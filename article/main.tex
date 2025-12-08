@@ -299,8 +299,8 @@ By establishing this formal dictionary (Table \ref{tab:dictionary}), we assert t
         
         % Mapping arrows
         \draw[<->, dashed, ultra thick, color=gray] (gene) -- node[above, font=\bfseries] {Isomorphism $\cong$} (agent);
-        \node[below=0.2cm of agent, font=\small, color=gray] {Category $\Poly$};
-        \node[below=0.2cm of gene, font=\small, color=gray] {Category $\Poly$};
+        \node[below=1.8cm of gene, font=\small, color=gray] {Category $\Poly$};
+        \node[below=1.8cm of agent, font=\small, color=gray] {Category $\Poly$};
     \end{tikzpicture}
     \caption{The Structural Isomorphism. Both Genes and Agents act as transducers converting Input Contexts ($I$) into Output Expressions ($O$), governed by the same categorical laws.}
     \label{fig:iso}
@@ -425,8 +425,8 @@ In $\Operad$, the CFFL is defined as a morphism involving a ``Copy'' operation $
         \draw[->, very thick] (gate) -- (out);
         
         % Annotations
-        \node[above=0.1cm of assessor, font=\tiny, color=gray] {Type: Check};
-        \node[below=0.1cm of executor, font=\tiny, color=gray] {Type: Gen};
+        \node[above=0.3cm of assessor, font=\tiny, color=gray] {Type: Check};
+        \node[below=0.3cm of executor, font=\tiny, color=gray] {Type: Gen};
 
     \end{tikzpicture}
     \caption{The CFFL implemented in $\Operad$. The Executor ($Z$) cannot act without the token from the Risk Assessor ($Y$), topologically preventing unilateral hallucinations.}
