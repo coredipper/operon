@@ -199,16 +199,16 @@ This formalism captures the essence of a ``stateful interface'': the system outp
     \centering
     \begin{tikzpicture}
         % The Mushroom Cap (Output/Position)
-        \draw[thick, fill=blue!10] (0,1) arc (180:0:1.5) -- cycle;
-        \node at (1.5, 1.5) {\textbf{Output} $o \in O$};
-        
+        \draw[thick, fill=blue!10] (0,1) arc (180:0:2) -- cycle;
+        \node at (2, 1.6) {\textbf{Output} $o \in O$};
+
         % The Stalks (Inputs/Directions)
         \draw[thick] (0.5, 1) -- (0.5, 0) node[below] {$i_1 \in I_o$};
-        \draw[thick] (1.5, 1) -- (1.5, 0) node[below] {$i_2 \in I_o$};
-        \draw[thick] (2.5, 1) -- (2.5, 0) node[below] {$...$};
-        
-        % Box
-        \node[draw, dashed, fit={(0,0) (3,2.5)}, label=below:\textit{The Interface $P(y)$}] {};
+        \draw[thick] (2, 1) -- (2, 0) node[below] {$i_2 \in I_o$};
+        \draw[thick] (3.5, 1) -- (3.5, 0) node[below] {$...$};
+
+        % Label
+        \node at (2, -1.2) {\textit{The Interface $P(y)$}};
     \end{tikzpicture}
     \caption{A visual representation of a Polynomial Functor (often called a ``Mushroom'' or ``Corolla''). The system offers an Output (the cap) and exposes specific Input ports (the stalks) dependent on that output.}
     \label{fig:poly_mushroom}
