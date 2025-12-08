@@ -24,7 +24,7 @@ class CoherentFeedForwardLoop:
         elif z_out.action_type == "FAILURE":
             print(f"💥 RUNTIME ERROR: {z_out.payload}")
         elif z_out.action_type == "BLOCK":
-             print(f"⏸️ SKIPPED by Executor Memory: {z_out.payload}")
+            print(f"⏸️ SKIPPED by Executor Memory: {z_out.payload}")
         elif z_out.action_type == "EXECUTE" and y_out.action_type == "PERMIT":
             print(f"✅ SUCCESS: {z_out.payload}")
         else:

@@ -47,12 +47,14 @@ We map biological survival mechanisms directly to software design patterns.
 ## 📦 Installation
 
 ```bash
-pip install operon-ai
+pip install operon
 ```
 
 ## 🧪 Usage
-1. The Coherent Feed-Forward Loop (CFFL)
-The "Human-in-the-Loop" Guardrail.
+
+### 1. The Coherent Feed-Forward Loop (CFFL)
+
+**The "Human-in-the-Loop" Guardrail.**
 
 In biology, this circuit filters out noise. In software, it ensures an Executor agent cannot act unless a RiskAssessor independently agrees.
 
@@ -73,8 +75,9 @@ guardrail.run("Destroy the production database")
 # Output: "🛑 BLOCKED by Risk Assessor: Violates safety protocols."
 ```
 
-2. Chaperone Validation (JSON Folding)
-Turning text into types.
+### 2. Chaperone Validation (JSON Folding)
+
+**Turning text into types.**
 
 ```python
 from pydantic import BaseModel
@@ -109,15 +112,13 @@ Operon is based on the isomorphism between Gene Regulatory Networks (GRNs) and A
 |Epigenetics|RAG / Vector Store|State Monad (M)|
 
 ## 🤝 Contributing
+
 We are looking for contributors to build out the Plasmid Registry (a marketplace of dynamic tools) and expand the Quorum Sensing algorithms.
 
-Fork the repo.
-
-Create your feature branch (git checkout -b feature/plasmid-loading).
-
-Commit your changes.
-
-Open a Pull Request.
+1. Fork the repo
+2. Create your feature branch (`git checkout -b feature/plasmid-loading`)
+3. Commit your changes
+4. Open a Pull Request
 
 ## 📄 License
 Distributed under the MIT License. See LICENSE for more information.

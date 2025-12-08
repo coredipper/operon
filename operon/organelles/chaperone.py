@@ -1,4 +1,4 @@
-from typing import Type, TypeVar, Generic, Optional
+from typing import Type, TypeVar
 from pydantic import BaseModel, ValidationError
 from ..core.types import FoldedProtein
 import json
