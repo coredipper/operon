@@ -1,28 +1,4 @@
-necolor{codegray}{rgb}{0.5,0.5,0.5}
-\definecolor{codepurple}{rgb}{0.58,0,0.82}
-\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
-
-\lstdefinestyle{mystyle}{
-        backgroundcolor=\color{backcolour},   
-            commentstyle=\color{codegreen},
-                keywordstyle=\color{magenta},
-                    numberstyle=\tiny\color{codegray},
-                        stringstyle=\color{codepurple},
-                            basicstyle=\ttfamily\footnotesize,
-                                breakatwhitespace=false,         
-                                    breaklines=true,                 
-                                        captionpos=b,                    
-                                            keepspaces=true,                 
-                                                numbers=left,                    
-                                                    numbersep=5pt,                  
-                                                        showspaces=false,                
-                                                            showstringspaces=false,
-                                                                showtabs=false,                  
-                                                                    tabsize=2
-}
-\lstset{style=mystyle}
-
-% \documentclass[11pt, a4paper]{article}
+\documentclass[11pt, a4paper]{article}
 
 % ==========================================
 % PREAMBLE & PACKAGES
@@ -51,8 +27,33 @@ necolor{codegray}{rgb}{0.5,0.5,0.5}
 \usepackage{xcolor}
 
 % Python Style
-\definecolor{codegreen}{rgb--- Bibliography ---
-\usepackage[style=numeric, backend=biber, sorting=none]{biblatex}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2
+}
+\lstset{style=mystyle}
+
+% --- Bibliography ---
+\usepackage[style=numeric, backend=bibtex, sorting=none]{biblatex}
 \addbibresource{references.bib}
 
 % --- Hyperlinks ---
@@ -117,7 +118,7 @@ necolor{codegray}{rgb}{0.5,0.5,0.5}
 % ABSTRACT
 % ==========================================
 \begin{abstract}
-The transition of Large Language Models (LLMs) from passive generators to autonomous agents has introduced significant challenges in reliability, security, and state management. Current agentic architectures are often constructed ad-hoc, prone to ``hallucination cascades,'' infinite loops, and prompt injection attacks. This paper proposes that these failure modes are not unique to software but are instances of universal control problems solved by biological systems over billions of years. We present a formal isomorphism between Gene Regulatory Networks (GRNs) and Agentic Software Systems using \textbf{Applied Category Theory}. We model agents as \textbf{Polynomial Functors} within the category $\Poly$, and their interactions via the \textbf{Operad of Wiring Diagrams}. We derive a rigorous syntax for agent composition by mapping biological mechanisms—including \textit{Quorum Sensing} for consensus, \textit{Chaperone Proteins} for structural validation, and \textit{Endosymbiosis} for neuro-symbolic integration—to software design patterns. This framework provides a mathematical basis for ``Epigenetic'' state management (RAG) and the topological defense against adversarial ``Prion'' attacks.
+The transition of Large Language Models (LLMs) from passive generators to autonomous agents has introduced significant challenges in reliability, security, and state management. Current agentic architectures are often constructed ad-hoc, prone to ``hallucination cascades,'' infinite loops, and prompt injection attacks. This paper proposes that these failure modes are not unique to software but are instances of universal control problems solved by biological systems over billions of years. We present a formal isomorphism between Gene Regulatory Networks (GRNs) and Agentic Software Systems using \textbf{Applied Category Theory}. We model agents as \textbf{Polynomial Functors} within the category $\Poly$, and their interactions via the \textbf{Operad of Wiring Diagrams}. We derive a rigorous syntax for agent composition by mapping biological mechanisms---including \textit{Quorum Sensing} for consensus, \textit{Chaperone Proteins} for structural validation, and \textit{Endosymbiosis} for neuro-symbolic integration---to software design patterns. This framework provides a mathematical basis for ``Epigenetic'' state management (RAG) and the topological defense against adversarial ``Prion'' attacks.
 \end{abstract}
 
 % ==========================================
@@ -139,7 +140,7 @@ Biology has evolved specific topological structures, known as \textbf{Network Mo
 \end{itemize}
 
 \subsection{The Categorical Bridge}
-To move this observation from metaphor to discipline, we utilize \textbf{Applied Category Theory}. We define the category of agents using the language of $\Poly$ (Polynomial Functors) as described by Spivak \cite{spivak2021learners}. An agent is not defined by its weights, but by its interface—a dynamical system consuming observations and producing actions:
+To move this observation from metaphor to discipline, we utilize \textbf{Applied Category Theory}. We define the category of agents using the language of $\Poly$ (Polynomial Functors) as described by Spivak \cite{spivak2021learners}. An agent is not defined by its weights, but by its interface---a dynamical system consuming observations and producing actions:
 \begin{equation}
     P_A(y) = \sum_{o \in \mathcal{O}} y^{\mathcal{I}_o}
 \end{equation}
@@ -164,7 +165,7 @@ By viewing agentic engineering through the lens of theoretical biology and categ
 This work sits at the intersection of Systems Biology, Applied Category Theory, and Agentic AI. While significant research exists within each domain, the formal synthesis of biological control topologies with agentic software architectures remains an unexplored frontier.
 
 \subsection{Network Motifs in Systems Biology}
-The concept of ``Network Motifs''—statistically over-represented sub-graphs in complex networks—was introduced by Milo et al. \cite{milo2002network}. Their work demonstrated that biological networks are not random but are composed of specific building blocks selected for functional data processing. Alon \cite{alon2007network} further characterized the dynamical properties of these motifs, identifying the \textit{Coherent Feed-Forward Loop (CFFL)} as a persistence detector. We extend this by mapping these motifs to the stochastic nature of Generative AI.
+The concept of ``Network Motifs''---statistically over-represented sub-graphs in complex networks---was introduced by Milo et al. \cite{milo2002network}. Their work demonstrated that biological networks are not random but are composed of specific building blocks selected for functional data processing. Alon \cite{alon2007network} further characterized the dynamical properties of these motifs, identifying the \textit{Coherent Feed-Forward Loop (CFFL)} as a persistence detector. We extend this by mapping these motifs to the stochastic nature of Generative AI.
 
 \subsection{Applied Category Theory (ACT)}
 To formalize network structure, we draw upon ACT. Spivak \cite{spivak2021learners} and Vagner et al. \cite{vagner2015algebras} established a rigorous framework for modeling Open Dynamical Systems using the category $\Poly$ and the Operad of Wiring Diagrams. To our knowledge, this is the first application of Polynomial Functors specifically designed to model the interface of LLM Agents and to verify safety properties in Agentic topologies.
@@ -234,7 +235,7 @@ An autonomous agent $A$ is a polynomial functor where $O_A$ is the set of genera
 
 \subsection{The Interface: Promoters as Lenses}
 
-In biology, a gene is not universally accessible. It is guarded by a \textbf{Promoter Region}—a specific DNA sequence that only binds to compatible Transcription Factors. In software, an agent is guarded by an \textbf{API Schema} or Context Window definition.
+In biology, a gene is not universally accessible. It is guarded by a \textbf{Promoter Region}---a specific DNA sequence that only binds to compatible Transcription Factors. In software, an agent is guarded by an \textbf{API Schema} or Context Window definition.
 
 We model this gating mechanism using \textbf{Optics}, specifically \textbf{Lenses}. A Lens consists of two maps between a global state $S$ and a local view $V$:
 \begin{enumerate}
@@ -455,7 +456,7 @@ A distributed topology where multiple agents emit a weak signal $\sigma$ into a 
 % ==========================================
 \section{Failure Modes \& Pathology}
 
-A key insight of Systems Biology is that diseases are often not caused by the complete failure of a single component, but by the \textbf{dysregulation of network dynamics}. A cancerous cell still ``works''—in fact, it works too well, reproducing indefinitely. Similarly, catastrophic failures in agentic systems often arise from functional agents interacting in topologically pathological ways.
+A key insight of Systems Biology is that diseases are often not caused by the complete failure of a single component, but by the \textbf{dysregulation of network dynamics}. A cancerous cell still ``works''---in fact, it works too well, reproducing indefinitely. Similarly, catastrophic failures in agentic systems often arise from functional agents interacting in topologically pathological ways.
 
 We classify three primary classes of agentic pathology based on their biological isomorphisms.
 
@@ -499,10 +500,10 @@ We classify three primary classes of agentic pathology based on their biological
 % ==========================================
 \section{Discussion: Towards ``Epigenetic'' Software}
 
-The isomorphism presented in this paper extends beyond the immediate execution of tasks (Gene Expression) to the management of long-term behavior and state. In biology, the DNA sequence is static; a neuron and a liver cell possess the exact same genetic code. Their distinct behaviors are determined by \textbf{Epigenetics}—chemical markers (like methylation) that restrict access to certain parts of the genome, effectively biasing the system toward specific outcomes.
+The isomorphism presented in this paper extends beyond the immediate execution of tasks (Gene Expression) to the management of long-term behavior and state. In biology, the DNA sequence is static; a neuron and a liver cell possess the exact same genetic code. Their distinct behaviors are determined by \textbf{Epigenetics}---chemical markers (like methylation) that restrict access to certain parts of the genome, effectively biasing the system toward specific outcomes.
 
 \subsection{RAG as Digital Methylation}
-In Agentic Systems, the Large Language Model (LLM) weights act as the DNA—a static, pre-trained substrate of potentiality. To create specialized agents, we do not typically retrain the model (mutation); instead, we use \textbf{Retrieval Augmented Generation (RAG)} and System Prompts.
+In Agentic Systems, the Large Language Model (LLM) weights act as the DNA---a static, pre-trained substrate of potentiality. To create specialized agents, we do not typically retrain the model (mutation); instead, we use \textbf{Retrieval Augmented Generation (RAG)} and System Prompts.
 
 We define this formally as \textbf{Phenotypic Plasticity}. The output of an agent is not solely a function of its weights ($W$) and the user query ($Q$), but of its epigenetic state ($E$):
 \begin{equation}
@@ -520,7 +521,7 @@ In Agentic Systems, we map Plasmids to \textbf{Tool Schemas}. An agent operating
 \begin{equation}
     Agent_{new} = Agent_{old} \otimes Tool_{Schema}
 \end{equation}
-By dynamically retrieving a tool definition (e.g., a Calculator API or SQL Interface) from a registry and injecting it into the Context Window, the agent undergoes a topological transformation, acquiring a new input/output modality instantly. This suggests that robust agentic architectures should support a ``Plasmid Registry''—a marketplace of ephemeral tools that agents can ingest and discard as needed.
+By dynamically retrieving a tool definition (e.g., a Calculator API or SQL Interface) from a registry and injecting it into the Context Window, the agent undergoes a topological transformation, acquiring a new input/output modality instantly. This suggests that robust agentic architectures should support a ``Plasmid Registry''---a marketplace of ephemeral tools that agents can ingest and discard as needed.
 
 \subsection{The Cost of State: The Metabolic Bound}
 Every biological process is constrained by ATP availability. Similarly, every agentic operation is constrained by token limits and latency. We propose that future agentic frameworks must implement the \textbf{Resource Functor} $R$ at the kernel level:
@@ -533,7 +534,7 @@ An agent graph should be ``compiled'' with a guaranteed upper bound on token con
 \subsection{Endosymbiosis: The Neuro-Symbolic Integration}
 The evolution of complex life was triggered by \textbf{Endosymbiosis}, where a host cell engulfed a bacterium (the future Mitochondrion), gaining the ability to generate massive energy (ATP) via aerobic respiration. This represents the integration of two distinct metabolic substrates.
 
-In Agentic AI, this maps to the integration of \textbf{Connectionist} (Neural) and \textbf{Symbolic} (Code) subsystems. An LLM acts as the host organism—capable of planning and semantic reasoning but energetically inefficient at arithmetic and logic. By ``engulfing'' a deterministic runtime (e.g., a Python REPL or Wolfram Engine), the agent delegates high-precision tasks to the symbolic organelle.
+In Agentic AI, this maps to the integration of \textbf{Connectionist} (Neural) and \textbf{Symbolic} (Code) subsystems. An LLM acts as the host organism---capable of planning and semantic reasoning but energetically inefficient at arithmetic and logic. By ``engulfing'' a deterministic runtime (e.g., a Python REPL or Wolfram Engine), the agent delegates high-precision tasks to the symbolic organelle.
 \begin{equation}
     Agent_{Eukaryote} = LLM_{Host} \oplus Runtime_{Mitochondria}
 \end{equation}
@@ -555,7 +556,7 @@ In this paper, we have demonstrated that \textbf{Gene Regulatory Networks (GRNs)
     \item \textbf{Evolution:} The mapping of \textit{Horizontal Gene Transfer} to dynamic tool loading and \textit{Endosymbiosis} to neuro-symbolic integration.
 \end{enumerate}
 
-We conclude that the future of reliable AI agents lies in \textbf{biomimetic topology}. By structuring our software according to the logic of life—from the metabolic constraints of Ischemia to the symbiotic integration of code and intuition—we inherit the billions of years of R\&D that biology has invested in solving the problem of autonomous control.
+We conclude that the future of reliable AI agents lies in \textbf{biomimetic topology}. By structuring our software according to the logic of life---from the metabolic constraints of Ischemia to the symbiotic integration of code and intuition---we inherit the billions of years of R\&D that biology has invested in solving the problem of autonomous control.
 
 \newpage
 
@@ -565,4 +566,3 @@ We conclude that the future of reliable AI agents lies in \textbf{biomimetic top
 \printbibliography
 
 \end{document}
-  }
