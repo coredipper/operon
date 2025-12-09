@@ -101,6 +101,33 @@ else:
     print(f"Misfold Trace: {protein.error_trace}")
 ```
 
+## 🔬 Examples
+
+Explore the `examples/` directory for runnable demonstrations of each topology:
+
+| Example | Topology | Description |
+|---------|----------|-------------|
+| [`01_code_review_bot.py`](examples/01_code_review_bot.py) | **CFFL** | Dual-check guardrails where both executor AND risk assessor must approve |
+| [`02_multi_model_consensus.py`](examples/02_multi_model_consensus.py) | **Quorum Sensing** | Multi-agent voting with threshold-based consensus |
+| [`03_structured_extraction.py`](examples/03_structured_extraction.py) | **Chaperone** | Schema validation turning raw text into Pydantic models |
+| [`04_budget_aware_agent.py`](examples/04_budget_aware_agent.py) | **ATP/Metabolic** | Resource management with graceful degradation (apoptosis) |
+| [`05_secure_chat_with_memory.py`](examples/05_secure_chat_with_memory.py) | **Membrane + Histones** | Input filtering (prion defense) combined with learned memory |
+| [`06_sql_query_validation.py`](examples/06_sql_query_validation.py) | **Chaperone** | Domain-specific validation for SQL query safety |
+
+Run any example:
+
+```bash
+# Clone and install
+git clone https://github.com/coredipper/operon.git
+cd operon
+pip install -e .
+
+# Run an example
+python examples/01_code_review_bot.py
+```
+
+---
+
 ## 📚 Theoretical Background
 
 Operon is based on the isomorphism between Gene Regulatory Networks (GRNs) and Agentic Architectures.
