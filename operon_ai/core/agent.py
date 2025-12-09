@@ -31,7 +31,8 @@ class BioAgent:
         print(f"🧬 [{self.name}] Expressing...")
 
         # 1. Membrane Check (Prion Defense)
-        if not self.membrane.filter(signal):
+        filter_result = self.membrane.filter(signal)
+        if not filter_result.allowed:
             return ActionProtein("BLOCK", "Blocked by Membrane (Prion Detected)", 1.0)
 
         # 2. Metabolic Check (Ischemia Defense)
