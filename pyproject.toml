@@ -29,3 +29,6 @@ dev = [
 
 [project.urls]
 Homepage = "https://github.com/coredipper/operon"
+
+[tool.hatch.build.targets.wheel]
+packages = ["operon"]
