@@ -1,6 +1,6 @@
 # Operon 🧬
 
-**Biologically Inspired Architectures for Agentic Control**
+**Biologically Inspired Architectures for EpiAgentic Control**
 
 > *"Don't fix the prompt. Fix the topology."*
 
