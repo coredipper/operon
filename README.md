@@ -27,20 +27,20 @@ Most agentic systems today are built like **cancerous cells**: they lack negativ
 We map biological survival mechanisms directly to software design patterns.
 
 * **🛡️ Prion Defense (Membrane):**
-    * **Biology:** Prevents misfolded proteins (prions) from infecting the cell.
-    * **Code:** Input sanitization layers that detect and block **Prompt Injections** before they ever reach the Agent's context window.
+  * **Biology:** Prevents misfolded proteins (prions) from infecting the cell.
+  * **Code:** Input sanitization layers that detect and block **Prompt Injections** before they ever reach the Agent's context window.
 
 * **⚡ Mitochondrial Tools (Endosymbiosis):**
-    * **Biology:** Organelles that provide massive energy (ATP) to the host.
-    * **Code:** **Neuro-symbolic** execution environments. Your LLM (Host) "engulfs" a Python REPL (Mitochondria) to perform exact math and logic, trading raw tokens for deterministic truth.
+  * **Biology:** Organelles that provide massive energy (ATP) to the host.
+  * **Code:** **Neuro-symbolic** execution environments. Your LLM (Host) "engulfs" a Python REPL (Mitochondria) to perform exact math and logic, trading raw tokens for deterministic truth.
 
 * **🧬 Epigenetic State (Histones):**
-    * **Biology:** Chemical markers that silence genes based on past stress, without changing DNA.
-    * **Code:** **Stateful Memory** that biases agent behavior. If an agent crashes on a specific task, it "methylates" that context, preventing it from retrying the same doomed action in the future.
+  * **Biology:** Chemical markers that silence genes based on past stress, without changing DNA.
+  * **Code:** **Stateful Memory** that biases agent behavior. If an agent crashes on a specific task, it "methylates" that context, preventing it from retrying the same doomed action in the future.
 
 * **🧶 Chaperone Validation (Folding):**
-    * **Biology:** Proteins that force linear amino acid chains to fold into functional 3D shapes.
-    * **Code:** **Retry loops** that force raw LLM text into strict **Pydantic/JSON schemas**. If the output "misfolds" (invalid JSON), the Chaperone rejects it and triggers a retry.
+  * **Biology:** Proteins that force linear amino acid chains to fold into functional 3D shapes.
+  * **Code:** **Retry loops** that force raw LLM text into strict **Pydantic/JSON schemas**. If the output "misfolds" (invalid JSON), the Chaperone rejects it and triggers a retry.
 
 ---
 
@@ -121,4 +121,5 @@ We are looking for contributors to build out the Plasmid Registry (a marketplace
 4. Open a Pull Request
 
 ## 📄 License
+
 Distributed under the MIT License. See LICENSE for more information.
