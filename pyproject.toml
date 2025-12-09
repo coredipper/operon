@@ -7,10 +7,10 @@ name = "operon-ai"
 version = "0.2.0"
 description = "Biomimetic wiring diagrams for robust agentic systems."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 license = "MIT"
 authors = [
-  { name = "Your Name", email = "your.email@example.com" },
+  { name = "Your Name", email = "bogdan@banu.be" },
 ]
 keywords = ["agents", "llm", "category-theory", "biology", "reliability"]
 classifiers = [
