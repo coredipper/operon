@@ -5,7 +5,7 @@
 > *"Don't fix the prompt. Fix the topology."*
 
 ![Status](https://img.shields.io/badge/status-experimental-orange)
-![Version](https://img.shields.io/badge/pypi-v0.2.0-blue)
+![Version](https://img.shields.io/badge/pypi-v0.3.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![Publish to PyPI](https://github.com/coredipper/operon/actions/workflows/publish.yml/badge.svg)](https://github.com/coredipper/operon/actions/workflows/publish.yml)
 
@@ -199,37 +199,204 @@ lysosome.autophagy()
 
 ---
 
-## 🔬 Topologies
+## 🧠 State Management
+
+Biologically-inspired state systems for agents:
+
+### 💊 Metabolism (Energy Management)
+
+Multi-currency energy system with regeneration, debt, and sharing.
+
+```python
+from operon_ai.state import ATP_Store, MetabolicState, EnergyType
+
+# Multiple energy currencies
+metabolism = ATP_Store(
+    budget=100,          # ATP for general operations
+    gtp_budget=50,       # GTP for specialized tools
+    nadh_reserve=30,     # NADH reserve (converts to ATP)
+    regeneration_rate=5, # Regenerate 5 ATP/second
+    max_debt=20,         # Allow energy debt
+)
+
+# Consume energy for operations
+metabolism.consume(10, "llm_call", EnergyType.ATP)
+metabolism.consume(20, "tool_use", EnergyType.GTP)
+
+# Convert reserves when low
+metabolism.convert_nadh_to_atp(15)
+
+# Transfer energy between agents
+metabolism.transfer_to(other_agent.metabolism, 10)
+```
+
+### 🧬 Genome (Immutable Configuration)
+
+DNA-like configuration with gene expression control.
+
+```python
+from operon_ai.state import Genome, Gene, GeneType, ExpressionLevel
+
+genome = Genome(genes=[
+    Gene(name="model", value="gpt-4", gene_type=GeneType.STRUCTURAL, required=True),
+    Gene(name="temperature", value=0.7, gene_type=GeneType.REGULATORY),
+    Gene(name="debug_mode", value=True, gene_type=GeneType.CONDITIONAL),
+])
+
+# Silence a gene without changing it
+genome.silence_gene("debug_mode")
+
+# Get active configuration
+config = genome.express()  # Only non-silenced genes
+
+# Create child with mutations
+child = genome.replicate(mutations={"temperature": 0.9})
+```
+
+### 🕰️ Telomere (Lifecycle Management)
+
+Agent lifespan tracking with senescence and renewal.
+
+```python
+from operon_ai.state import Telomere, LifecyclePhase
+
+telomere = Telomere(
+    max_operations=1000,
+    error_threshold=50,
+    allow_renewal=True,
+)
+
+# Each operation shortens telomeres
+while telomere.tick():  # Returns False when senescent
+    do_operation()
+    if telomere.record_error():
+        handle_error()
+
+# Renew agent (like telomerase)
+if telomere.get_phase() == LifecyclePhase.SENESCENT:
+    telomere.renew(amount=500)  # Extend lifespan
+```
+
+### 📝 Histone (Epigenetic Memory)
+
+Multi-type memory with decay, reinforcement, and inheritance.
+
+```python
+from operon_ai.state import HistoneStore, MarkerType, MarkerStrength
+
+memory = HistoneStore(enable_decay=True, decay_rate=0.1)
+
+# Different marker types for different persistence
+memory.methylate("user_preference", {"theme": "dark"},
+                 marker_type=MarkerType.METHYLATION,  # Permanent
+                 strength=MarkerStrength.STRONG)
+
+memory.methylate("session_context", {"topic": "ML"},
+                 marker_type=MarkerType.ACETYLATION,  # Temporary
+                 tags=["context"])
+
+# Semantic recall by tags
+results = memory.retrieve_by_tags(["context"])
+
+# Memory inheritance to child agents
+child_memory = memory.create_child(inherit_methylations=True)
+```
+
+---
+
+## 🔬 Network Topologies
 
 Higher-order patterns that wire agents together:
 
 ### Coherent Feed-Forward Loop (CFFL)
 
-**The "Human-in-the-Loop" Guardrail.** Ensures an executor cannot act unless a risk assessor independently agrees.
+**The "Human-in-the-Loop" Guardrail** with circuit breaker and caching.
 
 ```python
-from operon_ai import ATP_Store, CoherentFeedForwardLoop
+from operon_ai import ATP_Store
+from operon_ai.topology import CoherentFeedForwardLoop, GateLogic
 
 energy = ATP_Store(budget=100)
-guardrail = CoherentFeedForwardLoop(budget=energy)
+guardrail = CoherentFeedForwardLoop(
+    budget=energy,
+    gate_logic=GateLogic.AND,           # Both must agree
+    enable_circuit_breaker=True,         # Prevent cascade failures
+    enable_cache=True,                   # Cache decisions
+)
 
 # Dangerous request blocked by risk assessor
-guardrail.run("Delete all files in the system directory")
-# Output: "🛑 BLOCKED by Risk Assessor: Violates safety protocols."
+result = guardrail.run("Delete all files in the system directory")
+# result.blocked = True, result.block_reason = "Risk Assessor: Violates safety"
 ```
 
 ### Quorum Sensing
 
-Multi-agent consensus voting with configurable thresholds.
+Multi-agent consensus with voting strategies and reliability tracking.
 
 ```python
-from operon_ai import QuorumSensing, ATP_Store
+from operon_ai.topology import QuorumSensing, VotingStrategy
 
-budget = ATP_Store(budget=500)
-quorum = QuorumSensing(budget=budget, threshold=0.6)  # 60% agreement needed
+quorum = QuorumSensing(
+    n_agents=5,
+    budget=budget,
+    strategy=VotingStrategy.WEIGHTED,  # Weight-adjusted voting
+)
 
-result = quorum.run("Should we deploy to production?")
-# Multiple agents vote, consensus determines outcome
+# Set agent weights (experts have more influence)
+quorum.set_agent_weight("Expert_Agent", 2.0)
+
+result = quorum.run_vote("Should we deploy to production?")
+print(f"Decision: {result.decision.value}")
+print(f"Confidence: {result.confidence_score:.1%}")
+```
+
+### Cascade (Signal Amplification)
+
+Multi-stage processing with checkpoints and amplification.
+
+```python
+from operon_ai.topology import Cascade, CascadeStage, MAPKCascade
+
+cascade = Cascade(name="DataPipeline")
+
+cascade.add_stage(CascadeStage(
+    name="validate",
+    processor=lambda x: x if valid(x) else None,
+    checkpoint=lambda x: x is not None,  # Gate
+))
+
+cascade.add_stage(CascadeStage(
+    name="transform",
+    processor=lambda x: process(x),
+    amplification=2.0,  # Signal amplification
+))
+
+result = cascade.run(input_data)
+print(f"Amplification: {result.total_amplification}x")
+
+# Or use pre-built MAPK cascade
+mapk = MAPKCascade(tier1_amplification=10.0)
+```
+
+### Oscillator (Periodic Tasks)
+
+Biological rhythms for scheduled operations.
+
+```python
+from operon_ai.topology import Oscillator, HeartbeatOscillator, OscillatorPhase
+
+# Heartbeat for health checks
+heartbeat = HeartbeatOscillator(
+    beats_per_minute=60,
+    on_beat=lambda: health_check(),
+)
+heartbeat.start()
+
+# Custom work/rest cycle
+osc = Oscillator(frequency_hz=0.1)  # 10 second period
+osc.add_phase(OscillatorPhase(name="work", duration_seconds=7, action=do_work))
+osc.add_phase(OscillatorPhase(name="rest", duration_seconds=3, action=do_rest))
+osc.start()
 ```
 
 ---
@@ -266,6 +433,15 @@ Explore the `examples/` directory for runnable demonstrations:
 | [`11_lysosome_waste_management.py`](examples/11_lysosome_waste_management.py) | Lysosome | Cleanup, recycling, autophagy, toxic disposal |
 | [`12_complete_cell_simulation.py`](examples/12_complete_cell_simulation.py) | **All** | Complete cellular lifecycle with all organelles |
 
+### State Management & Topologies
+
+| Example | System | Description |
+|---------|--------|-------------|
+| [`13_advanced_metabolism.py`](examples/13_advanced_metabolism.py) | Metabolism | Multi-currency (ATP/GTP/NADH), debt, regeneration, sharing |
+| [`14_epigenetic_memory.py`](examples/14_epigenetic_memory.py) | Histone | Marker types, decay, reinforcement, inheritance |
+| [`15_genome_telomere_lifecycle.py`](examples/15_genome_telomere_lifecycle.py) | Genome+Telomere | Immutable config, gene expression, lifecycle management |
+| [`16_network_topologies.py`](examples/16_network_topologies.py) | Topologies | Cascade, Oscillator, enhanced QuorumSensing |
+
 Run any example:
 
 ```bash
@@ -296,6 +472,12 @@ Operon is based on the isomorphism between Gene Regulatory Networks (GRNs) and A
 | Mitochondria | Tool Use | Effect Monad |
 | Chaperone | Output Validation | Parser Combinator |
 | Lysosome | Garbage Collection | Cleanup Handler |
+| Genome | Immutable Config | Frozen Record |
+| Telomere | Lifecycle Counter | Bounded Natural |
+| Metabolism | Resource Budget | Multi-Currency Monad |
+| Cascade | Pipeline | Kleisli Arrow |
+| Oscillator | Periodic Task | Temporal Stream |
+| Quorum | Consensus | Weighted Functor |
 
 ---
 

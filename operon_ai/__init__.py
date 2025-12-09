@@ -8,11 +8,20 @@ Applied Category Theory to define rigorous "wiring diagrams".
 Core Components:
     - BioAgent: The fundamental agent unit (polynomial functor)
     - Signal: Input messages to agents
-    - ATP_Store: Metabolic budget management
+    - ActionProtein: Output actions from agents
 
-Topologies:
-    - CoherentFeedForwardLoop: Dual-check guardrails (executor + assessor)
+State Management:
+    - ATP_Store: Multi-currency metabolic budget (ATP, GTP, NADH)
+    - HistoneStore: Epigenetic memory with markers and decay
+    - Genome: Immutable configuration with gene expression
+    - Telomere: Lifecycle and senescence management
+
+Network Topologies:
+    - CoherentFeedForwardLoop: Dual-check guardrails with circuit breaker
+    - NegativeFeedbackLoop: Homeostasis and error correction
     - QuorumSensing: Multi-agent consensus voting
+    - Cascade: Signal amplification pipeline
+    - Oscillator: Periodic task scheduling
 
 Organelles:
     - Membrane: Input filtering and immune defense
@@ -22,19 +31,99 @@ Organelles:
     - Lysosome: Cleanup and recycling
 """
 
+# =============================================================================
 # Core
+# =============================================================================
 from .core.agent import BioAgent
-from .core.types import Signal, ActionProtein, FoldedProtein
+from .core.types import (
+    Signal,
+    SignalType,
+    SignalStrength,
+    ActionProtein,
+    ActionType,
+    FoldedProtein,
+    CellState,
+    Pathway,
+)
 
-# State
-from .state.metabolism import ATP_Store
-from .state.histone import HistoneStore
+# =============================================================================
+# State Management
+# =============================================================================
+from .state.metabolism import (
+    ATP_Store,
+    MetabolicState,
+    EnergyType,
+    EnergyTransaction,
+    MetabolicReport,
+)
+from .state.histone import (
+    HistoneStore,
+    MarkerType,
+    MarkerStrength,
+    EpigeneticMarker,
+    RetrievalResult,
+)
+from .state.genome import (
+    Genome,
+    Gene,
+    GeneType,
+    ExpressionLevel,
+    Mutation,
+    ExpressionState,
+)
+from .state.telomere import (
+    Telomere,
+    TelomereStatus,
+    LifecyclePhase,
+    SenescenceReason,
+    LifecycleEvent,
+)
 
-# Topology
-from .topology.loops import CoherentFeedForwardLoop
-from .topology.quorum import QuorumSensing
+# =============================================================================
+# Topologies
+# =============================================================================
+from .topology.loops import (
+    CoherentFeedForwardLoop,
+    NegativeFeedbackLoop,
+    GateLogic,
+    CircuitState,
+    LoopResult,
+    CircuitBreakerStats,
+)
+from .topology.quorum import (
+    QuorumSensing,
+    EmergencyQuorum,
+    VotingStrategy,
+    VoteType,
+    Vote,
+    QuorumResult,
+    AgentProfile,
+)
+from .topology.cascade import (
+    Cascade,
+    AgentCascade,
+    MAPKCascade,
+    CascadeStage,
+    CascadeResult,
+    StageResult,
+    StageStatus,
+    CascadeMode,
+)
+from .topology.oscillator import (
+    Oscillator,
+    CircadianOscillator,
+    HeartbeatOscillator,
+    CellCycleOscillator,
+    OscillatorPhase,
+    OscillatorState,
+    OscillatorStatus,
+    CycleResult,
+    WaveformType,
+)
 
+# =============================================================================
 # Organelles
+# =============================================================================
 from .organelles.membrane import (
     Membrane,
     ThreatLevel,
@@ -70,20 +159,87 @@ from .organelles.lysosome import (
     DigestResult,
 )
 
+# =============================================================================
+# Public API
+# =============================================================================
 __all__ = [
     # Core
     "BioAgent",
     "Signal",
+    "SignalType",
+    "SignalStrength",
     "ActionProtein",
+    "ActionType",
     "FoldedProtein",
+    "CellState",
+    "Pathway",
 
-    # State
+    # State - Metabolism
     "ATP_Store",
-    "HistoneStore",
+    "MetabolicState",
+    "EnergyType",
+    "EnergyTransaction",
+    "MetabolicReport",
 
-    # Topology
+    # State - Histone
+    "HistoneStore",
+    "MarkerType",
+    "MarkerStrength",
+    "EpigeneticMarker",
+    "RetrievalResult",
+
+    # State - Genome
+    "Genome",
+    "Gene",
+    "GeneType",
+    "ExpressionLevel",
+    "Mutation",
+    "ExpressionState",
+
+    # State - Telomere
+    "Telomere",
+    "TelomereStatus",
+    "LifecyclePhase",
+    "SenescenceReason",
+    "LifecycleEvent",
+
+    # Topology - Loops
     "CoherentFeedForwardLoop",
+    "NegativeFeedbackLoop",
+    "GateLogic",
+    "CircuitState",
+    "LoopResult",
+    "CircuitBreakerStats",
+
+    # Topology - Quorum
     "QuorumSensing",
+    "EmergencyQuorum",
+    "VotingStrategy",
+    "VoteType",
+    "Vote",
+    "QuorumResult",
+    "AgentProfile",
+
+    # Topology - Cascade
+    "Cascade",
+    "AgentCascade",
+    "MAPKCascade",
+    "CascadeStage",
+    "CascadeResult",
+    "StageResult",
+    "StageStatus",
+    "CascadeMode",
+
+    # Topology - Oscillator
+    "Oscillator",
+    "CircadianOscillator",
+    "HeartbeatOscillator",
+    "CellCycleOscillator",
+    "OscillatorPhase",
+    "OscillatorState",
+    "OscillatorStatus",
+    "CycleResult",
+    "WaveformType",
 
     # Membrane
     "Membrane",
@@ -120,4 +276,4 @@ __all__ = [
     "DigestResult",
 ]
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
