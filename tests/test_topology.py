@@ -4,9 +4,9 @@ import pytest
 from io import StringIO
 import sys
 
-from operon.state.metabolism import ATP_Store
-from operon.topology.loops import CoherentFeedForwardLoop
-from operon.topology.quorum import QuorumSensing
+from operon_ai.state.metabolism import ATP_Store
+from operon_ai.topology.loops import CoherentFeedForwardLoop
+from operon_ai.topology.quorum import QuorumSensing
 
 
 class TestCoherentFeedForwardLoop:

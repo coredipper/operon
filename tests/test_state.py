@@ -1,8 +1,8 @@
 """Tests for state management: ATP_Store, HistoneStore."""
 
 import pytest
-from operon.state.metabolism import ATP_Store
-from operon.state.histone import HistoneStore
+from operon_ai.state.metabolism import ATP_Store
+from operon_ai.state.histone import HistoneStore
 
 
 class TestATPStore:

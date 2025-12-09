@@ -16,7 +16,7 @@ Topology:
                  --> [Security Review] --+--> [AND Gate] --> Output
 """
 
-from operon import BioAgent, Signal, ATP_Store, CoherentFeedForwardLoop
+from operon_ai import BioAgent, Signal, ATP_Store, CoherentFeedForwardLoop
 
 
 def main():

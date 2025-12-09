@@ -2,9 +2,9 @@
 
 import pytest
 
-from operon.core.agent import BioAgent
-from operon.core.types import Signal
-from operon.state.metabolism import ATP_Store
+from operon_ai.core.agent import BioAgent
+from operon_ai.core.types import Signal
+from operon_ai.state.metabolism import ATP_Store
 
 
 class TestBioAgent:

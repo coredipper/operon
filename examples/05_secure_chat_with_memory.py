@@ -21,9 +21,9 @@ Topology:
                         NO: Add to Histone memory, return error
 """
 
-from operon import BioAgent, Signal, ATP_Store
-from operon.organelles.membrane import Membrane
-from operon.state.histone import HistoneStore
+from operon_ai import BioAgent, Signal, ATP_Store
+from operon_ai.organelles.membrane import Membrane
+from operon_ai.state.histone import HistoneStore
 
 
 def demonstrate_membrane():

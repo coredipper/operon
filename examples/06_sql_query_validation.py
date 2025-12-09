@@ -1,6 +1,6 @@
 """
-Chaperone Demo: SQL Query Validation
-====================================
+Example 6: SQL Query Validation (Chaperone Topology)
+====================================================
 
 Demonstrates the Chaperone Protein pattern for validating LLM-generated
 SQL queries before execution. Raw output is "folded" into a strict schema,
@@ -19,7 +19,7 @@ Topology:
 """
 
 from pydantic import BaseModel, Field
-from operon.organelles.chaperone import Chaperone
+from operon_ai.organelles.chaperone import Chaperone
 
 
 # Define the target schema - what constitutes a valid SQL query

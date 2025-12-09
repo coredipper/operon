@@ -60,7 +60,7 @@ pip install operon-ai
 In biology, this circuit filters out noise. In software, it ensures an Executor agent cannot act unless a RiskAssessor independently agrees.
 
 ```python
-from operon import ATP_Store, CoherentFeedForwardLoop
+from operon_ai import ATP_Store, CoherentFeedForwardLoop
 
 # Initialize metabolic budget (100 tokens)
 energy = ATP_Store(budget=100)
@@ -82,7 +82,7 @@ guardrail.run("Destroy the production database")
 
 ```python
 from pydantic import BaseModel
-from operon.organelles.chaperone import Chaperone
+from operon_ai.organelles.chaperone import Chaperone
 
 # Define the "DNA" (Schema)
 class SQLQuery(BaseModel):

@@ -18,7 +18,7 @@ Topology:
 """
 
 from pydantic import BaseModel, Field
-from operon.organelles.chaperone import Chaperone
+from operon_ai.organelles.chaperone import Chaperone
 
 
 # Define the target schema - what we want to extract

@@ -1,7 +1,7 @@
 """Tests for core types: Signal, ActionProtein, FoldedProtein."""
 
 import pytest
-from operon.core.types import Signal, ActionProtein, FoldedProtein
+from operon_ai.core.types import Signal, ActionProtein, FoldedProtein
 
 
 class TestSignal:

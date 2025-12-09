@@ -31,4 +31,4 @@ dev = [
 Homepage = "https://github.com/coredipper/operon"
 
 [tool.hatch.build.targets.wheel]
-packages = ["operon"]
+packages = ["operon_ai"]

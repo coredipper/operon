@@ -3,10 +3,10 @@
 import pytest
 from pydantic import BaseModel
 
-from operon.core.types import Signal
-from operon.organelles.membrane import Membrane
-from operon.organelles.mitochondria import Mitochondria
-from operon.organelles.chaperone import Chaperone
+from operon_ai.core.types import Signal
+from operon_ai.organelles.membrane import Membrane
+from operon_ai.organelles.mitochondria import Mitochondria
+from operon_ai.organelles.chaperone import Chaperone
 
 
 class TestMembrane:

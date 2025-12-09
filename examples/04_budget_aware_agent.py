@@ -16,7 +16,7 @@ Topology:
                     NO: Apoptosis (graceful shutdown)
 """
 
-from operon import BioAgent, Signal, ATP_Store
+from operon_ai import BioAgent, Signal, ATP_Store
 
 
 def run_agent_until_exhaustion(agent: BioAgent, tasks: list[str]):
