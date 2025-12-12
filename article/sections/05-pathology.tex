@@ -1,43 +1,187 @@
-% ==========================================
-% 5. FAILURE MODES (PATHOLOGY)
-% ==========================================
-\section{Failure Modes \& Pathology}
+\section{Motif 1: Coherent Feed-Forward Loop and Correct Safety Claims}
 
-A key insight of Systems Biology is that diseases are often not caused by the complete failure of a single component, but by the \textbf{dysregulation of network dynamics}. A cancerous cell still ``works''---in fact, it works too well, reproducing indefinitely. Similarly, catastrophic failures in agentic systems often arise from functional agents interacting in topologically pathological ways.
+\subsection{CFFL as Two-Key Execution}
 
-We classify three primary classes of agentic pathology based on their biological isomorphisms.
+A coherent feed-forward loop has a direct path and an indirect approval path. In agentic systems,
+we treat the indirect path as a verifier producing an explicit approval token.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[>=Latex, node distance=12mm]
+  \node[draw, rounded corners] (X) {Request $X$};
+  \node[draw, rounded corners, right=18mm of X] (Z) {Executor $Z$};
+  \node[draw, rounded corners, below=10mm of X] (Y) {Verifier $Y$};
+  \node[draw, rounded corners, right=18mm of Y] (AND) {$\wedge$ Gate};
+  \node[draw, rounded corners, right=18mm of AND] (OUT) {Action};
+
+  \draw[->] (X) -- node[above]{\small Gen} (Z);
+  \draw[->] (X) -- (Y);
+  \draw[->] (Y) -- node[above]{\small $\Approval$} (AND);
+  \draw[->] (Z) -- (AND);
+  \draw[->] (AND) -- (OUT);
+\end{tikzpicture}
+\caption{CFFL as two-key execution: executor output is gated by an approval token.}
+\end{figure}
+
+\subsection{The Correct Failure Probability}
+
+We now correct a common but subtle mistake: \emph{an AND gate does not enforce independence}.
+It enforces conjunction (both signals required). Independence is an assumption about how errors arise.
+
+\begin{definition}[Error Events]
+Let $E_{\mathrm{gen}}$ be the event that the generator/executor path proposes an unsafe or incorrect
+action. Let $E_{\mathrm{ver}}$ be the event that the verifier \emph{approves} that unsafe/incorrect action
+(i.e., fails to block it).
+\end{definition}
+
+\begin{theorem}[CFFL Risk Expression]
+In a direct serial execution (no gating), the system fails whenever $E_{\mathrm{gen}}$ occurs:
+\[
+  \mathbb{P}(\mathrm{Fail}_{\mathrm{direct}}) = \mathbb{P}(E_{\mathrm{gen}}).
+\]
+In a CFFL with an approval gate, the system fails only when both occur:
+\begin{equation}
+  \mathbb{P}(\mathrm{Fail}_{\mathrm{CFFL}})
+  = \mathbb{P}(E_{\mathrm{gen}} \cap E_{\mathrm{ver}})
+  = \mathbb{P}(E_{\mathrm{gen}})\,\mathbb{P}(E_{\mathrm{ver}} \mid E_{\mathrm{gen}}).
+  \label{eq:cffl-risk}
+\end{equation}
+If the verifier catches generator errors with probability $q$, i.e.
+$\mathbb{P}(E_{\mathrm{ver}} \mid E_{\mathrm{gen}})=1-q$, then CFFL reduces failure probability
+by a factor $(1-q)$ relative to the direct link.
+\end{theorem}
+
+\begin{proof}
+Direct execution has no second check, so failure is exactly $E_{\mathrm{gen}}$.
+In the CFFL, the executor can act only if an approval token is present, so failure requires
+(1) an unsafe proposal and (2) verifier approval. The probability identity
+$\mathbb{P}(A\cap B)=\mathbb{P}(A)\mathbb{P}(B\mid A)$ yields \eqref{eq:cffl-risk}.
+\end{proof}
+
+\begin{remark}[What Topology Guarantees vs What It Does Not]
+Topology guarantees an \emph{interlock}: unilateral generator output cannot execute without verifier
+approval. Topology does \emph{not} guarantee $\mathbb{P}(E_{\mathrm{ver}} \mid E_{\mathrm{gen}})$ is small.
+Reducing that conditional probability requires design choices: model diversity, independent evidence,
+tool-based verification, and adversarial testing.
+\end{remark}
+
+\subsection{A Topological Guarantee: Two-Key Execution in \texorpdfstring{$\WAgent$}{WAgent}}
+
+\begin{lemma}[Two-Key Execution]
+Assume the action sink requires an input port of type $(\Approval,\mathsf{T})$.
+Assume the generator path cannot output $(\Approval,\mathsf{T})$ (it outputs at most
+$(\mathsf{Text},\mathsf{U})$ or $(\mathsf{ToolCall}(\kappa),\mathsf{V})$).
+Then any well-typed wiring diagram that reaches the action sink must include a verifier box that
+produces $(\Approval,\mathsf{T})$.
+\end{lemma}
+
+\begin{proof}
+By $\WAgent$ typing, the action sink must be fed by a wire with exactly the required type and label.
+Since the generator cannot produce that port, the only way to satisfy the typing constraints is to
+include a box whose output includes $(\Approval,\mathsf{T})$, i.e.\ the verifier.
+\end{proof}
+
+\section{Motif 2: Quorum Sensing (Consensus \& Voting)}
+
+Quorum sensing aggregates many weak signals into a robust threshold decision. In agents, this maps to
+ensembles and voting.
+
+\begin{remark}[Correlation Warning]
+Voting improves reliability when individual errors are not perfectly correlated and when at least a
+plurality is better than chance. Shared prompts, shared context poisoning, or a shared misconception
+can make errors highly correlated, producing ``confidently wrong'' consensus.
+\end{remark}
+
+\paragraph{Design Implication.}
+To make quorum useful, inject diversity (different models/temperatures/prompts), incorporate
+tool-grounded checks, and consider robust aggregators (weighted voting, abstention, proof-carrying
+verifiers).
+
+\section{Motif 3: Chaperones as Partial Validators (Not Retractions)}
+
+Biological chaperones do not implement a perfect inverse; they attempt folding, detect failures,
+and route for repair or degradation. The correct software analogue is \emph{partial validation} with
+explicit error values.
+
+\begin{definition}[Chaperone Validator (Kleisli Form)]
+A chaperone is a Kleisli morphism
+\[
+  \Val: (\mathsf{Text},\mathsf{U}) \to \Either(\Err, (\mathsf{JSON}(\Sigma),\mathsf{V})).
+\]
+It either yields a validated structured value or an error trace used for repair.
+\end{definition}
+
+\paragraph{Retry \& Repair Loop.}
+The generator proposes a structure; the chaperone validates; if invalid, the error is fed back with
+bounded retries and a budget box.
+
+\section{Failure Modes as Pathology}
+
+Catastrophic failures often arise not from a single broken component but from dysregulated dynamics.
 
 \subsection{Oncology: Infinite Loops as Unchecked Growth}
-\begin{itemize}
-    \item \textbf{Biological Pathology (Cancer):} In a healthy cell, the cell cycle is driven by a positive feedback loop (Cyclins) but constrained by negative feedback ``checkpoints'' (e.g., the p53 gene). If p53 is mutated, the negative feedback is severed. The positive loop runs unchecked, leading to exponential proliferation (tumor growth).
-    \item \textbf{Agentic Pathology (The Recursive Hang):} Two agents get stuck in a politeness loop (e.g., ``Thank you,'' ``You're welcome'') or a debugger agent continuously generates new bugs to fix old ones.
-    \item \textbf{Categorical Diagnosis:} The Trace operation $Tr(A)$ lacks a \textbf{Contractive Map} property. In the metric space of the conversation, the distance between state $S_t$ and $S_{t+1}$ approaches zero ($d \to 0$), but the system fails to trigger a ``Stop'' token.
-    \item \textbf{Treatment:} Implementation of an \textit{Apoptosis} (Cell Death) mechanism. A meta-monitor agent observes the \textit{entropy} of the conversation. If information gain drops below a threshold (the conversation becomes repetitive), the monitor forces a termination signal.
-\end{itemize}
 
-\subsection{Autoimmunity: Hallucination Cascades}
-\begin{itemize}
-    \item \textbf{Biological Pathology (Autoimmune Disease):} The immune system relies on distinguishing ``Self'' (internal tissue) from ``Non-Self'' (foreign pathogens). In diseases like Lupus, this distinction blurs, and the system attacks healthy tissue.
-    \item \textbf{Agentic Pathology (Context Poisoning):} Agent A hallucinates a fact (e.g., a non-existent library function). Agent B reads this hallucination from the shared history, treats it as ground truth, and builds complex logic upon it. The error amplifies through the network until the output is detached from reality.
-    \item \textbf{Categorical Diagnosis:} A failure of the \textbf{Lens} to distinguish source types. The input port $I$ accepts both \texttt{External\_Observation} (User/Tool) and \texttt{Internal\_Memory} (History) without distinction.
-    \item \textbf{Treatment:} Strict Schema Typing. We must distinguish ``Self'' (Generated Tokens) from ``Non-Self'' (Tool Outputs) at the schema level. The Reviewer Agent should weigh \texttt{Tool\_Output} with higher authority than \texttt{Agent\_Thought}.
-\end{itemize}
+\paragraph{Agentic Pathology.}
+Agents can enter recursive politeness loops or self-debug loops.
 
-\subsection{Prion Disease: Topological Corruption via Prompt Injection}
-\begin{itemize}
-    \item \textbf{Biological Pathology (Prions):} Unlike viruses, prions lack genetic material. They are misfolded proteins that induce conformational changes in healthy proteins upon contact, triggering a chain reaction of structural corruption (e.g., Creutzfeldt-Jakob disease).
-    \item \textbf{Agentic Pathology (The Jailbreak Cascade):} A malicious string (Prompt Injection) enters the Context Window. The agent, attending to this string, ``misfolds'' its alignment, outputting a compliant response to a harmful query. If this output is fed into a downstream agent, the ``infection'' propagates purely through the geometry of the embedding space, without valid authorization.
-    \item \textbf{Categorical Diagnosis:} A violation of \textbf{Information Flow Security} within the Operad. The injection acts as a \textit{topological defect} that bypasses the Schema/Lens filter by mimicking the structure of a trusted signal.
-    \item \textbf{Treatment:} \textbf{Denaturation Layers}. Implementing an intermediate transformation layer (e.g., paraphrasing or sanitization) between agents that disrupts the specific syntax (folding) required for the injection to work, rendering the ``prion'' inert.
+\paragraph{Correct Categorical Diagnosis.}
+The problem is not ``distance goes to zero'' in an unspecified metric space. The problem is absence of a
+well-founded progress measure and enforced budgets.
+
+\paragraph{Treatment.}
+Introduce a guarded trace with:
+(1) a step/token budget, and
+(2) a ranking function $m(S)\in \mathbb{N}$ that must decrease unless new external evidence arrives.
+If $m$ fails to decrease for $k$ steps, trigger apoptosis (termination) or escalation.
+
+\subsection{Autoimmunity: Hallucination Cascades as Integrity Failure}
+
+\paragraph{Agentic Pathology.}
+One agent hallucinates; another consumes it from shared memory as if trusted.
+
+\paragraph{Diagnosis.}
+This is an integrity-labeling failure: the system does not distinguish untrusted generated text from
+validated tool outputs.
+
+\paragraph{Treatment.}
+Use integrity labels in $\WAgent$:
+tool outputs may be labeled $\mathsf{T}$ (trusted), while generated hypotheses remain $\mathsf{U}$ unless
+validated. Require critical decisions to consume $\mathsf{V}$ or $\mathsf{T}$ inputs only.
+
+\subsection{Prion Disease: Prompt Injection as Instruction Contamination}
+
+\paragraph{Agentic Pathology.}
+A malicious instruction enters context and influences downstream behavior.
+
+\paragraph{Correct Mechanism Statement.}
+Propagation is primarily due to \emph{context mixing and instruction-following} across trust boundaries,
+not ``pure geometry'' alone.
+
+\paragraph{Diagnosis.}
+An information-flow policy is violated: untrusted text affects privileged control decisions.
+
+\paragraph{Treatment.}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Noninterference by construction:} require privileged actions to be gated by
+  $(\Approval,\mathsf{T})$ tokens and/or tool-grounded evidence.
+  \item \textbf{Sanitization layers:} $\San: (\mathsf{Text},\mathsf{U}) \to (\mathsf{Text},\mathsf{U})$ that removes
+  tool-like syntax, policy-violating directives, or embedded prompts (useful but not sufficient alone).
+  \item \textbf{Capability least-privilege:} restrict which boxes possess capabilities like $\mathsf{Net}$,
+  $\mathsf{WriteFS}$, or $\mathsf{Money}$; require explicit escalation paths.
 \end{itemize}
 
 \subsection{Ischemia: Resource Exhaustion}
-\begin{itemize}
-    \item \textbf{Biological Pathology (Ischemia):} A tissue may be genetically perfect, but if blood flow (oxygen/ATP) is restricted, metabolic processes stall, leading to necrosis.
-    \item \textbf{Agentic Pathology (Token Starvation):} An agentic graph is logically sound but fails mid-execution because the context window is full or the API rate limit is hit.
-    \item \textbf{Categorical Diagnosis:} A failure in the \textbf{Resource Functor}. Every operation in the Operad carries a cost ($c$).
-    \begin{equation}
-        \sum_{agent \in Graph} Cost(agent) > Budget
-    \end{equation}
-    \item \textbf{Treatment:} \textbf{Metabolic Regulation}. Instead of a fixed loop, implement ``Budget-Aware'' agents. The agent observes its own remaining token count (ATP levels) and dynamically simplifies its reasoning strategy (switching from Chain-of-Thought to Zero-Shot) to conserve energy.
-\end{itemize}
+
+\paragraph{Agentic Pathology.}
+Token starvation, rate limits, latency spikes.
+
+\paragraph{Diagnosis.}
+Every wiring-diagram operation consumes resources. Static reasoning can bound \emph{structural} fan-out
+and maximum loop iterations, but dynamic effects (model variability, tool delays) require runtime
+enforcement.
+
+\paragraph{Treatment.}
+A resource-aware runtime enforces token budgets and timeouts. The compiler can reject architectures
+that contain \emph{unguarded} trace, but cannot in general compute exact bounds for unconstrained
+LLM-driven stopping conditions.
+

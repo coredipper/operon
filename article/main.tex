@@ -1,122 +1,45 @@
-\documentclass[11pt, a4paper]{article}
+\documentclass[11pt]{article}
 
-% ==========================================
-% PREAMBLE & PACKAGES
-% ==========================================
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage{geometry}
-\geometry{a4paper, margin=1in}
-\usepackage{times} % Standard academic font
-
-% --- Math & Theory ---
-\usepackage{amsmath, amssymb, amsthm}
-\usepackage{mathtools}
-\usepackage{stmaryrd} % For specialized brackets
-\usepackage{bm}
-
-% --- Graphics & Diagrams (TikZ) ---
-\usepackage{tikz}
-\usetikzlibrary{shapes, arrows.meta, positioning, calc, fit, backgrounds}
-\usepackage{graphicx}
-\usepackage{caption}
-\usepackage{subcaption}
-
-% --- Code Formatting ---
-\usepackage{listings}
-\usepackage{xcolor}
-
-% Python Style
-\definecolor{codegreen}{rgb}{0,0.6,0}
-\definecolor{codegray}{rgb}{0.5,0.5,0.5}
-\definecolor{codepurple}{rgb}{0.58,0,0.82}
-\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
-
-\lstdefinestyle{mystyle}{
-    backgroundcolor=\color{backcolour},
-    commentstyle=\color{codegreen},
-    keywordstyle=\color{magenta},
-    numberstyle=\tiny\color{codegray},
-    stringstyle=\color{codepurple},
-    basicstyle=\ttfamily\footnotesize,
-    breakatwhitespace=false,
-    breaklines=true,
-    captionpos=b,
-    keepspaces=true,
-    numbers=left,
-    numbersep=5pt,
-    showspaces=false,
-    showstringspaces=false,
-    showtabs=false,
-    tabsize=2
-}
-\lstset{style=mystyle}
-
-% --- Bibliography ---
-\usepackage[style=numeric, backend=bibtex, sorting=none]{biblatex}
-\addbibresource{references.bib}
-
-% --- Hyperlinks ---
+% --- Packages ---
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm, mathtools}
+\usepackage{booktabs}
 \usepackage{hyperref}
-\hypersetup{
-    colorlinks=true,
-    linkcolor=blue,
-    citecolor=red!70!black,
-    urlcolor=blue
-}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, calc}
 
-% ==========================================
-% MACROS & ENVIRONMENTS
-% ==========================================
+% --- Theorem environments ---
 \newtheorem{theorem}{Theorem}
-\newtheorem{definition}{Definition}
+\newtheorem{lemma}{Lemma}
 \newtheorem{proposition}{Proposition}
-\newtheorem{motif}{Network Motif}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
 
+% --- Macros ---
 \newcommand{\Poly}{\mathbf{Poly}}
-\newcommand{\Operad}{\mathcal{W}_{\text{Agent}}}
-\newcommand{\Agent}[1]{\text{\textsf{#1}}}
+\newcommand{\Set}{\mathbf{Set}}
+\newcommand{\WAgent}{\mathsf{WAgent}}
+\newcommand{\Either}{\mathsf{Either}}
+\newcommand{\Maybe}{\mathsf{Maybe}}
+\newcommand{\Err}{\mathsf{Err}}
+\newcommand{\Tok}{\mathsf{Token}}
+\newcommand{\Approval}{\mathsf{Approval}}
+\newcommand{\San}{\mathsf{Sanitize}}
+\newcommand{\Val}{\mathsf{Validate}}
+\newcommand{\Exec}{\mathsf{Exec}}
+\newcommand{\Obs}{\mathsf{Obs}}
+\newcommand{\Act}{\mathsf{Act}}
 
-% ==========================================
-% TITLE BLOCK
-% ==========================================
 \title{\textbf{Biological Motifs for Agentic Control}\\
-\large A Categorical Isomorphism between Gene Regulatory Networks and Autonomous Software Architectures}
-
-\author{
-    \textbf{Bogdan Banu} \\
-    \texttt{[bogdan@banu.be]}
-}
-
-\date{\today}
-
-% --- PREPRINT HEADER ---
-\usepackage{fancyhdr}
-\pagestyle{fancy}
-\fancyhf{} % Clear existing headers
-\renewcommand{\headrulewidth}{0pt} % Remove the line if you want a cleaner look
-
-% Right side: Status and Date
-\rhead{\footnotesize \textit{Preprint -- Work in Progress -- \today}}
-% Left side: Short Title
-\lhead{\footnotesize \textbf{Operon: Biological Motifs for Agentic Control}}
-% Center Footer: Page Number
-\cfoot{\thepage}
-
-% Ensure the Title page also gets the style (optional)
-\fancypagestyle{plain}{
-  \fancyhf{}
-  \rhead{\footnotesize \textit{Preprint -- Feedback Welcome}}
-  \cfoot{\thepage}
-}
+\large A Functorial Bridge between Gene Regulatory Networks and Autonomous Software Architectures}
+\author{Bogdan Banu\\\texttt{bogdan@banu.be}}
+\date{December 9, 2025}
 
 \begin{document}
-
 \maketitle
 
-% ==========================================
-% CONTENT SECTIONS
-% ==========================================
 \input{sections/00-abstract}
 \input{sections/01-introduction}
 \input{sections/02-related-work}
@@ -127,10 +50,8 @@
 \input{sections/07-conclusion}
 
 \newpage
-
-% ==========================================
-% REFERENCES
-% ==========================================
-\printbibliography
+\nocite{*}
+\bibliographystyle{plain}
+\bibliography{references}
 
 \end{document}

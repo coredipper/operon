@@ -1,6 +1,27 @@
-% ==========================================
-% ABSTRACT
-% ==========================================
 \begin{abstract}
-The transition of Large Language Models (LLMs) from passive generators to autonomous agents has introduced significant challenges in reliability, security, and state management. Current agentic architectures are often constructed ad-hoc, prone to ``hallucination cascades,'' infinite loops, and prompt injection attacks. This paper proposes that these failure modes are not unique to software but are instances of universal control problems solved by biological systems over billions of years. We present a formal isomorphism between Gene Regulatory Networks (GRNs) and Agentic Software Systems using \textbf{Applied Category Theory}. We model agents as \textbf{Polynomial Functors} within the category $\Poly$, and their interactions via the \textbf{Operad of Wiring Diagrams}. We derive a rigorous syntax for agent composition by mapping biological mechanisms---including \textit{Quorum Sensing} for consensus, \textit{Chaperone Proteins} for structural validation, and \textit{Endosymbiosis} for neuro-symbolic integration---to software design patterns. This framework provides a mathematical basis for ``Epigenetic'' state management (RAG) and the topological defense against adversarial ``Prion'' attacks.
+The transition of Large Language Models (LLMs) from passive generators to autonomous agents
+has introduced recurring failures in reliability, security, and state management. Current agentic
+architectures are often constructed ad-hoc, leaving systems vulnerable to cascading errors, runaway
+feedback loops, and prompt injection attacks.
+
+This paper argues that many of these failure modes are instances of general control problems long
+addressed by biological networks. We formalize a \emph{functorial correspondence}---at the level of
+\emph{open-system interfaces and composition}---between Gene Regulatory Networks (GRNs) and
+Agentic Software Systems using Applied Category Theory. Both are represented as coalgebras of
+polynomial functors in $\Poly$, composed via the operad of wiring diagrams.
+
+We introduce $\WAgent$, a typed syntax for agent wiring that (i) prevents structural integration
+errors at design time, (ii) enforces explicit validation boundaries through effectful optics and partial
+validators, and (iii) supports security reasoning via integrity labels and capability/effect tracking.
+Biological motifs---including coherent feed-forward loops (persistence detection), quorum sensing
+(consensus), and chaperones (structural validation)---become reusable architectural patterns with
+precise interface contracts.
+
+We also revisit a common safety claim: wiring alone does not guarantee statistical independence of
+errors. Instead, topology provides \emph{interlocks} (e.g., two-key execution) while independence is an
+external design requirement achieved by diversity (models, prompts, tools, and verifiers).
+
+This framework provides a compositional basis for ``epigenetic'' state management (RAG and memory),
+for defense against adversarial injection, and for principled termination and resource control in
+autonomous software.
 \end{abstract}
