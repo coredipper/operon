@@ -1,91 +1,159 @@
-\section{A Formal Syntax for Agent Composition: The Operad \texorpdfstring{$\WAgent$}{WAgent}}
+\section{Formal Syntax: The Agentic Operad}
 
-We now define a wiring discipline for agentic systems that supports:
-(1) static rejection of ill-typed wiring,
-(2) explicit validation boundaries, and
-(3) information-flow and capability reasoning.
+To formalize the composition of agents, we define the Operad of Wiring Diagrams, denoted as WAgent. An operad
+can be understood as a ``grammar'' for connecting operations (boxes) via typed wires. It defines which agent
+topologies are valid and allows us to reason about the properties of the composite system based solely on the
+properties of its components~\cite{vagner2015algebras}.
 
-\subsection{Data Types, Integrity Labels, and Capabilities}
+\subsection{The Typing Rules}
 
-\begin{definition}[Base Data Types]
-Let $\mathcal{T}$ be a set of base data types, e.g.
-\[
-  \mathcal{T} = \{\mathsf{Text},\, \mathsf{JSON}(\Sigma),\, \mathsf{Image},\, \mathsf{ToolCall}(\kappa),\, \mathsf{Error},\, \mathsf{Stop},\, \Approval\}.
-\]
-\end{definition}
-
-\begin{definition}[Integrity Labels]
-Let $\mathcal{L}=\{\mathsf{U},\mathsf{V},\mathsf{T}\}$ denote integrity levels:
-\[
-  \mathsf{U}=\text{untrusted},\quad
-  \mathsf{V}=\text{validated},\quad
-  \mathsf{T}=\text{trusted}.
-\]
-We order them $\mathsf{U} \le \mathsf{V} \le \mathsf{T}$ and enforce \emph{integrity-preserving flow}:
-a wire may connect output label $\ell_{\mathrm{out}}$ to input label $\ell_{\mathrm{in}}$ only if
+In WAgent, every wire carries a specific Type $\tau\in T$.
 \begin{equation}
-  \ell_{\mathrm{out}} \ge \ell_{\mathrm{in}}.
-  \label{eq:integrity-flow}
+T = \{\text{Text}, \text{JSON}, \text{Image}, \text{Error}, \text{ToolCall}\}.
+\tag{6}
 \end{equation}
-Thus untrusted data cannot directly feed a trusted-required port.
-\end{definition}
+These types correspond to biological molecular specificity (e.g., a specific transcription factor only binds to
+a specific DNA sequence). A connection is valid if and only if the type of the output port of Agent $A$ matches
+the type of the input port of Agent $B$.
 
-\begin{definition}[Capabilities / Effects]
-Let $\mathcal{C}$ be a set of capabilities (effects), e.g.
+\subsection{The Composition Operations}
+
+The operad defines three fundamental operations for combining agents. Any complex agentic architecture, no
+matter how large, can be decomposed into these three primitives.
+
+\subsubsection{Parallel Composition ($\otimes$)}
+
+Two agents, $A$ and $B$, execute simultaneously with no information exchange:
+\begin{equation}
+A \otimes B.
+\tag{7}
+\end{equation}
+\begin{itemize}[leftmargin=*]
+\item \textbf{Biological Analogy:} Two genes located on different chromosomes expressing proteins independently.
+\item \textbf{Constraint:} This operation is valid only if the internal state spaces $S_A$ and $S_B$ are disjoint.
+If they share a mutable memory store, the operation leaves the \textbf{independent-state interpretation} and
+requires an explicit \textbf{resource-sharing} structure (e.g., a shared state component or a Resource Sharing
+decorator).
+\end{itemize}
+
+\subsubsection{Serial Composition ($\circ$)}
+
+The output of Agent $A$ is piped directly into the input of Agent $B$:
+\begin{equation}
+B \circ A.
+\tag{8}
+\end{equation}
+\begin{itemize}[leftmargin=*]
+\item \textbf{Biological Analogy:} A Signal Transduction Pathway (Protein A activates Protein B).
+\item \textbf{Formal Verification:} This allows for static type checking of agent graphs. If Agent $A$ outputs
+Natural Language but Agent $B$ expects JSON Schema, the composition is undefined in WAgent. This moves runtime
+\textbf{type/schema mismatch} errors to ``compile-time'' architectural errors.
+\end{itemize}
+
+\subsubsection{Contraction / Trace ($Tr$)}
+
+A feedback loop where an output port of Agent $A$ is wired back into one of its own input ports:
+\begin{equation}
+Tr(A).
+\tag{9}
+\end{equation}
+\begin{itemize}[leftmargin=*]
+\item \textbf{Biological Analogy:} Autoregulation (Homeostasis) or Positive Feedback.
+\item \textbf{Software Implication:} This is the topological definition of Agency. A ``stateless'' LLM is a simple
+morphism. An ``Agent'' is a morphism wrapped in a Trace operation, allowing it to observe its own previous
+outputs (Chain-of-Thought).
+\end{itemize}
+
+\subsection{Theorem: Topological Error Suppression}
+
+We now use this formalism to prove why the Coherent Feed-Forward Loop (CFFL) is superior to a direct connection
+for high-stakes tasks.
+
+\paragraph{Network Motif 1 (Coherent Feed-Forward Loop).}
+A topological structure where Signal $X$ activates $Z$ directly, but also activates $Y$ which gates $Z$. The node
+$Z$ functions as an AND gate: it fires if and only if $X \wedge Y$.
+
+\paragraph{Theorem 1 (Error Suppression in CFFL).}
+Let $A_{\mathrm{gen}}$ be a generator agent and $A_{\mathrm{ver}}$ be a verifier agent. Let
+$P(E_{\mathrm{gen}})$ (resp.\ $P(E_{\mathrm{ver}})$) be the probability of a hallucination (error) in any single
+generation step of $A_{\mathrm{gen}}$ (resp.\ $A_{\mathrm{ver}}$).
+\begin{itemize}[leftmargin=*]
+\item \textbf{Case 1: Direct Link (Serial).} The system fails if $A_{\mathrm{gen}}$ hallucinates.
 \[
-  \mathcal{C}=\{\mathsf{ReadFS},\mathsf{WriteFS},\mathsf{Net},\mathsf{ExecCode},\mathsf{Money},\mathsf{EmailSend}\}.
+P(\mathrm{Fail}_{\mathrm{direct}}) = P(E_{\mathrm{gen}}).
 \]
-Each box (agent/module) carries an effect set $\epsilon \subseteq \mathcal{C}$, and composition
-aggregates effects by union unless restricted by a policy.
-\end{definition}
-
-\subsection{Ports and Well-Formed Wiring}
-
-\begin{definition}[Port Type]
-A port carries a \emph{decorated type} $(\tau,\ell)$ where $\tau\in\mathcal{T}$ and $\ell\in\mathcal{L}$.
-(Effects are box-level annotations, but may be required by specific ports such as execution.)
-\end{definition}
-
-\begin{definition}[Well-Typed Wire]
-A wire from port $(\tau_1,\ell_1)$ to port $(\tau_2,\ell_2)$ is well-typed when:
+\item \textbf{Case 2: CFFL Topology.} The system requires the logical conjunction of the Generator's request
+($X$) and the Verifier's approval ($Y$). Assuming the Verifier's error mode is independent of the Generator's
+(e.g., different prompt strategy or model temperature), the probability that both agents simultaneously
+hallucinate a ``Go'' signal for a destructive action is:
 \[
-  \tau_1 = \tau_2
-  \quad\text{and}\quad
-  \ell_1 \ge \ell_2.
+P(\mathrm{Fail}_{\mathrm{CFFL}}) = P(E_{\mathrm{gen}}\wedge E_{\mathrm{ver}})
+= P(E_{\mathrm{gen}})\times P(E_{\mathrm{ver}}).
 \]
-\end{definition}
+\end{itemize}
+Since $0\le P(E_{\mathrm{gen}}),P(E_{\mathrm{ver}})\le 1$, it follows that
+\[
+P(E_{\mathrm{gen}})P(E_{\mathrm{ver}})\le \min\{P(E_{\mathrm{gen}}),P(E_{\mathrm{ver}})\},
+\]
+with strict inequality whenever both probabilities lie in $(0,1)$.
 
-\begin{remark}
-This is the core distinction between \emph{structural correctness} and semantic correctness.
-$\WAgent$ can prevent structural integration errors (wrong types, wrong trust boundaries) but cannot,
-by itself, guarantee the semantic truth of a text produced by an LLM.
-\end{remark}
+\paragraph{Proof.}
+In WAgent, the CFFL is defined as a morphism involving a ``Copy'' operation $\Delta_X:X\to X\otimes X$ and an
+``AND-Merge'' operation $\mu: Z\otimes Y \to \mathrm{Out}$. The existence of the $\mu$ box in the wiring diagram
+structurally enforces \textbf{conjunctive gating}; statistical independence (or low correlation) between error
+modes is an additional modeling assumption that can be encouraged by diversity in prompts/models. This shows
+that certain safety properties are a property of the topology, not just the prompt engineering.
 
-\subsection{Primitive Composition Operations}
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[>=Latex, node distance=12mm]
+  \node[draw, rounded corners] (X) {User Request ($X$)};
+  \node[draw, rounded corners, below=10mm of X] (Y) {Risk Assessor ($Y$)};
+  \node[draw, rounded corners, right=22mm of X] (Z) {Executor ($Z$)};
+  \node[draw, rounded corners, align=center] (AND) at (Z |- Y) {$\wedge$\\AND Gate};
+  \node[draw, rounded corners, right=22mm of AND] (OUT) {Action};
 
-The operad provides three key wiring primitives.
+  \draw[->] (X) -- node[above]{\small Type: Gen} (Z);
+  \draw[->] (X) -- (Y);
+  \draw[->] (Y) -- node[above]{\small Type: Check} (AND);
+  \draw[->] (Z) -- (AND);
+  \draw[->] (AND) -- (OUT);
 
-\subsubsection{Parallel Composition $(\otimes)$}
+	  \node[below=0mm of AND] {\small Validation Token};
+	\end{tikzpicture}
+	\caption{The CFFL implemented in WAgent. The Executor ($Z$) cannot act without the token from the Risk Assessor
+	($Y$), topologically preventing unilateral execution without approval.}
+	\end{figure}
 
-Two agents $A$ and $B$ execute in parallel. Parallel composition is safe when they do not race on a
-shared mutable resource, or when shared resources are mediated by explicit resource boxes (locks,
-transactions, CRDTs, etc.).
+\subsection{Quorum Sensing (Consensus \& Voting)}
 
-\subsubsection{Serial Composition $(\circ)$}
+\paragraph{Network Motif 2 (Quorum Sensing).}
+A distributed topology where multiple agents emit a weak signal $\sigma$ into a shared environment. An effector
+node $E$ activates if and only if the concentration $[\sigma] > \theta$.
+\begin{itemize}[leftmargin=*]
+\item \textbf{Biological Function:} Many bacteria (e.g., \emph{V. fischeri}) secrete auto-inducer molecules.
+Individual bacteria do not react to low concentrations. However, once the population density reaches a threshold
+(Quorum), the concentration of auto-inducers triggers a simultaneous, coordinated gene expression event (e.g.,
+bioluminescence or biofilm formation).
+\item \textbf{Agentic Isomorphism (Voting Ensembles):} In non-deterministic systems, a single agent's output is
+noisy. By instantiating $N$ parallel agents (a Mixture of Experts), the system aggregates their outputs. The
+final action is taken only if the ``concentration'' of a specific semantic token exceeds a confidence threshold.
+This transforms weak, noisy individual signals into a robust, high-confidence collective action.
+\end{itemize}
 
-The output of $A$ feeds the input of $B$. In $\WAgent$, ill-typed connections are rejected at design time.
-This moves \emph{structural mismatch failures} (e.g., feeding text into a JSON port) from runtime to
-architecture time. It does \emph{not} eliminate semantic hallucinations.
+\subsection{Chaperone Proteins: Output Structural Validation}
 
-\subsubsection{Feedback / Trace $\mathrm{Tr}$}
-
-Feedback loops represent agency and self-reference, but require termination governance.
-Rather than appealing to an undefined ``contractive map'' property, we introduce an explicit progress
-measure and budget.
-
-\begin{definition}[Guarded Trace (Fuel/Budget)]
-A guarded trace $\mathrm{Tr}_B(A)$ wires feedback through a budget box $B$ that enforces:
-(1) a maximum number of iterations and/or tokens, and
-(2) a decreasing ranking/progress measure unless external evidence increases it.
-\end{definition}
-
+\begin{itemize}[leftmargin=*]
+\item \textbf{Biological Function:} Newly synthesized proteins emerge as linear chains that must fold into
+precise 3D structures to function. Chaperone Proteins (e.g., GroEL-GroES) sequester unfolded proteins,
+preventing aggregation and facilitating correct folding. If a protein fails to fold repeatedly, it is tagged for
+degradation (Ubiquitination) to prevent toxic buildup.
+\item \textbf{Agentic Isomorphism (Retry \& Repair Loops):} Generative models output unstructured token streams
+(``linear chains''). However, downstream agents require strictly structured inputs (e.g., valid JSON Schemas).
+A Validator Agent acts as a Chaperone: it intercepts the raw output, attempts to parse it into a formal schema
+(``folding''), and if validation fails, returns the error trace to the generator for re-synthesis. This turns a
+probabilistic string into a deterministic data structure.
+\item \textbf{Categorical View:} The Chaperone acts as a \textbf{partial} retraction: there is an inclusion
+$i:V\to S$ and a map $r:S\to V+\mathrm{Error}$ such that $r\circ i=\mathrm{inl}\circ \mathrm{id}_V$, and $r$ returns
+$\mathrm{Error}$ on ill-formed text.
+\end{itemize}

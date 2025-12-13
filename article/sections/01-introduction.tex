@@ -1,55 +1,58 @@
 \section{Introduction}
 
-Artificial Intelligence is shifting from \emph{Generative AI} (single-shot text generation) to \emph{Agentic AI}
-(systems that execute multi-step workflows to achieve goals). While individual LLM capabilities scale
-predictably, engineering \emph{systems of agents} remains fragile. Developers face non-deterministic
-outputs, runaway loops, adversarial instructions, and the challenge of maintaining global coherence
-under partial observability and stochastic behavior.
+The field of Artificial Intelligence is undergoing a paradigm shift from Generative AI (systems that
+produce text based on static prompts) to Agentic AI (systems that execute multi-step workflows to
+achieve autonomous goals). While the capabilities of individual Large Language Models (LLMs) have
+scaled predictably, the engineering of systems of agents remains a fragile art. Developers struggle with
+non-deterministic outputs, infinite loops, adversarial attacks, and the difficulty of maintaining global
+coherence in distributed, stochastic systems.
 
-We argue these challenges are not unique to software. They are fundamental constraints of distributed
-information processing. A close analogue to a multi-agent architecture is a \emph{Gene Regulatory Network}
-(GRN): thousands of genes read local signals and express proteins that regulate other genes, producing
-robust behavior under noise, resource constraints, and adversarial environments.
+We argue that these challenges are not novel engineering problems, but fundamental constraints of
+distributed information processing systems. The closest existing analogue to a multi-agent software
+architecture is not a traditional computer program, but a Gene Regulatory Network (GRN). In a biological
+cell, thousands of genes act as autonomous agents, reading local chemical signals (context) and expressing
+proteins (actions/tools) that, in turn, regulate other genes.
 
 \subsection{The Biological Heuristic}
 
-Systems biology identifies recurring \emph{network motifs} that implement control functions (filtering,
-memory, consensus, and defense). We focus on four motifs that map naturally to agentic engineering:
-
+Biology has evolved specific topological structures, known as Network Motifs, to handle noise, security,
+and state~\cite{milo2002network}. We identify four critical biological heuristics that map directly to agentic engineering:
 \begin{itemize}[leftmargin=*]
-  \item \textbf{Coherent Feed-Forward Loop (CFFL):} persistence detection and gating, analogous to
-  two-key execution guardrails.
-  \item \textbf{Quorum sensing:} distributed consensus via thresholded aggregation, analogous to
-  ensemble voting with confidence thresholds.
-  \item \textbf{Chaperone-assisted folding:} structural validation and repair loops, analogous to schema
-  validation and retry mechanisms.
-  \item \textbf{Immune-like self-defense:} mechanisms distinguishing trusted signals from untrusted
-  inputs, analogous to prompt-injection containment and information-flow policies.
+\item The Coherent Feed-Forward Loop (CFFL): Acts as a persistence detector to filter out transient noise,
+isomorphic to ``Human-in-the-Loop'' guardrails.
+\item Quorum Sensing: A distributed consensus mechanism where action is taken only when signal density
+exceeds a threshold, isomorphic to Mixture of Experts (MoE) voting.
+\item Chaperone Proteins: Molecular cages that force proteins to fold correctly, isomorphic to Schema
+Validators that enforce structured outputs (JSON).
+\item Immunological Self-Defense: Mechanisms to distinguish self from non-self, essential for preventing
+Prompt Injection (Prion) attacks.
 \end{itemize}
 
-\subsection{From Metaphor to Discipline}
+\subsection{The Categorical Bridge}
 
-To make the analogy actionable, we use Applied Category Theory:
-polynomial functors in $\Poly$ represent \emph{typed open interfaces}, and wiring diagrams represent
-\emph{compositional structure}. We emphasize an important precision:
-
-\begin{quote}
-We do \emph{not} claim GRNs and agentic systems are identical in physics or implementation.
-We claim they admit a shared \emph{interface-level semantics} in $\Poly$ that supports compositional
-reasoning about wiring, validation, gating, and resource control.
-\end{quote}
+To move this observation from metaphor to discipline, we utilize Applied Category Theory. We define the
+category of agents using the language of $\mathbf{Poly}$ (Polynomial Functors) as described by Spivak~\cite{spivak2021learners}.
+An agent is not defined by its weights, but by its interface---a dynamical system consuming observations
+and producing actions:
+\begin{equation}
+P_A(y) = \sum_{o\in O} y^{I_o}.
+\tag{1}
+\end{equation}
 
 \subsection{Contributions}
 
+This paper makes the following contributions:
 \begin{enumerate}[leftmargin=*]
-  \item \textbf{A Formal Dictionary:} a rigorous correspondence between biological components
-  (genes, promoters, plasmids) and software components (agents, schemas, tools).
-  \item \textbf{A Safer Agentic Operad $\WAgent$:} a syntax for agent wiring with types, integrity labels,
-  and effect tracking, supporting compile-time rejection of ill-formed compositions.
-  \item \textbf{Correct Topological Safety Claims:} topology enforces \emph{interlocks}, not independence;
-  we provide the correct probabilistic statement for CFFL safety and the corresponding design
-  requirements for independence/diversity.
-  \item \textbf{A Pathology Lens:} agentic failures are analyzed as dysregulated network dynamics,
-  informing termination, validation, and security treatments.
+\item \textbf{A Formal Dictionary:} We establish a rigorous mapping between biological components
+(Genes, Promoters, Plasmids) and software components (Agents, Schemas, Tools).
+\item \textbf{The Agentic Operad:} We define WAgent, a syntax for agent wiring that forbids specific classes
+of \textbf{ill-typed wirings} (and thus their associated runtime \textbf{type/schema mismatch} errors) at the
+topological level.
+\item \textbf{Pathology Identification:} We classify agentic failures as biological diseases, mapping Infinite
+Loops to Cancer, Hallucinations to Autoimmunity, and Prompt Injections to Prion Disease.
+\item \textbf{Future Architectures:} We propose Endosymbiosis as a model for Neuro-Symbolic AI, where LLMs
+``engulf'' deterministic runtimes to gain computational energy.
 \end{enumerate}
 
+By viewing agentic engineering through the lens of theoretical biology and category theory, we aim to provide a
+foundation for building self-stabilizing, robust software systems that inherit the resilience of the living world.

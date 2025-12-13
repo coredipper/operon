@@ -1,156 +1,153 @@
-\section{The Bridge: GRNs and Agents as Open Interfaces in \texorpdfstring{$\Poly$}{Poly}}
+\section{The Mapping: Biology $\sim$ Software}
 
-To relate GRNs and agentic systems, we map both to a common mathematical representation:
-polynomial functors for interfaces and coalgebras for stateful behavior.
+To treat Agentic Systems and Gene Regulatory Networks (GRNs) as isomorphic \textbf{at the level of their typed
+interfaces}, we must map them to a common mathematical object. We utilize the category $\mathbf{Poly}$, where
+objects are polynomial functors representing interfaces, and morphisms represent interaction protocols.
 
-\subsection{Preliminaries: Polynomial Functors}
+\subsection{Preliminaries: The Category $\mathbf{Poly}$}
 
-\begin{definition}[Polynomial Functor]
-A (finitary) polynomial functor $P$ is an object of $\Poly$ of the form
+In Applied Category Theory, a Polynomial Functor $P$ represents a typed interface for a dynamical system. It is
+defined as a sum of representable functors:
 \begin{equation}
-  P(y) \;=\; \sum_{o \in O} y^{I(o)} .
-  \label{eq:poly}
+P(y) = \sum_{o\in O} y^{I_o}.
+\tag{2}
 \end{equation}
-Here $O$ is a set of \emph{positions} (outputs). For each $o \in O$, $I(o)$ is the set of
-\emph{directions} (inputs) enabled/required after emitting $o$.
-\end{definition}
-
-Intuitively, a system exposes an output $o$ and then awaits an input $i \in I(o)$ before proceeding.
+Here, $O$ is the set of possible Positions (or Outputs) the system can expose. For each position $o\in O$, there
+is a set $I_o$ of Directions (or Inputs) required to transition the system to a new state.
+\begin{itemize}[leftmargin=*]
+\item The coefficient $o$ represents the value produced by the system.
+\item The exponent $I_o$ represents the capacity to receive information from the environment.
+\end{itemize}
+This formalism captures the essence of a ``stateful interface'': the system outputs a value $o$ and then waits
+for a specific type of input $i\in I_o$ before it can proceed.
 
 \begin{figure}[h]
 \centering
-\begin{tikzpicture}[>=Latex, node distance=10mm]
-  \node[draw, rounded corners, minimum width=28mm, minimum height=10mm] (cap) {$o \in O$};
-  \node[draw, circle, below left=10mm and 10mm of cap] (i1) {$i_1$};
-  \node[draw, circle, below=10mm of cap] (i2) {$i_2$};
-  \node[draw, circle, below right=10mm and 10mm of cap] (i3) {$i_3$};
+\begin{tikzpicture}[>=Latex, node distance=12mm]
+  \node[draw, rounded corners, minimum width=30mm, minimum height=10mm] (cap) {Output $o\in O$};
+  \node[draw, circle, below left=10mm and 10mm of cap] (i1) {$i_1\in I_o$};
+  \node[draw, circle, below=10mm of cap] (i2) {$i_2\in I_o$};
+  \node[draw, circle, below right=10mm and 10mm of cap] (i3) {$\cdots$};
   \draw[->] (i1) -- (cap);
   \draw[->] (i2) -- (cap);
   \draw[->] (i3) -- (cap);
-  \node[below=15mm of i2] {\small A ``corolla'' interface: output then enabled inputs.};
+  \node[below=12mm of i2] {The Interface $P(y)$};
 \end{tikzpicture}
-\caption{A visual mnemonic for a polynomial interface.}
+\caption{A visual representation of a Polynomial Functor (often called a ``Mushroom'' or ``Corolla''). The system
+offers an Output (the cap) and exposes specific Input ports (the stalks) dependent on that output.}
 \end{figure}
 
-\subsection{Coalgebras: Stateful Open Systems}
+\subsection{The Isomorphism: Genes and Agents}
 
-\begin{definition}[Coalgebra for $P$]
-A (deterministic) open dynamical system with interface $P$ is a coalgebra $(S,\varphi)$ where
+We now apply this abstract definition to our specific domains.
+
+\paragraph{Definition 1 (The Gene Object).}
+A gene $G$ is a polynomial functor where $O_G$ is the set of expressed proteins and
+$I_G=(I_{\text{prot}})_{\text{prot}\in O_G}$ is the \textbf{family} of regulatory-signal sets (transcription factors)
+available at each expressed protein:
 \begin{equation}
-  \varphi: S \to P(S).
-  \label{eq:coalgebra}
+P_{\text{Gene}}(y) = \sum_{\text{prot}\in \text{Proteins}} y^{I_{\text{prot}}}.
+\tag{3}
 \end{equation}
-Expanding $P(S)=\sum_{o\in O} S^{I(o)}$, the structure map yields:
-(1) a \emph{readout} selecting an output position $o$, and
-(2) an \emph{update} selecting next state given an input direction.
-\end{definition}
 
-This is the level at which both GRNs and agentic systems admit a shared description: state $S$,
-interface $P$, and compositional wiring.
-
-\subsection{Two Domain Categories and Two Encodings}
-
-We make the scope of the correspondence explicit.
-
-\begin{definition}[Interface Categories (Sketch)]
-Let $\mathbf{GRN}_{\mathrm{int}}$ be a category whose objects are \emph{open regulatory modules}
-with typed signal ports, and whose morphisms are admissible couplings (regulatory connections)
-that respect those ports. Let $\mathbf{AG}_{\mathrm{int}}$ be a category whose objects are \emph{open agent
-modules} with typed I/O ports, and whose morphisms are admissible dataflow connections.
-\end{definition}
-
-\begin{proposition}[Encodings into $\Poly$ (Informal)]
-There exist interface encodings (functors)
-\[
-  F: \mathbf{GRN}_{\mathrm{int}} \to \Poly
-  \qquad\text{and}\qquad
-  G: \mathbf{AG}_{\mathrm{int}} \to \Poly
-\]
-that map each module to a polynomial interface and each admissible coupling to a morphism in $\Poly$.
-\end{proposition}
-
-\begin{remark}
-We do not claim $\mathbf{GRN}_{\mathrm{int}} \cong \mathbf{AG}_{\mathrm{int}}$ as categories.
-Instead, we claim both admit a faithful \emph{interface-level} representation in $\Poly$ under the
-chosen abstraction (typed ports, open composition, and stateful coalgebra semantics).
-\end{remark}
-
-\subsection{Genes and Agents as Polynomial Interfaces}
-
-The original presentation used uniform direction sets, which is too coarse for both domains.
-We refine the definitions by allowing \emph{position-dependent directions}.
-
-\begin{definition}[Gene Interface Object]
-Fix a gene/module $G$. Let $O_G$ be the set of possible expression outcomes (e.g., protein isoforms,
-expression regimes, or ``off''), and for each $o\in O_G$ let $I_G(o)$ be the set of regulatory contexts
-(binding configurations, signal tuples) that are meaningful after $o$ is selected.
-Define:
+\paragraph{Definition 2 (The Agent Object).}
+An autonomous agent $A$ is a polynomial functor where $O_A$ is the set of generated messages/actions, and
+$I_A=(I_{\text{action}})_{\text{action}\in O_A}$ is the \textbf{family} of observation sets available at each action:
 \begin{equation}
-  P_G(y) \;=\; \sum_{o \in O_G} y^{I_G(o)} .
-  \label{eq:gene-poly}
+P_{\text{Agent}}(y) = \sum_{\text{action}\in \text{Actions}} y^{I_{\text{action}}}.
+\tag{4}
 \end{equation}
-\end{definition}
 
-\begin{definition}[Agent Interface Object]
-Fix an agent module $A$. Let $O_A$ be the set of action-positions (e.g., respond to user, call tool
-$\kappa$, request clarification, emit approval token, terminate), and for each $o\in O_A$ let $I_A(o)$
-be the expected observation type(s) after taking action $o$.
-Define:
+\subsection{The Interface: Promoters as Lenses}
+
+In biology, a gene is not universally accessible. It is guarded by a Promoter Region---a specific DNA sequence
+that only binds to compatible Transcription Factors. In software, an agent is guarded by an API Schema or
+Context Window definition.
+
+We model this gating mechanism using Optics, specifically Lenses. A Lens consists of two maps between a global
+state $S$ and a local view $V$:
+\begin{enumerate}[leftmargin=*]
+\item Get (View): $\mathrm{get}: S \to V$ (Extracting relevant signal from global state).
+\item Put (Update): $\mathrm{put}: S\times V' \to S$ (Updating global state based on local change).
+\end{enumerate}
+
+The ``Promoter'' acts as a filter that determines which part of the global cellular environment ($S$) is visible
+($V$) to the gene.
+\begin{itemize}[leftmargin=*]
+\item \textbf{Biological Lens:} The promoter filters the chaotic cellular soup, allowing the gene to ``see''
+only specific molecules (e.g., Lac Repressor).
+\item \textbf{Agentic Lens:} The Context Window filters the massive vector database, allowing the agent to
+``see'' only the relevant retrieved chunks (RAG).
+\end{itemize}
+
+If the input signal does not match the Schema (Promoter), the Lens fails to focus, and the interaction is routed
+to an explicit \textbf{inactive/error} case (equivalently, one works with a \textbf{partial} lens, or a total lens
+into $V+\mathrm{Error}$) (the agent does not run; the gene is not expressed).
+
+\subsection{Epigenetics and State: The Coalgebra}
+
+Neither genes nor agents are stateless functions. They possess memory.
+\begin{itemize}[leftmargin=*]
+\item \textbf{Biology:} Epigenetic markers (Methylation, Histone modification) alter how a gene responds to
+signals without changing the DNA code.
+\item \textbf{Software:} Retrieval Augmented Generation (RAG) and Conversation History alter how an agent
+responds to a prompt without changing the LLM weights.
+\end{itemize}
+
+We model this as a Coalgebra for the polynomial functor $P$. A dynamical system is defined as a tuple $(S,\phi)$,
+where $S$ is the state space and $\phi$ is the structure map:
 \begin{equation}
-  P_A(y) \;=\; \sum_{o \in O_A} y^{I_A(o)} .
-  \label{eq:agent-poly}
+\phi: S \to P(S).
+\tag{5}
 \end{equation}
-\end{definition}
 
-This refinement matches reality: different actions induce different expected next observations; and
-different gene expression regimes correspond to different relevant regulatory inputs.
+By expanding $P(S)$, we derive the two fundamental operations of the state machine:
+\begin{enumerate}[leftmargin=*]
+\item Readout: $S \to O$ (Given current state/memory, what action do I take?)
+\item Update: $\displaystyle \sum_{s\in S} I_{o(s)} \to S$ (Given current state $s$ and a new input
+$i\in I_{o(s)}$ compatible with its current output $o(s)$, what is my new state?)
+\end{enumerate}
 
-\subsection{Promoters and Schemas as \emph{Validated} Optics (Not ``Undefined'')}
+By establishing this formal dictionary (Table 1), we \textbf{can regard} GRNs and Agentic Systems as distinct
+implementations of the same abstract dynamical system \textbf{under this interface-level abstraction}.
 
-In biology, a promoter gates what signals are relevant to a gene. In software, schemas and context
-windows gate what data is visible and how it is interpreted. The crucial correction is that mismatches
-should not be treated as ``mathematically undefined''; they should be modeled as \emph{partial} or
-\emph{effectful} maps with explicit error values.
-
-\begin{definition}[Validated Lens (Sketch)]
-A validated lens from global state $S$ to local view $V$ is a pair
-\[
-  \mathrm{get}: S \to \Either(\Err, V),
-  \qquad
-  \mathrm{put}: S \times V' \to S,
-\]
-where $\mathrm{get}$ may fail with an error value when the promoter/schema does not match.
-\end{definition}
-
-\begin{remark}
-This aligns with real agent systems: a schema mismatch typically triggers error handling, retries,
-or safe termination, rather than an ``undefined'' computation.
-\end{remark}
-
-\subsection{Epigenetics and Memory as State}
-
-Both domains are stateful:
-epigenetic markers bias gene responsiveness without changing DNA, while RAG/history bias agent
-behavior without changing model weights. In our coalgebra semantics, these correspond to the internal
-state $S$.
-
-\subsection{Dictionary}
+\begin{figure}[h]
+\centering
+\begin{tabular}{@{}c@{\qquad}c@{}}
+\begin{tabular}{@{}c@{}}
+Gene\\(Function)\\[0.25em]
+Transcription Factors ($I$)\\
+Proteins ($O$)\\
+Promoter Binding\\
+Expression
+\end{tabular}
+&
+\begin{tabular}{@{}c@{}}
+Agent\\(LLM + Tools)\\[0.25em]
+Observations ($I$)\\
+Actions ($O$)\\
+Schema Match\\
+Generation
+\end{tabular}
+\end{tabular}
+\\[0.5em]
+\caption{The Structural Isomorphism. Both Genes and Agents act as transducers converting Input Contexts ($I$) into
+Output Expressions ($O$), governed by the same categorical laws (at the level of polynomial-interface models).}
+\end{figure}
 
 \begin{table}[h]
 \centering
-\small
 \begin{tabular}{@{}lll@{}}
 \toprule
 Category Concept & Biological Realization (GRN) & Software Realization (Agentic)\\
 \midrule
-Polynomial functor $P$ & Module interface & Agent/module interface\\
-Position set $O$ & Expression outcomes & Action kinds (tool call, reply, stop, \dots)\\
-Directions $I(o)$ & Regulatory contexts & Expected next observation types\\
-Validated lens & Promoter gating & Schema/context gating with error handling\\
-State $S$ & Epigenetic landscape & Memory/RAG/history\\
-Morphisms & Signal transduction wiring & Dataflow wiring\\
+Polynomial Functor ($P$) & Gene Interface & Agent Interface (System Prompt)\\
+Output Position ($O$) & Protein Expression & Tool Call / Message\\
+Input Direction ($I$) & Transcription Factor Binding & Observation / User Prompt\\
+Lens (Optic) & Promoter Region & API Schema / Context Window\\
+Internal State ($S$) & Epigenetic Markers (Methylation) & Vector Store / Chat History\\
+Morphism ($\circ$) & Signal Transduction Pathway & Data Pipeline\\
 \bottomrule
 \end{tabular}
-\caption{A compositional dictionary at the interface level.}
+\caption{The Isomorphism Dictionary}
 \end{table}
-

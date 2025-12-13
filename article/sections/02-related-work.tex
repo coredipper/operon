@@ -1,21 +1,27 @@
 \section{Related Work}
 
-This work sits at the intersection of Systems Biology, Applied Category Theory, and Agentic AI.
+This work sits at the intersection of Systems Biology, Applied Category Theory, and Agentic AI. While significant
+research exists within each domain, the formal synthesis of biological control topologies with agentic software
+architectures remains an unexplored frontier.
 
 \subsection{Network Motifs in Systems Biology}
 
-Network motifs as statistically over-represented subgraphs were introduced by Milo et al.
-Their functional characterization, including feed-forward persistence detection, is developed further
-by Alon.
+The concept of ``Network Motifs''---statistically over-represented sub-graphs in complex networks---was introduced
+by Milo et al.~\cite{milo2002network}. Their work demonstrated that biological networks are not random but are composed of specific
+building blocks selected for functional data processing. Alon~\cite{alon2007network} further characterized the dynamical properties
+of these motifs, identifying the Coherent Feed-Forward Loop (CFFL) as a persistence detector. We extend this by
+mapping these motifs to the stochastic nature of Generative AI.
 
 \subsection{Applied Category Theory (ACT)}
 
-We use the categorical language of open dynamical systems, polynomial functors, and wiring-diagram
-operads (e.g., Spivak; Vagner--Spivak--Lerman) to formalize interface composition.
+To formalize network structure, we draw upon ACT. Spivak~\cite{spivak2021learners} and Vagner et al.~\cite{vagner2015algebras} established a rigorous framework
+for modeling Open Dynamical Systems using the category $\mathbf{Poly}$ and the Operad of Wiring Diagrams. To our
+knowledge, this is the first application of Polynomial Functors specifically designed to model the interface of
+LLM Agents and to verify safety properties in Agentic topologies.
 
 \subsection{Reliability in Agentic AI}
 
-Techniques such as iterative self-critique and reasoning loops improve output quality but typically act
-at the prompt level rather than at the topology level. We propose that reliability can be designed as a
-property of architecture: gating, validation, resource budgets, and information-flow constraints.
-
+Techniques such as ``Chain of Thought''~\cite{wei2022chain} utilize iterative looping to improve output quality. However, these
+methods operate primarily at the level of the prompt (the input signal) rather than the topology (the wiring).
+By importing the concept of Autopoiesis~\cite{maturana1980autopoiesis}, we propose a methodology where reliability is a property of the
+network architecture itself.

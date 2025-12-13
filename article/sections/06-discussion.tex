@@ -1,41 +1,76 @@
 \section{Discussion: Towards ``Epigenetic'' Software}
 
+The isomorphism presented in this paper extends beyond the immediate execution of tasks (Gene Expression) to the
+management of long-term behavior and state. In biology, the DNA sequence is static; a neuron and a liver cell
+possess the exact same genetic code. Their distinct behaviors are determined by Epigenetics---chemical markers
+(like methylation) that restrict access to certain parts of the genome, effectively biasing the system toward
+specific outcomes.
+
 \subsection{RAG as Digital Methylation}
 
-Treat model weights as static ``DNA'' and RAG/context as epigenetic markers that expose or silence
-capabilities.
+In Agentic Systems, the Large Language Model (LLM) weights act as the DNA---a static, pre-trained substrate of
+potentiality. To create specialized agents, we do not typically retrain the model (mutation); instead, we use
+Retrieval Augmented Generation (RAG) and System Prompts.
 
-\[
-  O_{\mathrm{agent}} = f(W, E, Q),
-\]
-where $E$ is an epigenetic state (retrieved documents, memory, policies) shaping behavior without
-changing $W$.
+We define this formally as Phenotypic Plasticity. The output of an agent is not solely a function of its weights
+($W$) and the user query ($Q$), but of its epigenetic state ($E$):
+\begin{equation}
+O_{\text{agent}} = f(W,E,Q).
+\tag{11}
+\end{equation}
+
+Context injection (RAG) acts as a restrictive morphism. By populating the context window with specific documents
+(e.g., ``SQL Syntax Guide''), we effectively ``methylate'' (silence) the vast majority of the LLM's general
+knowledge (e.g., poetry, history) to force the expression of a specific ``SQL Agent'' phenotype.
+
+This suggests that the State Monad for an agentic system should not merely be a log of messages, but a structured
+Epigenetic Landscape that strictly controls which ``genes'' (capabilities) are accessible at any given step in the
+workflow.
 
 \subsection{Horizontal Gene Transfer: Dynamic Tool Loading}
 
-Tool schemas can be injected at runtime like plasmids:
-\[
-  A_{\mathrm{new}} = A_{\mathrm{old}} \otimes \mathrm{ToolSchema}.
-\]
-In $\WAgent$, the new schema adds new typed ports and capabilities, and must be mediated by integrity
-and effect policies.
+Standard evolution relies on vertical inheritance (Pre-training). However, bacteria utilize Horizontal Gene
+Transfer (HGT) to acquire new capabilities (Plasmids) from the environment in real-time.
 
-\subsection{Metabolic Bounds: What Can Be Guaranteed}
+In Agentic Systems, we map Plasmids to Tool Schemas. An agent operating in a novel environment may encounter a
+problem for which its ``genomic'' (pre-trained) capabilities are insufficient.
+\begin{equation}
+\mathrm{Agent}_{\text{new}} = \mathrm{Agent}_{\text{old}} \otimes \mathrm{ToolSchema}.
+\tag{12}
+\end{equation}
+By dynamically retrieving a tool definition (e.g., a Calculator API or SQL Interface) from a registry and
+injecting it into the Context Window, the agent undergoes a topological transformation, acquiring a new
+input/output modality instantly. This suggests that robust agentic architectures should support a ``Plasmid
+Registry''---a marketplace of ephemeral tools that agents can ingest and discard as needed.
 
-\begin{itemize}[leftmargin=*]
-  \item \textbf{Compiler guarantees:} reject unguarded feedback, enforce type/label constraints,
-  enforce explicit budget boxes on loops, bound fan-out structurally.
-  \item \textbf{Runtime guarantees:} enforce token/time/tool-call budgets, enforce capability limits,
-  and trigger safe termination/escalation.
-\end{itemize}
+\subsection{The Cost of State: The Metabolic Bound}
 
-\subsection{Endosymbiosis: Neuro-Symbolic Integration}
+Every biological process is constrained by ATP availability. Similarly, every agentic operation is constrained
+by token limits and latency. We propose that future agentic frameworks must implement the Resource Functor $R$ at
+the kernel level:
+\begin{equation}
+R(\mathrm{Agent}): (\mathrm{Inputs}, \mathrm{Budget}) \to (\mathrm{Outputs}, \mathrm{RemainingBudget}).
+\tag{13}
+\end{equation}
 
-LLMs excel at planning/semantics but are inefficient at exact arithmetic and formal reasoning.
-Integrating deterministic runtimes (REPLs, solvers) yields a symbiotic system:
-\[
-  A_{\mathrm{euk}} = A_{\mathrm{LLM}} \oplus A_{\mathrm{runtime}}.
-\]
-In $\WAgent$, the runtime box has sharply typed ports and produces high-integrity outputs
-(e.g.\ $(\mathsf{JSON}(\Sigma),\mathsf{T})$), which can then drive high-stakes decisions.
+An agent graph should be ``compiled'' with a \textbf{conservative} upper bound on token consumption in well-founded
+(e.g., acyclic or explicitly budgeted) topologies. If the topological structure allows for an \textbf{unguarded}
+loop (Unchecked Growth), the compiler must require an explicit \textbf{budget/termination certificate} before
+deployment, much like a cell undergoes apoptosis if metabolic stress becomes critical.
 
+\subsection{Endosymbiosis: The Neuro-Symbolic Integration}
+
+The evolution of complex life was triggered by Endosymbiosis, where a host cell engulfed a bacterium (the future
+Mitochondrion), gaining the ability to generate massive energy (ATP) via aerobic respiration. This represents the
+integration of two distinct metabolic substrates.
+
+In Agentic AI, this maps to the integration of Connectionist (Neural) and Symbolic (Code) subsystems. An LLM acts
+as the host organism---capable of planning and semantic reasoning but energetically inefficient at arithmetic and
+logic. By ``engulfing'' a deterministic runtime (e.g., a Python REPL or Wolfram Engine), the agent delegates
+high-precision tasks to the symbolic organelle.
+\begin{equation}
+\mathrm{Agent}_{\text{Eukaryote}} = \mathrm{LLM}_{\text{Host}} \oplus \mathrm{Runtime}_{\text{Mitochondria}}.
+\tag{14}
+\end{equation}
+Just as the host cell provides nutrients to the mitochondria in exchange for ATP, the LLM provides parsed
+variables to the runtime in exchange for deterministic truth.
