@@ -9,6 +9,9 @@ Core Components:
     - BioAgent: The fundamental agent unit (polynomial functor)
     - Signal: Input messages to agents
     - ActionProtein: Output actions from agents
+    - ApprovalToken: Proof-carrying approval for two-key execution
+    - IntegrityLabel/Capability: Minimal IFC + effect tags
+    - WiringDiagram: Typed wiring diagram checker (WAgent)
 
 State Management:
     - ATP_Store: Multi-currency metabolic budget (ATP, GTP, NADH)
@@ -41,9 +44,20 @@ from .core.types import (
     SignalStrength,
     ActionProtein,
     ActionType,
+    IntegrityLabel,
+    DataType,
+    Capability,
+    ApprovalToken,
     FoldedProtein,
     CellState,
     Pathway,
+)
+from .core.wagent import (
+    WiringError,
+    PortType,
+    ModuleSpec,
+    Wire,
+    WiringDiagram,
 )
 
 # =============================================================================
@@ -170,9 +184,18 @@ __all__ = [
     "SignalStrength",
     "ActionProtein",
     "ActionType",
+    "IntegrityLabel",
+    "DataType",
+    "Capability",
+    "ApprovalToken",
     "FoldedProtein",
     "CellState",
     "Pathway",
+    "WiringError",
+    "PortType",
+    "ModuleSpec",
+    "Wire",
+    "WiringDiagram",
 
     # State - Metabolism
     "ATP_Store",

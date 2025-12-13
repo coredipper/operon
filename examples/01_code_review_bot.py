@@ -6,9 +6,11 @@ Demonstrates the Coherent Feed-Forward Loop pattern where code changes
 only proceed if BOTH the executor (code generator) AND the risk assessor
 (security reviewer) approve.
 
-This is the biological equivalent of a persistence detector - transient
-signals (hallucinations) are filtered out because they're unlikely to
-pass both independent checks.
+This is a two-key execution guardrail: topology enforces an interlock
+(you cannot execute without approval), but it does not guarantee that
+the executor/verifier failures are statistically independent. In practice,
+use diversity (models/prompts/tools) and tool-grounded verification to
+reduce correlated errors.
 
 Topology:
     User Request --> [Code Generator] --+
@@ -16,7 +18,7 @@ Topology:
                  --> [Security Review] --+--> [AND Gate] --> Output
 """
 
-from operon_ai import BioAgent, Signal, ATP_Store, CoherentFeedForwardLoop
+from operon_ai import ATP_Store, CoherentFeedForwardLoop
 
 
 def main():
@@ -31,7 +33,7 @@ def main():
     # The CFFL wires together:
     # - Gene_Z (Executor): Generates/runs code
     # - Gene_Y (RiskAssessor): Reviews for safety
-    cffl = CoherentFeedForwardLoop(budget=budget)
+    cffl = CoherentFeedForwardLoop(budget=budget, silent=True)
 
     # Test cases demonstrating the guardrail
     test_requests = [
@@ -53,7 +55,14 @@ def main():
         print(f"Request: {request}")
         print(f"Budget remaining: {budget.atp} ATP")
         print()
-        cffl.run(request)
+        result = cffl.run(request)
+        if result.blocked:
+            print(f"🛑 BLOCKED: {result.block_reason}")
+        else:
+            if result.approval_token:
+                print(f"✅ PERMITTED (approval: {result.approval_token.issuer})")
+            else:
+                print("✅ PERMITTED")
         print()
 
     print("=" * 60)

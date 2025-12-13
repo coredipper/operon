@@ -29,7 +29,8 @@ def main():
     budget = ATP_Store(budget=1000)
 
     # Create a colony of 5 voting agents
-    # Each agent independently evaluates the request
+    # In practice, quorum works best with diversity: different models/prompts,
+    # independent evidence, and tool-grounded checks to reduce correlated errors.
     colony = QuorumSensing(n_agents=5, budget=budget)
 
     # Test cases for consensus voting
@@ -59,9 +60,9 @@ def main():
     print(f"Final budget: {budget.atp} ATP")
     print("=" * 60)
     print()
-    print("Note: Quorum sensing transforms noisy individual signals")
-    print("into robust collective decisions. A single hallucinating")
-    print("agent cannot override the wisdom of the colony.")
+    print("Note: Quorum sensing can reduce risk, but only if failures")
+    print("aren't perfectly correlated. If agents share the same context,")
+    print("prompts, or tools, the colony can still become confidently wrong.")
 
 
 if __name__ == "__main__":

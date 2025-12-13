@@ -1,43 +1,78 @@
-% ==========================================
-% 5. FAILURE MODES (PATHOLOGY)
-% ==========================================
 \section{Failure Modes \& Pathology}
 
-A key insight of Systems Biology is that diseases are often not caused by the complete failure of a single component, but by the \textbf{dysregulation of network dynamics}. A cancerous cell still ``works''---in fact, it works too well, reproducing indefinitely. Similarly, catastrophic failures in agentic systems often arise from functional agents interacting in topologically pathological ways.
+A key insight of Systems Biology is that diseases are often not caused by the complete failure of a single
+component, but by the dysregulation of network dynamics. A cancerous cell still ``works''---in fact, it works
+too well, reproducing indefinitely. Similarly, catastrophic failures in agentic systems often arise from
+functional agents interacting in topologically pathological ways.
 
 We classify three primary classes of agentic pathology based on their biological isomorphisms.
 
 \subsection{Oncology: Infinite Loops as Unchecked Growth}
-\begin{itemize}
-    \item \textbf{Biological Pathology (Cancer):} In a healthy cell, the cell cycle is driven by a positive feedback loop (Cyclins) but constrained by negative feedback ``checkpoints'' (e.g., the p53 gene). If p53 is mutated, the negative feedback is severed. The positive loop runs unchecked, leading to exponential proliferation (tumor growth).
-    \item \textbf{Agentic Pathology (The Recursive Hang):} Two agents get stuck in a politeness loop (e.g., ``Thank you,'' ``You're welcome'') or a debugger agent continuously generates new bugs to fix old ones.
-    \item \textbf{Categorical Diagnosis:} The Trace operation $Tr(A)$ lacks a \textbf{Contractive Map} property. In the metric space of the conversation, the distance between state $S_t$ and $S_{t+1}$ approaches zero ($d \to 0$), but the system fails to trigger a ``Stop'' token.
-    \item \textbf{Treatment:} Implementation of an \textit{Apoptosis} (Cell Death) mechanism. A meta-monitor agent observes the \textit{entropy} of the conversation. If information gain drops below a threshold (the conversation becomes repetitive), the monitor forces a termination signal.
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Biological Pathology (Cancer):} In a healthy cell, the cell cycle is driven by a positive feedback
+loop (Cyclins) but constrained by negative feedback ``checkpoints'' (e.g., the p53 gene). If p53 is mutated,
+the negative feedback is severed. The positive loop runs unchecked, leading to exponential proliferation
+(tumor growth).
+\item \textbf{Agentic Pathology (The Recursive Hang):} Two agents get stuck in a politeness loop (e.g.,
+``Thank you,'' ``You're welcome'') or a debugger agent continuously generates new bugs to fix old ones.
+\item \textbf{Categorical Diagnosis:} The Trace operation $Tr(A)$ is not equipped with a \textbf{well-founded
+termination measure}; equivalently, the induced state transition may admit cycles, and under an information-gain
+metric $d$ (e.g., $1-$similarity of successive messages) the distance between state $S_t$ and $S_{t+1}$ can
+approach zero while the system fails to trigger a ``Stop'' token.
+\item \textbf{Treatment:} Implementation of an Apoptosis (Cell Death) mechanism. A meta-monitor agent observes
+the entropy of the conversation. If information gain drops below a threshold (the conversation becomes
+repetitive), the monitor forces a termination signal.
 \end{itemize}
 
 \subsection{Autoimmunity: Hallucination Cascades}
-\begin{itemize}
-    \item \textbf{Biological Pathology (Autoimmune Disease):} The immune system relies on distinguishing ``Self'' (internal tissue) from ``Non-Self'' (foreign pathogens). In diseases like Lupus, this distinction blurs, and the system attacks healthy tissue.
-    \item \textbf{Agentic Pathology (Context Poisoning):} Agent A hallucinates a fact (e.g., a non-existent library function). Agent B reads this hallucination from the shared history, treats it as ground truth, and builds complex logic upon it. The error amplifies through the network until the output is detached from reality.
-    \item \textbf{Categorical Diagnosis:} A failure of the \textbf{Lens} to distinguish source types. The input port $I$ accepts both \texttt{External\_Observation} (User/Tool) and \texttt{Internal\_Memory} (History) without distinction.
-    \item \textbf{Treatment:} Strict Schema Typing. We must distinguish ``Self'' (Generated Tokens) from ``Non-Self'' (Tool Outputs) at the schema level. The Reviewer Agent should weigh \texttt{Tool\_Output} with higher authority than \texttt{Agent\_Thought}.
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Biological Pathology (Autoimmune Disease):} The immune system relies on distinguishing ``Self''
+(internal tissue) from ``Non-Self'' (foreign pathogens). In diseases like Lupus, this distinction blurs, and the
+system attacks healthy tissue.
+\item \textbf{Agentic Pathology (Context Poisoning):} Agent A hallucinates a fact (e.g., a non-existent library
+function). Agent B reads this hallucination from the shared history, treats it as ground truth, and builds
+complex logic upon it. The error amplifies through the network until the output is detached from reality.
+\item \textbf{Categorical Diagnosis:} A failure of the Lens to distinguish source types. The input port $I$
+accepts both External\_Observation (User/Tool) and Internal\_Memory (History) without distinction.
+\item \textbf{Treatment:} Strict Schema Typing. We must distinguish ``Self'' (Generated Tokens) from ``Non-Self''
+(Tool Outputs) at the schema level. The Reviewer Agent should weigh Tool\_Output with higher authority than
+Agent\_Thought.
 \end{itemize}
 
 \subsection{Prion Disease: Topological Corruption via Prompt Injection}
-\begin{itemize}
-    \item \textbf{Biological Pathology (Prions):} Unlike viruses, prions lack genetic material. They are misfolded proteins that induce conformational changes in healthy proteins upon contact, triggering a chain reaction of structural corruption (e.g., Creutzfeldt-Jakob disease).
-    \item \textbf{Agentic Pathology (The Jailbreak Cascade):} A malicious string (Prompt Injection) enters the Context Window. The agent, attending to this string, ``misfolds'' its alignment, outputting a compliant response to a harmful query. If this output is fed into a downstream agent, the ``infection'' propagates purely through the geometry of the embedding space, without valid authorization.
-    \item \textbf{Categorical Diagnosis:} A violation of \textbf{Information Flow Security} within the Operad. The injection acts as a \textit{topological defect} that bypasses the Schema/Lens filter by mimicking the structure of a trusted signal.
-    \item \textbf{Treatment:} \textbf{Denaturation Layers}. Implementing an intermediate transformation layer (e.g., paraphrasing or sanitization) between agents that disrupts the specific syntax (folding) required for the injection to work, rendering the ``prion'' inert.
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Biological Pathology (Prions):} Unlike viruses, prions lack genetic material. They are misfolded
+proteins that induce conformational changes in healthy proteins upon contact, triggering a chain reaction of
+structural corruption (e.g., Creutzfeldt-Jakob disease).
+\item \textbf{Agentic Pathology (The Jailbreak Cascade):} A malicious string (Prompt Injection) enters the
+Context Window. The agent, attending to this string, ``misfolds'' its alignment, outputting a compliant response
+to a harmful query. If this output is fed into a downstream agent, the ``infection'' propagates through reuse of
+the contaminated context across trust boundaries (and can be amplified by embedding-based retrieval), without
+valid authorization.
+\item \textbf{Categorical Diagnosis:} A violation of Information Flow Security within the Operad. The injection
+acts as a topological defect that bypasses the Schema/Lens filter by mimicking the structure of a trusted signal.
+\item \textbf{Treatment:} Denaturation Layers. Implementing an intermediate transformation layer (e.g.,
+paraphrasing or sanitization) between agents that disrupts the specific syntax (folding) required for the
+injection to work, rendering the ``prion'' inert.
 \end{itemize}
 
 \subsection{Ischemia: Resource Exhaustion}
-\begin{itemize}
-    \item \textbf{Biological Pathology (Ischemia):} A tissue may be genetically perfect, but if blood flow (oxygen/ATP) is restricted, metabolic processes stall, leading to necrosis.
-    \item \textbf{Agentic Pathology (Token Starvation):} An agentic graph is logically sound but fails mid-execution because the context window is full or the API rate limit is hit.
-    \item \textbf{Categorical Diagnosis:} A failure in the \textbf{Resource Functor}. Every operation in the Operad carries a cost ($c$).
-    \begin{equation}
-        \sum_{agent \in Graph} Cost(agent) > Budget
-    \end{equation}
-    \item \textbf{Treatment:} \textbf{Metabolic Regulation}. Instead of a fixed loop, implement ``Budget-Aware'' agents. The agent observes its own remaining token count (ATP levels) and dynamically simplifies its reasoning strategy (switching from Chain-of-Thought to Zero-Shot) to conserve energy.
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Biological Pathology (Ischemia):} A tissue may be genetically perfect, but if blood flow
+(oxygen/ATP) is restricted, metabolic processes stall, leading to necrosis.
+\item \textbf{Agentic Pathology (Token Starvation):} An agentic graph is logically sound but fails mid-execution
+because the context window is full or the API rate limit is hit.
+\item \textbf{Categorical Diagnosis:} A failure in the Resource Functor. Every operation in the Operad carries a
+cost ($c$).
+\begin{equation}
+\sum_{\text{agent}\in \text{Graph}} \mathrm{Cost}(\text{agent}) > \mathrm{Budget}.
+\tag{10}
+\end{equation}
+\item \textbf{Treatment:} Metabolic Regulation. Instead of a fixed loop, implement ``Budget-Aware'' agents. The
+agent observes its own remaining token count (ATP levels) and dynamically simplifies its reasoning strategy
+(switching from Chain-of-Thought to Zero-Shot) to conserve energy.
 \end{itemize}

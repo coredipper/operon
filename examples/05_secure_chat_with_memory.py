@@ -33,7 +33,7 @@ def demonstrate_membrane():
     print("=" * 60)
     print()
 
-    membrane = Membrane()
+    membrane = Membrane(silent=True)
 
     test_inputs = [
         # Normal requests
@@ -50,11 +50,14 @@ def demonstrate_membrane():
 
     for content, description in test_inputs:
         signal = Signal(content=content)
-        is_safe = membrane.filter(signal)
-        status = "PASSED" if is_safe else "BLOCKED"
-        icon = "✓" if is_safe else "✗"
+        result = membrane.filter(signal)
+        status = "PASSED" if result.allowed else "BLOCKED"
+        icon = "✓" if result.allowed else "✗"
         print(f"{icon} [{status}] {description}")
         print(f"  Input: \"{content[:50]}{'...' if len(content) > 50 else ''}\"")
+        if result.matched_signatures:
+            matches = ", ".join(s.description for s in result.matched_signatures[:2])
+            print(f"  Reason: {matches}")
         print()
 
 
@@ -69,8 +72,8 @@ def demonstrate_histones():
 
     # Simulate learning from failures
     print("--- Initial State ---")
-    context = histones.retrieve_context("any query")
-    print(f"Memory: {'(empty)' if not context else context}")
+    result = histones.retrieve_context("any query")
+    print("Memory: (empty)" if not result.markers else result.formatted_context)
     print()
 
     # Add some learned lessons
@@ -87,8 +90,8 @@ def demonstrate_histones():
 
     print()
     print("--- Memory After Learning ---")
-    context = histones.retrieve_context("deployment query")
-    print(context)
+    result = histones.retrieve_context("deployment query")
+    print(result.formatted_context or "(no relevant markers)")
 
 
 def demonstrate_integrated_agent():

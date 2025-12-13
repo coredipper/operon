@@ -68,9 +68,11 @@ Provides deterministic computation using secure AST-based parsing—no code inje
 - **ROS Management**: Error tracking with self-repair capability
 
 ```python
-from operon_ai import Mitochondria, SimpleTool
+from operon_ai import Mitochondria, SimpleTool, Capability
 
-mito = Mitochondria()
+# If `allowed_capabilities` is set, tools must declare required capabilities
+# as a subset of this set (least-privilege enforcement).
+mito = Mitochondria(allowed_capabilities={Capability.NET})
 
 # Safe math (no dangerous code paths)
 result = mito.metabolize("sqrt(16) + pi * 2")
@@ -80,11 +82,22 @@ print(result.atp.value)  # 10.283...
 mito.engulf_tool(SimpleTool(
     name="reverse",
     description="Reverse a string",
+    required_capabilities=set(),
     func=lambda s: s[::-1]
 ))
 
 result = mito.metabolize('reverse("hello")')
 print(result.atp.value)  # "olleh"
+
+mito.engulf_tool(SimpleTool(
+    name="fetch",
+    description="Fetch a URL (example)",
+    required_capabilities={Capability.NET},
+    func=lambda url: f"fetched: {url}",
+))
+
+result = mito.metabolize('fetch("https://example.com")')
+print(result.atp.value)
 
 # Auto-pathway detection
 mito.metabolize("5 > 3")  # -> Krebs Cycle (boolean)
@@ -310,7 +323,9 @@ Higher-order patterns that wire agents together:
 
 ### Coherent Feed-Forward Loop (CFFL)
 
-**The "Human-in-the-Loop" Guardrail** with circuit breaker and caching.
+**Two-key execution guardrail**: an action proceeds only if the executor and a risk assessor both permit it.
+
+Note: the AND gate provides an interlock, not true independence—risk reduction depends on assessor diversity/tool-grounding.
 
 ```python
 from operon_ai import ATP_Store
@@ -324,14 +339,19 @@ guardrail = CoherentFeedForwardLoop(
     enable_cache=True,                   # Cache decisions
 )
 
-# Dangerous request blocked by risk assessor
-result = guardrail.run("Delete all files in the system directory")
-# result.blocked = True, result.block_reason = "Risk Assessor: Violates safety"
+result = guardrail.run("Deploy to production")
+if result.blocked:
+    print(f"Blocked: {result.block_reason}")
+else:
+    # Proof-carrying token bound to this request (two-key execution)
+    print(f"Approval issuer: {result.approval_token.issuer}")
 ```
 
 ### Quorum Sensing
 
 Multi-agent consensus with voting strategies and reliability tracking.
+
+Note: quorum only helps if voters are not strongly correlated (use diverse models, tool checks, and/or data partitioning).
 
 ```python
 from operon_ai.topology import QuorumSensing, VotingStrategy
@@ -401,6 +421,31 @@ osc.start()
 
 ---
 
+## 🧷 Typed Wiring (WAgent)
+
+Validate wiring diagrams up-front: type flow (`DataType`), integrity flow (`IntegrityLabel`), and aggregate effects (`Capability`).
+
+```python
+from operon_ai import (
+    WiringDiagram, ModuleSpec, PortType,
+    DataType, IntegrityLabel, Capability,
+)
+
+diagram = WiringDiagram()
+diagram.add_module(ModuleSpec(
+    name="membrane",
+    outputs={"clean_text": PortType(DataType.TEXT, IntegrityLabel.VALIDATED)},
+))
+diagram.add_module(ModuleSpec(
+    name="executor",
+    inputs={"prompt": PortType(DataType.TEXT, IntegrityLabel.VALIDATED)},
+    capabilities={Capability.EXEC_CODE},
+))
+
+diagram.connect("membrane", "clean_text", "executor", "prompt")  # raises WiringError if invalid
+print(diagram.required_capabilities())
+```
+
 ## 📦 Installation
 
 ```bash
@@ -441,6 +486,7 @@ Explore the `examples/` directory for runnable demonstrations:
 | [`14_epigenetic_memory.py`](examples/14_epigenetic_memory.py) | Histone | Marker types, decay, reinforcement, inheritance |
 | [`15_genome_telomere_lifecycle.py`](examples/15_genome_telomere_lifecycle.py) | Genome+Telomere | Immutable config, gene expression, lifecycle management |
 | [`16_network_topologies.py`](examples/16_network_topologies.py) | Topologies | Cascade, Oscillator, enhanced QuorumSensing |
+| [`17_wagent_typed_wiring.py`](examples/17_wagent_typed_wiring.py) | WAgent | Typed wiring checker (integrity + capabilities) |
 
 Run any example:
 
@@ -459,7 +505,7 @@ python examples/12_complete_cell_simulation.py
 
 ## 📚 Theoretical Background
 
-Operon is based on the isomorphism between Gene Regulatory Networks (GRNs) and Agentic Architectures.
+Operon models a functorial correspondence between Gene Regulatory Networks (GRNs) and agentic architectures, using typed wiring diagrams as the interface.
 
 | Biological Concept | Software Equivalent | Mathematical Object |
 |-------------------|---------------------|---------------------|
@@ -469,12 +515,14 @@ Operon is based on the isomorphism between Gene Regulatory Networks (GRNs) and A
 | Epigenetics | RAG / Vector Store | State Monad (M) |
 | Membrane | Input Filter | Predicate (T → Bool) |
 | Ribosome | Template Engine | String Functor |
-| Mitochondria | Tool Use | Effect Monad |
+| Mitochondria | Tool Use | Effect Monad (capabilities) |
 | Chaperone | Output Validation | Parser Combinator |
 | Lysosome | Garbage Collection | Cleanup Handler |
 | Genome | Immutable Config | Frozen Record |
 | Telomere | Lifecycle Counter | Bounded Natural |
 | Metabolism | Resource Budget | Multi-Currency Monad |
+| Approval Token | Two-key execution | Proof token |
+| Integrity Label | Trust boundary | Information-flow label |
 | Cascade | Pipeline | Kleisli Arrow |
 | Oscillator | Periodic Task | Temporal Stream |
 | Quorum | Consensus | Weighted Functor |

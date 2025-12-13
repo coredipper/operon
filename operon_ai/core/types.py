@@ -14,7 +14,7 @@ biological category with morphisms defined by agent processing.
 
 from dataclasses import dataclass, field
 from typing import Dict, Optional, Generic, TypeVar, Any, List
-from enum import Enum
+from enum import Enum, IntEnum
 from datetime import datetime
 
 T = TypeVar('T')
@@ -114,6 +114,71 @@ class ActionType(Enum):
     DEFER = "defer"         # Defer to another agent
     FAILURE = "failure"     # Action failed
     UNKNOWN = "unknown"     # Unknown/unhandled
+
+
+class IntegrityLabel(IntEnum):
+    """
+    Integrity label for information-flow control.
+
+    Mirrors the paper's ordering U ≤ V ≤ T:
+    - UNTRUSTED: User input / raw model text
+    - VALIDATED: Schema-checked / partially validated
+    - TRUSTED: Tool-grounded / trusted boundary
+    """
+
+    UNTRUSTED = 0
+    VALIDATED = 1
+    TRUSTED = 2
+
+
+class DataType(Enum):
+    """
+    Abstract data types for wiring interfaces.
+
+    These are intentionally coarse-grained: they describe what kind of
+    value flows, not its full Python type.
+    """
+
+    TEXT = "text"
+    JSON = "json"
+    IMAGE = "image"
+    TOOL_CALL = "tool_call"
+    ERROR = "error"
+    STOP = "stop"
+    APPROVAL = "approval"
+
+
+class Capability(Enum):
+    """
+    Capability/effect tags for least-privilege reasoning.
+
+    These model what a module/tool can do (e.g., network, filesystem).
+    """
+
+    READ_FS = "read_fs"
+    WRITE_FS = "write_fs"
+    NET = "net"
+    EXEC_CODE = "exec_code"
+    MONEY = "money"
+    EMAIL_SEND = "email_send"
+
+
+@dataclass(frozen=True)
+class ApprovalToken:
+    """
+    A proof-carrying approval token used for two-key execution gates.
+
+    In the paper, privileged sinks require an (Approval, TRUSTED) input.
+    This token binds an approval decision to a specific request.
+    """
+
+    request_hash: str
+    issuer: str
+    reason: str = ""
+    confidence: float = 1.0
+    integrity: IntegrityLabel = IntegrityLabel.TRUSTED
+    timestamp: datetime = field(default_factory=datetime.now)
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
