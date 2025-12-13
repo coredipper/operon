@@ -27,7 +27,7 @@ from operon_ai import (
     Mitochondria,
     MetabolicPathway,
     SimpleTool,
-    ATP,
+    Capability,
 )
 
 
@@ -160,6 +160,20 @@ def main():
             print(f"  {call} = {result.atp.value}")
         else:
             print(f"  {call} = ERROR: {result.error}")
+
+    # Capability gating (least-privilege)
+    print("\n  Capability gating (least-privilege):")
+    restricted = Mitochondria(allowed_capabilities=set(), silent=True)
+    restricted.register_function(
+        "fetch_url",
+        lambda url: f"(mock) fetched {url}",
+        "Mock network fetch",
+        required_capabilities={Capability.NET},
+    )
+    restricted_result = restricted.metabolize('fetch_url(\"https://example.com\")')
+    print(f"  fetch_url(\"https://example.com\") -> success={restricted_result.success}")
+    if not restricted_result.success:
+        print(f"    error: {restricted_result.error}")
 
     # =================================================================
     # SECTION 4: Beta Oxidation (Data Transformation)

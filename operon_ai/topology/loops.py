@@ -22,7 +22,7 @@ import threading
 import hashlib
 
 from ..core.agent import BioAgent
-from ..core.types import Signal, ActionProtein
+from ..core.types import Signal, ActionProtein, ApprovalToken
 from ..state.metabolism import ATP_Store
 
 
@@ -50,6 +50,7 @@ class LoopResult:
     action: str
     executor_output: ActionProtein | None = None
     assessor_output: ActionProtein | None = None
+    approval_token: ApprovalToken | None = None
     blocked: bool = False
     block_reason: str = ""
     cached: bool = False
@@ -73,7 +74,11 @@ class CoherentFeedForwardLoop:
     Advanced Coherent Feed-Forward Loop (Type 1).
 
     The canonical guardrail topology where an action only proceeds
-    if both the executor AND a risk assessor approve.
+    if both the executor AND a risk assessor approve (two-key execution).
+
+    Note: The AND gate enforces an interlock, not independence. In practice,
+    real risk reduction depends on making the assessor's failure probability
+    conditional on generator errors small (e.g., diversity + tool-grounding).
 
     Features:
 
@@ -235,7 +240,7 @@ class CoherentFeedForwardLoop:
             return result
 
         # Apply gate logic
-        result = self._apply_gate_logic(z_out, y_out)
+        result = self._apply_gate_logic(z_out, y_out, user_prompt)
         result.processing_time_ms = (time.time() - start_time) * 1000
 
         # Update circuit breaker
@@ -269,8 +274,26 @@ class CoherentFeedForwardLoop:
 
         return result
 
-    def _apply_gate_logic(self, z_out: ActionProtein, y_out: ActionProtein) -> LoopResult:
+    def _apply_gate_logic(
+        self,
+        z_out: ActionProtein,
+        y_out: ActionProtein,
+        user_prompt: str,
+    ) -> LoopResult:
         """Apply the configured gate logic to agent outputs."""
+
+        request_hash = hashlib.sha256(user_prompt.encode()).hexdigest()[:16]
+        approval = (
+            ApprovalToken(
+                request_hash=request_hash,
+                issuer=self.assessor.name,
+                reason=str(y_out.payload),
+                confidence=y_out.confidence,
+                metadata={"gate_logic": self.gate_logic.value},
+            )
+            if y_out.action_type == "PERMIT"
+            else None
+        )
 
         executor_permits = z_out.action_type in ("EXECUTE", "PERMIT")
         executor_blocks = z_out.action_type == "BLOCK"
@@ -317,6 +340,7 @@ class CoherentFeedForwardLoop:
                     action="SUCCESS",
                     executor_output=z_out,
                     assessor_output=y_out,
+                    approval_token=approval,
                     blocked=False,
                     gate_logic=self.gate_logic
                 )
@@ -329,6 +353,7 @@ class CoherentFeedForwardLoop:
                     action="SUCCESS",
                     executor_output=z_out,
                     assessor_output=y_out,
+                    approval_token=approval,
                     blocked=False,
                     gate_logic=self.gate_logic
                 )
@@ -361,6 +386,7 @@ class CoherentFeedForwardLoop:
                     action="SUCCESS",
                     executor_output=z_out,
                     assessor_output=y_out,
+                    approval_token=approval,
                     blocked=False,
                     gate_logic=self.gate_logic
                 )
@@ -383,6 +409,7 @@ class CoherentFeedForwardLoop:
                     action="SUCCESS",
                     executor_output=z_out,
                     assessor_output=y_out,
+                    approval_token=approval,
                     blocked=False,
                     gate_logic=self.gate_logic
                 )

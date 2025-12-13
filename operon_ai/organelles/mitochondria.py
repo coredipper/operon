@@ -24,6 +24,7 @@ import operator
 import math
 import time
 
+from ..core.types import Capability
 
 class MetabolicPathway(Enum):
     """
@@ -87,6 +88,7 @@ class SimpleTool:
     name: str
     description: str
     func: Callable[..., Any]
+    required_capabilities: set[Capability] = field(default_factory=set)
 
     def execute(self, *args: Any, **kwargs: Any) -> Any:
         return self.func(*args, **kwargs)
@@ -211,6 +213,7 @@ class Mitochondria:
         timeout_seconds: float = 5.0,
         max_ros: float = 1.0,
         tools: list[Tool] | None = None,
+        allowed_capabilities: set[Capability] | None = None,
         silent: bool = False,
     ):
         """
@@ -220,11 +223,14 @@ class Mitochondria:
             timeout_seconds: Max execution time per operation
             max_ros: Max accumulated errors before shutdown
             tools: External tools to engulf
+            allowed_capabilities: If set, tools must declare required capabilities
+                as a subset of this set (least-privilege enforcement)
             silent: Suppress console output
         """
         self.timeout = timeout_seconds
         self.max_ros = max_ros
         self.silent = silent
+        self.allowed_capabilities = allowed_capabilities
 
         # Tool registry (endosymbiotic organelles)
         self.tools: dict[str, Tool] = {}
@@ -251,7 +257,13 @@ class Mitochondria:
         if not self.silent:
             print(f"🦠 [Mitochondria] Engulfed tool: {tool.name}")
 
-    def register_function(self, name: str, func: Callable, description: str = ""):
+    def register_function(
+        self,
+        name: str,
+        func: Callable,
+        description: str = "",
+        required_capabilities: set[Capability] | None = None,
+    ):
         """
         Convenience method to register a simple function as a tool.
 
@@ -259,8 +271,14 @@ class Mitochondria:
             name: Name to call the function by
             func: The callable to register
             description: Human-readable description
+            required_capabilities: Capabilities required to invoke this tool
         """
-        tool = SimpleTool(name=name, description=description, func=func)
+        tool = SimpleTool(
+            name=name,
+            description=description,
+            func=func,
+            required_capabilities=required_capabilities or set(),
+        )
         self.engulf_tool(tool)
 
     def metabolize(
@@ -424,6 +442,20 @@ class Mitochondria:
             raise ValueError(f"Unknown tool: {tool_name}. Available: {available}")
 
         tool = self.tools[tool_name]
+        required_caps = (
+            getattr(tool, "required_capabilities", None)
+            or getattr(tool, "capabilities", None)
+            or set()
+        )
+        required_caps = set(required_caps)
+        if self.allowed_capabilities is not None and not required_caps.issubset(self.allowed_capabilities):
+            missing = sorted(
+                (c.value if isinstance(c, Capability) else str(c)) for c in (required_caps - self.allowed_capabilities)
+            )
+            raise PermissionError(
+                f"Tool '{tool_name}' requires disallowed capabilities: {missing}"
+            )
+
         args = [self._compute_node(arg) for arg in tree.body.args]
         kwargs = {kw.arg: self._compute_node(kw.value) for kw in tree.body.keywords if kw.arg}
 
@@ -566,7 +598,20 @@ class Mitochondria:
 
     def list_tools(self) -> list[dict]:
         """List all available tools with descriptions."""
-        return [
-            {"name": name, "description": tool.description}
-            for name, tool in self.tools.items()
-        ]
+        tools = []
+        for name, tool in self.tools.items():
+            required_caps = (
+                getattr(tool, "required_capabilities", None)
+                or getattr(tool, "capabilities", None)
+                or set()
+            )
+            tools.append(
+                {
+                    "name": name,
+                    "description": tool.description,
+                    "required_capabilities": sorted(
+                        c.value if isinstance(c, Capability) else str(c) for c in set(required_caps)
+                    ),
+                }
+            )
+        return tools

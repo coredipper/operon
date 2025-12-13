@@ -18,9 +18,20 @@ from .types import (
     SignalStrength,
     ActionProtein,
     ActionType,
+    IntegrityLabel,
+    DataType,
+    Capability,
+    ApprovalToken,
     FoldedProtein,
     CellState,
     Pathway,
+)
+from .wagent import (
+    WiringError,
+    PortType,
+    ModuleSpec,
+    Wire,
+    WiringDiagram,
 )
 
 __all__ = [
@@ -30,7 +41,16 @@ __all__ = [
     "SignalStrength",
     "ActionProtein",
     "ActionType",
+    "IntegrityLabel",
+    "DataType",
+    "Capability",
+    "ApprovalToken",
     "FoldedProtein",
     "CellState",
     "Pathway",
+    "WiringError",
+    "PortType",
+    "ModuleSpec",
+    "Wire",
+    "WiringDiagram",
 ]

@@ -1,4 +1,6 @@
 from typing import Optional
+import re
+
 from .types import Signal, ActionProtein
 from ..state.metabolism import ATP_Store
 from ..state.histone import HistoneStore
@@ -40,7 +42,8 @@ class BioAgent:
             return ActionProtein("FAILURE", "Apoptosis: Insufficient ATP", 0.0)
 
         # 3. Epigenetic Retrieval (RAG)
-        context = self.histones.retrieve_context(signal.content)
+        retrieval = self.histones.retrieve_context(signal.content)
+        context = retrieval.formatted_context
         
         # 4. Transcription (LLM Generation)
         # We inject the "methylations" into the System Prompt.
@@ -61,17 +64,41 @@ class BioAgent:
         Simulates the Ribosome (Translation).
         Includes Mitochondria usage (Neuro-symbolic).
         """
-        # A. Neuro-Symbolic Calculation
-        if "calculate" in signal.content.lower():
-            math_expr = signal.content.split("calculate")[-1].strip()
-            result = self.mitochondria.digest_glucose(math_expr)
-            return ActionProtein("EXECUTE", f"Calculated: {result}", 1.0)
+        content = signal.content
+        content_lower = content.lower()
 
-        # B. Risk Logic (for topologies)
-        if self.role == "RiskAssessor":
-            if "destroy" in signal.content.lower():
+        # A. Risk Logic (for topologies / voting)
+        # The risk path should emit PERMIT/BLOCK rather than executing.
+        if self.role in ("RiskAssessor", "Voter"):
+            dangerous_markers = (
+                "destroy",
+                "delete all",
+                "rm -rf",
+                "wipe",
+                "exfiltrate",
+                "steal",
+                "hack",
+            )
+            if any(m in content_lower for m in dangerous_markers):
                 return ActionProtein("BLOCK", "Violates safety protocols.", 1.0)
             return ActionProtein("PERMIT", "Action is safe.", 1.0)
+
+        # B. Neuro-Symbolic Calculation (executor only)
+        if self.role == "Executor":
+            match = re.search(r"\bcalculate\b(.*)$", content, flags=re.IGNORECASE)
+            if match:
+                math_expr = match.group(1).strip()
+                looks_like_math = bool(
+                    math_expr
+                    and re.search(
+                        r"[0-9]|[+\-*/()^]|\b(pi|e|tau)\b",
+                        math_expr,
+                        flags=re.IGNORECASE,
+                    )
+                )
+                if looks_like_math:
+                    result = self.mitochondria.digest_glucose(math_expr)
+                    return ActionProtein("EXECUTE", f"Calculated: {result}", 1.0)
 
         # C. Executor Logic
         if self.role == "Executor":

@@ -12,6 +12,10 @@ Biological Analogy:
 The QuorumSensing topology enables multi-agent consensus decisions
 with configurable voting strategies, weighted influence, and
 confidence-based aggregation.
+
+Note: quorum improves reliability when votes are not perfectly correlated.
+If agents share the same prompts/context/tools, a "confidently wrong" quorum
+is still possible; inject diversity and tool-grounded checks where possible.
 """
 
 from dataclasses import dataclass, field
