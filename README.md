@@ -9,7 +9,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![Publish to PyPI](https://github.com/coredipper/operon/actions/workflows/publish.yml/badge.svg)](https://github.com/coredipper/operon/actions/workflows/publish.yml)
 
-> ⚠️ **Note:** Operon is a research-grade library serving as the reference implementation for the paper *"Biological Motifs for Agentic Control."* APIs are subject to change as the theoretical framework evolves.
+> ⚠️ **Note:** Operon is a research-grade library serving as the reference implementation for the paper [*"Biological Motifs for Agentic Control."*](article/main.pdf) APIs are subject to change as the theoretical framework evolves.
 
 ---
 
