@@ -516,16 +516,6 @@ Operon models a functorial correspondence between Gene Regulatory Networks (GRNs
 | Membrane | Input Filter | Predicate (T → Bool) |
 | Ribosome | Template Engine | String Functor |
 | Mitochondria | Tool Use | Effect Monad (capabilities) |
-| Chaperone | Output Validation | Parser Combinator |
-| Lysosome | Garbage Collection | Cleanup Handler |
-| Genome | Immutable Config | Frozen Record |
-| Telomere | Lifecycle Counter | Bounded Natural |
-| Metabolism | Resource Budget | Multi-Currency Monad |
-| Approval Token | Two-key execution | Proof token |
-| Integrity Label | Trust boundary | Information-flow label |
-| Cascade | Pipeline | Kleisli Arrow |
-| Oscillator | Periodic Task | Temporal Stream |
-| Quorum | Consensus | Weighted Functor |
 
 ---
 
