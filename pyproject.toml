@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 authors = [
-  { name = "Your Name", email = "bogdan@banu.be" },
+  { name = "Bogdan Banu", email = "bogdan@banu.be" },
 ]
 keywords = ["agents", "llm", "category-theory", "biology", "reliability"]
 classifiers = [
