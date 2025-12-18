@@ -105,3 +105,66 @@ class AnthropicProvider:
             if "api key" in error_str or "authentication" in error_str:
                 raise ProviderUnavailableError(f"Anthropic auth error: {e}")
             raise TranscriptionFailedError(f"Anthropic error: {e}")
+
+    def complete_with_tools(
+        self,
+        prompt: str,
+        tools: list["ToolSchema"],
+        config: ProviderConfig | None = None,
+    ) -> tuple[LLMResponse, list["ToolCall"]]:
+        """Send prompt with tools to Anthropic."""
+        if not self.is_available():
+            raise ProviderUnavailableError("ANTHROPIC_API_KEY not set")
+
+        from .base import ToolSchema, ToolCall
+
+        config = config or ProviderConfig()
+        client = self._get_client()
+        start = time.perf_counter()
+
+        anthropic_tools = [
+            {
+                "name": t.name,
+                "description": t.description,
+                "input_schema": t.parameters_schema,
+            }
+            for t in tools
+        ]
+
+        try:
+            response = client.messages.create(
+                model=self.model,
+                max_tokens=config.max_tokens,
+                system=config.system_prompt or "You are a helpful assistant.",
+                messages=[{"role": "user", "content": prompt}],
+                tools=anthropic_tools if anthropic_tools else None,
+            )
+
+            elapsed_ms = (time.perf_counter() - start) * 1000
+
+            content = ""
+            tool_calls = []
+            for block in response.content:
+                if block.type == "text":
+                    content += block.text
+                elif block.type == "tool_use":
+                    tool_calls.append(ToolCall(
+                        id=block.id,
+                        name=block.name,
+                        arguments=block.input,
+                    ))
+
+            tokens = response.usage.input_tokens + response.usage.output_tokens
+
+            return (
+                LLMResponse(
+                    content=content,
+                    model=response.model,
+                    tokens_used=tokens,
+                    latency_ms=elapsed_ms,
+                    raw_response=response.model_dump(),
+                ),
+                tool_calls,
+            )
+        except Exception as e:
+            raise TranscriptionFailedError(f"Anthropic error: {e}")
