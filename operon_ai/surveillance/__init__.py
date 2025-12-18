@@ -8,6 +8,7 @@ from .types import (
     MHCPeptide,
     ActivationState,
 )
+from .display import MHCDisplay, Observation
 
 __all__ = [
     "Signal1",
@@ -16,4 +17,6 @@ __all__ = [
     "ResponseAction",
     "MHCPeptide",
     "ActivationState",
+    "MHCDisplay",
+    "Observation",
 ]
