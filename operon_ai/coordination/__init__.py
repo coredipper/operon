@@ -18,6 +18,10 @@ from .watchdog import (
     ApoptosisEvent,
     ApoptosisReason,
 )
+from .priority import (
+    PriorityInheritance,
+    PriorityBoost,
+)
 
 __all__ = [
     "Phase",
@@ -33,4 +37,6 @@ __all__ = [
     "Watchdog",
     "ApoptosisEvent",
     "ApoptosisReason",
+    "PriorityInheritance",
+    "PriorityBoost",
 ]
