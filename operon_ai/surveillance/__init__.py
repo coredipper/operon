@@ -9,6 +9,7 @@ from .types import (
     ActivationState,
 )
 from .display import MHCDisplay, Observation
+from .thymus import Thymus, BaselineProfile, SelectionResult
 
 __all__ = [
     "Signal1",
@@ -19,4 +20,7 @@ __all__ = [
     "ActivationState",
     "MHCDisplay",
     "Observation",
+    "Thymus",
+    "BaselineProfile",
+    "SelectionResult",
 ]
