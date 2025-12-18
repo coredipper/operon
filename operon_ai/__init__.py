@@ -172,6 +172,26 @@ from .organelles.lysosome import (
     WasteType,
     DigestResult,
 )
+from .organelles.nucleus import (
+    Nucleus,
+    Transcription,
+)
+
+# =============================================================================
+# Providers
+# =============================================================================
+from .providers import (
+    LLMProvider,
+    LLMResponse,
+    ProviderConfig,
+    MockProvider,
+    OpenAIProvider,
+    AnthropicProvider,
+    NucleusError,
+    ProviderUnavailableError,
+    QuotaExhaustedError,
+    TranscriptionFailedError,
+)
 
 # =============================================================================
 # Public API
@@ -297,6 +317,22 @@ __all__ = [
     "Waste",
     "WasteType",
     "DigestResult",
+
+    # Nucleus
+    "Nucleus",
+    "Transcription",
+
+    # Providers
+    "LLMProvider",
+    "LLMResponse",
+    "ProviderConfig",
+    "MockProvider",
+    "OpenAIProvider",
+    "AnthropicProvider",
+    "NucleusError",
+    "ProviderUnavailableError",
+    "QuotaExhaustedError",
+    "TranscriptionFailedError",
 ]
 
 __version__ = "0.5.0"
