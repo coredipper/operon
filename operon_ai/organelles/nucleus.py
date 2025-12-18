@@ -153,3 +153,69 @@ class Nucleus:
     def clear_log(self) -> None:
         """Clear the transcription log (for testing/reset)."""
         self.transcription_log.clear()
+
+    def transcribe_with_tools(
+        self,
+        prompt: str,
+        mitochondria: "Mitochondria",
+        config: ProviderConfig | None = None,
+        max_iterations: int = 10,
+        auto_execute: bool = True,
+    ) -> LLMResponse:
+        """
+        Transcribe with tool access, running a multi-turn loop.
+        """
+        from ..providers import ToolSchema, ToolCall, ToolResult
+        from ..organelles.mitochondria import Mitochondria
+
+        tool_schemas = mitochondria.export_tool_schemas()
+
+        if not tool_schemas:
+            return self.transcribe(prompt, config)
+
+        if not hasattr(self.provider, 'complete_with_tools'):
+            return self.transcribe(prompt, config)
+
+        current_prompt = prompt
+        iterations = 0
+
+        while iterations < max_iterations:
+            iterations += 1
+
+            response, tool_calls = self.provider.complete_with_tools(
+                current_prompt,
+                tools=tool_schemas,
+                config=config,
+            )
+
+            if not tool_calls:
+                self.transcription_log.append(Transcription(
+                    prompt=prompt,
+                    response=response,
+                    provider=self.provider.name,
+                    timestamp=datetime.now(),
+                    energy_cost=self.base_energy_cost,
+                    config=config,
+                ))
+                return response
+
+            if not auto_execute:
+                return response
+
+            tool_results = []
+            for call in tool_calls:
+                result = mitochondria.execute_tool_call(call)
+                tool_results.append(result)
+
+            results_text = "\n".join([
+                f"Tool '{r.call_id}' returned: {r.output if r.success else f'Error: {r.error}'}"
+                for r in tool_results
+            ])
+
+            current_prompt = f"{prompt}\n\nTool results:\n{results_text}\n\nPlease provide your final response based on these results."
+
+        final_response = self.transcribe(
+            f"{current_prompt}\n\nPlease provide your final response now.",
+            config,
+        )
+        return final_response
