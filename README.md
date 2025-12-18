@@ -614,10 +614,10 @@ Operon models a functorial correspondence between Gene Regulatory Networks (GRNs
 │  └─────────────┘    └─────────────┘    └─────────────┘      │
 │         │                  │                  │             │
 │         │                  ▼                  │             │
-│         │           ┌─────────────┐          │             │
-│         │           │  RIBOSOME   │          │             │
-│         │           │ (Templates) │          │             │
-│         │           └─────────────┘          │             │
+│         │           ┌─────────────┐           │             │
+│         │           │  RIBOSOME   │           │             │
+│         │           │ (Templates) │           │             │
+│         │           └─────────────┘           │             │
 │         │                  │                  │             │
 │         │                  ▼                  ▼             │
 │         │           ┌─────────────┐    ┌─────────────┐      │
