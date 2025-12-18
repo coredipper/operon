@@ -11,6 +11,7 @@ from .types import (
 from .display import MHCDisplay, Observation
 from .thymus import Thymus, BaselineProfile, SelectionResult
 from .tcell import TCell, ImmuneResponse
+from .treg import RegulatoryTCell, SuppressionRule, ToleranceRecord, SuppressionResult
 
 __all__ = [
     "Signal1",
@@ -26,4 +27,8 @@ __all__ = [
     "SelectionResult",
     "TCell",
     "ImmuneResponse",
+    "RegulatoryTCell",
+    "SuppressionRule",
+    "ToleranceRecord",
+    "SuppressionResult",
 ]
