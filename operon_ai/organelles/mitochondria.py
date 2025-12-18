@@ -89,6 +89,7 @@ class SimpleTool:
     description: str
     func: Callable[..., Any]
     required_capabilities: set[Capability] = field(default_factory=set)
+    parameters_schema: dict = field(default_factory=lambda: {"type": "object", "properties": {}})
 
     def execute(self, *args: Any, **kwargs: Any) -> Any:
         return self.func(*args, **kwargs)
