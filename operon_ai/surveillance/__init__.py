@@ -12,6 +12,8 @@ from .display import MHCDisplay, Observation
 from .thymus import Thymus, BaselineProfile, SelectionResult
 from .tcell import TCell, ImmuneResponse
 from .treg import RegulatoryTCell, SuppressionRule, ToleranceRecord, SuppressionResult
+from .memory import ImmuneMemory, ThreatSignature
+from .immune_system import ImmuneSystem
 
 __all__ = [
     "Signal1",
@@ -31,4 +33,7 @@ __all__ = [
     "SuppressionRule",
     "ToleranceRecord",
     "SuppressionResult",
+    "ImmuneMemory",
+    "ThreatSignature",
+    "ImmuneSystem",
 ]
