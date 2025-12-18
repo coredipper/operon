@@ -1,6 +1,8 @@
 """Tests for LLM providers."""
 
+import os
 import pytest
+from unittest.mock import patch, MagicMock
 from operon_ai.providers import LLMProvider, LLMResponse, ProviderConfig, MockProvider
 
 
@@ -65,3 +67,44 @@ class TestMockProvider:
         provider = MockProvider(default_response="I don't know")
         response = provider.complete("unknown prompt")
         assert response.content == "I don't know"
+
+
+class TestOpenAIProvider:
+    """Test OpenAI provider implementation."""
+
+    def test_openai_provider_name(self):
+        """OpenAIProvider should identify itself."""
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"}):
+            from operon_ai.providers import OpenAIProvider
+            provider = OpenAIProvider()
+            assert provider.name == "openai"
+
+    def test_openai_provider_not_available_without_key(self):
+        """OpenAIProvider should not be available without API key."""
+        with patch.dict(os.environ, {}, clear=True):
+            # Remove key if present
+            os.environ.pop("OPENAI_API_KEY", None)
+            from operon_ai.providers import OpenAIProvider
+            provider = OpenAIProvider()
+            assert provider.is_available() is False
+
+    def test_openai_provider_available_with_key(self):
+        """OpenAIProvider should be available with API key."""
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"}):
+            from operon_ai.providers import OpenAIProvider
+            provider = OpenAIProvider()
+            assert provider.is_available() is True
+
+    def test_openai_provider_uses_env_key(self):
+        """OpenAIProvider should read key from environment."""
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "sk-test123"}):
+            from operon_ai.providers import OpenAIProvider
+            provider = OpenAIProvider()
+            assert provider._api_key == "sk-test123"
+
+    def test_openai_provider_accepts_explicit_key(self):
+        """OpenAIProvider should accept explicit API key."""
+        from operon_ai.providers import OpenAIProvider
+        provider = OpenAIProvider(api_key="sk-explicit")
+        assert provider._api_key == "sk-explicit"
+        assert provider.is_available() is True

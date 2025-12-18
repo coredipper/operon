@@ -16,6 +16,7 @@ from .base import (
     TranscriptionFailedError,
 )
 from .mock import MockProvider
+from .openai_provider import OpenAIProvider
 
 __all__ = [
     "LLMProvider",
@@ -26,4 +27,5 @@ __all__ = [
     "QuotaExhaustedError",
     "TranscriptionFailedError",
     "MockProvider",
+    "OpenAIProvider",
 ]
