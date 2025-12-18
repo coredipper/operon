@@ -5,7 +5,7 @@
 > *"Don't fix the prompt. Fix the topology."*
 
 ![Status](https://img.shields.io/badge/status-experimental-orange)
-![Version](https://img.shields.io/badge/pypi-v0.6.0-blue)
+![Version](https://img.shields.io/badge/pypi-v0.7.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![Publish to PyPI](https://github.com/coredipper/operon/actions/workflows/publish.yml/badge.svg)](https://github.com/coredipper/operon/actions/workflows/publish.yml)
 
@@ -208,6 +208,78 @@ print(recycled.get("last_error_type"))  # Debugging insight!
 
 # Periodic cleanup
 lysosome.autophagy()
+```
+
+### 🧠 Nucleus (LLM Integration Hub)
+
+The decision-making center that wraps LLM providers with auto-detection, fallback, and tool integration.
+
+**Features:**
+- **Provider Auto-Detection**: Automatically selects available provider (Anthropic → OpenAI → Gemini → Mock)
+- **Graceful Fallback**: Falls back to MockProvider for testing when no API keys present
+- **Tool Integration**: Connect to Mitochondria for native LLM function calling
+- **Audit Trail**: Complete logging of all transcriptions with energy costs
+- **Multi-turn Tool Loop**: Automatic tool execution with iteration limits
+
+```python
+from operon_ai import Nucleus, Mitochondria, ProviderConfig
+
+# Auto-detects provider from environment variables
+nucleus = Nucleus()
+print(f"Using: {nucleus.provider.name}")  # anthropic, openai, gemini, or mock
+
+# Simple transcription
+response = nucleus.transcribe("Explain DNA replication")
+print(response.content)
+
+# Tool integration with Mitochondria
+mito = Mitochondria(silent=True)
+mito.register_function(
+    name="calculator",
+    func=lambda expr: str(mito.metabolize(expr).atp.value),
+    description="Evaluate math expressions",
+    parameters_schema={
+        "type": "object",
+        "properties": {"expr": {"type": "string"}},
+        "required": ["expr"]
+    }
+)
+
+# LLM can now call tools automatically
+response = nucleus.transcribe_with_tools(
+    "What is 15 * 7 + 23? Use the calculator.",
+    mitochondria=mito,
+    config=ProviderConfig(temperature=0.0),
+    max_iterations=5,
+)
+print(response.content)
+```
+
+### 🔌 LLM Providers
+
+Swappable LLM backends with a unified interface:
+
+| Provider | Model Default | Environment Variable | Features |
+|----------|---------------|---------------------|----------|
+| `AnthropicProvider` | claude-sonnet-4-20250514 | `ANTHROPIC_API_KEY` | Tool use, streaming |
+| `OpenAIProvider` | gpt-4o-mini | `OPENAI_API_KEY` | Tool use, JSON mode |
+| `GeminiProvider` | gemini-2.0-flash | `GEMINI_API_KEY` | Native function calling |
+| `MockProvider` | mock | (none) | Testing, deterministic responses |
+
+```python
+from operon_ai import (
+    Nucleus,
+    AnthropicProvider,
+    OpenAIProvider,
+    GeminiProvider,
+    MockProvider,
+)
+
+# Explicit provider selection
+nucleus = Nucleus(provider=GeminiProvider(model="gemini-2.0-flash"))
+
+# Or use auto-detection (checks env vars in order)
+nucleus = Nucleus()  # Anthropic → OpenAI → Gemini → Mock
 ```
 
 ---
@@ -488,6 +560,16 @@ Explore the `examples/` directory for runnable demonstrations:
 | [`16_network_topologies.py`](examples/16_network_topologies.py) | Topologies | Cascade, Oscillator, enhanced QuorumSensing |
 | [`17_wagent_typed_wiring.py`](examples/17_wagent_typed_wiring.py) | WAgent | Typed wiring checker (integrity + capabilities) |
 
+### LLM Integration
+
+| Example | System | Description |
+|---------|--------|-------------|
+| [`18_cell_integrity_demo.py`](examples/18_cell_integrity_demo.py) | Integrity | Quality, Surveillance, and Coordination systems |
+| [`19_llm_code_assistant.py`](examples/19_llm_code_assistant.py) | Nucleus+CFFL | Code generation with two-phase safety review |
+| [`20_llm_memory_chat.py`](examples/20_llm_memory_chat.py) | Nucleus+Histone | Conversational AI with epigenetic memory |
+| [`21_llm_living_cell.py`](examples/21_llm_living_cell.py) | **Full Cell** | Complete lifecycle with LLM, memory, and aging |
+| [`22_llm_tool_use.py`](examples/22_llm_tool_use.py) | Nucleus+Mitochondria | LLM function calling with tool integration |
+
 Run any example:
 
 ```bash
@@ -516,6 +598,7 @@ Operon models a functorial correspondence between Gene Regulatory Networks (GRNs
 | Membrane | Input Filter | Predicate (T → Bool) |
 | Ribosome | Template Engine | String Functor |
 | Mitochondria | Tool Use | Effect Monad (capabilities) |
+| Nucleus | LLM Provider | Decision Functor (prompt → response) |
 
 ---
 
@@ -526,17 +609,23 @@ Operon models a functorial correspondence between Gene Regulatory Networks (GRNs
 │                         CELL (Agent)                        │
 ├─────────────────────────────────────────────────────────────┤
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐      │
-│  │  MEMBRANE   │───▶│  RIBOSOME   │───▶│MITOCHONDRIA │      │
-│  │  (Filter)   │    │ (Templates) │    │ (Compute)   │      │
+│  │  MEMBRANE   │───▶│   NUCLEUS   │───▶│MITOCHONDRIA │      │
+│  │  (Filter)   │    │ (LLM/Think) │◀───│ (Tools)     │      │
 │  └─────────────┘    └─────────────┘    └─────────────┘      │
-│         │                                     │             │
-│         │                                     ▼             │
-│         │                              ┌─────────────┐      │
-│         │                              │  CHAPERONE  │      │
-│         │                              │ (Validate)  │      │
-│         │                              └─────────────┘      │
-│         │                                     │             │
-│         ▼                                     ▼             │
+│         │                  │                  │             │
+│         │                  ▼                  │             │
+│         │           ┌─────────────┐          │             │
+│         │           │  RIBOSOME   │          │             │
+│         │           │ (Templates) │          │             │
+│         │           └─────────────┘          │             │
+│         │                  │                  │             │
+│         │                  ▼                  ▼             │
+│         │           ┌─────────────┐    ┌─────────────┐      │
+│         │           │  CHAPERONE  │    │   HISTONE   │      │
+│         │           │ (Validate)  │    │  (Memory)   │      │
+│         │           └─────────────┘    └─────────────┘      │
+│         │                  │                                │
+│         ▼                  ▼                                │
 │  ┌─────────────────────────────────────────────────────┐    │
 │  │                      LYSOSOME                       │    │
 │  │              (Cleanup & Recycling)                  │    │
