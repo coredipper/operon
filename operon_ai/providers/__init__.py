@@ -15,6 +15,7 @@ from .base import (
     QuotaExhaustedError,
     TranscriptionFailedError,
 )
+from .mock import MockProvider
 
 __all__ = [
     "LLMProvider",
@@ -24,4 +25,5 @@ __all__ = [
     "ProviderUnavailableError",
     "QuotaExhaustedError",
     "TranscriptionFailedError",
+    "MockProvider",
 ]

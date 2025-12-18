@@ -1,7 +1,7 @@
 """Tests for LLM providers."""
 
 import pytest
-from operon_ai.providers import LLMProvider, LLMResponse, ProviderConfig
+from operon_ai.providers import LLMProvider, LLMResponse, ProviderConfig, MockProvider
 
 
 class TestLLMProviderProtocol:
@@ -26,3 +26,42 @@ class TestLLMProviderProtocol:
         assert config.temperature == 0.7
         assert config.max_tokens == 1024
         assert config.timeout_seconds == 30.0
+
+
+class TestMockProvider:
+    """Test the mock provider for testing/fallback."""
+
+    def test_mock_provider_name(self):
+        """MockProvider should identify itself."""
+        provider = MockProvider()
+        assert provider.name == "mock"
+
+    def test_mock_provider_is_always_available(self):
+        """MockProvider should always be available."""
+        provider = MockProvider()
+        assert provider.is_available() is True
+
+    def test_mock_provider_returns_response(self):
+        """MockProvider should return a valid response."""
+        provider = MockProvider()
+        response = provider.complete("Hello")
+        assert isinstance(response, LLMResponse)
+        assert response.content != ""
+        assert response.model == "mock-v1"
+
+    def test_mock_provider_with_custom_responses(self):
+        """MockProvider should use custom responses when provided."""
+        responses = {"hello": "world", "foo": "bar"}
+        provider = MockProvider(responses=responses)
+
+        response = provider.complete("hello")
+        assert response.content == "world"
+
+        response = provider.complete("foo")
+        assert response.content == "bar"
+
+    def test_mock_provider_default_response(self):
+        """MockProvider should use default for unknown prompts."""
+        provider = MockProvider(default_response="I don't know")
+        response = provider.complete("unknown prompt")
+        assert response.content == "I don't know"
