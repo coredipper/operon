@@ -8,6 +8,12 @@ from .types import (
     TaggedData,
     UbiquitinPool,
 )
+from .components import (
+    ProvenanceContext,
+    E3Ligase,
+    Deubiquitinase,
+    ChaperoneRepair,
+)
 
 __all__ = [
     "ChainType",
@@ -17,4 +23,8 @@ __all__ = [
     "UbiquitinTag",
     "TaggedData",
     "UbiquitinPool",
+    "ProvenanceContext",
+    "E3Ligase",
+    "Deubiquitinase",
+    "ChaperoneRepair",
 ]
