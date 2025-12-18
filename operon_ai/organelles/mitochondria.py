@@ -633,3 +633,32 @@ class Mitochondria:
                 parameters_schema=schema
             ))
         return schemas
+
+    def execute_tool_call(self, call: "ToolCall") -> "ToolResult":
+        """Execute a tool call from an LLM."""
+        from ..providers import ToolCall, ToolResult
+
+        if call.name not in self.tools:
+            return ToolResult(
+                call_id=call.id,
+                output=None,
+                success=False,
+                error=f"Unknown tool: {call.name}. Available: {list(self.tools.keys())}"
+            )
+
+        try:
+            tool = self.tools[call.name]
+            result = tool.execute(**call.arguments)
+            return ToolResult(
+                call_id=call.id,
+                output=str(result),
+                success=True
+            )
+        except Exception as e:
+            self._ros_accumulated += 0.1
+            return ToolResult(
+                call_id=call.id,
+                output=None,
+                success=False,
+                error=str(e)
+            )

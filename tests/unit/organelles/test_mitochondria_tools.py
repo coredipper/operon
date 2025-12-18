@@ -68,3 +68,48 @@ def test_mitochondria_export_tool_schemas():
     add_schema = next(s for s in schemas if s.name == "add")
     assert add_schema.description == "Add two numbers"
     assert "x" in add_schema.parameters_schema["properties"]
+
+def test_mitochondria_execute_tool_call():
+    from operon_ai.providers import ToolCall, ToolResult
+
+    mito = Mitochondria(silent=True)
+    mito.register_function(
+        name="add",
+        func=lambda x, y: x + y,
+        description="Add two numbers"
+    )
+
+    call = ToolCall(id="call_1", name="add", arguments={"x": 5, "y": 3})
+    result = mito.execute_tool_call(call)
+
+    assert isinstance(result, ToolResult)
+    assert result.call_id == "call_1"
+    assert result.success
+    assert result.output == "8"
+
+def test_mitochondria_execute_tool_call_failure():
+    from operon_ai.providers import ToolCall, ToolResult
+
+    mito = Mitochondria(silent=True)
+    mito.register_function(
+        name="divide",
+        func=lambda x, y: x / y,
+        description="Divide numbers"
+    )
+
+    call = ToolCall(id="call_2", name="divide", arguments={"x": 5, "y": 0})
+    result = mito.execute_tool_call(call)
+
+    assert not result.success
+    assert "division by zero" in result.error.lower()
+
+def test_mitochondria_execute_tool_call_unknown():
+    from operon_ai.providers import ToolCall, ToolResult
+
+    mito = Mitochondria(silent=True)
+
+    call = ToolCall(id="call_3", name="unknown_tool", arguments={})
+    result = mito.execute_tool_call(call)
+
+    assert not result.success
+    assert "unknown tool" in result.error.lower()
