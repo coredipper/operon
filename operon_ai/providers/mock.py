@@ -69,7 +69,7 @@ class MockProvider:
 
         # Code review patterns
         if "review" in prompt_lower or "analyze" in prompt_lower:
-            return "Code review: The code looks acceptable. No critical issues found."
+            return "APPROVED: Code looks acceptable. No critical issues found."
 
         # Calculation patterns
         if match := re.search(r"calculate\s+(\d+)\s*\+\s*(\d+)", prompt_lower):

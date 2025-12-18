@@ -256,7 +256,7 @@ def run_smoke_test():
 
     # Test 1: Safe request
     result = assistant.process("Write a function to add two numbers")
-    assert result.code is not None, "Should generate code"
+    assert result.success, "Should generate and approve code"
     print(f"✓ Safe request: {'PASS' if result.success else 'BLOCKED'}")
 
     # Test 2: Injection attempt (should be blocked by membrane)
