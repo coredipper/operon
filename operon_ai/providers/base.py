@@ -55,6 +55,37 @@ class LLMResponse:
     raw_response: dict | None = None
 
 
+@dataclass
+class ToolSchema:
+    """
+    JSON Schema definition for a tool that LLMs can call.
+    """
+    name: str
+    description: str
+    parameters_schema: dict
+
+
+@dataclass
+class ToolCall:
+    """
+    A request from the LLM to execute a specific tool.
+    """
+    id: str
+    name: str
+    arguments: dict
+
+
+@dataclass
+class ToolResult:
+    """
+    Result of executing a tool call.
+    """
+    call_id: str
+    output: str | None
+    success: bool
+    error: str | None = None
+
+
 # =============================================================================
 # Protocol
 # =============================================================================
