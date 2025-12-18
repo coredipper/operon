@@ -264,6 +264,7 @@ class Mitochondria:
         func: Callable,
         description: str = "",
         required_capabilities: set[Capability] | None = None,
+        parameters_schema: dict | None = None,
     ):
         """
         Convenience method to register a simple function as a tool.
@@ -273,12 +274,14 @@ class Mitochondria:
             func: The callable to register
             description: Human-readable description
             required_capabilities: Capabilities required to invoke this tool
+            parameters_schema: JSON Schema describing the function parameters
         """
         tool = SimpleTool(
             name=name,
             description=description,
             func=func,
             required_capabilities=required_capabilities or set(),
+            parameters_schema=parameters_schema or {"type": "object", "properties": {}},
         )
         self.engulf_tool(tool)
 
@@ -616,3 +619,17 @@ class Mitochondria:
                 }
             )
         return tools
+
+    def export_tool_schemas(self) -> list["ToolSchema"]:
+        """Export all registered tools as ToolSchema objects for LLM consumption."""
+        from ..providers import ToolSchema
+
+        schemas = []
+        for name, tool in self.tools.items():
+            schema = getattr(tool, "parameters_schema", {"type": "object", "properties": {}})
+            schemas.append(ToolSchema(
+                name=name,
+                description=tool.description,
+                parameters_schema=schema
+            ))
+        return schemas
