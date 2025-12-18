@@ -178,6 +178,15 @@ from .organelles.nucleus import (
 )
 
 # =============================================================================
+# Memory
+# =============================================================================
+from .memory import (
+    MemoryTier,
+    MemoryEntry,
+    EpisodicMemory,
+)
+
+# =============================================================================
 # Providers
 # =============================================================================
 from .providers import (
@@ -321,6 +330,11 @@ __all__ = [
     # Nucleus
     "Nucleus",
     "Transcription",
+
+    # Memory
+    "MemoryTier",
+    "MemoryEntry",
+    "EpisodicMemory",
 
     # Providers
     "LLMProvider",
