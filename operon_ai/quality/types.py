@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Generic, TypeVar
+from typing import Any, Callable, Generic, TypeVar, Optional
 
 from operon_ai.core.types import IntegrityLabel
 
@@ -136,3 +136,110 @@ class TaggedData(Generic[T]):
             integrity=self.tag.integrity,
         )
         return TaggedData(data=self.data, tag=new_tag)
+
+
+class PoolExhaustionStrategy(Enum):
+    """Strategy when ubiquitin pool is exhausted."""
+    BLOCK = "block"           # Refuse to allocate
+    PASSTHROUGH = "passthrough"  # Create without pool tracking
+    RECYCLE_OLDEST = "recycle"   # Force-recycle oldest tags
+
+
+@dataclass
+class UbiquitinPool:
+    """Manages ubiquitin tag allocation and recycling."""
+
+    capacity: int = 1000
+    available: int = field(init=False)
+    exhaustion_strategy: PoolExhaustionStrategy = PoolExhaustionStrategy.BLOCK
+
+    # Tracking for RECYCLE_OLDEST
+    active_tags: list[tuple[datetime, UbiquitinTag]] = field(default_factory=list)
+
+    # Metrics
+    allocated_total: int = 0
+    recycled_total: int = 0
+    exhaustion_events: int = 0
+
+    def __post_init__(self):
+        self.available = self.capacity
+
+    def allocate(
+        self,
+        origin: str,
+        confidence: float = 1.0,
+        degron: DegronType = DegronType.NORMAL,
+        integrity: IntegrityLabel = IntegrityLabel.UNTRUSTED,
+    ) -> Optional[UbiquitinTag]:
+        """Allocate a new tag from the pool."""
+
+        if self.available < 1:
+            self.exhaustion_events += 1
+
+            if self.exhaustion_strategy == PoolExhaustionStrategy.BLOCK:
+                return None
+
+            elif self.exhaustion_strategy == PoolExhaustionStrategy.RECYCLE_OLDEST:
+                if not self._force_recycle():
+                    return None
+
+            elif self.exhaustion_strategy == PoolExhaustionStrategy.PASSTHROUGH:
+                # Create tag without consuming from pool
+                return self._create_tag(origin, confidence, degron, integrity)
+
+        self.available -= 1
+        self.allocated_total += 1
+        tag = self._create_tag(origin, confidence, degron, integrity)
+        self.active_tags.append((datetime.utcnow(), tag))
+        return tag
+
+    def _create_tag(
+        self,
+        origin: str,
+        confidence: float,
+        degron: DegronType,
+        integrity: IntegrityLabel,
+    ) -> UbiquitinTag:
+        """Create a new tag instance."""
+        return UbiquitinTag(
+            confidence=confidence,
+            origin=origin,
+            generation=0,
+            degron=degron,
+            integrity=integrity,
+        )
+
+    def recycle(self, tag: UbiquitinTag) -> None:
+        """Return a tag to the pool."""
+        self.available = min(self.capacity, self.available + tag.chain_length)
+        self.recycled_total += tag.chain_length
+        # Remove from active tracking
+        self.active_tags = [
+            (ts, t) for ts, t in self.active_tags
+            if not (t.timestamp == tag.timestamp and t.origin == tag.origin)
+        ]
+
+    def _force_recycle(self) -> bool:
+        """Force-recycle oldest tag. Returns True if successful."""
+        if not self.active_tags:
+            return False
+
+        # Sort by timestamp, recycle oldest
+        self.active_tags.sort(key=lambda x: x[0])
+        _, oldest = self.active_tags.pop(0)
+        self.available += oldest.chain_length
+        self.recycled_total += oldest.chain_length
+        return True
+
+    def status(self) -> dict:
+        """Return pool status metrics."""
+        utilization = 1 - (self.available / self.capacity) if self.capacity > 0 else 0
+        return {
+            "available": self.available,
+            "capacity": self.capacity,
+            "utilization": f"{utilization:.1%}",
+            "allocated_total": self.allocated_total,
+            "recycled_total": self.recycled_total,
+            "exhaustion_events": self.exhaustion_events,
+            "active_tags": len(self.active_tags),
+        }
