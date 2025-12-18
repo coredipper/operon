@@ -14,6 +14,7 @@ from .components import (
     Deubiquitinase,
     ChaperoneRepair,
 )
+from .proteasome import Proteasome
 
 __all__ = [
     "ChainType",
@@ -27,4 +28,5 @@ __all__ = [
     "E3Ligase",
     "Deubiquitinase",
     "ChaperoneRepair",
+    "Proteasome",
 ]
