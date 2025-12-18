@@ -13,6 +13,11 @@ from .controller import (
     OperationContext,
     OperationResult,
 )
+from .watchdog import (
+    Watchdog,
+    ApoptosisEvent,
+    ApoptosisReason,
+)
 
 __all__ = [
     "Phase",
@@ -25,4 +30,7 @@ __all__ = [
     "Checkpoint",
     "OperationContext",
     "OperationResult",
+    "Watchdog",
+    "ApoptosisEvent",
+    "ApoptosisReason",
 ]
