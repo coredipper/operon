@@ -7,6 +7,12 @@ from .types import (
     DependencyGraph,
     DeadlockInfo,
 )
+from .controller import (
+    CellCycleController,
+    Checkpoint,
+    OperationContext,
+    OperationResult,
+)
 
 __all__ = [
     "Phase",
@@ -15,4 +21,8 @@ __all__ = [
     "ResourceLock",
     "DependencyGraph",
     "DeadlockInfo",
+    "CellCycleController",
+    "Checkpoint",
+    "OperationContext",
+    "OperationResult",
 ]
