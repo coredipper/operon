@@ -30,10 +30,6 @@ llm = [
 dev = [
   "pytest>=7.0",
 ]
-llm = [
-  "openai>=1.0.0",
-  "anthropic>=0.18.0",
-]
 
 [project.urls]
 Homepage = "https://github.com/coredipper/operon"

@@ -24,3 +24,6 @@ htmlcov/
 
 # Worktrees
 .worktrees/
+
+# Documentation (generated plans)
+docs/
