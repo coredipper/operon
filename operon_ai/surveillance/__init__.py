@@ -10,6 +10,7 @@ from .types import (
 )
 from .display import MHCDisplay, Observation
 from .thymus import Thymus, BaselineProfile, SelectionResult
+from .tcell import TCell, ImmuneResponse
 
 __all__ = [
     "Signal1",
@@ -23,4 +24,6 @@ __all__ = [
     "Thymus",
     "BaselineProfile",
     "SelectionResult",
+    "TCell",
+    "ImmuneResponse",
 ]
