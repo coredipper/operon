@@ -50,6 +50,11 @@ from .lysosome import (
     DigestResult,
 )
 
+from .nucleus import (
+    Nucleus,
+    Transcription,
+)
+
 __all__ = [
     # Membrane
     "Membrane",
@@ -84,4 +89,8 @@ __all__ = [
     "Waste",
     "WasteType",
     "DigestResult",
+
+    # Nucleus
+    "Nucleus",
+    "Transcription",
 ]
