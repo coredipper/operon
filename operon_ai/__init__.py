@@ -193,9 +193,13 @@ from .providers import (
     LLMProvider,
     LLMResponse,
     ProviderConfig,
+    ToolSchema,
+    ToolCall,
+    ToolResult,
     MockProvider,
     OpenAIProvider,
     AnthropicProvider,
+    GeminiProvider,
     NucleusError,
     ProviderUnavailableError,
     QuotaExhaustedError,
@@ -340,13 +344,17 @@ __all__ = [
     "LLMProvider",
     "LLMResponse",
     "ProviderConfig",
+    "ToolSchema",
+    "ToolCall",
+    "ToolResult",
     "MockProvider",
     "OpenAIProvider",
     "AnthropicProvider",
+    "GeminiProvider",
     "NucleusError",
     "ProviderUnavailableError",
     "QuotaExhaustedError",
     "TranscriptionFailedError",
 ]
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"

@@ -10,6 +10,9 @@ from .base import (
     LLMProvider,
     LLMResponse,
     ProviderConfig,
+    ToolSchema,
+    ToolCall,
+    ToolResult,
     NucleusError,
     ProviderUnavailableError,
     QuotaExhaustedError,
@@ -18,11 +21,15 @@ from .base import (
 from .mock import MockProvider
 from .openai_provider import OpenAIProvider
 from .anthropic_provider import AnthropicProvider
+from .gemini_provider import GeminiProvider
 
 __all__ = [
     "LLMProvider",
     "LLMResponse",
     "ProviderConfig",
+    "ToolSchema",
+    "ToolCall",
+    "ToolResult",
     "NucleusError",
     "ProviderUnavailableError",
     "QuotaExhaustedError",
@@ -30,4 +37,5 @@ __all__ = [
     "MockProvider",
     "OpenAIProvider",
     "AnthropicProvider",
+    "GeminiProvider",
 ]

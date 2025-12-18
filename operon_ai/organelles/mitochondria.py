@@ -89,6 +89,7 @@ class SimpleTool:
     description: str
     func: Callable[..., Any]
     required_capabilities: set[Capability] = field(default_factory=set)
+    parameters_schema: dict = field(default_factory=lambda: {"type": "object", "properties": {}})
 
     def execute(self, *args: Any, **kwargs: Any) -> Any:
         return self.func(*args, **kwargs)
@@ -263,6 +264,7 @@ class Mitochondria:
         func: Callable,
         description: str = "",
         required_capabilities: set[Capability] | None = None,
+        parameters_schema: dict | None = None,
     ):
         """
         Convenience method to register a simple function as a tool.
@@ -272,12 +274,14 @@ class Mitochondria:
             func: The callable to register
             description: Human-readable description
             required_capabilities: Capabilities required to invoke this tool
+            parameters_schema: JSON Schema describing the function parameters
         """
         tool = SimpleTool(
             name=name,
             description=description,
             func=func,
             required_capabilities=required_capabilities or set(),
+            parameters_schema=parameters_schema or {"type": "object", "properties": {}},
         )
         self.engulf_tool(tool)
 
@@ -615,3 +619,46 @@ class Mitochondria:
                 }
             )
         return tools
+
+    def export_tool_schemas(self) -> list["ToolSchema"]:
+        """Export all registered tools as ToolSchema objects for LLM consumption."""
+        from ..providers import ToolSchema
+
+        schemas = []
+        for name, tool in self.tools.items():
+            schema = getattr(tool, "parameters_schema", {"type": "object", "properties": {}})
+            schemas.append(ToolSchema(
+                name=name,
+                description=tool.description,
+                parameters_schema=schema
+            ))
+        return schemas
+
+    def execute_tool_call(self, call: "ToolCall") -> "ToolResult":
+        """Execute a tool call from an LLM."""
+        from ..providers import ToolCall, ToolResult
+
+        if call.name not in self.tools:
+            return ToolResult(
+                call_id=call.id,
+                output=None,
+                success=False,
+                error=f"Unknown tool: {call.name}. Available: {list(self.tools.keys())}"
+            )
+
+        try:
+            tool = self.tools[call.name]
+            result = tool.execute(**call.arguments)
+            return ToolResult(
+                call_id=call.id,
+                output=str(result),
+                success=True
+            )
+        except Exception as e:
+            self._ros_accumulated += 0.1
+            return ToolResult(
+                call_id=call.id,
+                output=None,
+                success=False,
+                error=str(e)
+            )

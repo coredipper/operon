@@ -9,7 +9,7 @@ import time
 import re
 from dataclasses import dataclass, field
 
-from .base import LLMProvider, LLMResponse, ProviderConfig
+from .base import LLMProvider, LLMResponse, ProviderConfig, ToolSchema, ToolCall
 
 
 @dataclass
@@ -83,3 +83,44 @@ class MockProvider:
             return "SAFE: This operation appears safe to proceed."
 
         return self.default_response
+
+    def complete_with_tools(
+        self,
+        prompt: str,
+        tools: list[ToolSchema],
+        config: ProviderConfig | None = None,
+    ) -> tuple[LLMResponse, list[ToolCall]]:
+        """Mock tool calling - returns tool calls for tool-related prompts."""
+        config = config or ProviderConfig()
+        prompt_lower = prompt.lower()
+
+        tool_calls = []
+
+        # Check if prompt suggests using a tool
+        for tool in tools:
+            tool_name_lower = tool.name.lower()
+            # Simple heuristic: if tool name appears in prompt, call that tool
+            if tool_name_lower in prompt_lower:
+                tool_calls.append(ToolCall(
+                    id=f"mock_call_{tool.name}",
+                    name=tool.name,
+                    arguments={"input": prompt},
+                ))
+                break  # Only one tool call per mock response
+
+        if tool_calls:
+            content = ""  # When making tool calls, content is typically empty
+        else:
+            # No tool call, generate normal response
+            response = self.complete(prompt, config)
+            return response, []
+
+        return (
+            LLMResponse(
+                content=content,
+                model="mock",
+                tokens_used=len(prompt.split()),
+                latency_ms=1.0,
+            ),
+            tool_calls,
+        )
