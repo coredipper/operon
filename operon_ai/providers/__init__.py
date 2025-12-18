@@ -17,6 +17,7 @@ from .base import (
 )
 from .mock import MockProvider
 from .openai_provider import OpenAIProvider
+from .anthropic_provider import AnthropicProvider
 
 __all__ = [
     "LLMProvider",
@@ -28,4 +29,5 @@ __all__ = [
     "TranscriptionFailedError",
     "MockProvider",
     "OpenAIProvider",
+    "AnthropicProvider",
 ]

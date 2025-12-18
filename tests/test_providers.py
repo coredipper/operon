@@ -108,3 +108,42 @@ class TestOpenAIProvider:
         provider = OpenAIProvider(api_key="sk-explicit")
         assert provider._api_key == "sk-explicit"
         assert provider.is_available() is True
+
+
+class TestAnthropicProvider:
+    """Test Anthropic provider implementation."""
+
+    def test_anthropic_provider_name(self):
+        """AnthropicProvider should identify itself."""
+        with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}):
+            from operon_ai.providers import AnthropicProvider
+            provider = AnthropicProvider()
+            assert provider.name == "anthropic"
+
+    def test_anthropic_provider_not_available_without_key(self):
+        """AnthropicProvider should not be available without API key."""
+        with patch.dict(os.environ, {}, clear=True):
+            os.environ.pop("ANTHROPIC_API_KEY", None)
+            from operon_ai.providers import AnthropicProvider
+            provider = AnthropicProvider()
+            assert provider.is_available() is False
+
+    def test_anthropic_provider_available_with_key(self):
+        """AnthropicProvider should be available with API key."""
+        with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}):
+            from operon_ai.providers import AnthropicProvider
+            provider = AnthropicProvider()
+            assert provider.is_available() is True
+
+    def test_anthropic_provider_accepts_explicit_key(self):
+        """AnthropicProvider should accept explicit API key."""
+        from operon_ai.providers import AnthropicProvider
+        provider = AnthropicProvider(api_key="sk-ant-explicit")
+        assert provider._api_key == "sk-ant-explicit"
+        assert provider.is_available() is True
+
+    def test_anthropic_provider_default_model(self):
+        """AnthropicProvider should use claude-sonnet-4-20250514 as default model."""
+        from operon_ai.providers import AnthropicProvider
+        provider = AnthropicProvider(api_key="test-key")
+        assert provider.model == "claude-sonnet-4-20250514"
