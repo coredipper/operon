@@ -21,7 +21,7 @@ class MockProvider:
     to pattern-matched defaults when no real provider is available.
     """
     responses: dict[str, str] = field(default_factory=dict)
-    default_response: str = "This is a mock response. Set ANTHROPIC_API_KEY or OPENAI_API_KEY for real LLM calls."
+    default_response: str = "This is a mock response. Set ANTHROPIC_API_KEY, OPENAI_API_KEY, or GEMINI_API_KEY for real LLM calls."
     latency_ms: float = 10.0  # Simulated latency
 
     @property

@@ -263,7 +263,7 @@ Swappable LLM backends with a unified interface:
 |----------|---------------|---------------------|----------|
 | `AnthropicProvider` | claude-sonnet-4-20250514 | `ANTHROPIC_API_KEY` | Tool use, streaming |
 | `OpenAIProvider` | gpt-4o-mini | `OPENAI_API_KEY` | Tool use, JSON mode |
-| `GeminiProvider` | gemini-2.0-flash | `GEMINI_API_KEY` | Native function calling |
+| `GeminiProvider` | gemini-3.0-flash | `GEMINI_API_KEY` | Native function calling |
 | `MockProvider` | mock | (none) | Testing, deterministic responses |
 
 ```python
@@ -276,7 +276,7 @@ from operon_ai import (
 )
 
 # Explicit provider selection
-nucleus = Nucleus(provider=GeminiProvider(model="gemini-2.0-flash"))
+nucleus = Nucleus(provider=GeminiProvider(model="gemini-3.0-flash"))
 
 # Or use auto-detection (checks env vars in order)
 nucleus = Nucleus()  # Anthropic → OpenAI → Gemini → Mock

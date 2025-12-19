@@ -75,7 +75,8 @@ class Nucleus:
         Priority:
         1. Anthropic (if ANTHROPIC_API_KEY set)
         2. OpenAI (if OPENAI_API_KEY set)
-        3. MockProvider (fallback with warning)
+        3. Gemini (if GEMINI_API_KEY set)
+        4. MockProvider (fallback with warning)
         """
         # Try Anthropic first
         if os.environ.get("ANTHROPIC_API_KEY"):
@@ -97,10 +98,20 @@ class Nucleus:
             except ImportError:
                 pass
 
+        # Try Gemini third
+        if os.environ.get("GEMINI_API_KEY"):
+            try:
+                from ..providers import GeminiProvider
+                provider = GeminiProvider()
+                if provider.is_available():
+                    return provider
+            except ImportError:
+                pass
+
         # Fall back to mock with warning
         warnings.warn(
             "No LLM API keys found. Using MockProvider. "
-            "Set ANTHROPIC_API_KEY or OPENAI_API_KEY for real LLM calls.",
+            "Set ANTHROPIC_API_KEY, OPENAI_API_KEY, or GEMINI_API_KEY for real LLM calls.",
             UserWarning,
         )
         return MockProvider()
