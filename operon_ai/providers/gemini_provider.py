@@ -26,7 +26,7 @@ class GeminiProvider:
         pip install google-genai
         GEMINI_API_KEY environment variable
     """
-    model: str = "gemini-3.0-flash"
+    model: str = "gemini-flash-latest"
     _client: object | None = None
 
     def __post_init__(self):
