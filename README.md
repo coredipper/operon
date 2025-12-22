@@ -13,6 +13,15 @@
 
 ---
 
+## Contents
+
+- [The Problem: Fragile Agents](#-the-problem-fragile-agents)
+- [Core Organelles](#-core-organelles)
+- [Installation](#-installation)
+- [Examples](#-examples)
+- [Theoretical Background](#-theoretical-background)
+- [Architecture](#-architecture)
+
 ## 🦠 The Problem: Fragile Agents
 
 Most agentic systems today are built like **cancerous cells**: they lack negative feedback loops, suffer from unchecked recursion (infinite loops), and are easily hijacked by foreign signals (prompt injection). We try to fix this with "Prompt Engineering"—optimizing the internal state.
@@ -569,6 +578,14 @@ Explore the `examples/` directory for runnable demonstrations:
 | [`20_llm_memory_chat.py`](examples/20_llm_memory_chat.py) | Nucleus+Histone | Conversational AI with epigenetic memory |
 | [`21_llm_living_cell.py`](examples/21_llm_living_cell.py) | **Full Cell** | Complete lifecycle with LLM, memory, and aging |
 | [`22_llm_tool_use.py`](examples/22_llm_tool_use.py) | Nucleus+Mitochondria | LLM function calling with tool integration |
+
+### Complex Systems
+
+| Example | System | Description |
+|---------|--------|-------------|
+| [`23_resilient_incident_response.py`](examples/23_resilient_incident_response.py) | Multi-organelle | Incident triage, planning, coordinated execution, and quality gating |
+| [`24_governed_release_train.py`](examples/24_governed_release_train.py) | Governance | Quorum + CFFL + feedback control with coordinated rollout |
+| [`25_resource_allocation_tradeoffs.py`](examples/25_resource_allocation_tradeoffs.py) | Resource Allocation | Nutrient, machinery, and energy budgeting with trade-offs |
 
 Run any example:
 
