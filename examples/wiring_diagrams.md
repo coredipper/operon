@@ -29,6 +29,11 @@ Each arrow implies a typed connection with integrity constraints.
 - [Example 32: Wiring Diagram Execution](wiring_diagrams/example32_execution.md)
 - [Example 33: Wiring Diagram Execution - Failures](wiring_diagrams/example33_execution_failures.md)
 
+### Nucleus + LLM
+
+- [Example 34: Nucleus LLM Integration](wiring_diagrams/example34_nucleus_llm.md)
+- [Example 35: Nucleus LLM Execution](wiring_diagrams/example35_nucleus_execution.md)
+
 ## Example 17: Typed Wiring (Integrity + Capabilities)
 
 ```
@@ -129,6 +134,37 @@ Composition:
 [user] --text(U)--> [validator] --text(V)--> [planner] --plan(V)--+
                                                                  +--> [tool_builder] --toolcall(V)--> [sink]
                                                                  +--> [policy] --approval(T)--------> [sink]
+```
+
+## Example 34: Nucleus LLM Integration
+
+```
+[user] --text(U)--> [membrane] --text(U)--> [sanitizer] --text(V)--> [prompt_assembler]
+[sanitizer] --text(V)--> [context_retriever] --json(V)--> [prompt_assembler]
+[genome_policy] --json(T)--> [prompt_assembler]
+[tool_registry] --json(T)--> [prompt_assembler]
+
+[prompt_assembler] --text(V)--> [nucleus_llm] --json(U)--> [plan_validator] --json(V)--+
+                                                                                      +--> [policy_gate] --approval(T)--> [executor]
+                                                                                      +--> [tool_builder] --toolcall(V)--> [executor]
+[nucleus_llm] --text(U)--> [response_sanitizer] --text(V)--> [response_merger] <--json(T)-- [executor]
+
+[executor] --json(T)--> [memory_writer] --json(T)--> [episodic_store]
+[response_merger] --text(V)--> [outbox]
+```
+
+## Example 35: Nucleus LLM Execution
+
+```
+[user] --text(U)--> [membrane] --text(U)--> [sanitizer] --text(V)--> [prompt_assembler] --text(V)--> [nucleus_llm]
+[sanitizer] --text(V)--> [context_retriever] --json(V)--> [prompt_assembler]
+[genome_policy] --json(T)--> [prompt_assembler]
+[tool_registry] --json(T)--> [prompt_assembler]
+
+[nucleus_llm] --json(U)--> [plan_validator] --json(V)--+--> [policy_gate] --approval(T)--> [executor]
+                                                      +--> [tool_builder] --toolcall(V)--> [executor]
+[nucleus_llm] --text(U)--> [response_sanitizer] --text(V)--> [response_merger] <--json(T)-- [executor]
+[response_merger] --text(V)--> [outbox]
 ```
 
 Legend: U = UNTRUSTED, V = VALIDATED, T = TRUSTED.

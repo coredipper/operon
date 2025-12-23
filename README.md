@@ -576,7 +576,7 @@ Explore the `examples/` directory for runnable demonstrations:
 | [`31_wiring_diagram_composed_effects.py`](examples/31_wiring_diagram_composed_effects.py) | WAgent | Composed system with net + filesystem effect aggregation |
 | [`32_wiring_diagram_execution.py`](examples/32_wiring_diagram_execution.py) | WAgent | Minimal runtime executor for typed wiring diagrams |
 | [`33_wiring_diagram_execution_failures.py`](examples/33_wiring_diagram_execution_failures.py) | WAgent | Runtime failure cases (missing approval, type mismatch) |
-| [`wiring_diagrams.md`](examples/wiring_diagrams.md) | WAgent | ASCII + Mermaid wiring diagrams for examples 17, 26-33 |
+| [`wiring_diagrams.md`](examples/wiring_diagrams.md) | WAgent | ASCII + Mermaid wiring diagrams for examples 17, 26-35 |
 
 ### LLM Integration
 
