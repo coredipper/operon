@@ -1,28 +1,29 @@
 #!/usr/bin/env python3
 """
-Example 29: Wiring Diagram - Safe Tool Calls
-============================================
+Example 32: Wiring Diagram Execution
+====================================
 
-Demonstrates a wiring diagram for approval-gated tool usage:
-- Untrusted input must be validated before planning
-- Plan JSON feeds tool builder and approval policy
-- Sink requires validated tool call + trusted approval
-- Capability aggregation for effectful tools
-
-This does not execute anything; it only validates wiring constraints.
+Shows a minimal runtime executor that runs a typed wiring diagram
+with concrete module handlers.
 
 Mermaid diagram:
-    examples/wiring_diagrams/example29_safe_tool_calls.md
+    examples/wiring_diagrams/example32_execution.md
 """
 
+from __future__ import annotations
+
+import hashlib
+import json
+
 from operon_ai import (
+    ApprovalToken,
     Capability,
     DataType,
+    DiagramExecutor,
     IntegrityLabel,
     ModuleSpec,
     PortType,
     WiringDiagram,
-    WiringError,
 )
 
 
@@ -35,7 +36,6 @@ def main() -> None:
             outputs={"request": PortType(DataType.TEXT, IntegrityLabel.UNTRUSTED)},
         )
     )
-
     diagram.add_module(
         ModuleSpec(
             name="validator",
@@ -43,7 +43,6 @@ def main() -> None:
             outputs={"clean": PortType(DataType.TEXT, IntegrityLabel.VALIDATED)},
         )
     )
-
     diagram.add_module(
         ModuleSpec(
             name="planner",
@@ -51,16 +50,14 @@ def main() -> None:
             outputs={"plan": PortType(DataType.JSON, IntegrityLabel.VALIDATED)},
         )
     )
-
     diagram.add_module(
         ModuleSpec(
             name="tool_builder",
             inputs={"plan": PortType(DataType.JSON, IntegrityLabel.VALIDATED)},
             outputs={"action": PortType(DataType.TOOL_CALL, IntegrityLabel.VALIDATED)},
-            capabilities={Capability.NET},
+            capabilities={Capability.WRITE_FS},
         )
     )
-
     diagram.add_module(
         ModuleSpec(
             name="policy",
@@ -68,7 +65,6 @@ def main() -> None:
             outputs={"approval": PortType(DataType.APPROVAL, IntegrityLabel.TRUSTED)},
         )
     )
-
     diagram.add_module(
         ModuleSpec(
             name="sink",
@@ -80,23 +76,63 @@ def main() -> None:
     )
 
     diagram.connect("user", "request", "validator", "raw")
-
-    # Demonstrate a type mismatch by wiring TEXT directly into a JSON plan input.
-    try:
-        diagram.connect("validator", "clean", "tool_builder", "plan")
-    except WiringError as exc:
-        print(f"Expected wiring error: {exc}")
-
     diagram.connect("validator", "clean", "planner", "prompt")
     diagram.connect("planner", "plan", "tool_builder", "plan")
     diagram.connect("planner", "plan", "policy", "plan")
-
     diagram.connect("tool_builder", "action", "sink", "action")
     diagram.connect("policy", "approval", "sink", "approval")
 
-    print("✅ Wiring accepted")
-    required = sorted(diagram.required_capabilities(), key=lambda c: c.value)
-    print("Required capabilities:", [cap.value for cap in required])
+    executor = DiagramExecutor(diagram)
+
+    executor.register_module("user", lambda _inputs: {
+        "request": "Rotate service logs and archive to /var/logs",
+    })
+
+    executor.register_module("validator", lambda inputs: {
+        "clean": inputs["raw"].value.strip(),
+    })
+
+    def plan_handler(inputs):
+        return {
+            "plan": {
+                "task": inputs["prompt"].value,
+                "steps": ["precheck", "execute", "verify"],
+            }
+        }
+
+    executor.register_module("planner", plan_handler)
+
+    executor.register_module("tool_builder", lambda inputs: {
+        "action": {
+            "tool": "runbook",
+            "args": inputs["plan"].value,
+        }
+    })
+
+    def policy_handler(inputs):
+        payload = json.dumps(inputs["plan"].value, sort_keys=True)
+        request_hash = hashlib.sha256(payload.encode()).hexdigest()[:12]
+        return {
+            "approval": ApprovalToken(
+                request_hash=request_hash,
+                issuer="policy",
+                reason="validated plan",
+            )
+        }
+
+    executor.register_module("policy", policy_handler)
+
+    def sink_handler(inputs):
+        action = inputs["action"].value
+        approval = inputs["approval"].value
+        print("Sink received action:", action)
+        print("Approval token:", approval.request_hash, approval.issuer)
+        return {}
+
+    executor.register_module("sink", sink_handler)
+
+    report = executor.execute()
+    print("Execution order:", " -> ".join(report.execution_order))
 
 
 if __name__ == "__main__":

@@ -59,6 +59,12 @@ from .core.wagent import (
     Wire,
     WiringDiagram,
 )
+from .core.wiring_runtime import (
+    TypedValue,
+    ModuleExecution,
+    ExecutionReport,
+    DiagramExecutor,
+)
 
 # =============================================================================
 # State Management
@@ -229,6 +235,10 @@ __all__ = [
     "ModuleSpec",
     "Wire",
     "WiringDiagram",
+    "TypedValue",
+    "ModuleExecution",
+    "ExecutionReport",
+    "DiagramExecutor",
 
     # State - Metabolism
     "ATP_Store",

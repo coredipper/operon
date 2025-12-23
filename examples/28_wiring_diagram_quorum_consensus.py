@@ -10,6 +10,9 @@ Demonstrates a wiring diagram for multi-agent consensus:
 - Capability aggregation across voters/executors
 
 This does not execute anything; it only validates wiring constraints.
+
+Mermaid diagram:
+    examples/wiring_diagrams/example28_quorum_consensus.md
 """
 
 from operon_ai import (

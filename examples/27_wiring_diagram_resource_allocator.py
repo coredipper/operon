@@ -11,6 +11,9 @@ Demonstrates a resource allocation wiring diagram with:
 - Capability aggregation across effectful modules
 
 This does not execute anything; it only validates wiring constraints.
+
+Mermaid diagram:
+    examples/wiring_diagrams/example27_resource_allocator.md
 """
 
 from operon_ai import (

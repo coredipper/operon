@@ -10,6 +10,9 @@ Shows rigorous WAgent wiring constraints:
 - Capability aggregation across modules
 
 This does not execute anything; it only validates wiring constraints.
+
+Mermaid diagram:
+    examples/wiring_diagrams/example26_guarded_toolchain.md
 """
 
 from operon_ai import (

@@ -8,6 +8,9 @@ Demonstrates a lightweight, runtime-checkable version of the paper's WAgent idea
 - Modules carry capability/effect tags (least-privilege bookkeeping)
 
 This does not execute anything; it only validates wiring constraints.
+
+Mermaid diagram:
+    examples/wiring_diagrams/example17_typed_wiring.md
 """
 
 from operon_ai import (
@@ -94,4 +97,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

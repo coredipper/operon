@@ -573,6 +573,10 @@ Explore the `examples/` directory for runnable demonstrations:
 | [`28_wiring_diagram_quorum_consensus.py`](examples/28_wiring_diagram_quorum_consensus.py) | WAgent | Multi-agent votes aggregated into a trusted approval token |
 | [`29_wiring_diagram_safe_tool_calls.py`](examples/29_wiring_diagram_safe_tool_calls.py) | WAgent | Approval-gated tool calls with validated planning |
 | [`30_wiring_diagram_composed_system.py`](examples/30_wiring_diagram_composed_system.py) | WAgent | Composition via namespaced sub-diagrams and cross-links |
+| [`31_wiring_diagram_composed_effects.py`](examples/31_wiring_diagram_composed_effects.py) | WAgent | Composed system with net + filesystem effect aggregation |
+| [`32_wiring_diagram_execution.py`](examples/32_wiring_diagram_execution.py) | WAgent | Minimal runtime executor for typed wiring diagrams |
+| [`33_wiring_diagram_execution_failures.py`](examples/33_wiring_diagram_execution_failures.py) | WAgent | Runtime failure cases (missing approval, type mismatch) |
+| [`wiring_diagrams.md`](examples/wiring_diagrams.md) | WAgent | ASCII + Mermaid wiring diagrams for examples 17, 26-33 |
 
 ### LLM Integration
 

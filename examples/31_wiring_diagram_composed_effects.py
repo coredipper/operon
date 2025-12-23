@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """
-Example 30: Wiring Diagram - Composed System
-============================================
+Example 31: Wiring Diagram - Composed Effects
+=============================================
 
-Demonstrates composing two wiring diagrams into a larger system:
-- Ingress pipeline: user -> membrane -> sanitizer
-- Execution pipeline: planner -> tool_builder + policy -> sink
-- Composition with namespacing and cross-diagram connections
+Demonstrates composition with multiple effectful tool paths:
+- Ingress pipeline produces validated prompts
+- Execution pipeline fans out to net + filesystem tool builders
+- Shared approval gate required by all sinks
+- Capability aggregation shows combined effects
 
 This does not execute anything; it only validates wiring constraints.
 
 Mermaid diagram:
-    examples/wiring_diagrams/example30_composed_system.md
+    examples/wiring_diagrams/example31_composed_effects.md
 """
 
 from operon_ai import (
@@ -68,10 +69,18 @@ def build_execution_diagram() -> WiringDiagram:
     )
     diagram.add_module(
         ModuleSpec(
-            name="tool_builder",
+            name="tool_builder_write",
             inputs={"plan": PortType(DataType.JSON, IntegrityLabel.VALIDATED)},
             outputs={"action": PortType(DataType.TOOL_CALL, IntegrityLabel.VALIDATED)},
             capabilities={Capability.WRITE_FS},
+        )
+    )
+    diagram.add_module(
+        ModuleSpec(
+            name="tool_builder_net",
+            inputs={"plan": PortType(DataType.JSON, IntegrityLabel.VALIDATED)},
+            outputs={"action": PortType(DataType.TOOL_CALL, IntegrityLabel.VALIDATED)},
+            capabilities={Capability.NET},
         )
     )
     diagram.add_module(
@@ -81,9 +90,19 @@ def build_execution_diagram() -> WiringDiagram:
             outputs={"approval": PortType(DataType.APPROVAL, IntegrityLabel.TRUSTED)},
         )
     )
+
     diagram.add_module(
         ModuleSpec(
-            name="sink",
+            name="write_sink",
+            inputs={
+                "action": PortType(DataType.TOOL_CALL, IntegrityLabel.VALIDATED),
+                "approval": PortType(DataType.APPROVAL, IntegrityLabel.TRUSTED),
+            },
+        )
+    )
+    diagram.add_module(
+        ModuleSpec(
+            name="net_sink",
             inputs={
                 "action": PortType(DataType.TOOL_CALL, IntegrityLabel.VALIDATED),
                 "approval": PortType(DataType.APPROVAL, IntegrityLabel.TRUSTED),
@@ -91,10 +110,14 @@ def build_execution_diagram() -> WiringDiagram:
         )
     )
 
-    diagram.connect("planner", "plan", "tool_builder", "plan")
+    diagram.connect("planner", "plan", "tool_builder_write", "plan")
+    diagram.connect("planner", "plan", "tool_builder_net", "plan")
     diagram.connect("planner", "plan", "policy", "plan")
-    diagram.connect("tool_builder", "action", "sink", "action")
-    diagram.connect("policy", "approval", "sink", "approval")
+
+    diagram.connect("tool_builder_write", "action", "write_sink", "action")
+    diagram.connect("tool_builder_net", "action", "net_sink", "action")
+    diagram.connect("policy", "approval", "write_sink", "approval")
+    diagram.connect("policy", "approval", "net_sink", "approval")
 
     return diagram
 
@@ -129,13 +152,11 @@ def main() -> None:
     add_diagram(composed, ingress, "ingress.")
     add_diagram(composed, execution, "exec.")
 
-    # Demonstrate a failed cross-diagram connection (untrusted -> validated).
     try:
         composed.connect("ingress.user", "request", "exec.planner", "prompt")
     except WiringError as exc:
         print(f"Expected wiring error: {exc}")
 
-    # Correct wiring using the validated sanitizer output.
     composed.connect("ingress.sanitizer", "clean", "exec.planner", "prompt")
 
     print("✅ Wiring accepted")
