@@ -568,6 +568,11 @@ Explore the `examples/` directory for runnable demonstrations:
 | [`15_genome_telomere_lifecycle.py`](examples/15_genome_telomere_lifecycle.py) | Genome+Telomere | Immutable config, gene expression, lifecycle management |
 | [`16_network_topologies.py`](examples/16_network_topologies.py) | Topologies | Cascade, Oscillator, enhanced QuorumSensing |
 | [`17_wagent_typed_wiring.py`](examples/17_wagent_typed_wiring.py) | WAgent | Typed wiring checker (integrity + capabilities) |
+| [`26_wiring_diagram_guarded_toolchain.py`](examples/26_wiring_diagram_guarded_toolchain.py) | WAgent | Integrity upgrades, adapters, and approval-gated tool wiring |
+| [`27_wiring_diagram_resource_allocator.py`](examples/27_wiring_diagram_resource_allocator.py) | WAgent | Resource-budget wiring with validation, fanout, and approvals |
+| [`28_wiring_diagram_quorum_consensus.py`](examples/28_wiring_diagram_quorum_consensus.py) | WAgent | Multi-agent votes aggregated into a trusted approval token |
+| [`29_wiring_diagram_safe_tool_calls.py`](examples/29_wiring_diagram_safe_tool_calls.py) | WAgent | Approval-gated tool calls with validated planning |
+| [`30_wiring_diagram_composed_system.py`](examples/30_wiring_diagram_composed_system.py) | WAgent | Composition via namespaced sub-diagrams and cross-links |
 
 ### LLM Integration
 

@@ -134,6 +134,8 @@ def simulate_scenario(scenario: Scenario) -> None:
         silent=True,
     )
 
+    deficit_streak = 0
+
     for cycle in range(1, scenario.cycles + 1):
         print(f"\nCycle {cycle}")
         print("-" * 60)
@@ -176,8 +178,13 @@ def simulate_scenario(scenario: Scenario) -> None:
 
         state = energy_store.get_state()
 
+        if coverage < 1.0:
+            deficit_streak += 1
+        else:
+            deficit_streak = 0
+
         energy_ratio = energy_store.atp / max(1, energy_store.max_atp)
-        if energy_ratio < 0.2:
+        if deficit_streak >= 2 and energy_ratio < 0.3:
             lysosome.ingest(
                 Waste(
                     waste_type=WasteType.ORPHANED_RESOURCE,
