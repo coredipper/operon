@@ -13,6 +13,7 @@ Each arrow implies a typed connection with integrity constraints.
 ### Resource Allocation
 
 - [Example 27: Resource Allocator](wiring_diagrams/example27_resource_allocator.md)
+- [Example 36: Multi-Gemini Resource Allocation](wiring_diagrams/example36_multi_gemini_allocation.md)
 
 ### Consensus and Tooling
 
@@ -165,6 +166,20 @@ Composition:
                                                       +--> [tool_builder] --toolcall(V)--> [executor]
 [nucleus_llm] --text(U)--> [response_sanitizer] --text(V)--> [response_merger] <--json(T)-- [executor]
 [response_merger] --text(V)--> [outbox]
+```
+
+## Example 36: Multi-Gemini Resource Allocation
+
+```
+[user] --text(U)--> [membrane] --text(U)--> [sanitizer] --text(V)
+[sanitizer] --text(V)--> [budget_allocator]
+[sanitizer] --text(V)--> [prompt_fast]
+[sanitizer] --text(V)--> [prompt_deep]
+[sanitizer] --text(V)--> [prompt_safety]
+[resource_monitor] --json(T)--> [budget_allocator]
+[budget_allocator] --json(T)--> [prompt_fast] --text(V)--> [nucleus_fast] --json(U)--+
+[budget_allocator] --json(T)--> [prompt_deep] --text(V)--> [nucleus_deep] --json(U)--+--> [plan_aggregator] --json(V)--> [policy_gate] --approval(T)--> [response_builder] --text(V)--> [outbox]
+[budget_allocator] --json(T)--> [prompt_safety] --text(V)--> [nucleus_safety] --json(U)--+
 ```
 
 Legend: U = UNTRUSTED, V = VALIDATED, T = TRUSTED.
