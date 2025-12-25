@@ -177,7 +177,10 @@ The structure map $\alpha: S \to P(S) + \bot$ is defined as a \textbf{partial ma
 \end{equation}
 \end{definition}
 
+This structure maps to the energetics of transcriptional elongation. A gene (Agent) cannot express its protein (Action) instantaneously; it must transcribe an mRNA sequence (Chain of Thought) nucleotide by nucleotide. This process consumes a distinct amount of chemical energy (NTPs) per step. The Metabolic Coalgebra models this dependency: if the cellular energy budget is exhausted, transcription stalls (Ischemia), and the gene fails to execute its function, regardless of its regulatory logic.
+
 This formalism establishes that ``Ischemia'' (Token Starvation) is not merely a runtime error, but a reachable terminal state $\bot$ in the system's dynamics. This mirrors the biological mechanism where failure to meet metabolic costs triggers p53-mediated apoptosis \cite{aubrey2018p53}.
+
 
 \begin{theorem}[The Metabolic Bound]
 For any agentic topology $T$ composed of $N$ agents with total budget $R_{total}$, the system is guaranteed to halt. The ``Halting Problem'' is decidable for Metabolic Coalgebras because the resource state $r$ is strictly decreasing for every non-identity morphism \cite{boreale2023weighted}.
