@@ -50,3 +50,28 @@ python examples/01_code_review_bot.py
 # LLM examples (requires API key)
 ANTHROPIC_API_KEY=sk-... python examples/19_llm_code_assistant.py --demo
 ```
+
+## Naming Conventions
+
+### Method Names
+
+| Purpose | Preferred Name | Alternatives (avoid) |
+|---------|---------------|---------------------|
+| Energy consumption | `consume()` | metabolize, drain |
+| Signal processing | `process()` | handle, execute |
+| Template creation | `create_template()` | add_template, register_template |
+| Output validation | `fold()` | validate, parse |
+
+### Callback Names
+
+Use `on_<event>` pattern:
+- `on_state_change` - state transitions
+- `on_error` - error events
+- `on_complete` - completion events
+
+### Variable Names
+
+- `result` - operation outcomes
+- `response` - LLM responses
+- `signal` - input signals
+- `vitals` - health status
