@@ -18,7 +18,10 @@ Topology:
                  --> [Security Review] --+--> [AND Gate] --> Output
 """
 
-from operon_ai import ATP_Store, CoherentFeedForwardLoop
+from operon_ai import (
+    ATP_Store,
+    CoherentFeedForwardLoop,
+)
 
 
 def main():

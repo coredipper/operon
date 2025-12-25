@@ -17,7 +17,12 @@ Biological Analogy:
 - Rate limiting is like the inflammatory response slowing pathogen spread
 """
 
-from operon_ai import Signal, Membrane, ThreatLevel, ThreatSignature
+from operon_ai import (
+    Membrane,
+    Signal,
+    ThreatLevel,
+    ThreatSignature,
+)
 
 
 def main():

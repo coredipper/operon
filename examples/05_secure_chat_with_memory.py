@@ -25,7 +25,11 @@ For production systems, see Examples 12 and 21 which demonstrate
 building cells from individual organelles for more control.
 """
 
-from operon_ai import BioAgent, Signal, ATP_Store
+from operon_ai import (
+    ATP_Store,
+    BioAgent,
+    Signal,
+)
 from operon_ai.organelles.membrane import Membrane
 from operon_ai.state.histone import HistoneStore
 
