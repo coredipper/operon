@@ -1,28 +1,26 @@
 """
-Example 18: LLM Code Assistant with Safety Guardrails
+Example 19: LLM Code Assistant with Safety Guardrails
 =====================================================
 
 Demonstrates real LLM integration with the Coherent Feed-Forward Loop pattern.
-The code assistant uses TWO separate LLM calls:
-1. Code Generator - writes code based on the request
-2. Code Reviewer - reviews the generated code for safety
+The code assistant uses TWO separate LLM calls where both must approve before
+output is returned.
 
-Both must approve before output is returned.
-
-Key demonstrations:
+Key concepts:
 - Real LLM calls via Nucleus organelle
 - Membrane blocking injection attacks
 - Chaperone validating structured output
-- Graceful fallback to MockProvider when no API keys
 - Two-phase workflow (generate → review)
+- Graceful fallback to MockProvider when no API keys
+- ATP budget management for LLM operations
 
-Environment Variables:
-    ANTHROPIC_API_KEY: For Claude models (preferred)
-    OPENAI_API_KEY: For GPT models (fallback)
+Prerequisites:
+- Basic understanding of LLM integration
+- Optional: ANTHROPIC_API_KEY or OPENAI_API_KEY environment variable
 
 Usage:
-    python examples/18_llm_code_assistant.py --demo    # Interactive mode
-    python examples/18_llm_code_assistant.py           # Smoke test mode
+    python examples/19_llm_code_assistant.py           # Smoke test mode
+    python examples/19_llm_code_assistant.py --demo    # Interactive mode
 """
 
 import sys
