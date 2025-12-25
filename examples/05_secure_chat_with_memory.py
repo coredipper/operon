@@ -23,6 +23,10 @@ Topology:
 Note: BioAgent is a simplified wrapper for learning purposes.
 For production systems, see Examples 12 and 21 which demonstrate
 building cells from individual organelles for more control.
+
+See Also:
+- Example 07 for advanced membrane defense patterns
+- Example 14 for detailed epigenetic memory usage
 """
 
 from operon_ai import (

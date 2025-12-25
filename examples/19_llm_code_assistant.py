@@ -21,6 +21,10 @@ Prerequisites:
 Usage:
     python examples/19_llm_code_assistant.py           # Smoke test mode
     python examples/19_llm_code_assistant.py --demo    # Interactive mode
+
+See Also:
+- Example 12 for the non-LLM version of cell architecture
+- Example 21 for full lifecycle simulation with aging
 """
 
 import sys

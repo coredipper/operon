@@ -15,6 +15,10 @@ self-regulating AI systems that handle the full lifecycle:
 Input -> Processing -> Output -> Cleanup
 
 Think of this as a complete "cell cycle" for AI operations.
+
+See Also:
+- Examples 19-21 for LLM-powered versions of this cell
+- Examples 23-24 for production-grade patterns with error handling
 """
 
 from pydantic import BaseModel
