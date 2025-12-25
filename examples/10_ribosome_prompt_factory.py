@@ -163,31 +163,31 @@ def main():
 
     # Register base templates
     ribosome.create_template(
-        sequence="You are a {{role}} AI assistant.",
         name="system_base",
+        sequence="You are a {{role}} AI assistant.",
         description="Base system prompt"
     )
 
     ribosome.create_template(
-        sequence="User: {{user}}\nQuery: {{query}}",
         name="user_message",
+        sequence="User: {{user}}\nQuery: {{query}}",
         description="Standard user message format"
     )
 
     ribosome.create_template(
-        sequence="Please respond in {{format|text}} format.",
         name="format_instruction",
+        sequence="Please respond in {{format|text}} format.",
         description="Response format instruction"
     )
 
     # Compose a full prompt using includes
     ribosome.create_template(
+        name="full_prompt",
         sequence="""{{>system_base}}
 
 {{>format_instruction}}
 
 {{>user_message}}""",
-        name="full_prompt",
         description="Complete prompt with all components"
     )
 

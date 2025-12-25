@@ -95,17 +95,17 @@ class Cell:
     def _setup_templates(self):
         """Register prompt templates in the ribosome."""
         self.ribosome.create_template(
-            sequence="Calculate: {{expression}}\nProvide result as JSON.",
             name="calc_prompt",
+            sequence="Calculate: {{expression}}\nProvide result as JSON.",
             description="Calculation request template"
         )
 
         self.ribosome.create_template(
+            name="query_prompt",
             sequence="""System: You are a helpful assistant.
 Query: {{query}}
 {{#if context}}Context: {{context}}{{/if}}
 Respond with JSON: {"query": "...", "answer": "...", "confidence": 0.0-1.0}""",
-            name="query_prompt",
             description="General query template"
         )
 
