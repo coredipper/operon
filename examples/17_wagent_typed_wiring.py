@@ -2,14 +2,22 @@
 Example 17: WAgent Typed Wiring (Integrity Labels + Capabilities)
 =================================================================
 
-Demonstrates a lightweight, runtime-checkable version of the paper's WAgent idea:
+Demonstrates a lightweight, runtime-checkable version of the paper's WAgent idea.
+This does not execute anything; it only validates wiring constraints.
+
+Key concepts:
 - Ports have a (DataType, IntegrityLabel)
 - Wires must match types and preserve integrity (UNTRUSTED ≤ VALIDATED ≤ TRUSTED)
 - Modules carry capability/effect tags (least-privilege bookkeeping)
+- Runtime verification of type safety and information flow
 
-This does not execute anything; it only validates wiring constraints.
+Prerequisites:
+- None (introductory example)
 
-Mermaid diagram:
+Usage:
+    python examples/17_wagent_typed_wiring.py
+
+Related resources:
     examples/wiring_diagrams/example17_typed_wiring.md
 """
 

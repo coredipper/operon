@@ -17,8 +17,8 @@ that can be converted to ATP through oxidative phosphorylation.
 import time
 from operon_ai.state import (
     ATP_Store,
-    MetabolicState,
     EnergyType,
+    MetabolicState,
 )
 
 

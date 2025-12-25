@@ -19,9 +19,21 @@ Topology:
                         YES: Return result
                                             |
                         NO: Add to Histone memory, return error
+
+Note: BioAgent is a simplified wrapper for learning purposes.
+For production systems, see Examples 12 and 21 which demonstrate
+building cells from individual organelles for more control.
+
+See Also:
+- Example 07 for advanced membrane defense patterns
+- Example 14 for detailed epigenetic memory usage
 """
 
-from operon_ai import BioAgent, Signal, ATP_Store
+from operon_ai import (
+    ATP_Store,
+    BioAgent,
+    Signal,
+)
 from operon_ai.organelles.membrane import Membrane
 from operon_ai.state.histone import HistoneStore
 

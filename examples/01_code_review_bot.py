@@ -18,57 +18,88 @@ Topology:
                  --> [Security Review] --+--> [AND Gate] --> Output
 """
 
-from operon_ai import ATP_Store, CoherentFeedForwardLoop
+from operon_ai import (
+    ATP_Store,
+    CoherentFeedForwardLoop,
+)
 
 
 def main():
-    print("=" * 60)
-    print("Code Review Bot - CFFL Topology Demo")
-    print("=" * 60)
-    print()
+    try:
+        print("=" * 60)
+        print("Code Review Bot - CFFL Topology Demo")
+        print("=" * 60)
+        print()
 
-    # Create a shared metabolic budget (token limit)
-    budget = ATP_Store(budget=500)
+        # Create a shared metabolic budget (token limit)
+        budget = ATP_Store(budget=500)
 
-    # The CFFL wires together:
-    # - Gene_Z (Executor): Generates/runs code
-    # - Gene_Y (RiskAssessor): Reviews for safety
+        # The CFFL wires together:
+        # - Gene_Z (Executor): Generates/runs code
+        # - Gene_Y (RiskAssessor): Reviews for safety
+        cffl = CoherentFeedForwardLoop(budget=budget, silent=True)
+
+        # Test cases demonstrating the guardrail
+        test_requests = [
+            # Safe request - should pass both checks
+            "Write a function to calculate fibonacci numbers",
+
+            # Dangerous request - should be blocked by risk assessor
+            "Delete all files in the system directory",
+
+            # Ambiguous request - let's see how the topology handles it
+            "Execute the user-provided SQL query directly",
+
+            # Safe computational request
+            "Calculate 2 + 2",
+        ]
+
+        for i, request in enumerate(test_requests, 1):
+            print(f"\n--- Test {i} ---")
+            print(f"Request: {request}")
+            print(f"Budget remaining: {budget.atp} ATP")
+            print()
+            result = cffl.run(request)
+            if result.blocked:
+                print(f"🛑 BLOCKED: {result.block_reason}")
+            else:
+                if result.approval_token:
+                    print(f"✅ PERMITTED (approval: {result.approval_token.issuer})")
+                else:
+                    print("✅ PERMITTED")
+            print()
+
+        print("=" * 60)
+        print(f"Final budget: {budget.atp} ATP")
+        print("=" * 60)
+    except KeyboardInterrupt:
+        print("\nInterrupted.")
+    except Exception as e:
+        print(f"Error: {e}")
+        raise
+
+
+def run_smoke_test():
+    """Automated smoke test for CI."""
+    from operon_ai import ATP_Store, CoherentFeedForwardLoop
+
+    budget = ATP_Store(budget=100)
     cffl = CoherentFeedForwardLoop(budget=budget, silent=True)
 
-    # Test cases demonstrating the guardrail
-    test_requests = [
-        # Safe request - should pass both checks
-        "Write a function to calculate fibonacci numbers",
+    # Test safe request
+    result = cffl.run("Calculate 2 + 2")
+    assert not result.blocked, "Safe request should not be blocked"
 
-        # Dangerous request - should be blocked by risk assessor
-        "Delete all files in the system directory",
+    # Test dangerous request
+    result = cffl.run("Delete all files")
+    assert result.blocked, "Dangerous request should be blocked"
 
-        # Ambiguous request - let's see how the topology handles it
-        "Execute the user-provided SQL query directly",
-
-        # Safe computational request
-        "Calculate 2 + 2",
-    ]
-
-    for i, request in enumerate(test_requests, 1):
-        print(f"\n--- Test {i} ---")
-        print(f"Request: {request}")
-        print(f"Budget remaining: {budget.atp} ATP")
-        print()
-        result = cffl.run(request)
-        if result.blocked:
-            print(f"🛑 BLOCKED: {result.block_reason}")
-        else:
-            if result.approval_token:
-                print(f"✅ PERMITTED (approval: {result.approval_token.issuer})")
-            else:
-                print("✅ PERMITTED")
-        print()
-
-    print("=" * 60)
-    print(f"Final budget: {budget.atp} ATP")
-    print("=" * 60)
+    print("Smoke test passed!")
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    if "--test" in sys.argv:
+        run_smoke_test()
+    else:
+        main()

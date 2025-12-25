@@ -16,19 +16,16 @@ Biological Analogy:
 import time
 from operon_ai.state import ATP_Store
 from operon_ai.topology import (
-    # Cascade
     Cascade,
     CascadeStage,
+    HeartbeatOscillator,
     MAPKCascade,
-    # Oscillator
     Oscillator,
     OscillatorPhase,
-    HeartbeatOscillator,
-    WaveformType,
-    # Quorum
     QuorumSensing,
-    VotingStrategy,
     VoteType,
+    VotingStrategy,
+    WaveformType,
 )
 
 

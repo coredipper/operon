@@ -1,5 +1,5 @@
 """
-Example 20: LLM Living Cell - Full Lifecycle Simulation
+Example 21: LLM Living Cell - Full Lifecycle Simulation
 =======================================================
 
 The capstone example combining all systems:
@@ -22,8 +22,8 @@ Environment Variables:
     OPENAI_API_KEY: For GPT models (fallback)
 
 Usage:
-    python examples/20_llm_living_cell.py --demo    # Interactive mode
-    python examples/20_llm_living_cell.py           # Smoke test mode
+    python examples/21_llm_living_cell.py --demo    # Interactive mode
+    python examples/21_llm_living_cell.py           # Smoke test mode
 """
 
 import sys
@@ -286,16 +286,16 @@ class LivingCell:
         health_bar = "█" * int(vitals.telomere_length / 10) + "░" * (10 - int(vitals.telomere_length / 10))
         energy_bar = "█" * int(vitals.energy / 50) + "░" * (10 - int(vitals.energy / 50))
 
-        print(f"\n{'='*40}")
+        print(f"\n{'='*60}")
         print(f"🧬 {self.name} Status")
-        print(f"{'='*40}")
+        print(f"{'='*60}")
         print(f"Health:    {vitals.health.value.upper()}")
         print(f"Telomere:  [{health_bar}] {vitals.telomere_length}/{vitals.telomere_max}")
         print(f"Energy:    [{energy_bar}] {vitals.energy}/{vitals.energy_max}")
         print(f"ROS Level: {vitals.ros_level:.0%}")
         print(f"Memories:  {vitals.memories}")
         print(f"Interactions: {vitals.interactions}")
-        print(f"{'='*40}\n")
+        print(f"{'='*60}\n")
 
 
 def run_demo():

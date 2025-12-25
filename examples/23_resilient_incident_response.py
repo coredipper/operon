@@ -186,6 +186,7 @@ def main() -> None:
             "Incident: {{incident}}\n"
             "Return JSON with severity, impact, suspected_causes, sla_breach_risk, recommended_response."
         ),
+        description="Incident triage report template"
     )
     ribosome.create_template(
         name="plan_prompt",
@@ -195,6 +196,7 @@ def main() -> None:
             "Triage: {{triage}}\n"
             "Return JSON with summary, steps[id,action,resource,risk], rollback."
         ),
+        description="Remediation plan generation template"
     )
 
     if not budget.consume(15, "triage"):

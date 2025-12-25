@@ -16,7 +16,10 @@ Topology:
             --> [Agent N] -/
 """
 
-from operon_ai import ATP_Store, QuorumSensing
+from operon_ai import (
+    ATP_Store,
+    QuorumSensing,
+)
 
 
 def main():

@@ -1,13 +1,22 @@
 """
-Cell Integrity Systems Demo
+Example 18: Cell Integrity Systems Demo
+========================================
 
-This example demonstrates the three integrated systems for robust agentic operations:
-1. Quality System (Ubiquitin-Proteasome) - Provenance tracking and cascade prevention
-2. Surveillance System (Immune) - Byzantine agent detection
-3. Coordination System (Cell Cycle) - Deadlock prevention
+Demonstrates the three integrated systems for robust agentic operations working
+together to provide comprehensive reliability guarantees.
 
-Each system is biologically inspired, providing intuitive mental models for
-complex reliability patterns.
+Key concepts:
+- Quality System (Ubiquitin-Proteasome) - Provenance tracking and cascade prevention
+- Surveillance System (Immune) - Byzantine agent detection
+- Coordination System (Cell Cycle) - Deadlock prevention
+- Integrated health monitoring and maintenance
+- Biologically-inspired reliability patterns
+
+Prerequisites:
+- Understanding of cell-based architecture
+
+Usage:
+    python examples/18_cell_integrity_demo.py
 """
 
 from datetime import timedelta

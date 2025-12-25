@@ -1,25 +1,26 @@
 #!/usr/bin/env python3
 """
-Example 21: LLM Tool Use Integration
+Example 22: LLM Tool Use Integration
 ====================================
 
-Demonstrates the Nucleus-Mitochondria integration where:
-1. Mitochondria provides tool definitions (calculator, search, etc.)
-2. Nucleus sends prompts with tool schemas to the LLM
-3. LLM can request tool execution
-4. Results flow back for final response
+Demonstrates the Nucleus-Mitochondria integration where the LLM can request and
+execute tools. This is analogous to how the biological nucleus coordinates with
+mitochondria for ATP production - here we produce "computational energy" through
+tool execution.
 
-This is analogous to how the biological nucleus coordinates
-with mitochondria for ATP production - here we produce
-"computational energy" through tool execution.
+Key concepts:
+- Mitochondria provides tool definitions (calculator, weather, etc.)
+- Nucleus sends prompts with tool schemas to the LLM
+- LLM can request tool execution
+- Results flow back for final response
+- Safe mathematical evaluation via Mitochondria
+- Multi-tool query coordination
 
-Run with API key for real LLM:
-    GEMINI_API_KEY=... python examples/21_llm_tool_use.py
-    OPENAI_API_KEY=... python examples/21_llm_tool_use.py
-    ANTHROPIC_API_KEY=... python examples/21_llm_tool_use.py
+Prerequisites:
+- Optional: ANTHROPIC_API_KEY, OPENAI_API_KEY, or GEMINI_API_KEY
 
-Or run without for mock demonstration:
-    python examples/21_llm_tool_use.py
+Usage:
+    python examples/22_llm_tool_use.py
 """
 
 import os
@@ -33,7 +34,7 @@ from operon_ai import (
 
 def main():
     print("=" * 60)
-    print("Example 21: LLM Tool Use Integration")
+    print("Example 22: LLM Tool Use Integration")
     print("=" * 60)
 
     # Create Mitochondria with tools
