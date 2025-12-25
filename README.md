@@ -579,7 +579,7 @@ Explore the `examples/` directory for runnable demonstrations:
 | [`34_wiring_diagram_nucleus_llm.py`](examples/34_wiring_diagram_nucleus_llm.py) | WAgent | Nucleus LLM wiring with context, validation, and feedback |
 | [`35_wiring_diagram_nucleus_execution.py`](examples/35_wiring_diagram_nucleus_execution.py) | WAgent | Execute a nucleus wiring with guarded tool flow |
 | [`36_wiring_diagram_multi_gemini_allocation.py`](examples/36_wiring_diagram_multi_gemini_allocation.py) | WAgent | Resource allocation across multiple Gemini agents |
-| [`wiring_diagrams.md`](examples/wiring_diagrams.md) | WAgent | ASCII + Mermaid wiring diagrams for examples 17, 26-36 |
+| [`wiring_diagrams.md`](examples/wiring_diagrams.md) | WAgent | ASCII + Mermaid wiring diagrams for examples 17, 26-37 |
 
 ### LLM Integration
 
@@ -598,6 +598,7 @@ Explore the `examples/` directory for runnable demonstrations:
 | [`23_resilient_incident_response.py`](examples/23_resilient_incident_response.py) | Multi-organelle | Incident triage, planning, coordinated execution, and quality gating |
 | [`24_governed_release_train.py`](examples/24_governed_release_train.py) | Governance | Quorum + CFFL + feedback control with coordinated rollout |
 | [`25_resource_allocation_tradeoffs.py`](examples/25_resource_allocation_tradeoffs.py) | Resource Allocation | Nutrient, machinery, and energy budgeting with trade-offs |
+| [`37_metabolic_swarm_budgeting.py`](examples/37_metabolic_swarm_budgeting.py) | Coalgebra | Metabolic swarm with shared budget and halting guarantee |
 
 Run any example:
 

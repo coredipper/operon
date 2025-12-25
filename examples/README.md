@@ -1,6 +1,6 @@
 # Operon Examples
 
-This directory contains 36 examples demonstrating the operon_ai library,
+This directory contains 37 examples demonstrating the operon_ai library,
 progressing from basic concepts to complete LLM-powered cell simulations.
 
 ## Import Style Guide
@@ -40,6 +40,7 @@ from operon_ai.providers import MockProvider, ProviderConfig
 | 17-18 | Advanced | WAgent, Cell Integrity |
 | 19-25 | LLM Integration | Real providers, Memory, Tools |
 | 26-36 | Wiring Diagrams | Visual architecture, Composition |
+| 37 | Formal Theory | Metabolic Coalgebra, Halting Guarantee |
 
 ## Running Examples
 
@@ -65,6 +66,7 @@ ANTHROPIC_API_KEY=sk-... python examples/19_llm_code_assistant.py --demo
 ### Callback Names
 
 Use `on_<event>` pattern:
+
 - `on_state_change` - state transitions
 - `on_error` - error events
 - `on_complete` - completion events

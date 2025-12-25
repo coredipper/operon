@@ -35,6 +35,10 @@ Each arrow implies a typed connection with integrity constraints.
 - [Example 34: Nucleus LLM Integration](wiring_diagrams/example34_nucleus_llm.md)
 - [Example 35: Nucleus LLM Execution](wiring_diagrams/example35_nucleus_execution.md)
 
+### Formal Theory
+
+- [Example 37: Metabolic Swarm Budgeting](wiring_diagrams/example37_metabolic_swarm.md)
+
 ## Example 17: Typed Wiring (Integrity + Capabilities)
 
 ```
@@ -180,6 +184,37 @@ Composition:
 [budget_allocator] --json(T)--> [prompt_fast] --text(V)--> [nucleus_fast] --json(U)--+
 [budget_allocator] --json(T)--> [prompt_deep] --text(V)--> [nucleus_deep] --json(U)--+--> [plan_aggregator] --json(V)--> [policy_gate] --approval(T)--> [response_builder] --text(V)--> [outbox]
 [budget_allocator] --json(T)--> [prompt_safety] --text(V)--> [nucleus_safety] --json(U)--+
+```
+
+## Example 37: Metabolic Swarm Budgeting (Coalgebraic Resource Constraints)
+
+```
+                              [SharedMitochondria]
+                                    (ATP Pool)
+                                        |
+                    +-------------------+-------------------+
+                    |                   |                   |
+                consume(c)          consume(c)          consume(c)
+                    |                   |                   |
+                    v                   v                   v
+[task] --task(U)--> [worker_1] --+  [worker_2] --+  [worker_3] --+
+                         |       |        |       |        |       |
+                     result(V)   |    result(V)   |    result(V)   |
+                         |       |        |       |        |       |
+                         v       v        v       v        v       v
+                    [collector] <--------+--------+   [DEAD] (r<c)
+                         |
+                    candidates(V)
+                         |
+                         v
+                    [verifier] <-- consume(c) -- [SharedMitochondria]
+                         |
+                    verdict(T)
+                         |
+                         v
+                      [output]
+
+Termination: solved | ischemia | swarm_collapse | verifier_death | entropy_limit
 ```
 
 Legend: U = UNTRUSTED, V = VALIDATED, T = TRUSTED.
