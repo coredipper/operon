@@ -19,6 +19,10 @@ Topology:
                         YES: Return result
                                             |
                         NO: Add to Histone memory, return error
+
+Note: BioAgent is a simplified wrapper for learning purposes.
+For production systems, see Examples 12 and 21 which demonstrate
+building cells from individual organelles for more control.
 """
 
 from operon_ai import BioAgent, Signal, ATP_Store

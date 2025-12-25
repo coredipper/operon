@@ -14,6 +14,10 @@ Topology:
                     YES: Execute normally (consume ATP)
                                         |
                     NO: Apoptosis (graceful shutdown)
+
+Note: BioAgent is a simplified wrapper for learning purposes.
+For production systems, see Examples 12 and 21 which demonstrate
+building cells from individual organelles for more control.
 """
 
 from operon_ai import BioAgent, Signal, ATP_Store
