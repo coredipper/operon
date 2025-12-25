@@ -321,22 +321,28 @@ def demonstrate_integrated_lifecycle():
 
 def main():
     """Run all genome and telomere demonstrations."""
-    print("="*60)
-    print("GENOME AND TELOMERE LIFECYCLE DEMONSTRATION")
-    print("Immutable Configuration + Lifecycle Management")
-    print("="*60)
+    try:
+        print("="*60)
+        print("GENOME AND TELOMERE LIFECYCLE DEMONSTRATION")
+        print("Immutable Configuration + Lifecycle Management")
+        print("="*60)
 
-    demonstrate_genome_basics()
-    demonstrate_gene_expression()
-    demonstrate_genome_inheritance()
-    demonstrate_telomere_lifecycle()
-    demonstrate_telomere_renewal()
-    demonstrate_error_senescence()
-    demonstrate_integrated_lifecycle()
+        demonstrate_genome_basics()
+        demonstrate_gene_expression()
+        demonstrate_genome_inheritance()
+        demonstrate_telomere_lifecycle()
+        demonstrate_telomere_renewal()
+        demonstrate_error_senescence()
+        demonstrate_integrated_lifecycle()
 
-    print("\n" + "="*60)
-    print("All demonstrations complete!")
-    print("="*60)
+        print("\n" + "="*60)
+        print("All demonstrations complete!")
+        print("="*60)
+    except KeyboardInterrupt:
+        print("\nInterrupted.")
+    except Exception as e:
+        print(f"Error: {e}")
+        raise
 
 
 if __name__ == "__main__":
