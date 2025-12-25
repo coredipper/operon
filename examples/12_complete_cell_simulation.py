@@ -261,9 +261,13 @@ Respond with JSON: {"query": "...", "answer": "...", "confidence": 0.0-1.0}""",
 
     def get_health_report(self) -> dict:
         """Get overall cell health statistics."""
+        # Returns: {"operations_count": int, "total_atp_produced": float, "ros_level": float, "tools_available": list, "health": str}
         mito_stats = self.mitochondria.get_statistics()
+        # Returns: {"total_filtered": int, "total_blocked": int, "block_rate": float, "learned_patterns": int, "blocked_hashes": int}
         membrane_stats = self.membrane.get_statistics()
+        # Returns: {"total_folds": int, "successful_folds": int, "success_rate": float, "strategy_success": dict, "strategy_attempts": dict, "strategy_success_rates": dict}
         chaperone_stats = self.chaperone.get_statistics()
+        # Returns: {"queue_size": int, "total_ingested": int, "total_digested": int, "total_recycled": int, "by_type": dict, "recycling_bin_size": int}
         lysosome_stats = self.lysosome.get_statistics()
 
         return {

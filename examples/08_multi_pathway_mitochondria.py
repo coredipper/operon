@@ -244,6 +244,7 @@ def main():
             print(f"  Error from '{expr}': ROS = {result.ros_level:.2f}")
 
         # Check health status
+        # Returns: {"operations_count": int, "total_atp_produced": float, "ros_level": float, "tools_available": list, "health": str}
         stats = fragile_mito.get_statistics()
         print(f"\n  Health status: {stats['health']}")
 
@@ -282,6 +283,7 @@ def main():
         # SECTION 8: Statistics
         # =================================================================
         print("\n--- 8. STATISTICS ---")
+        # Returns: {"operations_count": int, "total_atp_produced": float, "ros_level": float, "tools_available": list, "health": str}
         stats = mito_tools.get_statistics()
         print(f"  Operations count: {stats['operations_count']}")
         print(f"  Total ATP produced: {stats['total_atp_produced']:.2f}")
