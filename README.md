@@ -24,11 +24,13 @@
 
 ## 🦠 The Problem: Fragile Agents
 
-Most agentic systems today are built like **cancerous cells**: they lack negative feedback loops, suffer from unchecked recursion (infinite loops), and are easily hijacked by foreign signals (prompt injection). We try to fix this with "Prompt Engineering"—optimizing the internal state.
+Agentic systems exhibit recurring failure modes: runaway recursion, prompt injection, unbounded resource consumption, and cascading errors. The typical response is to optimize the components—better prompts, larger models, more guardrails. Yet the systems remain fragile.
 
-**Biology solved this billions of years ago.** Cells don't rely on a central CPU; they rely on **Network Motifs**—specific wiring diagrams that guarantee robustness, consensus, and safety regardless of the noise in individual components.
+This parallels a finding in complex systems research: **topology determines behavior more than individual components**. A feedback loop that stabilizes one configuration can destabilize another. The wiring matters.
 
-**Operon** brings these biological control structures to Python. It uses **Applied Category Theory** to define rigorous "wiring diagrams" for agents, ensuring your system behaves like a multicellular organism, not a soup of stochastic scripts.
+Cell biology encountered analogous problems. Unchecked proliferation, foreign signal hijacking, resource exhaustion—these are pathologies that cells evolved mechanisms to prevent. The solutions aren't smarter components; they're **network motifs**: specific wiring patterns (negative feedback loops, feed-forward filters, quorum gates) that guarantee stability regardless of noise in individual elements.
+
+**Operon** applies these biological control structures to software. Using applied category theory, it defines composable wiring diagrams for agents—the same mathematical framework used to model gene regulatory networks. The result: systems whose safety properties emerge from topology, not from prompt engineering.
 
 ---
 
