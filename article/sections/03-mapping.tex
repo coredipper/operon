@@ -151,3 +151,34 @@ Morphism ($\circ$) & Signal Transduction Pathway & Data Pipeline\\
 \end{tabular}
 \caption{The Isomorphism Dictionary}
 \end{table}
+
+\subsection{Metabolic Coalgebras: Formalizing Resource Constraints}
+
+Finally, we address the physical constraints of computation. Just as biological systems are limited by ATP availability \cite{lynch2015bioenergetic}, agentic systems are limited by token budgets and latency. To model this, we extend the agentic coalgebra to be a \textbf{Metabolic Coalgebra}.
+
+We align this definition with the theory of \textbf{Quantitative Polynomial Functors} \cite{nakov2021quantitative}, treating the system as a state machine enriched over a resource monoid.
+
+\begin{definition}[The Resource Monoid]
+Let $(\mathcal{R}, +, 0, \ge)$ be an ordered commutative monoid representing computational resources (e.g., token counts), where $\mathcal{R} \cong \mathbb{N}$.
+\end{definition}
+
+\begin{definition}[Metabolic Coalgebra]
+A resource-constrained agent is a coalgebra $(S, \alpha)$ over a polynomial functor $P$, where the state space is the product of the logical state $L$ and the resource state $\mathcal{R}$:
+\begin{equation}
+    S \cong L \times \mathcal{R}
+\end{equation}
+The structure map $\alpha: S \to P(S) + \bot$ is defined as a \textbf{partial map} guarded by cost. For a transition requiring cost $c \in \mathcal{R}$:
+\begin{equation}
+    \alpha(l, r) = 
+    \begin{cases} 
+      (l', r - c) & \text{if } r \ge c \\
+      \bot & \text{if } r < c \quad \text{(Apoptosis)}
+    \end{cases}
+\end{equation}
+\end{definition}
+
+This formalism establishes that ``Ischemia'' (Token Starvation) is not merely a runtime error, but a reachable terminal state $\bot$ in the system's dynamics. This mirrors the biological mechanism where failure to meet metabolic costs triggers p53-mediated apoptosis \cite{aubrey2018p53}.
+
+\begin{theorem}[The Metabolic Bound]
+For any agentic topology $T$ composed of $N$ agents with total budget $R_{total}$, the system is guaranteed to halt. The ``Halting Problem'' is decidable for Metabolic Coalgebras because the resource state $r$ is strictly decreasing for every non-identity morphism \cite{boreale2023weighted}.
+\end{theorem}
