@@ -24,10 +24,10 @@ the ast module's parsing capabilities.
 """
 
 from operon_ai import (
-    Mitochondria,
-    MetabolicPathway,
-    SimpleTool,
     Capability,
+    MetabolicPathway,
+    Mitochondria,
+    SimpleTool,
 )
 
 

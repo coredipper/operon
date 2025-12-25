@@ -17,8 +17,8 @@ the core configuration.
 
 from operon_ai.state import (
     HistoneStore,
-    MarkerType,
     MarkerStrength,
+    MarkerType,
 )
 
 

@@ -22,9 +22,9 @@ enabling DRY (Don't Repeat Yourself) prompt engineering.
 """
 
 from operon_ai import (
+    Protein,
     Ribosome,
     mRNA,
-    Protein,
 )
 
 

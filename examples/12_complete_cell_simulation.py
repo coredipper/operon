@@ -19,28 +19,19 @@ Think of this as a complete "cell cycle" for AI operations.
 
 from pydantic import BaseModel
 from operon_ai import (
-    # Membrane (Immune System)
-    Membrane,
-    ThreatLevel,
-    ThreatSignature,
-    Signal,
-
-    # Ribosome (Prompt Synthesis)
-    Ribosome,
-    mRNA,
-
-    # Mitochondria (Computation)
-    Mitochondria,
-    SimpleTool,
-
-    # Chaperone (Output Validation)
     Chaperone,
     FoldingStrategy,
-
-    # Lysosome (Cleanup)
     Lysosome,
+    Membrane,
+    Mitochondria,
+    Ribosome,
+    Signal,
+    SimpleTool,
+    ThreatLevel,
+    ThreatSignature,
     Waste,
     WasteType,
+    mRNA,
 )
 
 

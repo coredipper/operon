@@ -23,10 +23,10 @@ preventing memory leaks and extracting value from failed operations.
 
 from datetime import datetime, timedelta
 from operon_ai import (
+    DigestResult,
     Lysosome,
     Waste,
     WasteType,
-    DigestResult,
 )
 
 

@@ -15,14 +15,14 @@ Biological Analogy:
 """
 
 from operon_ai.state import (
-    Genome,
+    ExpressionLevel,
     Gene,
     GeneType,
-    ExpressionLevel,
-    Telomere,
-    TelomereStatus,
+    Genome,
     LifecyclePhase,
     SenescenceReason,
+    Telomere,
+    TelomereStatus,
 )
 
 
