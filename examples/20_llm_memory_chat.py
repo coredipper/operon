@@ -1,8 +1,8 @@
 """
-Example 19: LLM Chat with Epigenetic Memory
+Example 20: LLM Chat with Epigenetic Memory
 ===========================================
 
-Builds on Example 18, adding a three-tier memory system:
+Builds on Example 19, adding a three-tier memory system:
 - Working Memory: Recent conversation (decays)
 - Episodic Memory: Learns from feedback (histone marks)
 - Long-term Memory: Persists to disk across sessions
@@ -18,8 +18,8 @@ Environment Variables:
     OPENAI_API_KEY: For GPT models (fallback)
 
 Usage:
-    python examples/19_llm_memory_chat.py --demo    # Interactive mode
-    python examples/19_llm_memory_chat.py           # Smoke test mode
+    python examples/20_llm_memory_chat.py --demo    # Interactive mode
+    python examples/20_llm_memory_chat.py           # Smoke test mode
 """
 
 import sys

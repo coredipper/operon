@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 21: LLM Tool Use Integration
+Example 22: LLM Tool Use Integration
 ====================================
 
 Demonstrates the Nucleus-Mitochondria integration where:
@@ -14,12 +14,12 @@ with mitochondria for ATP production - here we produce
 "computational energy" through tool execution.
 
 Run with API key for real LLM:
-    GEMINI_API_KEY=... python examples/21_llm_tool_use.py
-    OPENAI_API_KEY=... python examples/21_llm_tool_use.py
-    ANTHROPIC_API_KEY=... python examples/21_llm_tool_use.py
+    GEMINI_API_KEY=... python examples/22_llm_tool_use.py
+    OPENAI_API_KEY=... python examples/22_llm_tool_use.py
+    ANTHROPIC_API_KEY=... python examples/22_llm_tool_use.py
 
 Or run without for mock demonstration:
-    python examples/21_llm_tool_use.py
+    python examples/22_llm_tool_use.py
 """
 
 import os
@@ -33,7 +33,7 @@ from operon_ai import (
 
 def main():
     print("=" * 60)
-    print("Example 21: LLM Tool Use Integration")
+    print("Example 22: LLM Tool Use Integration")
     print("=" * 60)
 
     # Create Mitochondria with tools

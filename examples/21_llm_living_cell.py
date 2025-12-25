@@ -1,5 +1,5 @@
 """
-Example 20: LLM Living Cell - Full Lifecycle Simulation
+Example 21: LLM Living Cell - Full Lifecycle Simulation
 =======================================================
 
 The capstone example combining all systems:
@@ -22,8 +22,8 @@ Environment Variables:
     OPENAI_API_KEY: For GPT models (fallback)
 
 Usage:
-    python examples/20_llm_living_cell.py --demo    # Interactive mode
-    python examples/20_llm_living_cell.py           # Smoke test mode
+    python examples/21_llm_living_cell.py --demo    # Interactive mode
+    python examples/21_llm_living_cell.py           # Smoke test mode
 """
 
 import sys
