@@ -79,5 +79,27 @@ def main():
         raise
 
 
+def run_smoke_test():
+    """Automated smoke test for CI."""
+    from operon_ai import ATP_Store, CoherentFeedForwardLoop
+
+    budget = ATP_Store(budget=100)
+    cffl = CoherentFeedForwardLoop(budget=budget, silent=True)
+
+    # Test safe request
+    result = cffl.run("Calculate 2 + 2")
+    assert not result.blocked, "Safe request should not be blocked"
+
+    # Test dangerous request
+    result = cffl.run("Delete all files")
+    assert result.blocked, "Dangerous request should be blocked"
+
+    print("Smoke test passed!")
+
+
 if __name__ == "__main__":
-    main()
+    import sys
+    if "--test" in sys.argv:
+        run_smoke_test()
+    else:
+        main()
