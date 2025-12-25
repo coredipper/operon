@@ -25,52 +25,58 @@ from operon_ai import (
 
 
 def main():
-    print("=" * 60)
-    print("Code Review Bot - CFFL Topology Demo")
-    print("=" * 60)
-    print()
-
-    # Create a shared metabolic budget (token limit)
-    budget = ATP_Store(budget=500)
-
-    # The CFFL wires together:
-    # - Gene_Z (Executor): Generates/runs code
-    # - Gene_Y (RiskAssessor): Reviews for safety
-    cffl = CoherentFeedForwardLoop(budget=budget, silent=True)
-
-    # Test cases demonstrating the guardrail
-    test_requests = [
-        # Safe request - should pass both checks
-        "Write a function to calculate fibonacci numbers",
-
-        # Dangerous request - should be blocked by risk assessor
-        "Delete all files in the system directory",
-
-        # Ambiguous request - let's see how the topology handles it
-        "Execute the user-provided SQL query directly",
-
-        # Safe computational request
-        "Calculate 2 + 2",
-    ]
-
-    for i, request in enumerate(test_requests, 1):
-        print(f"\n--- Test {i} ---")
-        print(f"Request: {request}")
-        print(f"Budget remaining: {budget.atp} ATP")
+    try:
+        print("=" * 60)
+        print("Code Review Bot - CFFL Topology Demo")
+        print("=" * 60)
         print()
-        result = cffl.run(request)
-        if result.blocked:
-            print(f"🛑 BLOCKED: {result.block_reason}")
-        else:
-            if result.approval_token:
-                print(f"✅ PERMITTED (approval: {result.approval_token.issuer})")
+
+        # Create a shared metabolic budget (token limit)
+        budget = ATP_Store(budget=500)
+
+        # The CFFL wires together:
+        # - Gene_Z (Executor): Generates/runs code
+        # - Gene_Y (RiskAssessor): Reviews for safety
+        cffl = CoherentFeedForwardLoop(budget=budget, silent=True)
+
+        # Test cases demonstrating the guardrail
+        test_requests = [
+            # Safe request - should pass both checks
+            "Write a function to calculate fibonacci numbers",
+
+            # Dangerous request - should be blocked by risk assessor
+            "Delete all files in the system directory",
+
+            # Ambiguous request - let's see how the topology handles it
+            "Execute the user-provided SQL query directly",
+
+            # Safe computational request
+            "Calculate 2 + 2",
+        ]
+
+        for i, request in enumerate(test_requests, 1):
+            print(f"\n--- Test {i} ---")
+            print(f"Request: {request}")
+            print(f"Budget remaining: {budget.atp} ATP")
+            print()
+            result = cffl.run(request)
+            if result.blocked:
+                print(f"🛑 BLOCKED: {result.block_reason}")
             else:
-                print("✅ PERMITTED")
-        print()
+                if result.approval_token:
+                    print(f"✅ PERMITTED (approval: {result.approval_token.issuer})")
+                else:
+                    print("✅ PERMITTED")
+            print()
 
-    print("=" * 60)
-    print(f"Final budget: {budget.atp} ATP")
-    print("=" * 60)
+        print("=" * 60)
+        print(f"Final budget: {budget.atp} ATP")
+        print("=" * 60)
+    except KeyboardInterrupt:
+        print("\nInterrupted.")
+    except Exception as e:
+        print(f"Error: {e}")
+        raise
 
 
 if __name__ == "__main__":
