@@ -202,7 +202,7 @@ class Ribosome:
         self._translations_count = 0
         self._errors_count = 0
 
-    def register_template(self, template: mRNA, name: str | None = None):
+    def register_template(self, template: mRNA, name: str | None = None) -> None:
         """
         Register an mRNA template for later use.
 
@@ -451,7 +451,7 @@ class Ribosome:
 
         return result
 
-    def get_statistics(self) -> dict:
+    def get_statistics(self) -> dict[str, Any]:
         """Get synthesis statistics."""
         return {
             "translations_count": self._translations_count,
@@ -460,7 +460,7 @@ class Ribosome:
             "template_names": list(self.templates.keys()),
         }
 
-    def list_templates(self) -> list[dict]:
+    def list_templates(self) -> list[dict[str, Any]]:
         """List all registered templates."""
         return [
             {
