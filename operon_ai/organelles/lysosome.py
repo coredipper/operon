@@ -397,6 +397,8 @@ class Lysosome:
 
     def _auto_digest(self):
         """Auto-triggered digest when threshold reached."""
+        if not self.silent:
+            print(f"[Lysosome] Auto-digesting {len(self._queue)} items")
         # Process half the queue
         self.digest(max_items=len(self._queue) // 2)
 
