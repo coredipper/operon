@@ -6,7 +6,7 @@ A comprehensive guide to building, understanding, and integrating agents using t
 
 ## Table of Contents
 
-- [Theory: The Cell as Agent](#theory-the-cell-as-agent)
+- [Theory: The Gene-Agent Isomorphism](#theory-the-gene-agent-isomorphism)
 - [Core Concepts](#core-concepts)
 - [Agent Patterns](#agent-patterns)
 - [API Reference](#api-reference)
@@ -15,22 +15,42 @@ A comprehensive guide to building, understanding, and integrating agents using t
 
 ---
 
-## Theory: The Cell as Agent
+## Theory: The Gene-Agent Isomorphism
 
-Operon treats agents as **biological cells**—not as metaphor, but as a formal isomorphism grounded in category theory. Both cells and agents are polynomial functors: systems that consume typed inputs and produce typed outputs, constrained by internal state and energy budgets.
+Operon is grounded in a formal isomorphism between **genes** and **agents**—not cells and agents. Both are polynomial functors: systems that consume typed inputs and produce typed outputs, constrained by internal state and energy budgets.
+
+The key insight: a **cell** contains thousands of genes working together. Therefore:
+- **Gene** ↔ **Agent** (individual processing unit)
+- **Cell** ↔ **Multi-agent system** (orchestrated collection)
 
 ### The Fundamental Mapping
 
-| Biological Concept | Agent Equivalent | Mathematical Object |
-|-------------------|------------------|---------------------|
-| Cell | Agent | Polynomial Functor |
-| DNA | Model weights | Static substrate |
-| Gene Expression | Inference | Morphism |
-| Proteins | Actions/Messages | Output type |
-| Transcription Factors | Observations/Prompts | Input type |
-| Epigenetics | RAG/Memory | State coalgebra |
-| ATP | Tokens/Budget | Resource monoid |
-| Organelles | Components | Sub-functors |
+| Biological Concept | Software Equivalent | Mathematical Object |
+|-------------------|---------------------|---------------------|
+| **Gene** | **Agent** | Polynomial Functor |
+| Protein (output) | Action/Message | Output position |
+| Transcription Factor (input) | Observation/Prompt | Input direction |
+| Promoter Region | API Schema/Context Window | Lens (optic) |
+| Epigenetic Markers | RAG/Memory | State coalgebra |
+| Gene Expression | Inference/Generation | Morphism |
+| **Cell** | **Multi-agent system** | Composite functor |
+| Organelles | Shared infrastructure | Sub-functors |
+| ATP | Token budget | Resource monoid |
+| Signal Transduction | Data pipeline | Composition (∘) |
+
+### The Cell as Orchestrator
+
+A biological cell is not a single processing unit—it's a factory containing:
+- ~20,000 protein-coding genes (agents)
+- Organelles that provide shared services (Nucleus for transcription, Ribosome for synthesis)
+- Signaling pathways that wire genes together (topologies)
+- Metabolic constraints that limit total activity (ATP budget)
+
+Similarly, an Operon "Cell" (`IntegratedCell`) orchestrates multiple agents with:
+- Shared organelles (Nucleus, Membrane, Lysosome)
+- Coordination systems (resource locking, deadlock prevention)
+- Surveillance systems (Byzantine agent detection)
+- Quality systems (provenance tracking)
 
 ### Why This Matters
 
