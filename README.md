@@ -63,6 +63,7 @@ print(result.threat_level)  # ThreatLevel.CRITICAL
 membrane.learn_threat("BACKDOOR_PROTOCOL", level=ThreatLevel.CRITICAL)
 
 # Share immunity between agents
+other_membrane = Membrane()  # Another agent's membrane
 antibodies = membrane.export_antibodies()
 other_membrane.import_antibodies(antibodies)
 ```
