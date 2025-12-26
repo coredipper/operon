@@ -157,3 +157,26 @@ probabilistic string into a deterministic data structure.
 $i:V\to S$ and a map $r:S\to V+\mathrm{Error}$ such that $r\circ i=\mathrm{inl}\circ \mathrm{id}_V$, and $r$ returns
 $\mathrm{Error}$ on ill-formed text.
 \end{itemize}
+
+\subsection{Oscillator: Periodic Rhythms and Scheduling}
+
+\paragraph{Network Motif 4 (Biological Oscillator).}
+A topology that generates periodic behavior through delayed negative feedback. A node $A$ activates node $B$, which after a delay inhibits $A$, creating a self-sustaining cycle.
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Biological Function:} Oscillators underlie fundamental biological rhythms. The circadian clock regulates 24-hour cycles of gene expression. The cell cycle oscillator (Cyclin-CDK) drives periodic cell division. The heartbeat emerges from pacemaker cells with intrinsic oscillatory dynamics. These rhythms provide temporal organization to cellular processes.
+\item \textbf{Agentic Isomorphism (Scheduled Tasks):} In agentic systems, oscillators map to periodic scheduling patterns:
+\begin{itemize}
+\item \textbf{Heartbeat Oscillator} $\to$ Health checks that verify system liveness at regular intervals
+\item \textbf{Circadian Oscillator} $\to$ Daily maintenance tasks (log rotation, cache clearing, model refresh)
+\item \textbf{Cell Cycle Oscillator} $\to$ Phased workflows with distinct stages (G1: gather, S: synthesize, G2: validate, M: execute)
+\end{itemize}
+\item \textbf{Formal Structure:} An oscillator is a Trace operation with a built-in delay element $\delta$:
+\begin{equation}
+\mathrm{Osc}(A) = Tr(A \circ \delta)
+\tag{15}
+\end{equation}
+where $\delta: S \to S$ introduces temporal separation between activation and inhibition, preventing the system from reaching a fixed point.
+\end{itemize}
+
+The oscillator motif addresses a gap in typical agentic frameworks: most systems are purely reactive (responding to external stimuli) rather than proactive (generating internal rhythms). Biological systems maintain health through regular ``housekeeping'' independent of external input---a pattern that agentic systems should emulate for robustness.

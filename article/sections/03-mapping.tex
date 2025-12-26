@@ -147,9 +147,23 @@ Input Direction ($I$) & Transcription Factor Binding & Observation / User Prompt
 Lens (Optic) & Promoter Region & API Schema / Context Window\\
 Internal State ($S$) & Epigenetic Markers (Methylation) & Vector Store / Chat History\\
 Morphism ($\circ$) & Signal Transduction Pathway & Data Pipeline\\
+\midrule
+\multicolumn{3}{@{}l@{}}{\textit{Organelles (Specialized Processing Units)}}\\
+\midrule
+Template Engine & Ribosome (mRNA $\to$ Protein) & Prompt Template Factory\\
+Output Validation & Chaperone (Protein Folding) & Schema Validator / JSON Parser\\
+Waste Processing & Lysosome (Autophagy) & Error Handler / Garbage Collector\\
+Decision Center & Nucleus (Transcription) & LLM Provider Wrapper\\
+Input Filter & Membrane (Immune System) & Prompt Injection Defense\\
+Computation Engine & Mitochondria (ATP Synthesis) & Deterministic Tool Execution\\
+\midrule
+\multicolumn{3}{@{}l@{}}{\textit{Lifecycle and Rhythms}}\\
+\midrule
+Lifespan Limit & Telomere Shortening & Operation Counter / Max Iterations\\
+Periodic Scheduling & Circadian Oscillator & Health Checks / Heartbeat\\
 \bottomrule
 \end{tabular}
-\caption{The Isomorphism Dictionary}
+\caption{The Isomorphism Dictionary (Extended)}
 \end{table}
 
 \subsection{Metabolic Coalgebras: Formalizing Resource Constraints}
@@ -185,3 +199,59 @@ This formalism establishes that ``Ischemia'' (Token Starvation) is not merely a 
 \begin{theorem}[The Metabolic Bound]
 For any agentic topology $T$ composed of $N$ agents with total budget $R_{total}$, the system is guaranteed to halt. Unlike the general Halting Problem, termination is decidable for Metabolic Coalgebras: the resource state $r$ is strictly decreasing for every non-identity morphism, providing a well-founded termination measure \cite{boreale2023weighted}.
 \end{theorem}
+
+\noindent\textit{Reference Implementation:} The accompanying \texttt{operon} library provides a demonstration of Metabolic Coalgebras in \texttt{examples/37\_metabolic\_swarm\_budgeting.py}, where a swarm of agents shares a finite token budget and undergoes apoptosis when resources are exhausted.
+
+\subsection{Additional Organelles: Completing the Cellular Architecture}
+
+Beyond the core gene-agent mapping, biological cells contain specialized organelles that handle distinct aspects of cellular function. We extend our isomorphism to four additional structures that map directly to agentic software components.
+
+\paragraph{Ribosome: Template-to-Output Synthesis.}
+In biology, the ribosome reads messenger RNA (mRNA) sequences and synthesizes proteins by assembling amino acids according to the genetic code. Transfer RNA (tRNA) molecules carry amino acids to the ribosome, where codons (three-nucleotide sequences) specify which amino acid to add.
+
+In agentic systems, the Ribosome maps to a \textbf{prompt template engine}:
+\begin{itemize}[leftmargin=*]
+\item \textbf{mRNA} $\to$ Prompt templates with variable slots
+\item \textbf{tRNA} $\to$ Context bindings (variable $\to$ value mappings)
+\item \textbf{Codons} $\to$ Template directives (variables, conditionals, loops)
+\item \textbf{Translation} $\to$ Template rendering with context injection
+\end{itemize}
+Just as the ribosome ensures that the genetic code is faithfully translated into functional proteins, the software ribosome ensures that abstract prompt templates are instantiated into concrete, well-formed prompts.
+
+\paragraph{Lysosome: Waste Processing and Recycling.}
+The lysosome is the cell's recycling center, containing enzymes that break down cellular waste, damaged organelles, and foreign material. Through autophagy, the cell digests its own components to recover building blocks during stress.
+
+In agentic systems, the Lysosome maps to \textbf{error handling and garbage collection}:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Waste Classification} $\to$ Categorizing failures (timeout, validation error, toxic input)
+\item \textbf{Digestion} $\to$ Processing errors to extract debugging information
+\item \textbf{Recycling} $\to$ Recovering useful context from failed operations
+\item \textbf{Autophagy} $\to$ Periodic cleanup of stale cache and expired state
+\item \textbf{Toxic Disposal} $\to$ Secure handling of sensitive data (API keys, PII)
+\end{itemize}
+The lysosome prevents accumulation of ``cellular debris'' that could poison the system---analogous to memory leaks or error cascades in software.
+
+\paragraph{Nucleus: The Decision Center.}
+In eukaryotic cells, the nucleus houses the DNA and serves as the control center for gene expression. Transcription factors enter the nucleus, bind to promoter regions, and initiate transcription of specific genes.
+
+In agentic systems, the Nucleus maps to the \textbf{LLM provider wrapper}:
+\begin{itemize}[leftmargin=*]
+\item \textbf{DNA} $\to$ Pre-trained model weights (static substrate of capability)
+\item \textbf{Transcription} $\to$ Inference (prompt $\to$ response generation)
+\item \textbf{Nuclear Envelope} $\to$ Provider abstraction layer (API boundary)
+\item \textbf{Nucleolus} $\to$ Tool integration hub (where external capabilities are assembled)
+\end{itemize}
+The nucleus abstracts the complexity of the underlying LLM, exposing a consistent interface regardless of the provider (Anthropic, OpenAI, Gemini).
+
+\paragraph{Telomere: Lifecycle and Senescence.}
+Telomeres are protective caps at the ends of chromosomes that shorten with each cell division. When telomeres become critically short, the cell enters senescence (permanent growth arrest) or apoptosis. The enzyme telomerase can extend telomeres, enabling continued division in stem cells.
+
+In agentic systems, Telomeres map to \textbf{lifecycle management}:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Telomere Length} $\to$ Remaining operation budget (max iterations)
+\item \textbf{Shortening} $\to$ Decrementing counter per operation
+\item \textbf{Senescence} $\to$ Graceful degradation (reduced capability mode)
+\item \textbf{Apoptosis} $\to$ Clean shutdown when budget exhausted
+\item \textbf{Telomerase} $\to$ Renewal mechanism (resetting counters for trusted agents)
+\end{itemize}
+This provides a biological basis for the common pattern of limiting agent iterations. Rather than arbitrary timeouts, the telomere model frames lifecycle limits as a natural property of the system's ``cellular age.''
