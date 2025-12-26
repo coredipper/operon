@@ -25,6 +25,10 @@ from datetime import datetime, timedelta
 import weakref
 import threading
 import time
+import logging
+
+
+_logger = logging.getLogger(__name__)
 
 
 class WasteType(Enum):
@@ -350,8 +354,8 @@ class Lysosome:
         if hasattr(content, 'cleanup'):
             try:
                 content.cleanup()
-            except Exception:
-                pass
+            except Exception as e:
+                _logger.warning(f"Cleanup failed for {waste.waste_type.value}: {e}")
 
         return {}
 
@@ -383,8 +387,9 @@ class Lysosome:
                     digester = self._digesters.get(waste.waste_type, self._digest_default)
                     digester(waste)
                     self._total_digested += 1
-                except Exception:
-                    pass
+                except Exception as e:
+                    _logger.warning(f"Emergency digest failed for item: {e}")
+                    continue  # Continue processing other items
             self._queue = self._queue[items_to_process:]
 
             if not self.silent:
