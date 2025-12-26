@@ -2,7 +2,7 @@
 
 **Biologically Inspired Architectures for EpiAgentic Control**
 
-> *"Don't fix the prompt. Fix the topology."*
+> *"Safety from structure, not just strings."*
 
 ![Status](https://img.shields.io/badge/status-experimental-orange)
 ![Version](https://img.shields.io/badge/pypi-v0.8.0-blue)
@@ -69,14 +69,14 @@ other_membrane.import_antibodies(antibodies)
 
 ### ⚡ Mitochondria (Safe Computation Engine)
 
-Provides deterministic computation using secure AST-based parsing—no code injection possible.
+Provides deterministic computation using secure AST-based parsing, mitigating code injection risk by restricting evaluation to a safe subset of operations.
 
-**Features:**
-- **Glycolysis**: Fast math operations with 40+ safe functions
-- **Krebs Cycle**: Boolean and logical operations
-- **Oxidative Phosphorylation**: External tool invocation (sandboxed)
-- **Beta Oxidation**: JSON/literal data transformations
-- **ROS Management**: Error tracking with self-repair capability
+**Metabolic Pathways** (each maps to a class of computation):
+- **Glycolysis** → Fast math: arithmetic, trigonometry, 40+ safe functions
+- **Krebs Cycle** → Boolean logic: comparisons, logical operators
+- **Oxidative Phosphorylation** → Tool invocation: sandboxed external calls
+- **Beta Oxidation** → Data transformation: JSON parsing, literal evaluation
+- **ROS Management** → Error handling: tracking failures, self-repair
 
 ```python
 from operon_ai import Mitochondria, SimpleTool, Capability
@@ -189,7 +189,7 @@ print(protein.sequence)
 
 ### 🗑️ Lysosome (Cleanup & Recycling)
 
-The garbage collector and janitor—handles failures gracefully and extracts insights.
+Handles failure states, expired data, and sensitive material—digesting waste while extracting reusable insights.
 
 **Features:**
 - **Waste Classification**: Failed ops, expired cache, toxic data, etc.
@@ -619,7 +619,7 @@ python examples/12_complete_cell_simulation.py
 
 ## 📚 Theoretical Background
 
-Operon models a functorial correspondence between Gene Regulatory Networks (GRNs) and agentic architectures, using typed wiring diagrams as the interface.
+Operon is grounded in the observation that Gene Regulatory Networks (GRNs) and agentic architectures share structural similarities. Both can be modeled as typed wiring diagrams—graphs where nodes are components and edges carry typed signals. The table below maps biological concepts to their software and mathematical equivalents.
 
 | Biological Concept | Software Equivalent | Mathematical Object |
 |-------------------|---------------------|---------------------|
@@ -669,10 +669,14 @@ Operon models a functorial correspondence between Gene Regulatory Networks (GRNs
 
 ## 🤝 Contributing
 
-We are looking for contributors to build out the Plasmid Registry (a marketplace of dynamic tools) and expand the Quorum Sensing algorithms.
+Contributions welcome. Current areas of interest:
+
+- **Quorum algorithms**: Additional voting strategies and Byzantine fault tolerance
+- **Provider integrations**: New LLM backends beyond Anthropic/OpenAI/Gemini
+- **Network motifs**: Implementations of additional biological control patterns
 
 1. Fork the repo
-2. Create your feature branch (`git checkout -b feature/plasmid-loading`)
+2. Create your feature branch (`git checkout -b feature/your-feature`)
 3. Commit your changes
 4. Open a Pull Request
 
