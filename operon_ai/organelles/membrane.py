@@ -19,6 +19,7 @@ from enum import Enum
 import re
 import hashlib
 import time
+import threading
 
 from ..core.types import Signal
 
@@ -252,6 +253,7 @@ class Membrane:
         self._learned_patterns: dict[str, ThreatSignature] = {}
         self._request_times: list[float] = []
         self._blocked_hashes: set[str] = set()
+        self._rate_lock = threading.Lock()
 
         # Audit log
         self._audit_log: list[FilterResult] = []
@@ -281,20 +283,16 @@ class Membrane:
         self._total_filtered += 1
 
         # Rate limiting check
-        if self.rate_limit:
-            now = time.time()
-            self._request_times = [t for t in self._request_times if now - t < 60]
-            if len(self._request_times) >= self.rate_limit:
-                result = FilterResult(
-                    allowed=False,
-                    threat_level=ThreatLevel.CRITICAL,
-                    matched_signatures=[],
-                    audit_hash=content_hash,
-                    processing_time_ms=(time.time() - start_time) * 1000
-                )
-                self._log_result(result, "Rate limit exceeded")
-                return result
-            self._request_times.append(now)
+        if self._check_rate_limit():
+            result = FilterResult(
+                allowed=False,
+                threat_level=ThreatLevel.CRITICAL,
+                matched_signatures=[],
+                audit_hash=content_hash,
+                processing_time_ms=(time.time() - start_time) * 1000
+            )
+            self._log_result(result, "Rate limit exceeded")
+            return result
 
         # Check if previously blocked (immune memory)
         if content_hash in self._blocked_hashes:
@@ -358,6 +356,24 @@ class Membrane:
             self._total_blocked += 1
             if not self.silent:
                 print(f"🛡️ [Membrane] BLOCKED: {reason}")
+
+    def _check_rate_limit(self) -> bool:
+        """Check if request should be rate-limited. Thread-safe."""
+        if self.rate_limit is None:
+            return False
+
+        with self._rate_lock:
+            now = time.time()
+            cutoff = now - 60  # 60 second window
+
+            # Remove old entries
+            self._request_times = [t for t in self._request_times if t > cutoff]
+
+            if len(self._request_times) >= self.rate_limit:
+                return True
+
+            self._request_times.append(now)
+            return False
 
     def learn_threat(
         self,
