@@ -214,14 +214,13 @@ class GuardedExecutor:
             return {
                 "executed": False,
                 "reason": result.block_reason,
-                "risk_score": result.risk_assessment.risk_score
             }
 
         # Execution approved by both generator and verifier
         return {
             "executed": True,
             "approval_token": result.approval_token,
-            "output": result.output
+            "output": result.executor_output.payload if result.executor_output else None
         }
 ```
 
@@ -311,11 +310,11 @@ class ConsensusSystem:
             "decision": result.decision.value,
             "confidence": result.confidence_score,
             "votes": {
-                "approve": result.approve_count,
-                "reject": result.reject_count,
-                "abstain": result.abstain_count
+                "permit": result.permit_votes,
+                "block": result.block_votes,
+                "abstain": result.abstain_votes
             },
-            "reasoning": result.reasoning
+            "reasoning": [v.reasoning for v in result.votes if v.reasoning]
         }
 ```
 
