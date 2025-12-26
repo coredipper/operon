@@ -142,10 +142,13 @@ result = chap.fold(raw, User)
 print(result.valid)  # True
 print(result.structure.age)  # 30 (coerced to int)
 
-# Enhanced folding with confidence
+# Control which strategies are tried (default: STRICT → EXTRACTION → LENIENT → REPAIR)
+result = chap.fold(raw, User, strategies=[FoldingStrategy.STRICT, FoldingStrategy.REPAIR])
+
+# Enhanced folding with confidence scoring
 result = chap.fold_enhanced(raw, User)
 print(result.confidence)  # 0.65 (lower due to repairs)
-print(result.coercions_applied)  # ["fixed_single_quotes", "removed_trailing_comma"]
+print(result.strategy_used)  # FoldingStrategy.REPAIR
 ```
 
 ### 🧬 Ribosome (Prompt Template Engine)
