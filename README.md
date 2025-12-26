@@ -207,13 +207,13 @@ Handles failure states, expired data, and sensitive material—digesting waste w
 - **Toxic Disposal**: Secure handling of sensitive data
 
 ```python
-from operon_ai import Lysosome, Waste, WasteType
+from operon_ai import Lysosome, WasteType
 
 lysosome = Lysosome(auto_digest_threshold=100)
 
 # Capture failures
 try:
-    risky_operation()
+    result = 1 / 0  # Example risky operation
 except Exception as e:
     lysosome.ingest_error(e, source="risky_op", context={"step": 3})
 
@@ -331,7 +331,8 @@ metabolism.consume(20, "tool_use", EnergyType.GTP)
 metabolism.convert_nadh_to_atp(15)
 
 # Transfer energy between agents
-metabolism.transfer_to(other_agent.metabolism, 10)
+other_metabolism = ATP_Store(budget=50)
+metabolism.transfer_to(other_metabolism, 10)
 ```
 
 ### 🧬 Genome (Immutable Configuration)
@@ -371,10 +372,10 @@ telomere = Telomere(
 )
 
 # Each operation shortens telomeres
-while telomere.tick():  # Returns False when senescent
-    do_operation()
-    if telomere.record_error():
-        handle_error()
+for i in range(10):
+    if not telomere.tick():  # Returns False when senescent
+        break
+    print(f"Operation {i}: {telomere.remaining} remaining")
 
 # Renew agent (like telomerase)
 if telomere.get_phase() == LifecyclePhase.SENESCENT:
@@ -445,8 +446,10 @@ Multi-agent consensus with voting strategies and reliability tracking.
 Note: quorum only helps if voters are not strongly correlated (use diverse models, tool checks, and/or data partitioning).
 
 ```python
+from operon_ai import ATP_Store
 from operon_ai.topology import QuorumSensing, VotingStrategy
 
+budget = ATP_Store(budget=100)
 quorum = QuorumSensing(
     n_agents=5,
     budget=budget,
@@ -472,17 +475,17 @@ cascade = Cascade(name="DataPipeline")
 
 cascade.add_stage(CascadeStage(
     name="validate",
-    processor=lambda x: x if valid(x) else None,
+    processor=lambda x: x if x > 0 else None,  # Only positive values
     checkpoint=lambda x: x is not None,  # Gate
 ))
 
 cascade.add_stage(CascadeStage(
     name="transform",
-    processor=lambda x: process(x),
+    processor=lambda x: x * 2,  # Double the value
     amplification=2.0,  # Signal amplification
 ))
 
-result = cascade.run(input_data)
+result = cascade.run(10)  # Input value
 print(f"Amplification: {result.total_amplification}x")
 
 # Or use pre-built MAPK cascade
