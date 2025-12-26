@@ -488,10 +488,20 @@ Biological rhythms for scheduled operations.
 ```python
 from operon_ai.topology import Oscillator, HeartbeatOscillator, OscillatorPhase
 
-# Heartbeat for health checks
+# Define your periodic actions
+def health_check():
+    print("💓 Health check: OK")
+
+def do_work():
+    print("⚙️ Working...")
+
+def do_rest():
+    print("😴 Resting...")
+
+# Heartbeat for health checks (1 beat per second)
 heartbeat = HeartbeatOscillator(
     beats_per_minute=60,
-    on_beat=lambda: health_check(),
+    on_beat=health_check,
 )
 heartbeat.start()
 
@@ -500,6 +510,10 @@ osc = Oscillator(frequency_hz=0.1)  # 10 second period
 osc.add_phase(OscillatorPhase(name="work", duration_seconds=7, action=do_work))
 osc.add_phase(OscillatorPhase(name="rest", duration_seconds=3, action=do_rest))
 osc.start()
+
+# Stop when done (oscillators run in background threads)
+# heartbeat.stop()
+# osc.stop()
 ```
 
 ---
