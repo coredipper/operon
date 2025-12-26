@@ -64,7 +64,19 @@ class mRNA:
             self.codons = self._detect_codons()
 
     def _detect_codons(self) -> list[Codon]:
-        """Detect variable slots in the template."""
+        """
+        Detect variable slots in the template string.
+
+        Scans the template sequence for various variable patterns and creates
+        Codon objects representing each detected variable. Supports three types
+        of variable syntax:
+        - Simple variables: {{variable_name}}
+        - Optional variables: {{?variable_name}}
+        - Variables with defaults: {{variable_name|default_value}}
+
+        Returns:
+            List of Codon objects representing detected variables in the template.
+        """
         codons = []
 
         # Simple variables: {{variable_name}}
@@ -310,7 +322,26 @@ class Ribosome:
         context: dict[str, Any],
         warnings: list[str]
     ) -> str:
-        """Process variable substitutions."""
+        """
+        Process variable substitutions in the template sequence.
+
+        Handles multiple variable syntax patterns with priority order:
+        1. Variables with filters: {{name|filter}} - Apply transformation
+        2. Variables with defaults: {{name|default_value}} - Use default if missing
+        3. Optional variables: {{?name}} - Empty string if missing
+        4. Simple variables: {{name}} - Warning if missing
+
+        Variables can have filters applied (e.g., upper, lower, trim) for
+        post-translational modification of the substituted values.
+
+        Args:
+            sequence: The template string to process
+            context: Variable bindings (name -> value)
+            warnings: List to append warnings for unbound variables
+
+        Returns:
+            The sequence with all variable substitutions applied.
+        """
         result = sequence
 
         # Variables with filters: {{name|filter}}
@@ -370,7 +401,24 @@ class Ribosome:
         return result
 
     def _process_conditionals(self, sequence: str, context: dict[str, Any]) -> str:
-        """Process conditional blocks."""
+        """
+        Process conditional blocks in the template sequence.
+
+        Handles if/else constructs that conditionally include content based on
+        variable truthiness. Supports two patterns:
+        - {{#if var}}content{{/if}} - Include content if var is truthy
+        - {{#if var}}if_content{{#else}}else_content{{/if}} - Choose branch
+
+        The condition check uses Python truthiness evaluation (None, False, 0,
+        empty strings/lists are falsy; everything else is truthy).
+
+        Args:
+            sequence: The template string to process
+            context: Variable bindings for condition evaluation
+
+        Returns:
+            The sequence with conditional blocks evaluated and replaced.
+        """
         result = sequence
 
         # If/else blocks: {{#if var}}...{{#else}}...{{/if}}
@@ -391,7 +439,28 @@ class Ribosome:
         return result
 
     def _process_loops(self, sequence: str, context: dict[str, Any]) -> str:
-        """Process loop blocks."""
+        """
+        Process loop blocks in the template sequence.
+
+        Handles iteration over collections using the {{#each}} syntax:
+        {{#each items}}...{{/each}}
+
+        Within the loop body, provides special variables:
+        - {{.}} or {{item}} - Current item
+        - {{index}} - Zero-based position
+        - {{first}} - True if first iteration
+        - {{last}} - True if last iteration
+
+        If the item is a dictionary, its keys are merged into the loop context,
+        allowing direct access to nested properties.
+
+        Args:
+            sequence: The template string to process
+            context: Variable bindings, must contain the iterable
+
+        Returns:
+            The sequence with loop blocks expanded and rendered.
+        """
         result = sequence
 
         # Each blocks: {{#each items}}...{{/each}}
@@ -434,7 +503,26 @@ class Ribosome:
         return result
 
     def _process_includes(self, sequence: str, context: dict[str, Any]) -> str:
-        """Process include directives."""
+        """
+        Process include directives in the template sequence.
+
+        Handles template composition by including other registered templates:
+        {{>template_name}}
+
+        The included template is translated with the same context as the parent,
+        allowing for modular template design. If the referenced template doesn't
+        exist, a placeholder error message is inserted.
+
+        Note: This can cause recursive inclusion if templates reference each other.
+        No cycle detection is currently implemented.
+
+        Args:
+            sequence: The template string to process
+            context: Variable bindings to pass to included templates
+
+        Returns:
+            The sequence with include directives replaced by rendered templates.
+        """
         result = sequence
 
         # Include: {{>template_name}}
