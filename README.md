@@ -189,6 +189,10 @@ protein = ribosome.translate(
     query="How do I sort a list?"
 )
 print(protein.sequence)
+
+# Or create mRNA directly for inspection
+template = mRNA(sequence="Hello {{name}}")
+print(template.get_required_variables())  # ["name"]
 ```
 
 ### 🗑️ Lysosome (Cleanup & Recycling)
