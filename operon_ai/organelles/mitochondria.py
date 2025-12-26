@@ -67,6 +67,7 @@ class MetabolicResult:
     atp: ATP | None = None
     error: str | None = None
     ros_level: float = 0.0  # Accumulated danger level
+    pathway: MetabolicPathway | None = None  # Pathway attempted
 
 
 @runtime_checkable
@@ -314,7 +315,8 @@ class Mitochondria:
             return MetabolicResult(
                 success=False,
                 error=f"Expression too long ({len(expression)} chars, max {MAX_EXPRESSION_LENGTH})",
-                ros_level=self._ros_accumulated
+                ros_level=self._ros_accumulated,
+                pathway=pathway
             )
 
         # Check ROS levels (accumulated danger)
@@ -322,7 +324,8 @@ class Mitochondria:
             return MetabolicResult(
                 success=False,
                 error="Mitochondrial dysfunction: ROS threshold exceeded. Call repair() to recover.",
-                ros_level=self._ros_accumulated
+                ros_level=self._ros_accumulated,
+                pathway=pathway
             )
 
         # Auto-detect pathway if not specified
@@ -345,7 +348,8 @@ class Mitochondria:
                 return MetabolicResult(
                     success=False,
                     error=f"Unknown pathway: {pathway}",
-                    ros_level=self._ros_accumulated
+                    ros_level=self._ros_accumulated,
+                    pathway=pathway
                 )
 
             execution_time = (time.time() - start_time) * 1000
@@ -363,14 +367,21 @@ class Mitochondria:
             return MetabolicResult(
                 success=True,
                 atp=atp,
-                ros_level=self._ros_accumulated
+                ros_level=self._ros_accumulated,
+                pathway=pathway
             )
 
         except Exception as e:
             self._ros_accumulated += 0.1
+            error_context = {
+                "expression": expression[:100] + "..." if len(expression) > 100 else expression,
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+            }
             return MetabolicResult(
                 success=False,
-                error=f"Metabolic failure: {e}",
+                error=f"Metabolic failure in {pathway.value if pathway else 'auto'}: {type(e).__name__}: {e}",
+                pathway=pathway or MetabolicPathway.GLYCOLYSIS,
                 ros_level=self._ros_accumulated
             )
 
