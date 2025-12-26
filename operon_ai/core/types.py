@@ -13,7 +13,7 @@ biological category with morphisms defined by agent processing.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Generic, TypeVar, Any, List
+from typing import Generic, TypeVar, Any
 from enum import Enum, IntEnum
 from datetime import datetime
 
@@ -61,8 +61,8 @@ class Signal:
     signal_type: SignalType = SignalType.EXTERNAL
     strength: SignalStrength = SignalStrength.MODERATE
     timestamp: datetime = field(default_factory=datetime.now)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    trace_id: Optional[str] = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+    trace_id: str | None = None
 
     def with_metadata(self, **kwargs) -> 'Signal':
         """Create a new signal with additional metadata."""
@@ -178,7 +178,7 @@ class ApprovalToken:
     confidence: float = 1.0
     integrity: IntegrityLabel = IntegrityLabel.TRUSTED
     timestamp: datetime = field(default_factory=datetime.now)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -201,9 +201,9 @@ class ActionProtein:
     action_type: str  # Keep as str for backward compatibility
     payload: Any
     confidence: float
-    source_agent: Optional[str] = None
+    source_agent: str | None = None
     timestamp: datetime = field(default_factory=datetime.now)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def is_success(self) -> bool:
         """Check if this represents a successful action."""
@@ -242,9 +242,9 @@ class FoldedProtein(Generic[T]):
         folding_attempts: Number of attempts needed
     """
     valid: bool
-    structure: Optional[T] = None
+    structure: T | None = None
     raw_peptide_chain: str = ""
-    error_trace: Optional[str] = None
+    error_trace: str | None = None
     folding_attempts: int = 1
 
     def map(self, func) -> 'FoldedProtein':
@@ -322,9 +322,9 @@ class Pathway:
         signals: Signals that have traveled this path
     """
     name: str
-    stages: List[str] = field(default_factory=list)
+    stages: list[str] = field(default_factory=list)
     current_stage: int = 0
-    signals: List[Signal] = field(default_factory=list)
+    signals: list[Signal] = field(default_factory=list)
 
     def advance(self) -> bool:
         """Move to next stage. Returns False if at end."""
@@ -333,7 +333,7 @@ class Pathway:
             return True
         return False
 
-    def current_stage_name(self) -> Optional[str]:
+    def current_stage_name(self) -> str | None:
         """Get name of current stage."""
         if 0 <= self.current_stage < len(self.stages):
             return self.stages[self.current_stage]

@@ -63,6 +63,7 @@ print(result.threat_level)  # ThreatLevel.CRITICAL
 membrane.learn_threat("BACKDOOR_PROTOCOL", level=ThreatLevel.CRITICAL)
 
 # Share immunity between agents
+other_membrane = Membrane()  # Another agent's membrane
 antibodies = membrane.export_antibodies()
 other_membrane.import_antibodies(antibodies)
 ```
@@ -142,10 +143,13 @@ result = chap.fold(raw, User)
 print(result.valid)  # True
 print(result.structure.age)  # 30 (coerced to int)
 
-# Enhanced folding with confidence
+# Control which strategies are tried (default: STRICT → EXTRACTION → LENIENT → REPAIR)
+result = chap.fold(raw, User, strategies=[FoldingStrategy.STRICT, FoldingStrategy.REPAIR])
+
+# Enhanced folding with confidence scoring
 result = chap.fold_enhanced(raw, User)
 print(result.confidence)  # 0.65 (lower due to repairs)
-print(result.coercions_applied)  # ["fixed_single_quotes", "removed_trailing_comma"]
+print(result.strategy_used)  # FoldingStrategy.REPAIR
 ```
 
 ### 🧬 Ribosome (Prompt Template Engine)
@@ -185,6 +189,10 @@ protein = ribosome.translate(
     query="How do I sort a list?"
 )
 print(protein.sequence)
+
+# Or create mRNA directly for inspection
+template = mRNA(sequence="Hello {{name}}")
+print(template.get_required_variables())  # ["name"]
 ```
 
 ### 🗑️ Lysosome (Cleanup & Recycling)
@@ -199,13 +207,13 @@ Handles failure states, expired data, and sensitive material—digesting waste w
 - **Toxic Disposal**: Secure handling of sensitive data
 
 ```python
-from operon_ai import Lysosome, Waste, WasteType
+from operon_ai import Lysosome, WasteType
 
 lysosome = Lysosome(auto_digest_threshold=100)
 
 # Capture failures
 try:
-    risky_operation()
+    result = 1 / 0  # Example risky operation
 except Exception as e:
     lysosome.ingest_error(e, source="risky_op", context={"step": 3})
 
@@ -323,7 +331,8 @@ metabolism.consume(20, "tool_use", EnergyType.GTP)
 metabolism.convert_nadh_to_atp(15)
 
 # Transfer energy between agents
-metabolism.transfer_to(other_agent.metabolism, 10)
+other_metabolism = ATP_Store(budget=50)
+metabolism.transfer_to(other_metabolism, 10)
 ```
 
 ### 🧬 Genome (Immutable Configuration)
@@ -363,10 +372,10 @@ telomere = Telomere(
 )
 
 # Each operation shortens telomeres
-while telomere.tick():  # Returns False when senescent
-    do_operation()
-    if telomere.record_error():
-        handle_error()
+for i in range(10):
+    if not telomere.tick():  # Returns False when senescent
+        break
+    print(f"Operation {i}: {telomere.remaining} remaining")
 
 # Renew agent (like telomerase)
 if telomere.get_phase() == LifecyclePhase.SENESCENT:
@@ -437,8 +446,10 @@ Multi-agent consensus with voting strategies and reliability tracking.
 Note: quorum only helps if voters are not strongly correlated (use diverse models, tool checks, and/or data partitioning).
 
 ```python
+from operon_ai import ATP_Store
 from operon_ai.topology import QuorumSensing, VotingStrategy
 
+budget = ATP_Store(budget=100)
 quorum = QuorumSensing(
     n_agents=5,
     budget=budget,
@@ -464,17 +475,17 @@ cascade = Cascade(name="DataPipeline")
 
 cascade.add_stage(CascadeStage(
     name="validate",
-    processor=lambda x: x if valid(x) else None,
+    processor=lambda x: x if x > 0 else None,  # Only positive values
     checkpoint=lambda x: x is not None,  # Gate
 ))
 
 cascade.add_stage(CascadeStage(
     name="transform",
-    processor=lambda x: process(x),
+    processor=lambda x: x * 2,  # Double the value
     amplification=2.0,  # Signal amplification
 ))
 
-result = cascade.run(input_data)
+result = cascade.run(10)  # Input value
 print(f"Amplification: {result.total_amplification}x")
 
 # Or use pre-built MAPK cascade
@@ -488,10 +499,20 @@ Biological rhythms for scheduled operations.
 ```python
 from operon_ai.topology import Oscillator, HeartbeatOscillator, OscillatorPhase
 
-# Heartbeat for health checks
+# Define your periodic actions
+def health_check():
+    print("💓 Health check: OK")
+
+def do_work():
+    print("⚙️ Working...")
+
+def do_rest():
+    print("😴 Resting...")
+
+# Heartbeat for health checks (1 beat per second)
 heartbeat = HeartbeatOscillator(
     beats_per_minute=60,
-    on_beat=lambda: health_check(),
+    on_beat=health_check,
 )
 heartbeat.start()
 
@@ -500,6 +521,10 @@ osc = Oscillator(frequency_hz=0.1)  # 10 second period
 osc.add_phase(OscillatorPhase(name="work", duration_seconds=7, action=do_work))
 osc.add_phase(OscillatorPhase(name="rest", duration_seconds=3, action=do_rest))
 osc.start()
+
+# Stop when done (oscillators run in background threads)
+# heartbeat.stop()
+# osc.stop()
 ```
 
 ---
