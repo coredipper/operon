@@ -85,13 +85,32 @@ This lifecycle is managed through:
 - **ROS Accumulation**: Error buildup that degrades performance
 - **Apoptosis Signals**: Clean termination when thresholds are exceeded
 
+### Failure Modes: Agentic Pathology
+
+Just as cells can develop diseases, agentic systems exhibit pathological failure modes. Operon classifies four primary pathologies based on their biological isomorphisms:
+
+| Pathology | Biological Disease | Agentic Failure | Treatment |
+|-----------|-------------------|-----------------|-----------|
+| **Oncology** | Cancer (unchecked growth) | Infinite loops, recursive hangs | Apoptosis mechanism (entropy monitoring) |
+| **Autoimmunity** | Lupus (self-attack) | Hallucination cascades, context poisoning | Schema typing (distinguish Self from Non-Self) |
+| **Prion Disease** | CJD (protein misfolding) | Prompt injection cascades | Denaturation layers (sanitization) |
+| **Ischemia** | Stroke (oxygen starvation) | Token exhaustion, rate limits | Metabolic regulation (budget-aware agents) |
+
+**Oncology (Infinite Loops)**: When the Trace operation lacks a termination measure, agents can loop indefinitely. Treatment: Monitor information gain; trigger apoptosis when conversation becomes repetitive.
+
+**Autoimmunity (Hallucination Cascades)**: Agent A hallucinates a fact; Agent B treats it as ground truth. The error amplifies through the network. Treatment: Strict schema typing to distinguish generated content from tool outputs.
+
+**Prion Disease (Prompt Injection)**: A malicious string enters the context and "misfolds" agent alignment, propagating through downstream agents. Treatment: Denaturation layers (paraphrasing/sanitization) that disrupt injection syntax.
+
+**Ischemia (Resource Exhaustion)**: The system is logically sound but fails mid-execution due to token limits or rate limiting. Treatment: Budget-aware agents that degrade gracefully (switch from Chain-of-Thought to Zero-Shot when energy is low).
+
 ---
 
 ## Core Concepts
 
-### Organelles: The Building Blocks
+### Organelles: Shared Infrastructure
 
-Every agent is composed of organelles—specialized components that handle distinct aspects of operation:
+Organelles are specialized components shared across agents within a cellular system. They provide common services that multiple genes/agents can utilize:
 
 | Organelle | Function | Biological Analog |
 |-----------|----------|-------------------|
