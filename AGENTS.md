@@ -17,7 +17,7 @@ A comprehensive guide to building, understanding, and integrating agents using t
 
 ## Theory: The Gene-Agent Isomorphism
 
-Operon is grounded in a formal isomorphism between **genes** and **agents**—not cells and agents. Both are polynomial functors: systems that consume typed inputs and produce typed outputs, constrained by internal state and energy budgets.
+Operon is grounded in a formal isomorphism between **genes** and **agents**. Both are polynomial functors: systems that consume typed inputs and produce typed outputs, constrained by internal state and energy budgets.
 
 The key insight: a **cell** contains thousands of genes working together. Therefore:
 - **Gene** ↔ **Agent** (individual processing unit)
