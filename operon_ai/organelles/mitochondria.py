@@ -26,6 +26,10 @@ import time
 
 from ..core.types import Capability
 
+# Safety limits
+MAX_EXPRESSION_LENGTH = 10000  # Characters
+MAX_AST_DEPTH = 50  # Nesting levels
+
 class MetabolicPathway(Enum):
     """
     Different metabolic pathways for different substrates.
@@ -304,6 +308,14 @@ class Mitochondria:
         """
         self._operations_count += 1
         start_time = time.time()
+
+        # Safety: Reject overly long expressions
+        if len(expression) > MAX_EXPRESSION_LENGTH:
+            return MetabolicResult(
+                success=False,
+                error=f"Expression too long ({len(expression)} chars, max {MAX_EXPRESSION_LENGTH})",
+                ros_level=self._ros_accumulated
+            )
 
         # Check ROS levels (accumulated danger)
         if self._ros_accumulated >= self.max_ros:
