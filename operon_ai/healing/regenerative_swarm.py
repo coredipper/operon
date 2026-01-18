@@ -20,8 +20,6 @@ regeneration cycle:
 The key insight: Agent death is not just cleanup - it's information transfer.
 The dying agent's experience becomes a lesson for its successor.
 """
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Callable, Protocol
