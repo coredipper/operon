@@ -213,6 +213,25 @@ from .providers import (
 )
 
 # =============================================================================
+# Healing (Self-Repair Mechanisms)
+# =============================================================================
+from .healing import (
+    ChaperoneLoop,
+    HealingResult,
+    HealingOutcome,
+    RefoldingAttempt,
+    RegenerativeSwarm,
+    SwarmResult,
+    SimpleWorker,
+    WorkerMemory,
+    WorkerStatus,
+    AutophagyDaemon,
+    PruneResult,
+    ContextMetrics,
+    ContextHealthStatus,
+)
+
+# =============================================================================
 # Public API
 # =============================================================================
 __all__ = [
@@ -365,6 +384,21 @@ __all__ = [
     "ProviderUnavailableError",
     "QuotaExhaustedError",
     "TranscriptionFailedError",
+
+    # Healing (Self-Repair Mechanisms)
+    "ChaperoneLoop",
+    "HealingResult",
+    "HealingOutcome",
+    "RefoldingAttempt",
+    "RegenerativeSwarm",
+    "SwarmResult",
+    "SimpleWorker",
+    "WorkerMemory",
+    "WorkerStatus",
+    "AutophagyDaemon",
+    "PruneResult",
+    "ContextMetrics",
+    "ContextHealthStatus",
 ]
 
 __version__ = "0.9.0"

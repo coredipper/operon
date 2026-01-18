@@ -200,8 +200,6 @@ This formalism establishes that ``Ischemia'' (Token Starvation) is not merely a 
 For any agentic topology $T$ composed of $N$ agents with total budget $R_{total}$, the system is guaranteed to halt. Unlike the general Halting Problem, termination is decidable for Metabolic Coalgebras: the resource state $r$ is strictly decreasing for every non-identity morphism, providing a well-founded termination measure \cite{boreale2023weighted}.
 \end{theorem}
 
-\noindent\textit{Reference Implementation:} The accompanying \texttt{operon} library provides a demonstration of Metabolic Coalgebras in \texttt{examples/37\_metabolic\_swarm\_budgeting.py}, where a swarm of agents shares a finite token budget and undergoes apoptosis when resources are exhausted.
-
 \subsection{Additional Organelles: Completing the Cellular Architecture}
 
 Beyond the core gene-agent mapping, biological cells contain specialized organelles that handle distinct aspects of cellular function. We extend our isomorphism to four additional structures that map directly to agentic software components.

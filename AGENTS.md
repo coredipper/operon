@@ -104,6 +104,72 @@ Just as cells can develop diseases, agentic systems exhibit pathological failure
 
 **Ischemia (Resource Exhaustion)**: The system is logically sound but fails mid-execution due to token limits or rate limiting. Treatment: Budget-aware agents that degrade gracefully (switch from Chain-of-Thought to Zero-Shot when energy is low).
 
+### Self-Healing: Homeostatic Mechanisms
+
+Beyond treating failures, Operon provides continuous self-repair mechanisms:
+
+| Mechanism | Biological Parallel | Software Pattern | Module |
+|-----------|---------------------|------------------|--------|
+| **Chaperone Loop** | GroEL/GroES protein refolding | Feed validation errors back to generator | `healing.ChaperoneLoop` |
+| **Regenerative Swarm** | Apoptosis + stem cell regeneration | Kill stuck agents, respawn with summarized memory | `healing.RegenerativeSwarm` |
+| **Autophagy Daemon** | Cellular waste digestion | Prune context window via sleep/wake cycles | `healing.AutophagyDaemon` |
+
+#### Chaperone Loop (Structural Healing)
+
+```python
+from operon_ai.healing import ChaperoneLoop
+from operon_ai import Chaperone
+
+loop = ChaperoneLoop(
+    generator=my_llm_call,
+    chaperone=Chaperone(),
+    schema=MyOutputSchema,
+    max_retries=3,
+)
+
+result = loop.heal("Generate a price quote")
+# If validation fails, error trace is fed back for refolding
+# result.outcome: VALID_FIRST_TRY | HEALED | DEGRADED
+```
+
+#### Regenerative Swarm (Metabolic Healing)
+
+```python
+from operon_ai.healing import RegenerativeSwarm, create_default_summarizer
+
+swarm = RegenerativeSwarm(
+    worker_factory=create_worker,
+    summarizer=create_default_summarizer(),
+    entropy_threshold=0.9,  # High similarity = stuck
+    max_regenerations=3,
+)
+
+result = swarm.supervise("Solve complex task")
+# Stuck workers are killed and regenerated with summarized memory
+# New workers receive hints: "Worker_1 died trying X. Try different approach."
+```
+
+#### Autophagy Daemon (Cognitive Healing)
+
+```python
+from operon_ai.healing import AutophagyDaemon, create_simple_summarizer
+from operon_ai import HistoneStore, Lysosome
+
+daemon = AutophagyDaemon(
+    histone_store=HistoneStore(),
+    lysosome=Lysosome(),
+    summarizer=create_simple_summarizer(),
+    toxicity_threshold=0.8,  # Prune at 80% context fill
+)
+
+new_context, result = daemon.check_and_prune(context, max_tokens=8000)
+# If context exceeds threshold:
+#   1. Summarize useful state
+#   2. Store in long-term memory
+#   3. Flush raw context
+#   4. Return clean context + summary
+```
+
 ---
 
 ## Core Concepts

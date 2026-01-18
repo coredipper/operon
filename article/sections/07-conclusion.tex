@@ -2,20 +2,43 @@
 
 The transition from ``Prompt Engineering'' to ``Agentic Engineering'' requires moving beyond component-level
 optimization toward principled architectural design. Current methodologies often lack the formal foundations
-needed to guarantee system-level properties like termination and error suppression.
+needed to guarantee system-level properties like termination, error suppression, and graceful degradation.
 
 In this paper, we have demonstrated that Gene Regulatory Networks (GRNs) provide a proven architectural blueprint
 for distributed, stochastic information processing. By formalizing this analogy through Applied Category Theory,
 we have derived a suite of robust design patterns:
 \begin{enumerate}[leftmargin=*]
-\item \textbf{Robustness:} The use of Quorum Sensing and CFFL topologies to filter stochastic noise.
-\item \textbf{Validity:} The use of Chaperone Proteins to enforce structural determinism on probabilistic outputs.
+\item \textbf{Robustness:} The use of Quorum Sensing and Coherent Feed-Forward Loop topologies to filter
+stochastic noise and require consensus before action.
+\item \textbf{Validity:} The use of Chaperone Proteins to enforce structural determinism on probabilistic outputs,
+with multi-strategy folding (strict $\to$ extraction $\to$ lenient $\to$ repair) that mirrors the biological
+protein quality control system.
 \item \textbf{Security:} The identification of Prion-like prompt injections and the topological defenses required
-to stop them.
+to stop them, including denaturation layers that disrupt malicious syntax.
+\item \textbf{Termination:} The Metabolic Coalgebra formalism that guarantees halting through strictly decreasing
+resource states, providing a decidable termination measure where the general Halting Problem offers none.
+\item \textbf{Homeostasis:} The extension from discrete failure treatment to continuous self-repair through three
+healing modalities:
+\begin{itemize}
+\item \textit{Structural Healing} (Chaperone Loop): Error traces fed back to generators enable context-aware
+correction rather than blind retry.
+\item \textit{Metabolic Healing} (Apoptosis + Regeneration): Stuck agents are cleanly terminated and replaced
+with successors that inherit summarized learnings.
+\item \textit{Cognitive Healing} (Autophagy): Context windows are proactively pruned via sleep/wake cycles,
+consolidating useful state and flushing accumulated noise.
+\end{itemize}
 \item \textbf{Evolution:} The mapping of Horizontal Gene Transfer to dynamic tool loading and Endosymbiosis to
-neuro-symbolic integration.
+neuro-symbolic integration, enabling runtime capability acquisition.
 \end{enumerate}
 
-We conclude that biomimetic topology offers a promising direction for reliable AI agents. The control structures
-that emerged in biological systems---from metabolic constraints to symbiotic integration---address the same
-fundamental challenges of distributed, stochastic information processing that agentic architectures face today.
+The homeostatic mechanisms represent a fundamental shift in perspective: most agent frameworks focus on
+\textit{Action} (doing things), while biological systems equally prioritize \textit{Maintenance} (staying alive).
+By implementing continuous repair mechanisms, we build systems that degrade gracefully rather than failing
+catastrophically---systems that, like their biological counterparts, can operate indefinitely in noisy,
+adversarial environments.
+
+We conclude that biomimetic topology offers a principled foundation for reliable AI agents. The control structures
+that emerged over billions of years of evolution---from metabolic constraints to immune surveillance to
+regenerative healing---address the same fundamental challenges of distributed, stochastic information processing
+that agentic architectures face today. The isomorphism is not merely metaphorical; it is mathematical, and it
+provides actionable design patterns grounded in both category theory and empirical biological validation.

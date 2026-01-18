@@ -7,8 +7,6 @@ functional agents interacting in topologically pathological ways.
 
 We classify four primary classes of agentic pathology based on their biological isomorphisms.
 
-\noindent\textit{Reference Implementation:} The accompanying \texttt{operon} library provides integrated defenses against these pathologies in \texttt{examples/18\_cell\_integrity\_demo.py}, implementing a Quality System (provenance tracking), Surveillance System (Byzantine agent detection), and Coordination System (deadlock prevention).
-
 \subsection{Oncology: Infinite Loops as Unchecked Growth}
 
 \begin{itemize}[leftmargin=*]
@@ -77,4 +75,53 @@ cost ($c$).
 \item \textbf{Treatment:} Metabolic Regulation. Instead of a fixed loop, implement ``Budget-Aware'' agents. The
 agent observes its own remaining token count (ATP levels) and dynamically simplifies its reasoning strategy
 (switching from Chain-of-Thought to Zero-Shot) to conserve energy.
+\end{itemize}
+
+\subsection{Homeostasis: From Treatment to Continuous Repair}
+
+The preceding pathologies describe discrete failure modes and their treatments. Biological systems,
+however, do not merely recover from failures---they maintain continuous \textbf{homeostasis} through
+autonomous repair mechanisms. We identify three primary healing modalities.
+
+\subsubsection{Structural Healing: The Chaperone Loop}
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Biological Mechanism:} Chaperone proteins (GroEL/GroES) cage misfolded proteins and
+provide a protected environment for refolding attempts. The error (misfolding) becomes input to the
+repair process.
+\item \textbf{Agentic Implementation:} A feedback loop where validation errors are passed back to
+the generator. Rather than simple retry, the error trace (e.g., ``TypeError: `one hundred' is not float'')
+is injected into the generator's context, enabling context-aware correction.
+\item \textbf{Categorical Structure:} The Chaperone Loop is a coalgebra with state
+$S = \text{Output} \times \text{ErrorTrace}$ and structure map
+$\alpha: S \to \text{Valid} + S$ (either succeed or retry with error context).
+\end{itemize}
+
+\subsubsection{Metabolic Healing: Apoptosis and Regeneration}
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Biological Mechanism:} Damaged cells trigger apoptosis (programmed death), and stem
+cells divide to regenerate the lost tissue. The dying cell's state is not entirely lost---cellular
+debris signals neighboring cells about the threat.
+\item \textbf{Agentic Implementation:} A supervisor detects stuck agents (via entropy monitoring:
+repeated outputs indicate no progress). Rather than restart with blank state, the supervisor
+summarizes the failed agent's memory and injects it into the replacement: ``Worker\_1 died
+attempting strategy X. Try a different approach.''
+\item \textbf{Categorical Structure:} The regeneration is a partial morphism
+$\text{summarize}: \text{Memory}_{\text{failed}} \to \text{Memory}_{\text{new}}$ that preserves
+learned constraints while discarding corrupted state.
+\end{itemize}
+
+\subsubsection{Cognitive Healing: Autophagy}
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Biological Mechanism:} Cells digest accumulated waste (damaged organelles, protein
+aggregates) through autophagy, recycling components and preventing toxic buildup.
+\item \textbf{Agentic Implementation:} A background daemon monitors context window utilization.
+When it exceeds a threshold (e.g., 80\%), the agent enters a ``sleep cycle'': useful state is
+summarized into long-term memory, raw context is flushed, and the agent resumes with a clean
+window plus summary.
+\item \textbf{Categorical Structure:} Autophagy implements a quotient map
+$q: \text{RawContext} \twoheadrightarrow \text{Summary}$ that collapses verbose detail while
+preserving essential information.
 \end{itemize}
