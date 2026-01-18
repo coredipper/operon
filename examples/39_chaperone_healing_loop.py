@@ -19,6 +19,14 @@ The key insight: The error trace itself is information. "TypeError: 'one hundred
 is not a valid float" tells the generator exactly what went wrong, enabling
 targeted repair rather than blind retry.
 
+Prerequisites:
+- Example 09 for basic Chaperone validation patterns
+- Example 23 for multi-organelle pipelines
+
+See Also:
+- operon_ai/healing/chaperone_loop.py for the core implementation
+- Article Section 5.5: Homeostasis - Structural Healing
+
 Usage:
     python examples/39_chaperone_healing_loop.py
     python examples/39_chaperone_healing_loop.py --test
@@ -314,7 +322,7 @@ def run_smoke_test():
     assert result3.outcome == HealingOutcome.VALID_FIRST_TRY, f"Expected VALID_FIRST_TRY, got {result3.outcome}"
     assert len(result3.attempts) == 1, "Expected single attempt"
 
-    print("✓ All smoke tests passed!")
+    print("Smoke test passed!")
 
 
 # =============================================================================

@@ -20,6 +20,7 @@ regeneration cycle:
 The key insight: Agent death is not just cleanup - it's information transfer.
 The dying agent's experience becomes a lesson for its successor.
 """
+from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
@@ -281,7 +282,7 @@ class RegenerativeSwarm:
         """
         recent_outputs: list[str] = []
 
-        for step in range(self.max_steps_per_worker):
+        for _ in range(self.max_steps_per_worker):
             output = worker.step(task)
 
             # Check for explicit success markers

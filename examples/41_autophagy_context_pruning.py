@@ -20,6 +20,14 @@ Biological parallel:
 The key insight: Context pollution degrades performance gradually.
 Proactive cleanup prevents catastrophic degradation.
 
+Prerequisites:
+- Example 14 for epigenetic memory patterns
+- Example 11 for Lysosome cleanup patterns
+
+See Also:
+- operon_ai/healing/autophagy_daemon.py for the core implementation
+- Article Section 5.5: Homeostasis - Cognitive Healing
+
 Usage:
     python examples/41_autophagy_context_pruning.py
     python examples/41_autophagy_context_pruning.py --test
@@ -389,7 +397,7 @@ def run_smoke_test():
     assert stats["prune_count"] >= 1, "Expected at least one prune recorded"
     assert stats["total_tokens_freed"] > 0, "Expected tokens freed recorded"
 
-    print("✓ All smoke tests passed!")
+    print("Smoke test passed!")
 
 
 # =============================================================================

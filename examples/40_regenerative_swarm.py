@@ -21,6 +21,14 @@ Biological parallel:
 The key insight: Agent death is not just cleanup - it's information transfer.
 The dying agent's experience becomes a lesson for its successor.
 
+Prerequisites:
+- Example 37 for metabolic swarm budgeting concepts
+- Example 04 for basic ATP budgeting
+
+See Also:
+- operon_ai/healing/regenerative_swarm.py for the core implementation
+- Article Section 5.5: Homeostasis - Metabolic Healing
+
 Usage:
     python examples/40_regenerative_swarm.py
     python examples/40_regenerative_swarm.py --test
@@ -382,7 +390,7 @@ def run_smoke_test():
     assert result3.total_workers_spawned == 1, "Expected single worker"
     assert len(result3.apoptosis_events) == 0, "Expected no apoptosis"
 
-    print("✓ All smoke tests passed!")
+    print("Smoke test passed!")
 
 
 # =============================================================================

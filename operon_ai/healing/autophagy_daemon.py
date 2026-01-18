@@ -22,6 +22,7 @@ maintenance:
 The key insight: Context pollution degrades performance. Proactive cleanup
 prevents gradual degradation before it becomes catastrophic.
 """
+from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone

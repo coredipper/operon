@@ -17,6 +17,7 @@ The key insight: The error trace itself is information. "TypeError: 'one hundred
 is not a valid float" tells the generator exactly what went wrong, enabling
 targeted repair rather than random regeneration.
 """
+from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Type, TypeVar, Callable, Protocol
