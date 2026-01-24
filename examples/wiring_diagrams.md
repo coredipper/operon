@@ -39,6 +39,20 @@ Each arrow implies a typed connection with integrity constraints.
 
 - [Example 37: Metabolic Swarm Budgeting](wiring_diagrams/example37_metabolic_swarm.md)
 
+### Cost Attribution
+
+- [Example 38: Linear Budget Tracking](#example-38-linear-budget-tracking-cost-attribution)
+
+### Health & Healing (v0.10+)
+
+- [Example 39: Chaperone Healing Loop](#example-39-chaperone-healing-loop)
+- [Example 40: Epiplexity Monitoring](#example-40-epiplexity-monitoring)
+
+### Surveillance (v0.11+)
+
+- [Example 41: Innate Immunity](#example-41-innate-immunity)
+- [Example 42: Morphogen Gradients](#example-42-morphogen-gradients)
+
 ## Example 17: Typed Wiring (Integrity + Capabilities)
 
 ```
@@ -218,3 +232,200 @@ Termination: solved | ischemia | swarm_collapse | verifier_death | entropy_limit
 ```
 
 Legend: U = UNTRUSTED, V = VALIDATED, T = TRUSTED.
+
+## Example 38: Linear Budget Tracking (Cost Attribution)
+
+```mermaid
+flowchart TB
+    subgraph inputs["Data Sources"]
+        CSV[("Anthropic CSV")]
+        GIT[("Git History")]
+        LINEAR[("Linear API")]
+    end
+
+    subgraph parsing["Parsing"]
+        CSV --> CSVParser["CostCSVParser"]
+        GIT --> GitAnalyzer["GitTicketAnalyzer"]
+    end
+
+    subgraph attribution["Attribution"]
+        CSVParser --> Attributor["CostAttributor"]
+        GitAnalyzer --> Attributor
+    end
+
+    subgraph budgeting["Budget Tracking"]
+        LINEAR --> BudgetConfig
+        BudgetConfig --> Tracker["TicketBudgetTracker"]
+        Attributor --> Tracker
+    end
+
+    subgraph states["Metabolic States"]
+        Tracker --> Normal["NORMAL < 70%"]
+        Tracker --> Conserving["CONSERVING 70-90%"]
+        Tracker --> Starving["STARVING > 90%"]
+        Tracker --> Over["OVER BUDGET > 100%"]
+    end
+```
+
+```
+[csv] --cost(U)--> [csv_parser] --cost(V)--+
+                                           +--> [attributor] --ticket_cost(V)--> [tracker] --> [metabolic_state]
+[git] --commits(U)--> [git_analyzer] --commits(V)--+                              ^
+                                                                                   |
+[linear] --estimates(T)------------------------------------------------------------+
+```
+
+## Example 39: Chaperone Healing Loop
+
+```mermaid
+flowchart LR
+    subgraph ChaperoneLoop["Chaperone Loop (GroEL/GroES)"]
+        prompt[Prompt] --> generator[Generator LLM]
+        generator --> raw[Raw Output]
+        raw --> chaperone[Chaperone Validator]
+        chaperone -->|valid| output[Folded Protein]
+        chaperone -->|invalid| error[Error Trace]
+        error -->|feedback| generator
+        error -->|max retries| ubiquitin[Ubiquitin Tag → Lysosome]
+    end
+
+    style output fill:#c8e6c9
+    style ubiquitin fill:#ffcdd2
+```
+
+```
+                    +---------------------------+
+                    |                           |
+                    v                           |
+[prompt] --text(U)--> [generator] --json(U)--> [chaperone] --json(V)--> [output]
+                           ^                        |
+                           |                        |
+                           +---error(V)---[healing_feedback]
+                                                    |
+                                          [max_retries?]--ubiquitin(V)--> [lysosome]
+
+Confidence: 1.0 → 0.85 → 0.70 → ... (decay per retry)
+```
+
+## Example 40: Epiplexity Monitoring
+
+```mermaid
+flowchart TB
+    subgraph Monitor["Epiplexity Monitor"]
+        input[Agent Output] --> embed[Embedding Provider]
+        embed --> novelty[Embedding Novelty ê]
+        input --> perplexity[Perplexity H]
+        novelty --> combine["Ê = α·ê + (1-α)·H"]
+        perplexity --> combine
+        combine --> window[Windowed Integral]
+        window --> status{Health Status}
+        status -->|low Ê| healthy[HEALTHY]
+        status -->|moderate Ê| exploring[EXPLORING]
+        status -->|high Ê, short| converging[CONVERGING]
+        status -->|high Ê, sustained| stagnant[STAGNANT]
+        status -->|critical duration| critical[CRITICAL]
+    end
+
+    style healthy fill:#c8e6c9
+    style exploring fill:#e3f2fd
+    style converging fill:#fff9c4
+    style stagnant fill:#ffccbc
+    style critical fill:#ffcdd2
+```
+
+```
+[agent_output] --text(U)--> [embedding_provider] --embedding(V)--+
+                                                                 +--> [epiplexity_calc] --> [health_status]
+[agent_output] --text(U)--> [perplexity_calc] --perplexity(V)----+
+                                                                         |
+                                                    +--------------------+--------------------+
+                                                    |                    |                    |
+                                               [HEALTHY]            [STAGNANT]           [CRITICAL]
+                                               (ê high)             (ê low, H high)      (sustained)
+```
+
+## Example 41: Innate Immunity
+
+```mermaid
+flowchart TB
+    subgraph InnateImmunity["Innate Immunity (Fast Path)"]
+        input[Input Signal] --> tlr[TLR Pattern Matching]
+        tlr -->|no match| complement[Complement System]
+        tlr -->|PAMP detected| inflammation[Inflammation Response]
+        complement -->|valid| allow[ALLOW]
+        complement -->|invalid| inflammation
+        inflammation --> block[BLOCK + Alert]
+    end
+
+    subgraph TLR["TLR Patterns (PAMPs)"]
+        pamp1[Instruction Override]
+        pamp2[Jailbreak Attempt]
+        pamp3[ChatML Injection]
+        pamp4[Role Manipulation]
+    end
+
+    style allow fill:#c8e6c9
+    style block fill:#ffcdd2
+```
+
+```
+[input] --text(U)--> [tlr_scanner] --+--no_match--> [complement_validators] --valid--> [ALLOW]
+                                     |                        |
+                                     |                    invalid
+                                     |                        |
+                                     +--PAMP_detected--> [inflammation] --> [BLOCK]
+                                                              |
+                                              +---------------+---------------+
+                                              |               |               |
+                                         [cytokines]    [log_level++]    [rate_limit]
+```
+
+## Example 42: Morphogen Gradients
+
+```mermaid
+flowchart TB
+    subgraph Orchestrator["Gradient Orchestrator"]
+        step[Step Result] --> update[Update Gradients]
+        update --> gradient[Morphogen Gradient]
+        gradient --> hints[Strategy Hints]
+        gradient --> phenotype[Phenotype Config]
+        hints --> agent[Agent Prompt]
+        phenotype --> agent
+    end
+
+    subgraph Gradient["Morphogen Types"]
+        complexity[Complexity]
+        confidence[Confidence]
+        budget[Token Budget]
+        error_rate[Error Rate]
+        urgency[Urgency]
+        risk[Risk Level]
+    end
+
+    subgraph Coordination["Multi-Agent Coordination"]
+        gradient --> agent1[Agent 1]
+        gradient --> agent2[Agent 2]
+        gradient --> agent3[Agent 3]
+        agent1 --> step
+        agent2 --> step
+        agent3 --> step
+    end
+
+    style gradient fill:#e0f7fa
+```
+
+```
+                              [GradientOrchestrator]
+                                       |
+              +------------------------+------------------------+
+              |                        |                        |
+         [complexity]             [confidence]              [budget]
+              |                        |                        |
+              v                        v                        v
+[agent_1] <--hints-- [gradient] --hints--> [agent_2] <--hints-- [agent_3]
+    |                     ^                     |                    |
+    |                     |                     |                    |
+    +-----step_result-----+-----step_result-----+----step_result-----+
+
+Coordination without central control: agents read local gradient concentrations
+```
