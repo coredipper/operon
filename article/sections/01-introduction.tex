@@ -24,8 +24,10 @@ analogous to ``Human-in-the-Loop'' guardrails.
 exceeds a threshold, analogous to Mixture of Experts (MoE) voting.
 \item Chaperone Proteins: Molecular cages that force proteins to fold correctly, analogous to Schema
 Validators that enforce structured outputs (JSON).
-\item Immunological Self-Defense: Mechanisms to distinguish self from non-self, relevant to preventing
-Prompt Injection attacks.
+\item Mitochondrial Information Processing: Metabolic constraints acting as a ``Motherboard'' for
+decision gating, governing not just energy availability but cognitive control policy.
+\item Adaptive Immunity: The Self/Non-Self distinction, with MHC-like provenance tagging and Trust-Gated
+access control, relevant to preventing Prompt Injection attacks and hallucination cascades.
 \end{itemize}
 
 \subsection{The Categorical Bridge}
@@ -44,14 +46,21 @@ P_A(y) = \sum_{o\in O} y^{I_o}.
 This paper makes the following contributions:
 \begin{enumerate}[leftmargin=*]
 \item \textbf{A Formal Dictionary:} We establish a rigorous mapping between biological components
-(Genes, Promoters, Plasmids) and software components (Agents, Schemas, Tools).
+(Genes, Promoters, Plasmids, Organelles) and software components (Agents, Schemas, Tools, Runtimes),
+including multi-cellular organization for multi-agent systems.
 \item \textbf{The Agentic Operad:} We define WAgent, a syntax for agent wiring that forbids specific classes
-of \textbf{ill-typed wirings} (and thus their associated runtime \textbf{type/schema mismatch} errors) at the
-topological level.
-\item \textbf{Pathology Identification:} We classify agentic failures as biological diseases, mapping Infinite
-Loops to Cancer, Hallucinations to Autoimmunity, and Prompt Injections to Prion Disease.
-\item \textbf{Future Architectures:} We propose Endosymbiosis as a model for Neuro-Symbolic AI, where LLMs
-``engulf'' deterministic runtimes to gain computational energy.
+of \textbf{ill-typed wirings} at the topological level. We prove error suppression bounds for the CFFL
+topology, explicitly accounting for correlation between error modes.
+\item \textbf{Adaptive Immunity:} We formalize the Provenance Functor and Trust-Gated Lens, providing
+structural injection resistance where content-based attacks cannot elevate trust levels.
+\item \textbf{Epistemic Health:} We define Epiplexity (Bayesian Surprise) with operational approximations
+using embedding similarity and perplexity, connecting agent dynamics to the Free Energy Principle.
+\item \textbf{Metabolic Intelligence:} We distinguish fast (Apoptosis) and slow (Retrograde Response)
+interventions, and formalize the Metabolic-Epigenetic Coupling for cost-gated retrieval.
+\item \textbf{Pathology \& Homeostasis:} We classify agentic failures as biological diseases and derive
+continuous self-repair mechanisms (Chaperone Loop, Regeneration, Autophagy).
+\item \textbf{Evolutionary Dynamics:} We situate agentic AI within the Vermeij Trend, identifying three
+selective pressures (adversarial, complexity, efficiency) that drive architectural evolution.
 \end{enumerate}
 
 By viewing agentic engineering through the lens of theoretical biology and category theory, we aim to provide a

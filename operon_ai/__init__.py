@@ -232,6 +232,46 @@ from .healing import (
 )
 
 # =============================================================================
+# Health (Epistemic Monitoring)
+# =============================================================================
+from .health import (
+    EpiplexityMonitor,
+    EpiplexityState,
+    EpiplexityResult,
+    HealthStatus,
+    EmbeddingProvider,
+    MockEmbeddingProvider,
+)
+
+# =============================================================================
+# Surveillance - Innate Immunity
+# =============================================================================
+from .surveillance import (
+    InnateImmunity,
+    InnateCheckResult,
+    TLRPattern,
+    PAMPCategory,
+    InflammationLevel,
+    InflammationState,
+    InflammationResponse,
+    JSONValidator,
+    LengthValidator,
+    CharacterSetValidator,
+)
+
+# =============================================================================
+# Coordination - Morphogen Gradients
+# =============================================================================
+from .coordination import (
+    MorphogenType,
+    MorphogenValue,
+    MorphogenGradient,
+    GradientUpdate,
+    GradientOrchestrator,
+    PhenotypeConfig,
+)
+
+# =============================================================================
 # Public API
 # =============================================================================
 __all__ = [
@@ -399,6 +439,34 @@ __all__ = [
     "PruneResult",
     "ContextMetrics",
     "ContextHealthStatus",
+
+    # Health (Epistemic Monitoring)
+    "EpiplexityMonitor",
+    "EpiplexityState",
+    "EpiplexityResult",
+    "HealthStatus",
+    "EmbeddingProvider",
+    "MockEmbeddingProvider",
+
+    # Surveillance - Innate Immunity
+    "InnateImmunity",
+    "InnateCheckResult",
+    "TLRPattern",
+    "PAMPCategory",
+    "InflammationLevel",
+    "InflammationState",
+    "InflammationResponse",
+    "JSONValidator",
+    "LengthValidator",
+    "CharacterSetValidator",
+
+    # Coordination - Morphogen Gradients
+    "MorphogenType",
+    "MorphogenValue",
+    "MorphogenGradient",
+    "GradientUpdate",
+    "GradientOrchestrator",
+    "PhenotypeConfig",
 ]
 
-__version__ = "0.10.0"
+__version__ = "0.11.0"

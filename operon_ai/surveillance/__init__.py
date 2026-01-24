@@ -14,8 +14,21 @@ from .tcell import TCell, ImmuneResponse
 from .treg import RegulatoryTCell, SuppressionRule, ToleranceRecord, SuppressionResult
 from .memory import ImmuneMemory, ThreatSignature
 from .immune_system import ImmuneSystem
+from .innate import (
+    InnateImmunity,
+    InnateCheckResult,
+    TLRPattern,
+    PAMPCategory,
+    InflammationLevel,
+    InflammationState,
+    InflammationResponse,
+    JSONValidator,
+    LengthValidator,
+    CharacterSetValidator,
+)
 
 __all__ = [
+    # Adaptive Immunity (existing)
     "Signal1",
     "Signal2",
     "ThreatLevel",
@@ -36,4 +49,15 @@ __all__ = [
     "ImmuneMemory",
     "ThreatSignature",
     "ImmuneSystem",
+    # Innate Immunity (new)
+    "InnateImmunity",
+    "InnateCheckResult",
+    "TLRPattern",
+    "PAMPCategory",
+    "InflammationLevel",
+    "InflammationState",
+    "InflammationResponse",
+    "JSONValidator",
+    "LengthValidator",
+    "CharacterSetValidator",
 ]

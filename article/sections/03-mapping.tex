@@ -155,7 +155,7 @@ Output Validation & Chaperone (Protein Folding) & Schema Validator / JSON Parser
 Waste Processing & Lysosome (Autophagy) & Error Handler / Garbage Collector\\
 Decision Center & Nucleus (Transcription) & LLM Provider Wrapper\\
 Input Filter & Membrane (Immune System) & Prompt Injection Defense\\
-Computation Engine & Mitochondria (ATP Synthesis) & Deterministic Tool Execution\\
+Computation Engine & Mitochondria (MIPS) & Runtime Supervisor / Decision Gate\\
 \midrule
 \multicolumn{3}{@{}l@{}}{\textit{Lifecycle and Rhythms}}\\
 \midrule
@@ -164,6 +164,45 @@ Periodic Scheduling & Circadian Oscillator & Health Checks / Heartbeat\\
 \bottomrule
 \end{tabular}
 \caption{The Isomorphism Dictionary (Extended)}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Biological Concept} & \textbf{Agentic Concept} & \textbf{Formal Structure}\\
+\midrule
+\multicolumn{3}{@{}l@{}}{\textit{Immunity and Security}}\\
+\midrule
+Toll-Like Receptor (TLR) & Regex Injection Filter & Pattern Matching\\
+MHC Presentation & Provenance Labeling & Functor $\mathcal{P}: \mathbf{Msg} \to \mathbf{Trust}$\\
+T-Cell Receptor & Trust Gate & Partial Lens\\
+Negative Selection & Injection Training & Penalized Learning\\
+Regulatory T-Cell & Confidence Dampening & Suppression Function\\
+Immune Memory & Threat Signature Store & Hash-Indexed Cache\\
+\midrule
+\multicolumn{3}{@{}l@{}}{\textit{Metabolism and Control}}\\
+\midrule
+ATP & Token Budget & Resource Monoid $\mathcal{R}$\\
+mPTP Opening & Fast Apoptosis Trigger & Guard Condition\\
+Retrograde Signaling & Phenotype Reshaping & Slow Adaptation\\
+Metabolic-Epigenetic Coupling & Cost-Gated Retrieval & Conditional Access\\
+\midrule
+\multicolumn{3}{@{}l@{}}{\textit{Information and Health}}\\
+\midrule
+Trophic Factors & Novel Input Signals & Epiplexity $> \delta$\\
+Bayesian Brain & Free Energy Minimization & KL Divergence\\
+Apoptosis & Agent Termination & State $\to \bot$\\
+\midrule
+\multicolumn{3}{@{}l@{}}{\textit{Multi-Cellular Organization}}\\
+\midrule
+Genome & Base Model Weights & Shared Parameters\\
+Epigenome & System Prompt + RAG & Phenotype Context\\
+Morphogen Gradient & Shared Context Variables & JSON State\\
+Tissue Boundary & Trust Boundary & Type Barrier\\
+\bottomrule
+\end{tabular}
+\caption{Extended Isomorphism Dictionary: Security, Metabolism, and Organization}
 \end{table}
 
 \subsection{Metabolic Coalgebras: Formalizing Resource Constraints}
@@ -253,3 +292,24 @@ In agentic systems, Telomeres map to \textbf{lifecycle management}:
 \item \textbf{Telomerase} $\to$ Renewal mechanism (resetting counters for trusted agents)
 \end{itemize}
 This provides a biological basis for the common pattern of limiting agent iterations. Rather than arbitrary timeouts, the telomere model frames lifecycle limits as a natural property of the system's ``cellular age.''
+
+\paragraph{Mitochondria: The Metabolic Motherboard.}
+Recent scholarship reframes mitochondria not merely as the cell's powerhouse, but as the \textbf{Mitochondrial Information Processing System (MIPS)} \cite{picard2022mips}. Mitochondria sense environmental stress and integrate metabolic signals to govern cellular decision-making. They function as ``social signaling organelles'' that communicate with the nucleus and other organelles.
+
+In agentic systems, the Mitochondria maps to the \textbf{Runtime Supervisor}:
+\begin{itemize}[leftmargin=*]
+\item \textbf{ATP Production} $\to$ Deterministic computation (tool execution, code evaluation)
+\item \textbf{Stress Sensing} $\to$ Monitoring token burn rate vs. informational yield
+\item \textbf{Retrograde Signaling} $\to$ Forcing strategy shifts when metabolic efficiency drops
+\item \textbf{Fusion/Fission} $\to$ Context fusion under resource constraints
+\end{itemize}
+
+\textbf{Temporal Dynamics: Fast vs. Slow Interventions.}
+A crucial distinction exists between the timescales of mitochondrial intervention. In biology, retrograde signaling influences nuclear gene expression over hours to days---it is a \textit{developmental} response that reshapes the cell's phenotype. In contrast, acute metabolic stress (ATP depletion, Ca$^{2+}$ overload) triggers immediate responses: cytochrome c release initiates apoptosis within minutes.
+
+We preserve this distinction in the agentic mapping:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Fast Intervention (Acute):} The Runtime monitors real-time metrics (token velocity, error rate). When thresholds are breached, it triggers immediate Apoptosis---terminating the current chain-of-thought without negotiation. This mirrors the mitochondrial permeability transition pore (mPTP) opening.
+\item \textbf{Slow Intervention (Chronic):} The Runtime accumulates statistics across sessions (average efficiency, failure patterns). These inform \textit{Retrograde Responses}---modifications to system prompts, retrieval strategies, or model selection that reshape the agent's ``phenotype'' over deployment cycles. This mirrors how chronic metabolic stress induces mitochondrial biogenesis and metabolic reprogramming.
+\end{itemize}
+The Runtime does not ``override'' the LLM in the sense of injecting tokens mid-generation; rather, it governs the \textit{boundary conditions} within which generation occurs, and triggers state transitions (continue, pivot, terminate) at defined checkpoints.

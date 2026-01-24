@@ -7,22 +7,66 @@ functional agents interacting in topologically pathological ways.
 
 We classify four primary classes of agentic pathology based on their biological isomorphisms.
 
-\subsection{Oncology: Infinite Loops as Unchecked Growth}
+\subsection{Oncology: Infinite Loops as Epistemic Starvation}
 
 \begin{itemize}[leftmargin=*]
 \item \textbf{Biological Pathology (Cancer):} In a healthy cell, the cell cycle is driven by a positive feedback
 loop (Cyclins) but constrained by negative feedback ``checkpoints'' (e.g., the p53 gene). If p53 is mutated,
 the negative feedback is severed. The positive loop runs unchecked, leading to exponential proliferation
-(tumor growth).
+(tumor growth). Crucially, cells require continuous \textit{trophic factors} (novel signals from their
+environment) to inhibit suicide programs; lack of external signaling triggers apoptosis.
 \item \textbf{Agentic Pathology (The Recursive Hang):} Two agents get stuck in a politeness loop (e.g.,
 ``Thank you,'' ``You're welcome'') or a debugger agent continuously generates new bugs to fix old ones.
-\item \textbf{Categorical Diagnosis:} The Trace operation $Tr(A)$ is not equipped with a \textbf{well-founded
-termination measure}; equivalently, the induced state transition may admit cycles, and under an information-gain
-metric $d$ (e.g., $1-$similarity of successive messages) the distance between state $S_t$ and $S_{t+1}$ can
-approach zero while the system fails to trigger a ``Stop'' token.
-\item \textbf{Treatment:} Implementation of an Apoptosis (Cell Death) mechanism. A meta-monitor agent observes
-the entropy of the conversation. If information gain drops below a threshold (the conversation becomes
-repetitive), the monitor forces a termination signal.
+The system is active, but the state is stagnant.
+\item \textbf{Categorical Diagnosis:} The Trace operation $Tr(A)$ lacks an \textbf{Epiplexic Gradient}. We
+formalize conversation progress by \textbf{Epiplexity} (Bayesian Surprise)---the information gain of a new
+observation $o$ given the current state $S$:
+\begin{equation}
+\mathcal{E}(o) = D_{KL}( P(S \mid o) \| P(S) )
+\tag{17}
+\end{equation}
+This formulation connects to the Free Energy Principle \cite{friston2010}: biological systems minimize
+surprise by either updating their internal model (learning) or acting to change observations (agency).
+A system with $\mathcal{E} \to 0$ is neither learning nor effectively acting---it has entered a
+dissipative fixed point.
+
+In a healthy topology, every step must resolve uncertainty ($\mathcal{E} > \delta$). A recursive hang is
+characterized by $\mathcal{E} \to 0$: the agent is ``computing'' but not ``learning.''
+
+\textbf{Operational Approximation.} Since the agent's internal belief state $P(S)$ is not directly
+observable, we approximate Epiplexity using normalized embedding-based metrics:
+\begin{equation}
+\hat{\mathcal{E}}_t = \alpha \cdot (1 - \cos(\mathbf{e}_{t}, \mathbf{e}_{t-1})) + (1 - \alpha) \cdot \sigma(H(m_t \mid m_{<t}))
+\tag{18}
+\end{equation}
+where $\mathbf{e}_t$ is the embedding of message $m_t$, $\cos(\cdot, \cdot)$ is cosine similarity, and
+$H(m_t \mid m_{<t})$ is the conditional perplexity of the current message given the conversation history.
+We normalize perplexity to $[0,1]$ via a sigmoid: $\sigma(H) = 1 - e^{-H/H_0}$ where $H_0$ is a baseline
+perplexity (e.g., median perplexity over a validation corpus of normal conversations).
+
+The mixing parameter $\alpha \in [0,1]$ balances semantic novelty (embedding distance) against linguistic
+surprise (perplexity). We recommend $\alpha = 0.5$ as a default, calibrated on a validation set where both
+terms contribute equally to variance. In practice:
+\begin{itemize}[leftmargin=*]
+\item High $\alpha$: Sensitive to semantic repetition (same meaning, different words)
+\item Low $\alpha$: Sensitive to linguistic repetition (same phrases, possibly different context)
+\end{itemize}
+Both terms approaching zero indicate stagnation.
+
+\textbf{Windowed Detection.} To distinguish genuine convergence (task completion) from pathological
+loops, we compute the \textbf{Epiplexic Integral} over a sliding window of $k$ steps:
+\begin{equation}
+\mathcal{E}_{\text{window}} = \frac{1}{k}\sum_{i=t-k}^{t} \hat{\mathcal{E}}_i
+\tag{19}
+\end{equation}
+Apoptosis triggers when $\mathcal{E}_{\text{window}} < \delta$ \textit{and} no terminal action
+(task completion, user handoff) has been signaled.
+
+\item \textbf{Treatment:} Implementation of an \textbf{Epiplexic Checkpoint}. A meta-monitor observes the
+sliding-window Epiplexity. If it drops below threshold without task completion, the monitor triggers
+Apoptosis---the agentic equivalent of trophic factor withdrawal. The system may optionally attempt a
+\textbf{Perturbation Injection} (injecting a novel prompt or switching strategy) before terminal shutdown,
+analogous to stress-induced autophagy preceding apoptosis.
 \end{itemize}
 
 \subsection{Autoimmunity: Hallucination Cascades}
@@ -70,7 +114,7 @@ because the context window is full or the API rate limit is hit.
 cost ($c$).
 \begin{equation}
 \sum_{\text{agent}\in \text{Graph}} \mathrm{Cost}(\text{agent}) > \mathrm{Budget}.
-\tag{10}
+\tag{20}
 \end{equation}
 \item \textbf{Treatment:} Metabolic Regulation. Instead of a fixed loop, implement ``Budget-Aware'' agents. The
 agent observes its own remaining token count (ATP levels) and dynamically simplifies its reasoning strategy

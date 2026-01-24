@@ -24,8 +24,28 @@ Context injection (RAG) acts as a restrictive morphism. By populating the contex
 knowledge (e.g., poetry, history) to force the expression of a specific ``SQL Agent'' phenotype.
 
 This suggests that the State Monad for an agentic system should not merely be a log of messages, but a structured
-Epigenetic Landscape that strictly controls which ``genes'' (capabilities) are accessible at any given step in the
-workflow.
+Epigenetic Landscape \cite{waddington1957} that strictly controls which ``genes'' (capabilities) are accessible
+at any given step in the workflow. Waddington's original metaphor---a ball rolling down a landscape of valleys
+representing developmental fates---applies directly: the agent's trajectory through solution space is channeled
+by the contours of its RAG context.
+
+\subsubsection{Metabolic-Epigenetic Coupling}
+
+Recent evidence suggests that chromatin accessibility is coupled to mitochondrial function via metabolite
+availability (e.g., Acetyl-CoA) \cite{chandel2024mitochondria}. The cell cannot express certain genes without
+sufficient metabolic substrate. We map this to \textbf{Cost-Gated Retrieval}. The accessibility of a RAG
+document $d$ is a function of the Metabolic State $\mathcal{R}$:
+\begin{equation}
+Access(d) =
+\begin{cases}
+  \text{Open} & \text{if } \mathcal{R} > Cost(d) \\
+  \text{Silenced} & \text{if } \mathcal{R} \le Cost(d)
+\end{cases}
+\tag{15}
+\end{equation}
+Just as a cell silences energy-intensive genes during starvation, the Runtime ``methylates'' (hides) expensive
+context when the token budget is low. This creates an adaptive epigenetic landscape where the agent's accessible
+capabilities dynamically contract and expand based on resource availability.
 
 \subsection{Horizontal Gene Transfer: Dynamic Tool Loading}
 
@@ -74,3 +94,183 @@ high-precision tasks to the symbolic organelle.
 \end{equation}
 Just as the host cell provides nutrients to the mitochondria in exchange for ATP, the LLM provides parsed
 variables to the runtime in exchange for deterministic truth.
+
+This symbiosis is computational: as Picard argues \cite{picard2022mips}, the mitochondria acts as a ``Motherboard,''
+integrating signals to determine cell state. The Symbolic Runtime provides the deterministic ``ground truth'' (ATP)
+required for the probabilistic LLM to reliably affect the world.
+
+\subsection{Multi-Cellular Organization: From Agents to Tissues}
+
+The preceding analysis focuses on single-cell analogies: one agent as one cell. However, most agentic systems
+involve multiple distinct agents with different ``genomes'' (system prompts) and specialized functions. We extend
+the isomorphism to multi-cellular organization, drawing on developmental biology.
+
+\subsubsection{Cell Types and Agent Specialization}
+
+In multi-cellular organisms, a single genome gives rise to hundreds of distinct cell types through differential
+gene expression. Each cell type has a characteristic \textbf{expression profile}---which genes are active---that
+determines its function (neuron, hepatocyte, immune cell).
+
+In multi-agent systems, a single base model can instantiate multiple \textbf{agent phenotypes} through differential
+context:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Genome} $\to$ Base model weights (shared)
+\item \textbf{Epigenome} $\to$ System prompt + RAG context (phenotype-specific)
+\item \textbf{Cell Type} $\to$ Agent role (Coder, Reviewer, Planner, Executor)
+\end{itemize}
+
+This reframes the ``multi-agent'' architecture question: rather than asking ``how many agents?'', we ask
+``what is the developmental program?''---the specification of which phenotypes exist and how they differentiate.
+
+\textbf{Bounds of the Analogy.} We clarify which aspects of development transfer to agentic systems:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Cell Division} $\to$ \textbf{Agent Spawning:} Creating a new agent with similar (or identical)
+context. Unlike biological division, agent spawning is cheap and reversible.
+\item \textbf{Lineage Commitment:} In biology, differentiated cells rarely change type (a neuron doesn't become
+a hepatocyte). In agentic systems, \textbf{phenotype is fixed at instantiation}---an agent's system prompt
+determines its role for that execution. Re-differentiation requires spawning a new agent with different context.
+\item \textbf{Apoptosis of Excess:} Development involves programmed death of cells that fail to integrate properly.
+This transfers directly: agents that fail to produce useful output are terminated (metabolic apoptosis).
+\item \textbf{Does NOT transfer:} Slow developmental timescales (hours/days in biology vs. milliseconds in agents),
+physical spatial constraints (agents don't have ``positions''), irreversibility (agents can be restarted).
+\end{itemize}
+
+\subsubsection{Morphogen Gradients: Coordination Without Central Control}
+
+In embryonic development, cells coordinate their behavior through \textbf{morphogen gradients}---diffusible
+signaling molecules whose concentration varies spatially. Cells read their local concentration and differentiate
+accordingly, enabling pattern formation without a central controller.
+
+In multi-agent systems, the morphogen maps to \textbf{shared context variables} that influence agent behavior:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Task Complexity Gradient:} A variable indicating current task difficulty. Agents in ``high
+complexity'' regions activate detailed reasoning; those in ``low complexity'' regions use fast heuristics.
+\item \textbf{Confidence Gradient:} A variable indicating certainty about the current solution. Low confidence
+triggers Quorum Sensing (recruit more agents); high confidence enables direct execution.
+\item \textbf{Resource Gradient:} Token budget remaining. Agents sense ``metabolic scarcity'' and adapt their
+strategies accordingly (the Metabolic-Epigenetic Coupling).
+\end{itemize}
+
+\textbf{Implementation Pattern.} The gradient is represented as a JSON structure injected into each agent's
+context by the orchestrator:
+\begin{verbatim}
+{
+  "morphogens": {
+    "complexity": 0.8,    // High: use detailed reasoning
+    "confidence": 0.3,    // Low: consider recruiting help
+    "budget": 1200,       // Tokens remaining
+    "error_rate": 0.05    // Recent failure rate
+  }
+}
+\end{verbatim}
+Agents read their local concentration via a standardized preamble in the system prompt:
+``\textit{Current environment state: [morphogens]. Adjust your strategy accordingly.}''
+The orchestrator updates gradients after each step, and agents condition their behavior on the current values.
+This is analogous to cells reading morphogen concentrations through membrane receptors.
+
+\subsubsection{Tissue Architecture: The Agent Graph as Organism}
+
+We propose a hierarchy of organizational levels:
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Cell (Agent):} A single LLM instantiation with specific context. The atomic unit.
+\item \textbf{Tissue (Agent Cluster):} A group of agents with shared function and direct communication
+(e.g., a Coding Team: Planner + Coder + Reviewer). Corresponds to parallel composition with shared state.
+\item \textbf{Organ (Subsystem):} Multiple tissues coordinating to perform a complex function
+(e.g., the Development Organ: Design Tissue + Implementation Tissue + Testing Tissue).
+\item \textbf{Organism (System):} The complete agent graph, with homeostatic regulation maintaining
+system-level health metrics.
+\end{enumerate}
+
+The key insight is that \textbf{boundaries matter}. In biology, tissue boundaries prevent inappropriate mixing
+(epithelial barriers). In agent systems, trust boundaries (the Adaptive Immunity motif) prevent information
+leakage between subsystems with different security requirements. The wiring diagram's type system enforces
+these boundaries: an agent in the ``User-Facing Tissue'' cannot directly wire to an agent in the ``Database
+Tissue'' without passing through a ``Membrane'' (API boundary with provenance tagging).
+
+\subsection{Bioenergetic Intelligence: Beyond the Battery Metaphor}
+
+Recent work in mitochondrial psychobiology \cite{allen2022energy, picard2022signaling} challenges the view of
+mitochondria as passive energy sources. They function as ``social signaling organelles'' that actively participate
+in cellular decision-making. This refines our Isomorphism:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Mitochondrial Sociality $\to$ Context Fusion:} Just as mitochondria fuse to share resources under
+stress, resource-constrained agents should implement \textbf{Context Fusion}---merging sparse Epigenetic States
+into a shared summary to survive ``Token Ischemia.''
+\item \textbf{Energy as Attention:} The Agentic Runtime does not merely limit the chain-of-thought, but actively
+\textit{directs} it. High-energy states permit ``Exploratory'' reasoning (Divergent), while low-energy states
+force ``Consolidatory'' reasoning (Convergent). The Metabolic Coalgebra is a \textbf{Cognitive Control Policy}.
+\end{itemize}
+
+\subsubsection{The Vermeij Trend: Why Agents Must Evolve}
+
+Finally, we situate this architecture within the broader history of complexity. Geerat Vermeij \cite{vermeij2023power}
+argues that evolution is driven by the maximization of \textbf{Power}---the rate at which a system acquires and
+applies energy. Life has consistently trended from low-power states (anaerobic bacteria) to high-power states
+(endothermic mammals) by internalizing energy production (endosymbiosis).
+
+We observe an identical trend in AI. The shift from ``Generative AI'' (Zero-Shot) to ``Agentic AI'' (Chain-of-Thought)
+is a shift from low-metabolism to high-metabolism architectures. However, Vermeij notes that high power requires
+high structural integrity; a system that amplifies energy without proper constraints self-destructs.
+
+\textbf{The Competitive Dynamics.} Vermeij's argument is specifically about \textit{escalation}---competitive
+pressure between predators and prey drives both toward higher power. What is the analogue in agentic AI?
+
+We identify three sources of selective pressure:
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Adversarial Robustness (Predator-Prey):} Prompt injection attacks, jailbreaks, and adversarial
+inputs act as ``predators'' that exploit agent vulnerabilities. Agents that survive deployment develop
+``immune systems'' (the Adaptive Immunity motif). This is a direct Red Queen dynamic: attackers evolve new
+injection techniques; defenders evolve new detection mechanisms. The CFFL and Trust-Gated Lens are
+``armor'' adaptations.
+
+\item \textbf{Task Complexity (Environmental Pressure):} Users demand agents that can handle increasingly
+complex, multi-step tasks. Simple prompt-response systems (``anaerobic'') cannot compete with agentic
+systems that chain reasoning, use tools, and maintain state (``aerobic''). This is analogous to the
+oxygen revolution: organisms that could exploit the new energy source (aerobic respiration) outcompeted
+those that could not.
+
+\item \textbf{Resource Efficiency (Metabolic Selection):} Token costs and latency create selection pressure
+for efficient architectures. Agents that accomplish tasks with fewer tokens (higher metabolic efficiency)
+are deployed more widely. The Metabolic Coalgebra provides the formal framework for this optimization:
+systems evolve toward the Pareto frontier of capability vs. resource consumption.
+\end{enumerate}
+
+\textbf{The Cambrian Parallel.} The progression from prompt engineering to agentic engineering mirrors the
+Cambrian explosion: a sudden increase in metabolic capability (LLM reasoning power) that enables new
+``body plans'' (agent architectures). The Cambrian saw the emergence of eyes, shells, and predation---all
+requiring sophisticated metabolic support. Similarly, agentic AI sees the emergence of tool use, planning,
+and adversarial robustness---all requiring the structural integrity that the Operon framework provides.
+
+The prediction is clear: agent architectures that lack proper metabolic regulation, immune defense, and
+homeostatic mechanisms will be outcompeted by those that possess them. The Operon framework is not merely
+a safety feature; it is the necessary evolutionary adaptation---the ``vascularization'' of software---that
+enables high-power cognition to function without collapsing into incoherent noise (thermodynamic death).
+
+\subsubsection{Immune Evasion and Adversarial Limits}
+
+No static defense is perfect against adaptive attackers. Biology faces this reality: pathogens evolve
+to evade immune detection (antigenic drift, molecular mimicry, immunosuppression). The same dynamics
+apply to agentic security.
+
+\textbf{Evasion Vectors.} An adversary who understands the defense layers can craft inputs that:
+\begin{itemize}[leftmargin=*]
+\item Pass innate filters by avoiding known PAMP signatures (novel injection syntax)
+\item Evade provenance checks by exploiting trusted channels (tool poisoning)
+\item Fool T-cell detection by mimicking normal behavioral distributions (low-and-slow attacks)
+\end{itemize}
+
+\textbf{Mitigation Strategies.} Biology's answer is continuous adaptation:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Signature Updates:} Innate PAMP databases must be continuously updated as new attack
+patterns are discovered (analogous to antiviral signature updates).
+\item \textbf{Thymic Retraining:} Baseline behavioral profiles should be periodically refreshed,
+especially after system updates that legitimately change agent behavior.
+\item \textbf{Immune Memory Sharing:} Threat signatures discovered by one deployment should propagate
+to others (analogous to herd immunity via shared threat intelligence).
+\item \textbf{Diversity:} Heterogeneous defenses (different filter implementations, multiple verifier
+models) reduce the probability of universal evasion.
+\end{itemize}
+
+The honest conclusion is that security is a process, not a product. The Operon framework provides the
+\textit{architecture} for defense-in-depth, but the \textit{content} of that defense (specific patterns,
+behavioral baselines, trust policies) must evolve with the threat landscape.

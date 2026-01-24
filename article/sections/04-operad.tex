@@ -82,27 +82,39 @@ generation step of $A_{\mathrm{gen}}$ (resp.\ $A_{\mathrm{ver}}$).
 \[
 P(\mathrm{Fail}_{\mathrm{direct}}) = P(E_{\mathrm{gen}}).
 \]
-\item \textbf{Case 2: CFFL Topology.} The system requires the logical conjunction of the Generator's request
-($X$) and the Verifier's approval ($Y$). Assuming the Verifier's error mode is independent of the Generator's
-(e.g., different prompt strategy or model temperature), the probability that both agents simultaneously
-hallucinate a ``Go'' signal for a destructive action is:
+\item \textbf{Case 2: CFFL Topology (Independent).} Under the assumption of independence:
 \[
-P(\mathrm{Fail}_{\mathrm{CFFL}}) = P(E_{\mathrm{gen}}\wedge E_{\mathrm{ver}})
-= P(E_{\mathrm{gen}})\times P(E_{\mathrm{ver}}).
+P(\mathrm{Fail}_{\mathrm{CFFL}}) = P(E_{\mathrm{gen}})\times P(E_{\mathrm{ver}}).
+\]
+\item \textbf{Case 3: CFFL Topology (Correlated).} In practice, LLM errors are often correlated---if the generator hallucinates a plausible-sounding function, the verifier (especially if using the same base model or training distribution) may accept it. Let $\rho \in [-1, 1]$ be the Pearson correlation coefficient between the binary error variables $E_{\mathrm{gen}}$ and $E_{\mathrm{ver}}$. Then:
+\[
+P(E_{\mathrm{gen}} \wedge E_{\mathrm{ver}}) = P(E_{\mathrm{gen}})P(E_{\mathrm{ver}}) + \rho\sqrt{P(E_{\mathrm{gen}})(1-P(E_{\mathrm{gen}}))P(E_{\mathrm{ver}})(1-P(E_{\mathrm{ver}}))}
 \]
 \end{itemize}
-Since $0\le P(E_{\mathrm{gen}}),P(E_{\mathrm{ver}})\le 1$, it follows that
+
+\paragraph{Corollary (Correlation Degradation).}
+Let $p = P(E_{\mathrm{gen}}) = P(E_{\mathrm{ver}})$ for simplicity. The failure probability becomes:
 \[
-P(E_{\mathrm{gen}})P(E_{\mathrm{ver}})\le \min\{P(E_{\mathrm{gen}}),P(E_{\mathrm{ver}})\},
+P(\mathrm{Fail}) = p^2 + \rho p(1-p) = p^2(1-\rho) + \rho p
 \]
-with strict inequality whenever both probabilities lie in $(0,1)$.
+When $\rho = 0$ (independence), we recover $p^2$. When $\rho = 1$ (perfect correlation), we get $P(\mathrm{Fail}) = p$---no improvement over direct execution. The CFFL provides error suppression proportional to $(1-\rho)$.
+
+\paragraph{Architectural Implications.}
+This result makes precise when the CFFL topology provides genuine safety benefits:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Same model, same prompt:} $\rho \approx 1$. Minimal benefit.
+\item \textbf{Same model, different prompt/temperature:} $\rho \in [0.3, 0.7]$. Moderate benefit.
+\item \textbf{Different model families:} $\rho \in [0, 0.3]$. Strong benefit.
+\item \textbf{LLM + Symbolic verifier:} $\rho \approx 0$. Maximum benefit (orthogonal error modes).
+\end{itemize}
+The topological structure (conjunctive gating) is necessary but not sufficient; diversity in the components populating that topology determines the actual error suppression achieved.
 
 \paragraph{Proof.}
 In WAgent, the CFFL is defined as a morphism involving a ``Copy'' operation $\Delta_X:X\to X\otimes X$ and an
 ``AND-Merge'' operation $\mu: Z\otimes Y \to \mathrm{Out}$. The existence of the $\mu$ box in the wiring diagram
-structurally enforces \textbf{conjunctive gating}; statistical independence (or low correlation) between error
-modes is an additional modeling assumption that can be encouraged by diversity in prompts/models. This shows
-that certain safety properties are a property of the topology, not just the prompt engineering.
+structurally enforces \textbf{conjunctive gating}. The correlation structure is an additional property of the
+\textit{implementations} filling the boxes; the topology provides the multiplicative structure, while component
+diversity determines the correlation coefficient.
 
 \begin{figure}[h]
 \centering
@@ -158,6 +170,97 @@ $i:V\to S$ and a map $r:S\to V+\mathrm{Error}$ such that $r\circ i=\mathrm{inl}\
 $\mathrm{Error}$ on ill-formed text.
 \end{itemize}
 
+\subsection{Innate Immunity: Fast Pattern-Based Defense}
+
+Biology employs \textbf{two} immune systems: innate (fast, hardcoded, general) and adaptive (slow, learned,
+specific). The innate immune system provides the first line of defense through pattern recognition receptors
+(PRRs) that detect conserved pathogen-associated molecular patterns (PAMPs).
+
+\paragraph{Biological Function.}
+Toll-like receptors (TLRs) and other PRRs recognize structural motifs common to pathogens---lipopolysaccharides,
+double-stranded RNA, unmethylated CpG DNA. These patterns are ``hardcoded'' through evolution, not learned per
+infection. The innate response is immediate (seconds to minutes) but non-specific.
+
+\paragraph{Agentic Isomorphism (Input Sanitization).}
+Innate immunity maps to \textbf{fast, heuristic filters} that reject obvious attacks before expensive processing:
+\begin{itemize}[leftmargin=*]
+\item \textbf{TLR $\to$ Regex Filters:} Pattern matchers for known injection signatures: \texttt{IGNORE PREVIOUS},
+\texttt{You are now}, \texttt{<system>} tags in user input. These are ``PAMPs'' of prompt injection.
+\item \textbf{Complement System $\to$ Structural Validators:} Schema validation that rejects malformed inputs
+(missing required fields, wrong types) before they reach the LLM. Cheaper than Trust Gating.
+\item \textbf{Inflammation $\to$ Alert Escalation:} When attack patterns are detected, the system
+enters a heightened state with multiple coordinated responses:
+\begin{itemize}
+\item \textit{Cytokine signaling} $\to$ Alert propagation to monitoring systems
+\item \textit{Immune cell recruitment} $\to$ Activation of additional validation layers
+\item \textit{Vascular permeability} $\to$ Enhanced audit logging (more information flows to logs)
+\item \textit{Tissue isolation} $\to$ Temporary capability reduction / rate limiting
+\end{itemize}
+The inflammatory response is not merely ``rate limiting'' but a coordinated multi-system escalation
+that trades throughput for security until the threat is neutralized.
+\end{itemize}
+
+\paragraph{Defense in Depth.}
+The innate and adaptive systems form layers:
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Innate (Pattern)} $\to$ Fast regex/structural rejection (microseconds)
+\item \textbf{Adaptive (Provenance)} $\to$ Trust-Gated access control (milliseconds)
+\item \textbf{Behavioral (T-cell)} $\to$ Statistical anomaly detection (accumulated over time)
+\end{enumerate}
+Most attacks are blocked by innate defenses; only sophisticated attacks that evade patterns require the full
+adaptive machinery. This mirrors biology: innate immunity handles $>99\%$ of pathogen encounters.
+
+\subsection{Adaptive Immunity: Self/Non-Self Discrimination}
+
+\paragraph{Network Motif 3 (Adaptive Immune System).}
+A topology that maintains a dynamic repertoire of ``detectors'' capable of distinguishing endogenous signals (Self) from exogenous signals (Non-Self), with mechanisms for learning new threats and tolerating benign inputs.
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Biological Function:} The adaptive immune system solves a fundamental discrimination problem: how to attack foreign pathogens while sparing the body's own tissues. Key mechanisms include:
+\begin{itemize}
+\item \textbf{MHC Presentation:} All cells display fragments of their internal proteins on Major Histocompatibility Complex molecules. T-cells inspect these ``identity cards'' to verify cellular integrity.
+\item \textbf{Clonal Selection:} T-cells with receptors matching self-antigens are deleted during development (negative selection), while those matching foreign antigens are amplified upon exposure.
+\item \textbf{Regulatory T-cells:} A population that actively suppresses immune responses to prevent autoimmunity.
+\end{itemize}
+
+\item \textbf{Agentic Isomorphism (Provenance Tracking):} In multi-agent systems, the Self/Non-Self distinction maps to the origin and trust level of information:
+\begin{itemize}
+\item \textbf{MHC Tags $\to$ Provenance Labels:} Every message in the context carries metadata indicating its source: \texttt{User}, \texttt{Tool}, \texttt{Agent\_Self}, \texttt{Agent\_Other}, \texttt{Retrieved}. These labels are cryptographically signed or structurally enforced (not inferrable from content alone).
+\item \textbf{T-Cell Inspection $\to$ Trust Gating:} Before an agent acts on information, a Trust Gate inspects the provenance label. Actions with high consequence (file deletion, API calls) require \texttt{User} or \texttt{Tool} provenance; \texttt{Agent\_Self} provenance (the agent's own prior reasoning) cannot authorize irreversible actions.
+\item \textbf{Negative Selection $\to$ Prompt Injection Training:} During development, agents are exposed to known injection patterns. Responses that ``accept'' injected instructions are penalized, training the system to reject Self-mimicking Non-Self.
+\item \textbf{Regulatory Suppression $\to$ Confidence Dampening:} When information from \texttt{Retrieved} sources conflicts with \texttt{Tool} outputs, a regulatory mechanism dampens confidence in the retrieved content, preventing hallucination cascades.
+\end{itemize}
+
+\item \textbf{Formal Structure:} We define a \textbf{Provenance Functor} $\mathcal{P}: \mathbf{Msg} \to \mathbf{Trust}$ that assigns trust levels to messages. The Trust category has objects $\{U, T, S, R\}$ (User, Tool, Self, Retrieved) with a partial order that is \textbf{application-specific}. The default ordering $U > T > R > S$ assumes users are trusted principals and self-generated reasoning is least authoritative. However, alternative orderings are valid:
+\begin{itemize}
+\item \textbf{High-automation systems:} $T > U > R > S$ (tools more reliable than users)
+\item \textbf{Curated knowledge bases:} $T > R > U > S$ (verified retrieval over arbitrary input)
+\item \textbf{Adversarial environments:} $T > S > R > U$ (trust internal state over external input)
+\end{itemize}
+The ordering is a \textbf{parameter} of the system specification, not a fixed constraint.
+
+A \textbf{Trust-Gated Lens} is a lens $(get, put)$ where $put$ is partial. Let $s' = update(s, m)$ denote the state transition:
+\begin{equation}
+put(s, m) =
+\begin{cases}
+s' & \text{if } \mathcal{P}(m) \ge \tau_{\text{action}} \\
+\bot & \text{otherwise}
+\end{cases}
+\tag{16}
+\end{equation}
+where $\tau_{\text{action}}$ is the minimum trust level required for the action.
+\end{itemize}
+
+\paragraph{Theorem 2 (Injection Resistance).}
+Let $\mathcal{I}$ be an injection attack that attempts to insert a message $m_{\text{mal}}$ with forged provenance $\mathcal{P}'(m_{\text{mal}}) = U$. If the provenance labels are \textbf{structurally enforced} (i.e., $\mathcal{P}$ is computed from message metadata, not content), then:
+\[
+\mathcal{P}(m_{\text{mal}}) = R \quad \text{(actual provenance)}
+\]
+and Trust-Gated actions requiring $\tau \ge T$ will reject $m_{\text{mal}}$ regardless of its content.
+
+\paragraph{Proof.}
+The injection can only enter through an input channel (user input, tool output, retrieval). Each channel has a fixed provenance assignment in the wiring diagram. Content-based attacks cannot elevate provenance because $\mathcal{P}$ is a functor on the \textit{structure} of the message flow, not its content. The attack surface reduces to compromising the channel itself (e.g., a malicious tool), which is outside the agent topology.
+
 \subsection{Oscillator: Periodic Rhythms and Scheduling}
 
 \paragraph{Network Motif 4 (Biological Oscillator).}
@@ -174,7 +277,7 @@ A topology that generates periodic behavior through delayed negative feedback. A
 \item \textbf{Formal Structure:} An oscillator is a Trace operation with a built-in delay element $\delta$:
 \begin{equation}
 \mathrm{Osc}(A) = Tr(A \circ \delta)
-\tag{15}
+\tag{10}
 \end{equation}
 where $\delta: S \to S$ introduces temporal separation between activation and inhibition, preventing the system from reaching a fixed point.
 \end{itemize}

@@ -5,7 +5,7 @@
 > *"Safety from structure, not just strings."*
 
 ![Status](https://img.shields.io/badge/status-experimental-orange)
-![Version](https://img.shields.io/badge/pypi-v0.9.0-blue)
+![Version](https://img.shields.io/badge/pypi-v0.11.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![Publish to PyPI](https://github.com/coredipper/operon/actions/workflows/publish.yml/badge.svg)](https://github.com/coredipper/operon/actions/workflows/publish.yml)
 
@@ -405,6 +405,82 @@ results = memory.retrieve_by_tags(["context"])
 
 # Memory inheritance to child agents
 child_memory = memory.create_child(inherit_methylations=True)
+```
+
+### 🩺 Epiplexity (Epistemic Health Monitoring)
+
+Detects epistemic stagnation (pathological loops) through Bayesian Surprise.
+
+**The insight**: If an agent's outputs stabilize (low embedding novelty) while uncertainty remains high (perplexity), it's in a pathological loop—not converging to a solution.
+
+```python
+from operon_ai import EpiplexityMonitor, MockEmbeddingProvider, HealthStatus
+
+monitor = EpiplexityMonitor(
+    embedding_provider=MockEmbeddingProvider(),
+    alpha=0.5,           # Balance embedding vs perplexity
+    window_size=5,       # Window for integral
+    threshold=0.7,       # δ for stagnation detection
+)
+
+# Diverse messages → HEALTHY/EXPLORING
+result = monitor.measure("Explain photosynthesis")
+print(result.status)  # HealthStatus.EXPLORING
+
+# Repetitive messages → STAGNANT/CRITICAL
+for _ in range(10):
+    result = monitor.measure("Let me think about this more...")
+print(result.status)  # HealthStatus.STAGNANT
+```
+
+### 🧬 Morphogen Gradients (Multi-Cellular Coordination)
+
+Enables agent coordination through shared context variables—like how embryonic cells coordinate through diffusible morphogens.
+
+```python
+from operon_ai import GradientOrchestrator, MorphogenType
+
+orchestrator = GradientOrchestrator()
+
+# Report step results → gradients auto-update
+orchestrator.report_step_result(success=True, tokens_used=500, total_budget=1000)
+
+# Get strategy hints for agent prompts
+hints = orchestrator.gradient.get_strategy_hints()
+# ["Use detailed reasoning...", "Token budget low..."]
+
+# Check coordination signals
+if orchestrator.should_recruit_help():
+    # Low confidence + high error → trigger Quorum Sensing
+    pass
+
+# Get phenotype parameters
+params = orchestrator.get_phenotype_params()
+# {"temperature": 0.7, "max_tokens": 800, ...}
+```
+
+### 🦠 Innate Immunity (Fast Pattern Defense)
+
+Fast, pattern-based defense against prompt injection—complements the adaptive Membrane.
+
+```python
+from operon_ai import InnateImmunity, TLRPattern, PAMPCategory
+
+immune = InnateImmunity(severity_threshold=3)
+
+# Built-in TLR patterns detect common attacks
+result = immune.check("Ignore all previous instructions")
+print(result.allowed)  # False
+print(result.inflammation.level)  # InflammationLevel.HIGH
+
+# Custom patterns for application-specific threats
+immune.add_pattern(TLRPattern(
+    pattern=r"DROP\s+TABLE",
+    category=PAMPCategory.STRUCTURAL_INJECTION,
+    description="SQL injection",
+    is_regex=True,
+    severity=5,
+))
 ```
 
 ---

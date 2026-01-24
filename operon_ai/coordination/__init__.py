@@ -1,4 +1,4 @@
-"""Coordination system (Cell Cycle model)."""
+"""Coordination system (Cell Cycle model + Multi-Cellular Organization)."""
 from .types import (
     Phase,
     CheckpointResult,
@@ -31,8 +31,17 @@ from .system import (
     WorkError,
     ValidationError,
 )
+from .morphogen import (
+    MorphogenType,
+    MorphogenValue,
+    MorphogenGradient,
+    GradientUpdate,
+    GradientOrchestrator,
+    PhenotypeConfig,
+)
 
 __all__ = [
+    # Cell Cycle (existing)
     "Phase",
     "CheckpointResult",
     "LockResult",
@@ -55,4 +64,11 @@ __all__ = [
     "CheckpointError",
     "WorkError",
     "ValidationError",
+    # Morphogen Gradients (new)
+    "MorphogenType",
+    "MorphogenValue",
+    "MorphogenGradient",
+    "GradientUpdate",
+    "GradientOrchestrator",
+    "PhenotypeConfig",
 ]

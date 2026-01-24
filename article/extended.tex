@@ -1,0 +1,200 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{microtype}
+
+% Margins
+\geometry{top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm}
+
+% Theorem Styles
+\newtheorem{theorem}{Theorem}
+\newtheorem{definition}{Definition}
+\newtheorem{motif}{Network Motif}
+
+% Macros
+\newcommand{\Poly}{\mathbf{Poly}}
+\newcommand{\cat}[1]{\mathbf{#1}}
+\newcommand{\Epiplexity}{\mathcal{E}}
+
+% Title Data
+\title{\textbf{Biological Motifs for Agentic Control}\\ \large A Categorical Isomorphism between Gene Regulatory Networks and Autonomous Software Architectures}
+\author{Bogdan Banu \\ \texttt{bogdan@banu.be}}
+\date{January 24, 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+The transition of Large Language Models (LLMs) from passive generators to autonomous agents has introduced significant challenges in reliability, security, and state management. Current agentic architectures are often constructed ad-hoc, prone to ``hallucination cascades,'' infinite loops, and prompt injection attacks. This paper proposes that these failure modes are not unique to software but are instances of universal control problems solved by biological systems. We present a formal isomorphism between Gene Regulatory Networks (GRNs) and Agentic Software Systems using Applied Category Theory. We model agents as \textbf{Polynomial Functors} in $\Poly$, and their interactions via the \textbf{Operad of Wiring Diagrams}. We derive a rigorous syntax for agent composition by mapping biological mechanisms---including \textit{Quorum Sensing} for consensus, \textit{Chaperones} for structural validation, and \textit{Mitochondrial Signaling} for bioenergetic resource governance---to software design patterns. This framework provides a mathematical basis for ``Epigenetic'' state management (RAG), topological defense against ``Prion'' attacks, and a \textit{Metabolic Coalgebra} that ensures decidable termination.
+\end{abstract}
+
+\section{Introduction}
+The field of Artificial Intelligence is undergoing a paradigm shift from Generative AI to Agentic AI. While the capabilities of individual LLMs have scaled predictably, engineering systems of agents remains fragile. Developers struggle with non-deterministic outputs, infinite loops, adversarial attacks, and maintaining global coherence.
+
+We argue that these challenges are fundamental constraints of distributed information processing. The closest existing analogue to a multi-agent software architecture is not a computer program, but a \textbf{Gene Regulatory Network (GRN)}. In a cell, thousands of genes act as autonomous agents, reading local signals and expressing proteins that regulate other genes.
+
+\subsection{The Biological Heuristic}
+Biology has evolved specific topological structures, known as \textit{Network Motifs}, to handle noise and security. We identify critical heuristics mapping to agentic engineering:
+\begin{itemize}
+    \item \textbf{Coherent Feed-Forward Loop (CFFL):} Persistence detection acting as ``two-key'' execution guardrails.
+    \item \textbf{Quorum Sensing:} Distributed consensus analogous to Mixture of Experts (MoE) voting.
+    \item \textbf{Chaperone Proteins:} Molecular cages enforcing structural validity (JSON schemas).
+    \item \textbf{Mitochondrial Information Processing:} Metabolic constraints acting as a ``Motherboard'' for decision gating.
+\end{itemize}
+
+\subsection{The Categorical Bridge}
+To move from metaphor to discipline, we utilize Applied Category Theory. We define the category of agents using the language of $\Poly$ (Polynomial Functors). An agent is defined not by its weights, but by its interface---a dynamical system consuming observations and producing actions.
+
+\section{The Mapping: Biology $\cong$ Software}
+To treat Agentic Systems and GRNs as isomorphic at the interface level, we utilize the category $\Poly$.
+
+\subsection{Polynomial Interfaces}
+A Polynomial Functor $P$ represents a typed interface:
+\begin{equation}
+    P(y) = \sum_{o \in O} y^{I(o)}
+\end{equation}
+Here, $O$ is the set of Outputs (Positions). For each output $o$, $I(o)$ is the set of required Inputs (Directions) to proceed.
+
+\begin{definition}[The Agent Object]
+An autonomous agent $A$ is a polynomial functor where $O_A$ is the set of actions, and $I_A(o)$ is the set of observations enabled by action $o$:
+\begin{equation}
+    P_{Agent}(y) = \sum_{a \in Actions} y^{Observation(a)}
+\end{equation}
+\end{definition}
+
+\subsection{Promoters as Lenses}
+In biology, a gene is guarded by a Promoter; in software, by a Schema. We model this as a \textbf{Validated Lens}. Unlike standard lenses, this maps the global state $S$ to a local view $V$ potentially returning an error if the schema (promoter) does not bind.
+
+\subsection{Metabolic Coalgebras: Formalizing Resource Constraints}
+Just as biological systems are limited by ATP, agents are limited by tokens. We extend our framework to include resource constraints, defining a \textbf{Metabolic Coalgebra}. This aligns with the theory of Quantitative Polynomial Functors.
+
+\begin{definition}[The Resource Monoid]
+Let $(\mathcal{R}, +, 0, \ge)$ be an ordered commutative monoid representing computational resources (e.g., tokens), where $\mathcal{R} \cong \mathbb{N}$.
+\end{definition}
+
+\begin{definition}[Metabolic Coalgebra]
+A resource-constrained agent is a coalgebra $(S, \alpha)$ over $P$, where $S \cong L \times \mathcal{R}$. The structure map $\alpha: S \to P(S) + \bot$ is a partial map guarded by cost $c$:
+\begin{equation}
+    \alpha(l, r) = 
+    \begin{cases} 
+      (l', r - c) & \text{if } r \ge c \\
+      \bot & \text{if } r < c \quad \text{(Apoptosis)}
+    \end{cases}
+\end{equation}
+\end{definition}
+
+\begin{theorem}[The Metabolic Bound]
+For any topology with finite budget $R_{total}$, the system is guaranteed to halt. The ``Halting Problem'' is decidable for Metabolic Coalgebras because the resource state is strictly decreasing.
+\end{theorem}
+
+\subsection{Additional Organelles: The Cellular Architecture}
+We extend the isomorphism to specialized cellular structures.
+
+\begin{itemize}
+    \item \textbf{Ribosome (Template Engine):} Translates mRNA (Templates) into Proteins (Prompts) using amino acids (Variables).
+    \item \textbf{Lysosome (Garbage Collector):} Handles waste processing (context flushing) and autophagy (summarization).
+    \item \textbf{Mitochondria: The Metabolic Motherboard.} 
+    Recent scholarship reframes mitochondria not merely as powerhouses, but as the cell's \textit{Mitochondrial Information Processing System (MIPS)} \cite{picard2022mips}. They sense environmental stress and integrate metabolic signals.
+    \begin{itemize}
+        \item \textbf{Agentic Isomorphism:} The \textbf{Runtime Supervisor}.
+        \item \textbf{Function:} It actively governs the \textit{quality} of compute. If the Runtime detects ``Metabolic Stress'' (e.g., high token burn with low informational yield), it acts as a logic gate, overriding the LLM to trigger a \textit{Retrograde Response}---forcing a strategy shift or initiating Apoptosis.
+    \end{itemize}
+\end{itemize}
+
+\section{Formal Syntax: The Agentic Operad}
+We define \texttt{WAgent}, a wiring discipline that enforces structural correctness.
+\begin{enumerate}
+    \item \textbf{Typing:} Wires must match Schema types (JSON $\to$ JSON).
+    \item \textbf{Integrity:} Information flow policies (Untrusted $\not\to$ Trusted).
+    \item \textbf{Topology:} We define primitives for Parallel ($\otimes$), Serial ($\circ$), and Trace ($Tr$) composition.
+\end{enumerate}
+
+\section{Failure Modes \& Pathology}
+We classify agentic failures as biological diseases caused by dysregulated dynamics.
+
+\subsection{Oncology: Infinite Loops as Epistemic Starvation}
+\begin{itemize}
+    \item \textbf{Biological Pathology:} Cancerous cells ignore negative feedback (p53). Crucially, cells require continuous \textit{trophic factors} (novel signals) to inhibit suicide programs; lack of external signaling triggers apoptosis.
+    \item \textbf{Agentic Pathology:} The Recursive Hang. The system is active, but the state is stagnant.
+    \item \textbf{Categorical Diagnosis:} The Trace operation $Tr(A)$ lacks an \textbf{Epiplexic Gradient}. We formalize conversation progress by \textbf{Epiplexity} (Bayesian Surprise) $\Epiplexity$---the information gain of a new observation $o$:
+    \begin{equation}
+        \Epiplexity(o) = D_{KL}( P(S \mid o) \| P(S) )
+    \end{equation}
+    In a healthy topology, every step must resolve uncertainty ($\Epiplexity > \delta$). A recursive hang is characterized by $\Epiplexity \to 0$. The agent is ``computing'' but not ``learning.''
+    \item \textbf{Treatment:} Implementation of an \textbf{Epiplexic Checkpoint}. A monitor observes the KL-divergence of the history. If epiplexity drops below a threshold, the monitor triggers Apoptosis.
+\end{itemize}
+
+\subsection{Autoimmunity: Hallucination Cascades}
+Failure to distinguish ``Self'' (Generated Thoughts) from ``Non-Self'' (Tool Outputs). Treatment involves strict Integrity Labels ($U$ vs $T$) in the wiring diagram.
+
+\subsection{Prion Disease: Prompt Injection}
+Malicious inputs that mimic trusted structures. Treatment involves ``Denaturation Layers'' (Paraphrasing/Sanitization) and topological gating.
+
+\section{Discussion: Towards Epigenetic Software}
+
+\subsection{RAG as Digital Methylation}
+In biology, epigenetic markers (methylation) control gene expression without changing DNA. In software, RAG controls agent behavior without changing weights.
+
+\subsubsection{Metabolic-Epigenetic Coupling}
+Recent evidence suggests chromatin accessibility is coupled to mitochondrial function via metabolite availability (e.g., Acetyl-CoA) \cite{chandel2024mitochondria}. We map this to \textbf{Cost-Gated Retrieval}. The accessibility of a RAG document $d$ is a function of the Metabolic State $\mathcal{R}$:
+\begin{equation}
+    Access(d) = 
+    \begin{cases} 
+      Open & \text{if } \mathcal{R} > Cost(d) \\
+      Silenced & \text{if } \mathcal{R} \le Cost(d)
+    \end{cases}
+\end{equation}
+Just as a cell silences energy-intensive genes during starvation, the Runtime ``methylates'' (hides) expensive context when the token budget is low.
+
+\subsection{Endosymbiosis: Neuro-Symbolic Integration}
+The eukaryotic cell emerged from the symbiosis of a host and a mitochondrion. Similarly, robust agents require the symbiosis of a \textbf{Host LLM} (Nucleus) and a \textbf{Symbolic Runtime} (Mitochondria).
+This symbiosis is computational: as Picard argues, the mitochondria acts as a ``Motherboard,'' integrating signals to determine cell state. The Symbolic Runtime provides the deterministic ``ground truth'' (ATP) required for the probabilistic LLM to affect the world.
+
+\subsection{Bioenergetic Intelligence: Beyond the Battery Metaphor}
+Recent work in mitochondrial psychobiology \cite{allen2022energy, picard2022signaling} challenges the view of mitochondria as passive energy sources. They function as ``social signaling organelles.'' This refines our Isomorphism:
+\begin{itemize}
+    \item \textbf{Mitochondrial Sociality $\to$ Context Fusion:} Just as mitochondria fuse to share resources under stress, resource-constrained agents should implement \textbf{Context Fusion}---merging sparse Epigenetic States into a shared summary to survive ``Token Ischemia.''
+    \item \textbf{Energy as Attention:} The Agentic Runtime does not merely limit the chain-of-thought, but actively directs it. High-energy states permit ``Exploratory'' reasoning (Divergent), while low-energy states force ``Consolidatory'' reasoning (Convergent). The Metabolic Coalgebra is a \textbf{Cognitive Control Policy}.
+\end{itemize}
+
+\subsubsection{The Vermeij Trend: Why Agents Must Evolve}
+Finally, we situate this architecture within the broader history of complexity. Geerat Vermeij \cite{vermeij2023power} argues that evolution is driven by the maximization of \textbf{Power}---the rate at which a system acquires and applies energy. Life has consistently trended from low-power states (anaerobic bacteria) to high-power states (endothermic mammals) by internalizing energy production (endosymbiosis).
+
+We observe an identical trend in AI. The shift from ``Generative AI'' (Zero-Shot) to ``Agentic AI'' (Chain-of-Thought) is a shift from low-metabolism to high-metabolism architectures. However, Vermeij notes that high power requires high structural integrity; a system that amplifies energy without proper constraints self-destructs. Thus, the \textbf{Operon} framework is not merely a safety feature; it is the necessary evolutionary adaptation---the ``vascularization'' of software---that enables high-power cognition to function without collapsing into incoherent noise (thermodynamic death).
+
+\section{Conclusion}
+By formalizing the analogy between GRNs and Agents through Applied Category Theory, we derive robust design patterns: CFFL for gating, Chaperones for validation, and Metabolic Coalgebras for termination. The future of reliable AI lies in biomimetic topology---inheriting the billions of years of R\&D biology has invested in autonomous control.
+
+\begin{thebibliography}{99}
+
+\bibitem{alon2007} Uri Alon. \textit{Network motifs: theory and experimental approaches}. Nature Reviews Genetics, 8(6), 2007.
+
+\bibitem{spivak2021} David I. Spivak. \textit{Learners' Languages}. Compositionality, 3(4), 2021.
+
+\bibitem{lynch2015} Michael Lynch and Georgi K Marinov. \textit{The bioenergetic costs of a gene}. PNAS, 112(51), 2015.
+
+\bibitem{nakov2021} Georgi Nakov and Fredrik Nordvall Forsberg. \textit{Quantitative Polynomial Functors}. CALCO, 2021.
+
+\bibitem{boreale2023} Michele Boreale. \textit{Coalgebras for Bisimulation of Weighted Automata}. LMCS, 19, 2023.
+
+\bibitem{picard2022mips} Martin Picard et al. \textit{Mitochondria as the processor of the cell}. Trends in Neurosciences, 2018 (revisited 2024).
+
+\bibitem{allen2022energy} John F. Allen. \textit{Energy transduction and the mind: mitochondria in brain function}. The Biochemist, 44(4), 2022.
+
+\bibitem{picard2022signaling} Martin Picard and Orian S. Shirihai. \textit{Mitochondria as signaling organelles}. Cell Metabolism, 34(11), 2022.
+
+\bibitem{chandel2024mitochondria} Navdeep S. Chandel. \textit{Mitochondria as signaling organelles: control, physiology and pathology}. Science Advances (related works), 2024.
+
+\bibitem{friston2010} Karl Friston. \textit{The free-energy principle: a unified brain theory?}. Nature Reviews Neuroscience, 11(2), 2010.
+
+\bibitem{vermeij2023power} Geerat J. Vermeij. \textit{The Evolution of Power: A New Understanding of the History of Life}. Princeton University Press, 2023.
+
+\end{thebibliography}
+
+\end{document}

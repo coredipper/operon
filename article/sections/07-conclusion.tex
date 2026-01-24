@@ -6,39 +6,87 @@ needed to guarantee system-level properties like termination, error suppression,
 
 In this paper, we have demonstrated that Gene Regulatory Networks (GRNs) provide a proven architectural blueprint
 for distributed, stochastic information processing. By formalizing this analogy through Applied Category Theory,
-we have derived a suite of robust design patterns:
+we have derived a comprehensive suite of design patterns:
+
+\subsection*{Core Contributions}
+
 \begin{enumerate}[leftmargin=*]
-\item \textbf{Robustness:} The use of Quorum Sensing and Coherent Feed-Forward Loop topologies to filter
-stochastic noise and require consensus before action.
-\item \textbf{Validity:} The use of Chaperone Proteins to enforce structural determinism on probabilistic outputs,
-with multi-strategy folding (strict $\to$ extraction $\to$ lenient $\to$ repair) that mirrors the biological
-protein quality control system.
-\item \textbf{Security:} The identification of Prion-like prompt injections and the topological defenses required
-to stop them, including denaturation layers that disrupt malicious syntax.
-\item \textbf{Termination:} The Metabolic Coalgebra formalism that guarantees halting through strictly decreasing
-resource states, providing a decidable termination measure where the general Halting Problem offers none.
-\item \textbf{Homeostasis:} The extension from discrete failure treatment to continuous self-repair through three
-healing modalities:
-\begin{itemize}
-\item \textit{Structural Healing} (Chaperone Loop): Error traces fed back to generators enable context-aware
-correction rather than blind retry.
-\item \textit{Metabolic Healing} (Apoptosis + Regeneration): Stuck agents are cleanly terminated and replaced
-with successors that inherit summarized learnings.
-\item \textit{Cognitive Healing} (Autophagy): Context windows are proactively pruned via sleep/wake cycles,
-consolidating useful state and flushing accumulated noise.
-\end{itemize}
-\item \textbf{Evolution:} The mapping of Horizontal Gene Transfer to dynamic tool loading and Endosymbiosis to
-neuro-symbolic integration, enabling runtime capability acquisition.
+\item \textbf{Robustness via Topology:} The Coherent Feed-Forward Loop provides error suppression proportional
+to $(1-\rho)$, where $\rho$ is the correlation between component error modes. We make precise the conditions
+under which topological redundancy provides genuine safety benefits: diversity in model families yields
+$\rho \approx 0$; same-model verification yields $\rho \approx 1$ with minimal improvement. The topology is
+necessary but not sufficient; component diversity determines actual error suppression.
+
+\item \textbf{Adaptive Immunity:} We formalize the Self/Non-Self distinction as a \textbf{Provenance Functor}
+$\mathcal{P}: \mathbf{Msg} \to \mathbf{Trust}$ with structurally-enforced labels. The Trust-Gated Lens
+provides injection resistance by ensuring that content-based attacks cannot elevate provenance. This extends
+the Prion metaphor into a full immunological framework with MHC-like tagging, negative selection during
+training, and regulatory suppression of conflicting sources.
+
+\item \textbf{Epistemic Health:} The formalization of \textbf{Epiplexity} (Bayesian Surprise) as a metric for
+detecting ``epistemic starvation.'' We provide an operational approximation using embedding similarity and
+conditional perplexity, with windowed detection to distinguish task completion from pathological loops.
+This connects agent dynamics to the Free Energy Principle: healthy agents minimize surprise through learning
+or effective action; stagnant agents do neither.
+
+\item \textbf{Metabolic Intelligence:} The reframing of the Runtime from passive budget to active
+\textbf{Cognitive Control Policy}. Drawing on MIPS (Mitochondrial Information Processing System), we
+distinguish fast interventions (Apoptosis via mPTP-like triggers) from slow interventions (Retrograde
+Responses that reshape agent phenotype across sessions). The Runtime governs reasoning \textit{quality}
+through the Metabolic-Epigenetic Coupling: low-budget states ``methylate'' expensive context, forcing
+efficient phenotypes.
+
+\item \textbf{Multi-Cellular Organization:} The extension from single-agent to multi-agent systems using
+developmental biology. Agent phenotypes arise from differential context (epigenome) on shared weights (genome).
+Morphogen gradients (shared context variables) enable coordination without central control. Tissue boundaries
+enforce security isolation. This reframes ``how many agents?'' as ``what is the developmental program?''
+
+\item \textbf{Homeostasis:} Continuous self-repair through three modalities: Structural (Chaperone Loop with
+error-context feedback), Metabolic (Apoptosis + Regeneration with state summarization), and Cognitive
+(Autophagy via sleep/wake cycles). Most frameworks focus on Action; biology equally prioritizes Maintenance.
+
+\item \textbf{Evolutionary Dynamics:} The Vermeij Trend predicts that agentic architectures face three
+selective pressures: adversarial robustness (Red Queen dynamics with attackers), task complexity
+(environmental pressure toward ``aerobic'' multi-step reasoning), and resource efficiency (metabolic
+selection toward the Pareto frontier). Architectures lacking proper immune defense and metabolic regulation
+will be outcompeted.
 \end{enumerate}
 
-The homeostatic mechanisms represent a fundamental shift in perspective: most agent frameworks focus on
-\textit{Action} (doing things), while biological systems equally prioritize \textit{Maintenance} (staying alive).
-By implementing continuous repair mechanisms, we build systems that degrade gracefully rather than failing
-catastrophically---systems that, like their biological counterparts, can operate indefinitely in noisy,
-adversarial environments.
+\subsection*{The Mathematical Foundation}
 
-We conclude that biomimetic topology offers a principled foundation for reliable AI agents. The control structures
-that emerged over billions of years of evolution---from metabolic constraints to immune surveillance to
-regenerative healing---address the same fundamental challenges of distributed, stochastic information processing
-that agentic architectures face today. The isomorphism is not merely metaphorical; it is mathematical, and it
-provides actionable design patterns grounded in both category theory and empirical biological validation.
+The isomorphism rests on the category $\mathbf{Poly}$ of polynomial functors, where both genes and agents are
+modeled as interfaces $(O, I)$ consuming observations and producing actions. The Operad of Wiring Diagrams
+provides the grammar for composition, with type-checking at the topological level preventing classes of
+runtime errors. The Metabolic Coalgebra enriches this with resource constraints, guaranteeing termination
+through strictly decreasing state. The Provenance Functor layers trust semantics onto message flow, providing
+formal injection resistance.
+
+\subsection*{Implications}
+
+The Operon framework is not merely a safety feature; it is the necessary evolutionary adaptation---the
+``vascularization'' of software---that enables high-power cognition to function without thermodynamic
+collapse. The control structures that emerged over billions of years of evolution address the same fundamental
+challenges of distributed, stochastic information processing that agentic architectures face today.
+
+The isomorphism is not metaphorical; it is mathematical. And it is actionable: each biological motif maps
+to implementable code patterns, as demonstrated by the reference implementation. We anticipate that future
+agent frameworks will be evaluated not just on capability benchmarks, but on their metabolic efficiency,
+immune resistance, and homeostatic robustness---the same criteria that determine organismal fitness in
+biological evolution.
+
+\subsection*{Future Work}
+
+Several directions remain open:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Epiplexity Validation:} Empirical calibration of the $\alpha$ mixing parameter and threshold
+$\delta$ across diverse task types and LLM families.
+\item \textbf{Correlation Estimation:} Lightweight methods for estimating $\rho$ between agent error modes
+without exhaustive pairwise testing.
+\item \textbf{Developmental Programs:} Higher-level DSLs for specifying multi-agent ``body plans'' that
+compile to wiring diagrams with automatic type checking.
+\item \textbf{Adversarial Robustness:} Red-team evaluation of immune evasion vectors, including novel
+injection syntax, tool poisoning, and behavioral mimicry attacks. Development of continuous adaptation
+mechanisms (signature updates, thymic retraining, threat intelligence sharing).
+\item \textbf{Production Benchmarks:} Validation on real LLM outputs at scale, measuring both security
+efficacy and performance overhead of the defense layers.
+\end{itemize}
