@@ -483,6 +483,92 @@ immune.add_pattern(TLRPattern(
 ))
 ```
 
+### 🔬 Adaptive Immune System (Runtime Surveillance)
+
+Complete surveillance system inspired by the adaptive immune system. Detects behavioral drift, jailbreak attempts, and compromise through continuous monitoring.
+
+**Components:**
+- **MHCDisplay**: Surface presentation of agent behavior (response times, confidence, errors)
+- **Thymus**: Trains baseline profiles, performs positive/negative selection
+- **TCell**: Inspects behavior against trained baselines, generates immune responses
+- **RegulatoryTCell**: Manages tolerance, prevents autoimmune overreaction
+- **ImmuneMemory**: Remembers known threats for rapid response
+
+```python
+from operon_ai.surveillance import ImmuneSystem, ThreatLevel
+
+# Create integrated immune system
+immune = ImmuneSystem(
+    min_training_samples=20,
+    window_size=100,
+)
+
+# Register agent for surveillance
+immune.register_agent("agent_alpha")
+
+# Training phase: Record normal behavior
+for _ in range(25):
+    immune.record_observation(
+        agent_id="agent_alpha",
+        output="Normal response",
+        response_time=0.5,
+        confidence=0.9,
+    )
+
+# Train baseline from observations
+result = immune.train_agent("agent_alpha")
+print(f"Trained: {result.passed}")  # True
+
+# Runtime: Inspect current behavior
+response = immune.inspect("agent_alpha")
+if response.threat_level >= ThreatLevel.HIGH:
+    print(f"ALERT: {response.recommended_action}")
+```
+
+### 🩹 Healing (Self-Repair Mechanisms)
+
+Biological systems don't just crash—they repair, recycle, and regenerate. Three primary healing patterns:
+
+**Healing Mechanisms:**
+- **ChaperoneLoop**: Structural healing through error feedback (like GroEL/GroES protein refolding)
+- **RegenerativeSwarm**: Metabolic healing through worker apoptosis and regeneration
+- **AutophagyDaemon**: Cognitive healing through context pruning
+
+```python
+from operon_ai import ChaperoneLoop, AutophagyDaemon, HistoneStore, Lysosome, Chaperone
+from pydantic import BaseModel
+
+class Output(BaseModel):
+    answer: str
+    confidence: float
+
+# Structural Healing: Feed validation errors back for context-aware repair
+loop = ChaperoneLoop(
+    generator=my_llm_generator,  # Callable that generates text
+    chaperone=Chaperone(),
+    schema=Output,
+    max_attempts=3,
+)
+
+result = loop.heal("Generate a structured answer")
+if result.outcome == HealingOutcome.HEALED:
+    print(f"Healed after {len(result.attempts)} attempts")
+
+# Cognitive Healing: Prune context when approaching token limits
+daemon = AutophagyDaemon(
+    histone_store=HistoneStore(),
+    lysosome=Lysosome(),
+    summarizer=lambda msgs: "Summary: " + msgs[-1],  # Your summarizer
+)
+
+# Check and auto-prune if context too large
+new_context, pruned = daemon.check_and_prune(
+    context=long_message_list,
+    max_tokens=8000,
+)
+print(f"Pruned {pruned.messages_digested} messages")
+```
+
 ---
 
 ## 🔬 Network Topologies
@@ -702,6 +788,8 @@ Explore the `examples/` directory for runnable demonstrations:
 | [`24_governed_release_train.py`](examples/24_governed_release_train.py) | Governance | Quorum + CFFL + feedback control with coordinated rollout |
 | [`25_resource_allocation_tradeoffs.py`](examples/25_resource_allocation_tradeoffs.py) | Resource Allocation | Nutrient, machinery, and energy budgeting with trade-offs |
 | [`37_metabolic_swarm_budgeting.py`](examples/37_metabolic_swarm_budgeting.py) | Coalgebra | Metabolic swarm with shared budget and halting guarantee |
+| [`38_linear_budget_tracking.py`](examples/38_linear_budget_tracking.py) | Metabolism | Token cost tracking via git commits and Linear tickets |
+| [`39_chaperone_healing_loop.py`](examples/39_chaperone_healing_loop.py) | Healing | Chaperone Loop with feedback-driven structural repair |
 
 **Health & Coordination (v0.11.0)**
 
