@@ -41,17 +41,17 @@ Each arrow implies a typed connection with integrity constraints.
 
 ### Cost Attribution
 
-- [Example 38: Linear Budget Tracking](#example-38-linear-budget-tracking-cost-attribution)
+- [Example 38: Linear Budget Tracking](wiring_diagrams/example38_linear_budget_tracking.md)
 
 ### Health & Healing (v0.10+)
 
-- [Example 39: Chaperone Healing Loop](#example-39-chaperone-healing-loop)
-- [Example 40: Epiplexity Monitoring](#example-40-epiplexity-monitoring)
+- [Example 39: Chaperone Healing Loop](wiring_diagrams/example39_chaperone_healing_loop.md)
+- [Example 40: Epiplexity Monitoring](wiring_diagrams/example40_epiplexity_monitoring.md)
 
 ### Surveillance (v0.11+)
 
-- [Example 41: Innate Immunity](#example-41-innate-immunity)
-- [Example 42: Morphogen Gradients](#example-42-morphogen-gradients)
+- [Example 41: Innate Immunity](wiring_diagrams/example41_innate_immunity.md)
+- [Example 42: Morphogen Gradients](wiring_diagrams/example42_morphogen_gradients.md)
 
 ## Example 17: Typed Wiring (Integrity + Capabilities)
 
