@@ -703,6 +703,14 @@ Explore the `examples/` directory for runnable demonstrations:
 | [`25_resource_allocation_tradeoffs.py`](examples/25_resource_allocation_tradeoffs.py) | Resource Allocation | Nutrient, machinery, and energy budgeting with trade-offs |
 | [`37_metabolic_swarm_budgeting.py`](examples/37_metabolic_swarm_budgeting.py) | Coalgebra | Metabolic swarm with shared budget and halting guarantee |
 
+**Health & Coordination (v0.11.0)**
+
+| Example | System | Description |
+|---------|--------|-------------|
+| [`40_epiplexity_monitoring.py`](examples/40_epiplexity_monitoring.py) | Epiplexity | Epistemic health monitoring, stagnation detection |
+| [`41_innate_immunity.py`](examples/41_innate_immunity.py) | Innate Immunity | TLR patterns, inflammation response, structural validators |
+| [`42_morphogen_gradients.py`](examples/42_morphogen_gradients.py) | Morphogen | Multi-cellular coordination via shared context gradients |
+
 Run any example:
 
 ```bash
