@@ -53,6 +53,12 @@ Each arrow implies a typed connection with integrity constraints.
 - [Example 41: Innate Immunity](wiring_diagrams/example41_innate_immunity.md)
 - [Example 42: Morphogen Gradients](wiring_diagrams/example42_morphogen_gradients.md)
 
+### Practical Applications (v0.11+)
+
+- [Example 43: Code Review Pipeline](wiring_diagrams/example43_code_review.md)
+- [Example 44: Codebase Q&A](wiring_diagrams/example44_codebase_qa.md)
+- [Example 45: Enhanced Cost Attribution](wiring_diagrams/example45_cost_attribution.md)
+
 ## Example 17: Typed Wiring (Integrity + Capabilities)
 
 ```

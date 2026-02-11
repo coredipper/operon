@@ -799,6 +799,14 @@ Explore the `examples/` directory for runnable demonstrations:
 | [`41_innate_immunity.py`](examples/41_innate_immunity.py) | Innate Immunity | TLR patterns, inflammation response, structural validators |
 | [`42_morphogen_gradients.py`](examples/42_morphogen_gradients.py) | Morphogen | Multi-cellular coordination via shared context gradients |
 
+**Practical Applications**
+
+| Example | System | Description |
+|---------|--------|-------------|
+| [`43_code_review_pipeline.py`](examples/43_code_review_pipeline.py) | CFFL+Membrane | Automated PR review with dual-approval gate and security scanning |
+| [`44_codebase_qa_rag.py`](examples/44_codebase_qa_rag.py) | Healing+Memory | RAG-based Q&A with citation validation and pattern learning |
+| [`45_enhanced_cost_attribution.py`](examples/45_enhanced_cost_attribution.py) | Morphogen+ATP | Team-level cost tracking with trend analysis and cross-team coordination |
+
 Run any example:
 
 ```bash
