@@ -9,7 +9,7 @@ build/
 *.egg-info/
 
 # Virtual environments
-.venv/
+.venv*/
 venv/
 
 # IDE
