@@ -25,6 +25,9 @@ htmlcov/
 # Worktrees
 .worktrees/
 
+# Beads
+.beads/
+
 # Env files
 .env
 .env.*
