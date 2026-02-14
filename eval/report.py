@@ -169,7 +169,7 @@ def write_latex(summary: dict, out_path: Path) -> None:
         "\\caption{Evaluation results aggregated across "
         f"{seed_count} deterministic seeds (Wilson 95\\% CI). "
         "Top: synthetic motif tests. Bottom: "
-        "external benchmark--derived tests (BFCL, AgentDojo).}}"
+        "external benchmark--derived tests (BFCL, AgentDojo).}"
     )
     lines.append("\\label{tab:eval-summary}")
     lines.append("\\end{table}")
