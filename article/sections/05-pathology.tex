@@ -41,7 +41,7 @@ observable, we approximate Epiplexity using normalized embedding-based metrics:
 \end{equation}
 where $\mathbf{e}_t$ is the embedding of message $m_t$, $\cos(\cdot, \cdot)$ is cosine similarity, and
 $H(m_t \mid m_{<t})$ is the conditional perplexity of the current message given the conversation history.
-We normalize perplexity to $[0,1]$ via a sigmoid: $\sigma(H) = 1 - e^{-H/H_0}$ where $H_0$ is a baseline
+We normalize perplexity to $[0,1]$ via an exponential saturation: $\sigma(H) = 1 - e^{-H/H_0}$ where $H_0$ is a baseline
 perplexity (e.g., median perplexity over a validation corpus of normal conversations).
 
 The mixing parameter $\alpha \in [0,1]$ balances semantic novelty (embedding distance) against linguistic

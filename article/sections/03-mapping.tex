@@ -137,7 +137,9 @@ Output Expressions ($O$), governed by the same categorical laws (at the level of
 
 \begin{table}[h]
 \centering
-\begin{tabular}{@{}lll@{}}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}p{0.27\linewidth}p{0.34\linewidth}p{0.34\linewidth}@{}}
 \toprule
 Category Concept & Biological Realization (GRN) & Software Realization (Agentic)\\
 \midrule
@@ -168,7 +170,9 @@ Periodic Scheduling & Circadian Oscillator & Health Checks / Heartbeat\\
 
 \begin{table}[h]
 \centering
-\begin{tabular}{@{}lll@{}}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}p{0.27\linewidth}p{0.34\linewidth}p{0.34\linewidth}@{}}
 \toprule
 \textbf{Biological Concept} & \textbf{Agentic Concept} & \textbf{Formal Structure}\\
 \midrule
@@ -186,7 +190,7 @@ Immune Memory & Threat Signature Store & Hash-Indexed Cache\\
 ATP & Token Budget & Resource Monoid $\mathcal{R}$\\
 mPTP Opening & Fast Apoptosis Trigger & Guard Condition\\
 Retrograde Signaling & Phenotype Reshaping & Slow Adaptation\\
-Metabolic-Epigenetic Coupling & Cost-Gated Retrieval & Conditional Access\\
+Metabolic-Epigenetic State Coupling & Cost-Gated Retrieval Policy & Conditional Access Control\\
 \midrule
 \multicolumn{3}{@{}l@{}}{\textit{Information and Health}}\\
 \midrule
@@ -235,8 +239,13 @@ This structure maps to the energetics of transcriptional elongation. A gene (Age
 This formalism establishes that ``Ischemia'' (Token Starvation) is not merely a runtime error, but a reachable terminal state $\bot$ in the system's dynamics. This mirrors the biological mechanism where failure to meet metabolic costs triggers p53-mediated apoptosis \cite{aubrey2018p53}.
 
 
-\begin{theorem}[The Metabolic Bound]
-For any agentic topology $T$ composed of $N$ agents with total budget $R_{total}$, the system is guaranteed to halt. Unlike the general Halting Problem, termination is decidable for Metabolic Coalgebras: the resource state $r$ is strictly decreasing for every non-identity morphism, providing a well-founded termination measure \cite{boreale2023weighted}.
+\begin{theorem}[The Metabolic Bound (Qualified)]
+Assume a resource-cost function assigns each non-identity transition a cost $c \ge c_{\min} > 0$, the resource
+state is monotone nonincreasing (no regeneration), and identity morphisms are the only zero-cost transitions.
+Then for any agentic topology with total budget $R_{total}$, every execution has length at most
+$\lfloor R_{total} / c_{\min} \rfloor$, so termination is decidable. If regeneration or zero-cost cycles are
+permitted, termination requires an additional well-founded potential or an explicit budget/termination
+certificate \cite{boreale2023weighted}.
 \end{theorem}
 
 \subsection{Additional Organelles: Completing the Cellular Architecture}

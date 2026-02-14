@@ -31,7 +31,7 @@
 \maketitle
 
 \begin{abstract}
-The transition of Large Language Models (LLMs) from passive generators to autonomous agents has introduced significant challenges in reliability, security, and state management. Current agentic architectures are often constructed ad-hoc, prone to ``hallucination cascades,'' infinite loops, and prompt injection attacks. This paper proposes that these failure modes are not unique to software but are instances of universal control problems solved by biological systems. We present a formal isomorphism between Gene Regulatory Networks (GRNs) and Agentic Software Systems using Applied Category Theory. We model agents as \textbf{Polynomial Functors} in $\Poly$, and their interactions via the \textbf{Operad of Wiring Diagrams}. We derive a rigorous syntax for agent composition by mapping biological mechanisms---including \textit{Quorum Sensing} for consensus, \textit{Chaperones} for structural validation, and \textit{Mitochondrial Signaling} for bioenergetic resource governance---to software design patterns. This framework provides a mathematical basis for ``Epigenetic'' state management (RAG), topological defense against ``Prion'' attacks, and a \textit{Metabolic Coalgebra} that ensures decidable termination.
+The transition of Large Language Models (LLMs) from passive generators to autonomous agents has introduced significant challenges in reliability, security, and state management. Current agentic architectures are often constructed ad-hoc, prone to ``hallucination cascades,'' infinite loops, and prompt injection attacks. This paper proposes that these failure modes are not unique to software but are instances of universal control problems solved by biological systems. We present a formal isomorphism between Gene Regulatory Networks (GRNs) and Agentic Software Systems using Applied Category Theory. We model agents as \textbf{Polynomial Functors} in $\Poly$, and their interactions via the \textbf{Operad of Wiring Diagrams}. We derive a rigorous syntax for agent composition by mapping biological mechanisms---including \textit{Quorum Sensing} for consensus, \textit{Chaperones} for structural validation, and \textit{Mitochondrial Signaling} for bioenergetic resource governance---to software design patterns. This framework provides a mathematical basis for ``Epigenetic'' state management (RAG), topological defense against ``Prion'' attacks, and a \textit{Metabolic Coalgebra} that provides a decidable termination criterion under explicit resource-monotonicity assumptions.
 \end{abstract}
 
 \section{Introduction}
@@ -89,8 +89,12 @@ A resource-constrained agent is a coalgebra $(S, \alpha)$ over $P$, where $S \co
 \end{equation}
 \end{definition}
 
-\begin{theorem}[The Metabolic Bound]
-For any topology with finite budget $R_{total}$, the system is guaranteed to halt. The ``Halting Problem'' is decidable for Metabolic Coalgebras because the resource state is strictly decreasing.
+\begin{theorem}[The Metabolic Bound (Qualified)]
+Assume a resource-cost function assigns each non-identity transition a cost $c \ge c_{\min} > 0$, the resource
+state is monotone nonincreasing (no regeneration), and identity morphisms are the only zero-cost transitions.
+Then for any topology with finite budget $R_{total}$, every execution has length at most
+$\lfloor R_{total} / c_{\min} \rfloor$, so termination is decidable. If regeneration or zero-cost cycles are
+permitted, termination requires an additional well-founded potential or explicit budget/termination certificate.
 \end{theorem}
 
 \subsection{Additional Organelles: The Cellular Architecture}

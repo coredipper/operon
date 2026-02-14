@@ -2,7 +2,7 @@
 
 The transition from ``Prompt Engineering'' to ``Agentic Engineering'' requires moving beyond component-level
 optimization toward principled architectural design. Current methodologies often lack the formal foundations
-needed to guarantee system-level properties like termination, error suppression, and graceful degradation.
+needed to reason about system-level properties like termination, error suppression, and graceful degradation.
 
 In this paper, we have demonstrated that Gene Regulatory Networks (GRNs) provide a proven architectural blueprint
 for distributed, stochastic information processing. By formalizing this analogy through Applied Category Theory,
@@ -57,9 +57,9 @@ will be outcompeted.
 The isomorphism rests on the category $\mathbf{Poly}$ of polynomial functors, where both genes and agents are
 modeled as interfaces $(O, I)$ consuming observations and producing actions. The Operad of Wiring Diagrams
 provides the grammar for composition, with type-checking at the topological level preventing classes of
-runtime errors. The Metabolic Coalgebra enriches this with resource constraints, guaranteeing termination
-through strictly decreasing state. The Provenance Functor layers trust semantics onto message flow, providing
-formal injection resistance.
+runtime errors. The Metabolic Coalgebra enriches this with resource constraints, providing a decidable
+termination criterion when costs are strictly decreasing and regeneration is excluded (or separately bounded).
+The Provenance Functor layers trust semantics onto message flow, providing formal injection resistance.
 
 \subsection*{Implications}
 
