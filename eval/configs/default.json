@@ -1,0 +1,56 @@
+{
+  "folding": {
+    "samples": 200,
+    "min_fields": 3,
+    "max_fields": 8,
+    "min_corruptions": 1,
+    "max_corruptions": 3,
+    "wrap_text_prob": 0.2
+  },
+  "immune": {
+    "agents": 40,
+    "compromised": 8,
+    "train_observations": 30,
+    "eval_observations": 20,
+    "min_training_samples": 10,
+    "min_observations": 10,
+    "window_size": 50,
+    "baseline_confidence": 0.9,
+    "baseline_confidence_std": 0.05,
+    "baseline_time": 0.25,
+    "baseline_time_std": 0.05,
+    "compromised_confidence": 0.55,
+    "compromised_time": 0.65,
+    "canary_fail_rate": 0.4
+  },
+  "healing": {
+    "trials": 200,
+    "max_retries": 3,
+    "fix_prob_with_error": 0.85,
+    "fix_prob_blind": 0.25
+  },
+  "bfcl_folding": {
+    "categories": ["simple", "multiple", "parallel"],
+    "max_samples": 200,
+    "min_corruptions": 1,
+    "max_corruptions": 3,
+    "wrap_text_prob": 0.2
+  },
+  "agentdojo_immune": {
+    "attacks": ["important_instructions", "tool_knowledge", "direct", "ignore_previous"],
+    "agents": 40,
+    "compromised": 8,
+    "train_observations": 30,
+    "eval_observations": 20,
+    "min_training_samples": 10,
+    "min_observations": 10,
+    "window_size": 50,
+    "baseline_confidence": 0.9,
+    "baseline_confidence_std": 0.05,
+    "baseline_time": 0.25,
+    "baseline_time_std": 0.05,
+    "compromised_confidence": 0.55,
+    "compromised_time": 0.65,
+    "canary_fail_rate": 0.4
+  }
+}
