@@ -46,6 +46,35 @@ python -m eval.report --glob "eval/results/seed-*.json" \
   --out-tex eval/results/summary.tex
 ```
 
+## External Benchmarks (BFCL + AgentDojo)
+
+The harness includes suites derived from two external benchmarks.
+Install optional dependencies:
+
+```bash
+pip install -e ".[eval]"
+```
+
+Run external suites only:
+
+```bash
+python -m eval.run --suite all_external --config eval/configs/default.json
+```
+
+### BFCL Folding
+
+Uses function-call schemas from the [Berkeley Function Calling
+Leaderboard](https://gorilla.cs.berkeley.edu/leaderboard.html) to test
+Chaperone folding with realistic schemas. Falls back to built-in schemas
+if `bfcl-eval` data is not available.
+
+### AgentDojo Immune
+
+Uses prompt injection attack templates from
+[AgentDojo](https://agentdojo.spylab.ai/) to generate realistic compromised
+agent behavioral signatures. Falls back to built-in templates if `agentdojo`
+is not installed.
+
 ## Notes
 
 This harness is intentionally synthetic. It does not represent real LLM outputs

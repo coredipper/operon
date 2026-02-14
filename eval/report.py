@@ -3,9 +3,8 @@ from __future__ import annotations
 import argparse
 import glob
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable
 
 from eval.utils import wilson_interval
 
@@ -15,11 +14,7 @@ class Aggregate:
     name: str
     success: int = 0
     total: int = 0
-    seed_rates: list[float] = None
-
-    def __post_init__(self):
-        if self.seed_rates is None:
-            self.seed_rates = []
+    seed_rates: list[float] = field(default_factory=list)
 
     def add(self, success: int, total: int) -> None:
         self.success += success
