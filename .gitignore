@@ -25,5 +25,10 @@ htmlcov/
 # Worktrees
 .worktrees/
 
+# Env files
+.env
+.env.*
+!.env.example
+
 # Documentation (generated plans)
 docs/
