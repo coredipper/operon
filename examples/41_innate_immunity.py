@@ -19,7 +19,7 @@ The key insight: Innate immunity handles >99% of threats with minimal overhead.
 Only sophisticated attacks require the full adaptive machinery.
 
 References:
-- Article Section 4.3: Innate Immunity - Fast Pattern-Based Defense
+- Article Section 4.6: Innate Immunity - Fast Pattern-Based Defense
 """
 
 from operon_ai.surveillance import (

@@ -19,7 +19,7 @@ The key insight: Agents can coordinate through shared context variables
 (the "gradient") without explicit communication between them.
 
 References:
-- Article Section 6.3.2: Morphogen Gradients - Coordination Without Central Control
+- Article Section 6.5.2: Morphogen Gradients - Coordination Without Central Control
 """
 
 from operon_ai.coordination import (

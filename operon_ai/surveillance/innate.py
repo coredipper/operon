@@ -26,7 +26,7 @@ This module implements the innate immunity layer:
    - Tissue isolation → Temporary capability reduction / rate limiting
 
 References:
-- Article Section 4.3: Innate Immunity - Fast Pattern-Based Defense
+- Article Section 4.6: Innate Immunity - Fast Pattern-Based Defense
 """
 from dataclasses import dataclass, field
 from typing import Callable, Protocol

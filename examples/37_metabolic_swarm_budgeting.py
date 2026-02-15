@@ -17,7 +17,7 @@ Prerequisites:
 - Example 25 for resource allocation trade-offs
 
 See Also:
-- Article Section 3.4: Metabolic Coalgebras: Formalizing Resource Constraints
+- Article Section 3.5: Metabolic Coalgebras - Formalizing Resource Constraints
 - Lynch (2015): The bioenergetic costs of a gene
 - Nakov (2021): Quantitative Polynomial Functors
 

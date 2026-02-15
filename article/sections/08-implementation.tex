@@ -30,11 +30,12 @@ class ImmuneSystem:
     memory: ImmuneMemory    # Threat signatures
     displays: dict[str, MHCDisplay]
     tcells: dict[str, TCell]
+    profiles: dict[str, BaselineProfile]  # Trained baselines
 \end{verbatim}
 
 The \texttt{MHCPeptide} class captures behavioral fingerprints---statistical signatures of agent output
 including response time distributions, vocabulary hashes, confidence patterns, and error rates. This
-directly implements the MHC presentation concept from Section 4.4.
+directly implements the MHC presentation concept from Section 4.7.
 
 \paragraph{Two-Signal Activation.}
 T-cell activation requires both signals:
@@ -42,12 +43,14 @@ T-cell activation requires both signals:
 class Signal1(Enum):
     SELF = "self"        # Matches baseline
     NON_SELF = "non_self"  # Anomalous behavior
+    UNKNOWN = "unknown"  # Insufficient data (anergic)
 
 class Signal2(Enum):
     NONE = "none"
     CANARY_FAILED = "canary"
     CROSS_VALIDATED = "cross"
     REPEATED_ANOMALY = "repeat"
+    MANUAL_FLAG = "manual"  # Operator override
 \end{verbatim}
 
 An agent is only flagged when \texttt{Signal1 == NON\_SELF} \textbf{and} \texttt{Signal2 != NONE}.
@@ -108,8 +111,10 @@ The \texttt{ApprovalToken} provides proof-carrying authorization for privileged 
 class ApprovalToken:
     request_hash: str
     issuer: str
-    integrity: IntegrityLabel
-    timestamp: datetime
+    reason: str = ""
+    confidence: float = 1.0
+    integrity: IntegrityLabel = IntegrityLabel.TRUSTED
+    timestamp: datetime = field(default_factory=now)
 \end{verbatim}
 
 This implements the Trust-Gated Lens: actions requiring high integrity must present a valid
@@ -169,10 +174,12 @@ lower section of Table~\ref{tab:eval-summary}.
 The current implementation has several limitations:
 
 \begin{itemize}[leftmargin=*]
-\item \textbf{Epiplexity:} Not yet implemented. The operational approximation (Equation 18)
-requires embedding infrastructure not included in the current release.
-\item \textbf{Multi-cellular coordination:} Morphogen gradients are specified but the
-orchestrator implementation is incomplete.
+\item \textbf{Epiplexity:} Implemented with a mock embedding provider (\texttt{MockEmbeddingProvider}).
+Integration with production embedding APIs and empirical calibration of the $\alpha$ mixing parameter
+and threshold $\delta$ across diverse task types remain future work.
+\item \textbf{Multi-cellular coordination:} The morphogen gradient orchestrator
+(\texttt{GradientOrchestrator}) is implemented for single-process deployments. Cross-agent gradient
+propagation in distributed multi-process deployments remains future work.
 \item \textbf{Benchmarking:} Synthetic harness is implemented, but real-world validation with LLM outputs
 and adversarial inputs is still in progress.
 \end{itemize}

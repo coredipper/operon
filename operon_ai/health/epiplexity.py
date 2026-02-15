@@ -35,8 +35,8 @@ class HealthStatus(Enum):
     HEALTHY = "healthy"           # Normal operation
     CONVERGING = "converging"     # Low epiplexity, likely task completion
     EXPLORING = "exploring"       # High novelty, making progress
-    STAGNANT = "stagnant"         # High epiplexity, possible loop
-    CRITICAL = "critical"         # Sustained high epiplexity, intervention needed
+    STAGNANT = "stagnant"         # Low epiplexity (no surprise), possible loop
+    CRITICAL = "critical"         # Sustained low epiplexity, intervention needed
 
 
 @dataclass
@@ -44,7 +44,7 @@ class EpiplexityResult:
     """Result of a single epiplexity measurement."""
 
     # Raw components
-    embedding_novelty: float  # 1 - cos(e_t, e_{t-1}), range [0, 2]
+    embedding_novelty: float  # ½(1 - cos(e_t, e_{t-1})), range [0, 1]
     normalized_perplexity: float  # σ(H), range [0, 1]
 
     # Combined score
@@ -128,14 +128,14 @@ class EpiplexityMonitor:
     """
     Monitor for detecting epistemic stagnation.
 
-    Implements the operational Epiplexity approximation:
+    Implements the operational Epiplexity approximation (Equation 13):
 
-        Ê_t = α·(1 - cos(e_t, e_{t-1})) + (1-α)·σ(H(m_t|m_{<t}))
+        Ê_t = α·½(1 - cos(e_t, e_{t-1})) + (1-α)·σ(H(m_t|m_{<t}))
 
     Where:
     - e_t is the embedding of message t
     - cos is cosine similarity
-    - σ is sigmoid normalization to [0,1]
+    - σ(H) = 1 - e^{-H/H_0} is exponential saturation to [0,1]
     - H is conditional perplexity (approximated)
     - α is the mixing parameter
 
@@ -143,14 +143,15 @@ class EpiplexityMonitor:
 
         E_w = (1/w) Σ Ê_t  for t in window
 
-    An agent is flagged when E_w > δ for sustained periods.
+    Low Epiplexity = low Bayesian surprise = stagnation.
+    An agent is flagged when E_w < δ for sustained periods.
 
     Example:
         >>> monitor = EpiplexityMonitor(
         ...     embedding_provider=MockEmbeddingProvider(),
         ...     alpha=0.5,
         ...     window_size=5,
-        ...     threshold=0.7,
+        ...     threshold=0.2,
         ... )
         >>> result = monitor.measure("First message")
         >>> result.status
@@ -164,15 +165,14 @@ class EpiplexityMonitor:
     embedding_provider: EmbeddingProvider
     alpha: float = 0.5  # Mixing parameter (0 = perplexity only, 1 = embedding only)
     window_size: int = 10  # Window for integral calculation
-    threshold: float = 0.7  # δ threshold for stagnation detection
+    threshold: float = 0.2  # δ threshold: E_w < δ indicates stagnation
     critical_duration: int = 5  # Consecutive stagnant measurements before CRITICAL
 
     # Internal state
     state: EpiplexityState = field(default_factory=EpiplexityState)
 
-    # Perplexity approximation parameters
-    perplexity_baseline: float = 2.0  # Baseline perplexity for normalization
-    perplexity_scale: float = 0.5  # Scale for sigmoid
+    # Perplexity normalization parameter (H_0 in the paper)
+    perplexity_h0: float = 2.0  # Baseline perplexity for exponential saturation
 
     def measure(
         self,
@@ -204,10 +204,8 @@ class EpiplexityMonitor:
 
         # Calculate normalized perplexity
         if perplexity is not None:
-            # Use provided perplexity with sigmoid normalization
-            normalized_perplexity = self._sigmoid(
-                (perplexity - self.perplexity_baseline) * self.perplexity_scale
-            )
+            # Use provided perplexity with exponential saturation: σ(H) = 1 - e^{-H/H_0}
+            normalized_perplexity = self._exponential_saturation(perplexity)
         else:
             # Approximate: low novelty + repetition suggests high uncertainty
             # This is a heuristic when actual perplexity isn't available
@@ -271,9 +269,9 @@ class EpiplexityMonitor:
 
         return dot_product / (magnitude_a * magnitude_b)
 
-    def _sigmoid(self, x: float) -> float:
-        """Sigmoid function for normalization."""
-        return 1.0 / (1.0 + math.exp(-x))
+    def _exponential_saturation(self, h: float) -> float:
+        """Exponential saturation σ(H) = 1 - e^{-H/H_0}, mapping [0, ∞) → [0, 1)."""
+        return 1.0 - math.exp(-h / self.perplexity_h0)
 
     def _approximate_perplexity(
         self,
@@ -319,15 +317,15 @@ class EpiplexityMonitor:
         """
         Determine health status from components.
 
-        Decision logic:
+        Decision logic (per paper Section 5):
         - High novelty (>0.5): EXPLORING (making progress)
         - Low novelty + low perplexity (<0.3): CONVERGING (task complete)
-        - Low novelty + high perplexity: STAGNANT (loop)
-        - Integral > threshold for critical_duration: CRITICAL
+        - Low novelty + high perplexity: STAGNANT (loop — stuck but uncertain)
+        - Integral < threshold for critical_duration: CRITICAL (sustained stagnation)
         """
-        # Check for critical (sustained stagnation)
+        # Check for critical (sustained low surprise = deep stagnation)
         if (
-            integral > self.threshold and
+            integral < self.threshold and
             self.state.current_consecutive_stagnant >= self.critical_duration
         ):
             return HealthStatus.CRITICAL
@@ -340,12 +338,12 @@ class EpiplexityMonitor:
         if novelty < 0.3 and perplexity < 0.3:
             return HealthStatus.CONVERGING
 
-        # Low novelty + high perplexity = stagnant
+        # Low novelty + high perplexity = stagnant (loop pathology)
         if novelty < 0.3 and perplexity > 0.5:
             return HealthStatus.STAGNANT
 
-        # Integral above threshold = stagnant
-        if integral > self.threshold:
+        # Low integral = low Bayesian surprise = stagnant
+        if integral < self.threshold:
             return HealthStatus.STAGNANT
 
         return HealthStatus.HEALTHY

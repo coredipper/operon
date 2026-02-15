@@ -211,7 +211,7 @@ Tissue Boundary & Trust Boundary & Type Barrier\\
 
 \subsection{Metabolic Coalgebras: Formalizing Resource Constraints}
 
-Finally, we address the physical constraints of computation. Just as biological systems are limited by ATP availability \cite{lynch2015bioenergetic}, agentic systems are limited by token budgets and latency. To model this, we extend our coalgebraic framework to include resource constraints, defining a \textbf{Metabolic Coalgebra}. Mathematically, this is an instance of a Quantitative Coalgebra enriched over a resource monoid, effectively restricting the domain of the state transition function to resource-sufficient states.
+Finally, we address the physical constraints of computation. Just as biological systems are limited by ATP availability \cite{lynch2015bioenergetic,kempes2017thermodynamic}, agentic systems are limited by token budgets and latency. To model this, we extend our coalgebraic framework to include resource constraints, defining a \textbf{Metabolic Coalgebra}. Mathematically, this is an instance of a Quantitative Coalgebra enriched over a resource monoid, effectively restricting the domain of the state transition function to resource-sufficient states.
 
 We align this definition with the theory of \textbf{Quantitative Polynomial Functors} \cite{nakov2021quantitative}, treating the system as a state machine enriched over a resource monoid.
 
@@ -221,17 +221,17 @@ Let $(\mathcal{R}, +, 0, \ge)$ be an ordered commutative monoid representing com
 
 \begin{definition}[Metabolic Coalgebra]
 A resource-constrained agent is a coalgebra $(S, \alpha)$ over a polynomial functor $P$, where the state space is the product of the logical state $L$ and the resource state $\mathcal{R}$:
-\begin{equation}
+\begin{equation*}
     S \cong L \times \mathcal{R}
-\end{equation}
+\end{equation*}
 The structure map $\alpha: S \to P(S) + \bot$ is defined as a \textbf{partial map} guarded by cost. For a transition requiring cost $c \in \mathcal{R}$:
-\begin{equation}
-    \alpha(l, r) = 
-    \begin{cases} 
+\begin{equation*}
+    \alpha(l, r) =
+    \begin{cases}
       (l', r - c) & \text{if } r \ge c \\
       \bot & \text{if } r < c \quad \text{(Apoptosis)}
     \end{cases}
-\end{equation}
+\end{equation*}
 \end{definition}
 
 This structure maps to the energetics of transcriptional elongation. A gene (Agent) cannot express its protein (Action) instantaneously; it must transcribe an mRNA sequence (Chain of Thought) nucleotide by nucleotide. This process consumes a distinct amount of chemical energy (NTPs) per step. The Metabolic Coalgebra models this dependency: if the cellular energy budget is exhausted, transcription stalls (Ischemia), and the gene fails to execute its function, regardless of its regulatory logic.

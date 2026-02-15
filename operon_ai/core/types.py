@@ -118,12 +118,12 @@ class ActionType(Enum):
 
 class IntegrityLabel(IntEnum):
     """
-    Integrity label for information-flow control.
+    3-level trust hierarchy that collapses the paper's 4-level model
+    {U, T, S, R} (User, Tool, Self, Retrieved) into:
 
-    Mirrors the paper's ordering U ≤ V ≤ T:
-    - UNTRUSTED: User input / raw model text
-    - VALIDATED: Schema-checked / partially validated
-    - TRUSTED: Tool-grounded / trusted boundary
+    - UNTRUSTED (0): User input, Retrieved, Self-generated  (paper's U, S, R)
+    - VALIDATED (1): Schema-checked / Chaperone-folded
+    - TRUSTED   (2): Tool-grounded / deterministic output   (paper's T)
     """
 
     UNTRUSTED = 0

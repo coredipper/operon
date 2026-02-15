@@ -9,7 +9,7 @@ properties of its components~\cite{vagner2015algebras}.
 
 In WAgent, every wire carries a specific Type $\tau\in T$.
 \begin{equation}
-T = \{\text{Text}, \text{JSON}, \text{Image}, \text{Error}, \text{ToolCall}\}.
+T = \{\text{Text}, \text{JSON}, \text{Image}, \text{Error}, \text{ToolCall}, \text{Stop}, \text{Approval}\}.
 \tag{6}
 \end{equation}
 These types correspond to biological molecular specificity (e.g., a specific transcription factor only binds to
@@ -254,7 +254,7 @@ put(s, m) =
 s' & \text{if } \mathcal{P}(m) \ge \tau_{\text{action}} \\
 \bot & \text{otherwise}
 \end{cases}
-\tag{16}
+\tag{10}
 \end{equation}
 where $\tau_{\text{action}}$ is the minimum trust level required for the action.
 \end{itemize}
@@ -285,7 +285,7 @@ A topology generates periodic behavior via delayed negative feedback. Node $A$ a
 \item \textbf{Formal Structure:} An oscillator is a Trace operation with a built-in delay element $\delta$:
 \begin{equation}
 \mathrm{Osc}(A) = Tr(A \circ \delta)
-\tag{10}
+\tag{11}
 \end{equation}
 where $\delta: S \to S$ introduces temporal separation between activation and inhibition, preventing the system from reaching a fixed point.
 \end{itemize}
