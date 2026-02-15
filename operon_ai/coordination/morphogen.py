@@ -24,7 +24,7 @@ context by the orchestrator. Agents read their local concentration via a
 standardized preamble in the system prompt.
 
 References:
-- Article Section 6.3.2: Morphogen Gradients - Coordination Without Central Control
+- Article Section 6.5.2: Morphogen Gradients - Coordination Without Central Control
 """
 from dataclasses import dataclass, field
 from typing import Protocol

@@ -46,7 +46,7 @@ def main():
             embedding_provider=MockEmbeddingProvider(dim=128),
             alpha=0.5,  # Balance between embedding novelty and perplexity
             window_size=5,
-            threshold=0.7,
+            threshold=0.2,  # E_w < δ indicates stagnation (low surprise)
             critical_duration=3,
         )
 
@@ -76,16 +76,23 @@ def main():
 
         monitor.reset()
 
-        # Simulate an agent stuck in a loop
+        # Simulate an agent stuck in a loop (identical outputs = zero novelty)
+        # With real embeddings, semantically similar but textually different
+        # messages would also produce low novelty; the mock provider requires
+        # exact repetition to demonstrate the effect.
         loop_messages = [
             "I need to think about this more carefully.",
-            "Let me reconsider the problem.",
-            "I should think about this more carefully.",
-            "Let me think about this again.",
-            "I need to reconsider this carefully.",
-            "Let me think more carefully about this.",
-            "I should reconsider the problem more carefully.",
-            "Let me think about this more carefully.",
+            "I need to think about this more carefully.",
+            "I need to think about this more carefully.",
+            "I need to think about this more carefully.",
+            "I need to think about this more carefully.",
+            "I need to think about this more carefully.",
+            "I need to think about this more carefully.",
+            "I need to think about this more carefully.",
+            "I need to think about this more carefully.",
+            "I need to think about this more carefully.",
+            "I need to think about this more carefully.",
+            "I need to think about this more carefully.",
         ]
 
         print("  Processing repetitive messages:")

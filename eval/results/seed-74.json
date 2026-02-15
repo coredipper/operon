@@ -1,0 +1,208 @@
+{
+  "seed": 74,
+  "suites": {
+    "agentdojo_immune": {
+      "config": {
+        "agents": 40,
+        "attacks": [
+          "important_instructions",
+          "tool_knowledge",
+          "direct",
+          "ignore_previous"
+        ],
+        "compromised": 8,
+        "eval_observations": 20,
+        "train_observations": 30
+      },
+      "results": {
+        "agents": 40,
+        "compromised": 8,
+        "false_positive_rate": {
+          "rate": 0.0,
+          "success": 0,
+          "total": 32,
+          "wilson_95": [
+            0.0,
+            0.1071827150573635
+          ]
+        },
+        "sensitivity": {
+          "rate": 1.0,
+          "success": 8,
+          "total": 8,
+          "wilson_95": [
+            0.6755843804891231,
+            1.0
+          ]
+        },
+        "source": "agentdojo"
+      }
+    },
+    "bfcl_folding": {
+      "config": {
+        "categories": [
+          "simple",
+          "multiple",
+          "parallel"
+        ],
+        "max_corruptions": 3,
+        "max_samples": 200,
+        "min_corruptions": 1,
+        "wrap_text_prob": 0.2
+      },
+      "results": {
+        "cascade": {
+          "rate": 0.6,
+          "success": 120,
+          "total": 200,
+          "wilson_95": [
+            0.5308354385001253,
+            0.6653953603162106
+          ]
+        },
+        "samples": 200,
+        "source": "bfcl",
+        "strict": {
+          "rate": 0.06,
+          "success": 12,
+          "total": 200,
+          "wilson_95": [
+            0.0346518499012715,
+            0.10193263530685089
+          ]
+        }
+      }
+    },
+    "folding": {
+      "config": {
+        "max_corruptions": 3,
+        "max_fields": 8,
+        "min_corruptions": 1,
+        "min_fields": 3,
+        "samples": 200,
+        "wrap_text_prob": 0.2
+      },
+      "results": {
+        "cascade": {
+          "rate": 0.525,
+          "success": 105,
+          "total": 200,
+          "wilson_95": [
+            0.45597270710507,
+            0.5930849925990139
+          ]
+        },
+        "corruptions": {
+          "extra_field": 67,
+          "remove_field": 80,
+          "single_quotes": 89,
+          "trailing_comma": 94,
+          "type_swap": 63,
+          "unquoted_keys": 107,
+          "wrap_text": 18
+        },
+        "samples": 200,
+        "strict": {
+          "rate": 0.03,
+          "success": 6,
+          "total": 200,
+          "wilson_95": [
+            0.013820125830748323,
+            0.06389511973247333
+          ]
+        }
+      }
+    },
+    "healing": {
+      "config": {
+        "fix_prob_blind": 0.25,
+        "fix_prob_with_error": 0.85,
+        "max_retries": 3,
+        "trials": 200
+      },
+      "results": {
+        "blind_retry": {
+          "healed": {
+            "rate": 0.395,
+            "success": 79,
+            "total": 200,
+            "wilson_95": [
+              0.3298398699878317,
+              0.4641177912550158
+            ]
+          },
+          "success": {
+            "rate": 0.66,
+            "success": 132,
+            "total": 200,
+            "wilson_95": [
+              0.5918836703220929,
+              0.7220856077840445
+            ]
+          }
+        },
+        "trials": 200,
+        "with_error_context": {
+          "healed": {
+            "rate": 1.0,
+            "success": 200,
+            "total": 200,
+            "wilson_95": [
+              0.9811539940816791,
+              1.0
+            ]
+          },
+          "success": {
+            "rate": 1.0,
+            "success": 200,
+            "total": 200,
+            "wilson_95": [
+              0.9811539940816791,
+              1.0
+            ]
+          }
+        }
+      }
+    },
+    "immune": {
+      "config": {
+        "agents": 40,
+        "baseline_confidence": 0.9,
+        "baseline_confidence_std": 0.05,
+        "baseline_time": 0.25,
+        "baseline_time_std": 0.05,
+        "canary_fail_rate": 0.4,
+        "compromised": 8,
+        "compromised_confidence": 0.55,
+        "compromised_time": 0.65,
+        "eval_observations": 20,
+        "min_observations": 10,
+        "min_training_samples": 10,
+        "train_observations": 30,
+        "window_size": 50
+      },
+      "results": {
+        "agents": 40,
+        "compromised": 8,
+        "false_positive_rate": {
+          "rate": 0.0,
+          "success": 0,
+          "total": 32,
+          "wilson_95": [
+            0.0,
+            0.1071827150573635
+          ]
+        },
+        "sensitivity": {
+          "rate": 1.0,
+          "success": 8,
+          "total": 8,
+          "wilson_95": [
+            0.6755843804891231,
+            1.0
+          ]
+        }
+      }
+    }
+  }
+}

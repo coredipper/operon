@@ -9,7 +9,7 @@ properties of its components~\cite{vagner2015algebras}.
 
 In WAgent, every wire carries a specific Type $\tau\in T$.
 \begin{equation}
-T = \{\text{Text}, \text{JSON}, \text{Image}, \text{Error}, \text{ToolCall}\}.
+T = \{\text{Text}, \text{JSON}, \text{Image}, \text{Error}, \text{ToolCall}, \text{Stop}, \text{Approval}\}.
 \tag{6}
 \end{equation}
 These types correspond to biological molecular specificity (e.g., a specific transcription factor only binds to
@@ -59,9 +59,9 @@ Tr(A).
 \end{equation}
 \begin{itemize}[leftmargin=*]
 \item \textbf{Biological Analogy:} Autoregulation (Homeostasis) or Positive Feedback.
-\item \textbf{Software Implication:} This is the topological definition of Agency. A ``stateless'' LLM is a simple
-morphism. An ``Agent'' is a morphism wrapped in a Trace operation, allowing it to observe its own previous
-outputs (Chain-of-Thought).
+\item \textbf{Software Implication:} Trace captures \textbf{explicit feedback wiring} (outputs fed back as inputs),
+e.g., when an agent conditions on its own prior outputs or a memory buffer. Internal chain-of-thought is
+modeled as hidden state in the coalgebra, not by Trace itself.
 \end{itemize}
 
 \subsection{Theorem: Topological Error Suppression}
@@ -86,9 +86,17 @@ P(\mathrm{Fail}_{\mathrm{direct}}) = P(E_{\mathrm{gen}}).
 \[
 P(\mathrm{Fail}_{\mathrm{CFFL}}) = P(E_{\mathrm{gen}})\times P(E_{\mathrm{ver}}).
 \]
-\item \textbf{Case 3: CFFL Topology (Correlated).} In practice, LLM errors are often correlated---if the generator hallucinates a plausible-sounding function, the verifier (especially if using the same base model or training distribution) may accept it. Let $\rho \in [-1, 1]$ be the Pearson correlation coefficient between the binary error variables $E_{\mathrm{gen}}$ and $E_{\mathrm{ver}}$. Then:
+\item \textbf{Case 3: CFFL Topology (Correlated).} In practice, LLM errors are often correlated---if the generator hallucinates a plausible-sounding function, the verifier (especially if using the same base model or training distribution) may accept it. Let $\rho$ be the (Pearson/phi) correlation between the Bernoulli error variables $E_{\mathrm{gen}}$ and $E_{\mathrm{ver}}$, with $p = P(E_{\mathrm{gen}})$ and $q = P(E_{\mathrm{ver}})$ (assume $p,q\in(0,1)$ so $\rho$ is well-defined). Then:
 \[
-P(E_{\mathrm{gen}} \wedge E_{\mathrm{ver}}) = P(E_{\mathrm{gen}})P(E_{\mathrm{ver}}) + \rho\sqrt{P(E_{\mathrm{gen}})(1-P(E_{\mathrm{gen}}))P(E_{\mathrm{ver}})(1-P(E_{\mathrm{ver}}))}
+P(E_{\mathrm{gen}} \wedge E_{\mathrm{ver}}) = pq + \rho\sqrt{p(1-p)q(1-q)}.
+\]
+Because $E_{\mathrm{gen}}$ and $E_{\mathrm{ver}}$ are Bernoulli, $\rho$ is \textbf{not free in} $[-1,1]$; it is constrained by the Fr\'echet--Hoeffding bounds
+\[
+P(E_{\mathrm{gen}} \wedge E_{\mathrm{ver}}) \in [\max(0,p+q-1),\;\min(p,q)],
+\]
+equivalently
+\[
+\rho \in \left[\frac{\max(0,p+q-1)-pq}{\sqrt{p(1-p)q(1-q)}},\;\frac{\min(p,q)-pq}{\sqrt{p(1-p)q(1-q)}}\right].
 \]
 \end{itemize}
 
@@ -97,7 +105,7 @@ Let $p = P(E_{\mathrm{gen}}) = P(E_{\mathrm{ver}})$ for simplicity. The failure 
 \[
 P(\mathrm{Fail}) = p^2 + \rho p(1-p) = p^2(1-\rho) + \rho p
 \]
-When $\rho = 0$ (independence), we recover $p^2$. When $\rho = 1$ (perfect correlation), we get $P(\mathrm{Fail}) = p$---no improvement over direct execution. The CFFL provides error suppression proportional to $(1-\rho)$.
+with $\rho \in \left[-\min\!\left(\frac{p}{1-p},\frac{1-p}{p}\right),\,1\right]$. When $\rho = 0$ (independence), we recover $p^2$. As $\rho$ increases toward its upper bound, the gain vanishes and $P(\mathrm{Fail}) \to p$.
 
 \paragraph{Architectural Implications.}
 This result makes precise when the CFFL topology provides genuine safety benefits:
@@ -177,8 +185,8 @@ specific). The innate immune system provides the first line of defense through p
 (PRRs) that detect conserved pathogen-associated molecular patterns (PAMPs).
 
 \paragraph{Biological Function.}
-Toll-like receptors (TLRs) and other PRRs recognize structural motifs common to pathogens---lipopolysaccharides,
-double-stranded RNA, unmethylated CpG DNA. These patterns are ``hardcoded'' through evolution, not learned per
+Toll-like receptors (TLRs) and other PRRs recognize motifs common to pathogens, including lipopolysaccharides,
+double-stranded RNA, and unmethylated CpG DNA. These patterns are ``hardcoded'' through evolution, not learned per
 infection. The innate response is immediate (seconds to minutes) but non-specific.
 
 \paragraph{Agentic Isomorphism (Input Sanitization).}
@@ -226,12 +234,12 @@ A topology that maintains a dynamic repertoire of ``detectors'' capable of disti
 \item \textbf{Agentic Isomorphism (Provenance Tracking):} In multi-agent systems, the Self/Non-Self distinction maps to the origin and trust level of information:
 \begin{itemize}
 \item \textbf{MHC Tags $\to$ Provenance Labels:} Every message in the context carries metadata indicating its source: \texttt{User}, \texttt{Tool}, \texttt{Agent\_Self}, \texttt{Agent\_Other}, \texttt{Retrieved}. These labels are cryptographically signed or structurally enforced (not inferrable from content alone).
-\item \textbf{T-Cell Inspection $\to$ Trust Gating:} Before an agent acts on information, a Trust Gate inspects the provenance label. Actions with high consequence (file deletion, API calls) require \texttt{User} or \texttt{Tool} provenance; \texttt{Agent\_Self} provenance (the agent's own prior reasoning) cannot authorize irreversible actions.
+\item \textbf{T-Cell Inspection $\to$ Trust Gating:} Before an agent acts on information, a Trust Gate inspects the provenance label. Actions with high consequence (file deletion, API calls) require \texttt{Tool} provenance or an explicit, authenticated \texttt{User} approval token routed through a separate gate; \texttt{Agent\_Self} provenance (the agent's own prior reasoning) cannot authorize irreversible actions.
 \item \textbf{Negative Selection $\to$ Prompt Injection Training:} During development, agents are exposed to known injection patterns. Responses that ``accept'' injected instructions are penalized, training the system to reject Self-mimicking Non-Self.
-\item \textbf{Regulatory Suppression $\to$ Confidence Dampening:} When information from \texttt{Retrieved} sources conflicts with \texttt{Tool} outputs, a regulatory mechanism dampens confidence in the retrieved content, preventing hallucination cascades.
+\item \textbf{Regulatory Suppression $\to$ Confidence Dampening:} When \texttt{Retrieved} content conflicts with \texttt{Tool} outputs, a regulatory mechanism dampens confidence in the retrieved signal to prevent cascades.
 \end{itemize}
 
-\item \textbf{Formal Structure:} We define a \textbf{Provenance Functor} $\mathcal{P}: \mathbf{Msg} \to \mathbf{Trust}$ that assigns trust levels to messages. The Trust category has objects $\{U, T, S, R\}$ (User, Tool, Self, Retrieved) with a partial order that is \textbf{application-specific}. The default ordering $U > T > R > S$ assumes users are trusted principals and self-generated reasoning is least authoritative. However, alternative orderings are valid:
+\item \textbf{Formal Structure:} We define a \textbf{Provenance Functor} $\mathcal{P}: \mathbf{Msg} \to \mathbf{Trust}$ that assigns trust levels to messages. The Trust category has objects $\{U, T, S, R\}$ (User, Tool, Self, Retrieved) with a partial order that is \textbf{application-specific}. A conservative default (as in the reference implementation) is $T > \{U,R,S\}$, treating $\{U,R,S\}$ as \textbf{UNTRUSTED} until validated. Alternative orderings are valid:
 \begin{itemize}
 \item \textbf{High-automation systems:} $T > U > R > S$ (tools more reliable than users)
 \item \textbf{Curated knowledge bases:} $T > R > U > S$ (verified retrieval over arbitrary input)
@@ -246,7 +254,7 @@ put(s, m) =
 s' & \text{if } \mathcal{P}(m) \ge \tau_{\text{action}} \\
 \bot & \text{otherwise}
 \end{cases}
-\tag{16}
+\tag{10}
 \end{equation}
 where $\tau_{\text{action}}$ is the minimum trust level required for the action.
 \end{itemize}
@@ -264,10 +272,10 @@ The injection can only enter through an input channel (user input, tool output, 
 \subsection{Oscillator: Periodic Rhythms and Scheduling}
 
 \paragraph{Network Motif 4 (Biological Oscillator).}
-A topology that generates periodic behavior through delayed negative feedback. A node $A$ activates node $B$, which after a delay inhibits $A$, creating a self-sustaining cycle.
+A topology generates periodic behavior via delayed negative feedback. Node $A$ activates node $B$; after a delay, $B$ inhibits $A$, yielding a self-sustaining cycle.
 
 \begin{itemize}[leftmargin=*]
-\item \textbf{Biological Function:} Oscillators underlie fundamental biological rhythms. The circadian clock regulates 24-hour cycles of gene expression. The cell cycle oscillator (Cyclin-CDK) drives periodic cell division. The heartbeat emerges from pacemaker cells with intrinsic oscillatory dynamics. These rhythms provide temporal organization to cellular processes.
+\item \textbf{Biological Function:} Oscillators underlie fundamental biological rhythms. The circadian clock regulates 24-hour gene-expression cycles. The cell-cycle oscillator (Cyclin-CDK) drives periodic division. Heartbeats emerge from pacemaker cells with intrinsic oscillatory dynamics. These rhythms provide temporal organization to cellular processes.
 \item \textbf{Agentic Isomorphism (Scheduled Tasks):} In agentic systems, oscillators map to periodic scheduling patterns:
 \begin{itemize}
 \item \textbf{Heartbeat Oscillator} $\to$ Health checks that verify system liveness at regular intervals
@@ -277,7 +285,7 @@ A topology that generates periodic behavior through delayed negative feedback. A
 \item \textbf{Formal Structure:} An oscillator is a Trace operation with a built-in delay element $\delta$:
 \begin{equation}
 \mathrm{Osc}(A) = Tr(A \circ \delta)
-\tag{10}
+\tag{11}
 \end{equation}
 where $\delta: S \to S$ introduces temporal separation between activation and inhibition, preventing the system from reaching a fixed point.
 \end{itemize}

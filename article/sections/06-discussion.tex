@@ -16,7 +16,7 @@ We define this formally as Phenotypic Plasticity. The output of an agent is not 
 ($W$) and the user query ($Q$), but of its epigenetic state ($E$):
 \begin{equation}
 O_{\text{agent}} = f(W,E,Q).
-\tag{11}
+\tag{16}
 \end{equation}
 
 Context injection (RAG) acts as a restrictive morphism. By populating the context window with specific documents
@@ -41,7 +41,7 @@ Access(d) =
   \text{Open} & \text{if } \mathcal{R} > Cost(d) \\
   \text{Silenced} & \text{if } \mathcal{R} \le Cost(d)
 \end{cases}
-\tag{15}
+\tag{17}
 \end{equation}
 Just as a cell silences energy-intensive genes during starvation, the Runtime ``methylates'' (hides) expensive
 context when the token budget is low. This creates an adaptive epigenetic landscape where the agent's accessible
@@ -56,7 +56,7 @@ In Agentic Systems, we map Plasmids to Tool Schemas. An agent operating in a nov
 problem for which its ``genomic'' (pre-trained) capabilities are insufficient.
 \begin{equation}
 \mathrm{Agent}_{\text{new}} = \mathrm{Agent}_{\text{old}} \otimes \mathrm{ToolSchema}.
-\tag{12}
+\tag{18}
 \end{equation}
 By dynamically retrieving a tool definition (e.g., a Calculator API or SQL Interface) from a registry and
 injecting it into the Context Window, the agent undergoes a topological transformation, acquiring a new
@@ -70,7 +70,7 @@ by token limits and latency. We propose that future agentic frameworks must impl
 the kernel level:
 \begin{equation}
 R(\mathrm{Agent}): (\mathrm{Inputs}, \mathrm{Budget}) \to (\mathrm{Outputs}, \mathrm{RemainingBudget}).
-\tag{13}
+\tag{19}
 \end{equation}
 
 An agent graph should be ``compiled'' with a \textbf{conservative} upper bound on token consumption in well-founded
@@ -90,7 +90,7 @@ logic. By ``engulfing'' a deterministic runtime (e.g., a Python REPL or Wolfram 
 high-precision tasks to the symbolic organelle.
 \begin{equation}
 \mathrm{Agent}_{\text{Eukaryote}} = \mathrm{LLM}_{\text{Host}} \oplus \mathrm{Runtime}_{\text{Mitochondria}}.
-\tag{14}
+\tag{20}
 \end{equation}
 Just as the host cell provides nutrients to the mitochondria in exchange for ATP, the LLM provides parsed
 variables to the runtime in exchange for deterministic truth.
@@ -111,8 +111,8 @@ In multi-cellular organisms, a single genome gives rise to hundreds of distinct 
 gene expression. Each cell type has a characteristic \textbf{expression profile}---which genes are active---that
 determines its function (neuron, hepatocyte, immune cell).
 
-In multi-agent systems, a single base model can instantiate multiple \textbf{agent phenotypes} through differential
-context:
+In multi-agent systems, a single base model can instantiate multiple \textbf{agent phenotypes}. Differential
+context selects which phenotype is expressed:
 \begin{itemize}[leftmargin=*]
 \item \textbf{Genome} $\to$ Base model weights (shared)
 \item \textbf{Epigenome} $\to$ System prompt + RAG context (phenotype-specific)
@@ -212,8 +212,8 @@ We observe an identical trend in AI. The shift from ``Generative AI'' (Zero-Shot
 is a shift from low-metabolism to high-metabolism architectures. However, Vermeij notes that high power requires
 high structural integrity; a system that amplifies energy without proper constraints self-destructs.
 
-\textbf{The Competitive Dynamics.} Vermeij's argument is specifically about \textit{escalation}---competitive
-pressure between predators and prey drives both toward higher power. What is the analogue in agentic AI?
+\textbf{The Competitive Dynamics.} Vermeij's argument is about \textit{escalation}: competitive pressure
+between predators and prey drives both toward higher power. What is the analogue in agentic AI?
 
 We identify three sources of selective pressure:
 \begin{enumerate}[leftmargin=*]

@@ -31,6 +31,10 @@ llm = [
 dev = [
   "pytest>=7.0",
 ]
+eval = [
+  "agentdojo>=0.1.35",
+  "bfcl-eval>=2026.2",
+]
 
 [project.urls]
 Homepage = "https://github.com/coredipper/operon"

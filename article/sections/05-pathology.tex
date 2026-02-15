@@ -23,7 +23,7 @@ formalize conversation progress by \textbf{Epiplexity} (Bayesian Surprise)---the
 observation $o$ given the current state $S$:
 \begin{equation}
 \mathcal{E}(o) = D_{KL}( P(S \mid o) \| P(S) )
-\tag{17}
+\tag{12}
 \end{equation}
 This formulation connects to the Free Energy Principle \cite{friston2010}: biological systems minimize
 surprise by either updating their internal model (learning) or acting to change observations (agency).
@@ -36,12 +36,12 @@ characterized by $\mathcal{E} \to 0$: the agent is ``computing'' but not ``learn
 \textbf{Operational Approximation.} Since the agent's internal belief state $P(S)$ is not directly
 observable, we approximate Epiplexity using normalized embedding-based metrics:
 \begin{equation}
-\hat{\mathcal{E}}_t = \alpha \cdot (1 - \cos(\mathbf{e}_{t}, \mathbf{e}_{t-1})) + (1 - \alpha) \cdot \sigma(H(m_t \mid m_{<t}))
-\tag{18}
+\hat{\mathcal{E}}_t = \alpha \cdot \tfrac{1}{2}(1 - \cos(\mathbf{e}_{t}, \mathbf{e}_{t-1})) + (1 - \alpha) \cdot \sigma(H(m_t \mid m_{<t}))
+\tag{13}
 \end{equation}
 where $\mathbf{e}_t$ is the embedding of message $m_t$, $\cos(\cdot, \cdot)$ is cosine similarity, and
 $H(m_t \mid m_{<t})$ is the conditional perplexity of the current message given the conversation history.
-We normalize perplexity to $[0,1]$ via a sigmoid: $\sigma(H) = 1 - e^{-H/H_0}$ where $H_0$ is a baseline
+We normalize perplexity to $[0,1]$ via an exponential saturation: $\sigma(H) = 1 - e^{-H/H_0}$ where $H_0$ is a baseline
 perplexity (e.g., median perplexity over a validation corpus of normal conversations).
 
 The mixing parameter $\alpha \in [0,1]$ balances semantic novelty (embedding distance) against linguistic
@@ -57,7 +57,7 @@ Both terms approaching zero indicate stagnation.
 loops, we compute the \textbf{Epiplexic Integral} over a sliding window of $k$ steps:
 \begin{equation}
 \mathcal{E}_{\text{window}} = \frac{1}{k}\sum_{i=t-k}^{t} \hat{\mathcal{E}}_i
-\tag{19}
+\tag{14}
 \end{equation}
 Apoptosis triggers when $\mathcal{E}_{\text{window}} < \delta$ \textit{and} no terminal action
 (task completion, user handoff) has been signaled.
@@ -114,7 +114,7 @@ because the context window is full or the API rate limit is hit.
 cost ($c$).
 \begin{equation}
 \sum_{\text{agent}\in \text{Graph}} \mathrm{Cost}(\text{agent}) > \mathrm{Budget}.
-\tag{20}
+\tag{15}
 \end{equation}
 \item \textbf{Treatment:} Metabolic Regulation. Instead of a fixed loop, implement ``Budget-Aware'' agents. The
 agent observes its own remaining token count (ATP levels) and dynamically simplifies its reasoning strategy

@@ -1,0 +1,113 @@
+{
+  "agentdojo_false_positive": {
+    "rate": 0.0,
+    "seed_mean": 0.0,
+    "seed_std": 0.0,
+    "success": 0,
+    "total": 3200,
+    "wilson_95": [
+      0.0,
+      0.0011990605278363324
+    ]
+  },
+  "agentdojo_sensitivity": {
+    "rate": 1.0,
+    "seed_mean": 1.0,
+    "seed_std": 0.0,
+    "success": 800,
+    "total": 800,
+    "wilson_95": [
+      0.9952209490028883,
+      1.0
+    ]
+  },
+  "bfcl_cascade": {
+    "rate": 0.5691,
+    "seed_mean": 0.5691000000000002,
+    "seed_std": 0.03096413696161701,
+    "success": 11382,
+    "total": 20000,
+    "wilson_95": [
+      0.56222422409678,
+      0.575949235545092
+    ]
+  },
+  "bfcl_strict": {
+    "rate": 0.0491,
+    "seed_mean": 0.049099999999999984,
+    "seed_std": 0.015445897758814716,
+    "success": 982,
+    "total": 20000,
+    "wilson_95": [
+      0.04619095615047644,
+      0.052182228328248884
+    ]
+  },
+  "folding_cascade": {
+    "rate": 0.56245,
+    "seed_mean": 0.56245,
+    "seed_std": 0.03517987688116229,
+    "success": 11249,
+    "total": 20000,
+    "wilson_95": [
+      0.5555632739451319,
+      0.5693127398701345
+    ]
+  },
+  "folding_strict": {
+    "rate": 0.05535,
+    "seed_mean": 0.05535000000000002,
+    "seed_std": 0.014411958418429655,
+    "success": 1107,
+    "total": 20000,
+    "wilson_95": [
+      0.052265450257890846,
+      0.05860533368193
+    ]
+  },
+  "healing_blind": {
+    "rate": 0.68045,
+    "seed_mean": 0.68045,
+    "seed_std": 0.03186219538810052,
+    "success": 13609,
+    "total": 20000,
+    "wilson_95": [
+      0.673953253876697,
+      0.6868774377640527
+    ]
+  },
+  "healing_with_error": {
+    "rate": 0.9959,
+    "seed_mean": 0.9959000000000002,
+    "seed_std": 0.004734357550306214,
+    "success": 19918,
+    "total": 20000,
+    "wilson_95": [
+      0.9949141379157396,
+      0.9966953937254228
+    ]
+  },
+  "immune_false_positive": {
+    "rate": 0.004375,
+    "seed_mean": 0.004375,
+    "seed_std": 0.012578666604030559,
+    "success": 14,
+    "total": 3200,
+    "wilson_95": [
+      0.0026079049131415605,
+      0.0073306638350762055
+    ]
+  },
+  "immune_sensitivity": {
+    "rate": 1.0,
+    "seed_mean": 1.0,
+    "seed_std": 0.0,
+    "success": 800,
+    "total": 800,
+    "wilson_95": [
+      0.9952209490028883,
+      1.0
+    ]
+  },
+  "seeds": 100
+}

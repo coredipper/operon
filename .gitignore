@@ -9,7 +9,7 @@ build/
 *.egg-info/
 
 # Virtual environments
-.venv/
+.venv*/
 venv/
 
 # IDE
@@ -24,6 +24,14 @@ htmlcov/
 
 # Worktrees
 .worktrees/
+
+# Beads
+.beads/
+
+# Env files
+.env
+.env.*
+!.env.example
 
 # Documentation (generated plans)
 docs/
