@@ -11,6 +11,7 @@ from eval.suites.immune import ImmuneConfig, run_immune
 from eval.suites.healing import HealingConfig, run_healing
 from eval.suites.bfcl_folding import BfclFoldingConfig, run_bfcl_folding
 from eval.suites.agentdojo_immune import AgentDojoImmuneConfig, run_agentdojo_immune
+from eval.suites.bfcl_live import BfclLiveConfig, run_bfcl_live
 
 
 def _apply_overrides(config_obj, overrides: dict | None) -> None:
@@ -32,7 +33,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Operon synthetic evaluation harness")
     parser.add_argument(
         "--suite",
-        choices=["all", "all_external", "folding", "immune", "healing", "bfcl_folding", "agentdojo_immune"],
+        choices=["all", "all_external", "folding", "immune", "healing", "bfcl_folding", "agentdojo_immune", "bfcl_live"],
         default="all",
     )
     parser.add_argument("--config", help="Path to JSON config file")
@@ -99,6 +100,20 @@ def main() -> int:
                 "eval_observations": adj_config.eval_observations,
             },
             "results": run_agentdojo_immune(adj_config, rng),
+        }
+
+    if args.suite == "bfcl_live":
+        live_config = BfclLiveConfig()
+        _apply_overrides(live_config, config_data.get("bfcl_live"))
+        results["suites"]["bfcl_live"] = {
+            "config": {
+                "provider": live_config.provider,
+                "model": live_config.model,
+                "categories": live_config.categories,
+                "max_samples": live_config.max_samples,
+                "temperature": live_config.temperature,
+            },
+            "results": run_bfcl_live(live_config),
         }
 
     output = json.dumps(results, indent=2, sort_keys=True)

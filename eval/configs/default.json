@@ -52,5 +52,12 @@
     "compromised_confidence": 0.55,
     "compromised_time": 0.65,
     "canary_fail_rate": 0.4
+  },
+  "bfcl_live": {
+    "provider": "openai",
+    "model": "gpt-4o-mini",
+    "categories": ["simple", "multiple", "parallel"],
+    "max_samples": 50,
+    "temperature": 0.001
   }
 }

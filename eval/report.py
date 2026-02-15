@@ -62,6 +62,8 @@ def aggregate(files: list[Path]) -> dict:
     bfcl_cascade = Aggregate("bfcl_cascade")
     agentdojo_sensitivity = Aggregate("agentdojo_sensitivity")
     agentdojo_fpr = Aggregate("agentdojo_false_positive")
+    live_raw = Aggregate("bfcl_live_raw")
+    live_chaperone = Aggregate("bfcl_live_chaperone")
 
     for path in files:
         data = _load_results(path)
@@ -102,6 +104,13 @@ def aggregate(files: list[Path]) -> dict:
             agentdojo_sensitivity.add(sens.get("success", 0), sens.get("total", 0))
             agentdojo_fpr.add(fpr.get("success", 0), fpr.get("total", 0))
 
+        live = suites.get("bfcl_live", {}).get("results", {})
+        if live:
+            raw = live.get("raw", {})
+            chap = live.get("chaperone", {})
+            live_raw.add(raw.get("success", 0), raw.get("total", 0))
+            live_chaperone.add(chap.get("success", 0), chap.get("total", 0))
+
     return {
         "folding_strict": folding_strict.stats(),
         "folding_cascade": folding_cascade.stats(),
@@ -113,6 +122,8 @@ def aggregate(files: list[Path]) -> dict:
         "bfcl_cascade": bfcl_cascade.stats(),
         "agentdojo_sensitivity": agentdojo_sensitivity.stats(),
         "agentdojo_false_positive": agentdojo_fpr.stats(),
+        "bfcl_live_raw": live_raw.stats(),
+        "bfcl_live_chaperone": live_chaperone.stats(),
         "seeds": len(files),
     }
 
@@ -132,6 +143,8 @@ def write_latex(summary: dict, out_path: Path) -> None:
         ("BFCL Folding (Cascade)", summary.get("bfcl_cascade")),
         ("AgentDojo Immune (Sensitivity)", summary.get("agentdojo_sensitivity")),
         ("AgentDojo Immune (False Positive)", summary.get("agentdojo_false_positive")),
+        ("BFCL Live (Raw Parse)", summary.get("bfcl_live_raw")),
+        ("BFCL Live (Chaperone)", summary.get("bfcl_live_chaperone")),
     ]
     external_rows = [(n, s) for n, s in external_rows if s and s.get("total", 0) > 0]
 
