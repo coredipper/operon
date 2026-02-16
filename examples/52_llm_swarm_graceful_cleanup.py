@@ -173,7 +173,7 @@ class LLMSwarmWorkerFactory:
                     config=ProviderConfig(temperature=0.0, max_tokens=256),
                 )
                 output = response.content
-            except Exception:
+            except (KeyError, ValueError):
                 output = f"Processing step {step}..."
 
             # Accumulate context
@@ -450,9 +450,7 @@ def run_smoke_test():
     print("  Test 1: Basic swarm - PASSED")
 
     # Test 2: HistoneStore receives summaries
-    # The factory stores summaries during cleanup
-    markers = factory.histone_store._markers if hasattr(factory.histone_store, '_markers') else []
-    # Just verify histone store is operational
+    # Verify histone store is operational
     factory.histone_store.add_marker(
         content="test marker",
         marker_type=MarkerType.ACETYLATION,

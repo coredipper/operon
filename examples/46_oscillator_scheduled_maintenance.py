@@ -150,7 +150,8 @@ class ContextHealthMonitor:
 
         return snapshot
 
-    def _is_noise(self, line: str) -> bool:
+    @staticmethod
+    def _is_noise(line: str) -> bool:
         """Heuristic: is this line noise?"""
         stripped = line.strip()
         if not stripped:
@@ -158,7 +159,7 @@ class ContextHealthMonitor:
         # Repeated chars
         if len(set(stripped)) <= 2 and len(stripped) > 5:
             return True
-        # Very short filler
+        # Filler tokens
         if stripped.lower() in ("...", "---", "***", "===", "thinking..."):
             return True
         # Repeated words
@@ -288,14 +289,21 @@ class MaintenanceScheduler:
 
         return pruned_context, result
 
-    def _is_noise_line(self, line: str) -> bool:
-        """Check if line is noise."""
+    @staticmethod
+    def _is_noise_line(line: str) -> bool:
+        """Check if line is noise (same heuristic as ContextHealthMonitor)."""
         stripped = line.strip()
         if not stripped:
             return False
+        # Repeated chars
         if len(set(stripped)) <= 2 and len(stripped) > 5:
             return True
+        # Filler tokens
         if stripped.lower() in ("...", "---", "***", "===", "thinking..."):
+            return True
+        # Repeated words
+        words = stripped.split()
+        if len(words) > 3 and len(set(words)) == 1:
             return True
         return False
 
@@ -427,7 +435,7 @@ def run_maintenance_cycle(
 
         # Slow maintenance: run every maintenance_period cycles
         if cycle > 0 and cycle % maintenance_period == 0:
-            mt_phase, mt_amplitude = compute_oscillator_phase(
+            _mt_phase, mt_amplitude = compute_oscillator_phase(
                 cycle // maintenance_period, maintenance_period
             )
 

@@ -516,7 +516,7 @@ def run_smoke_test():
     }
     agent3 = RepairMemoryAgent(responses=responses3, silent=True)
     agent3.generate_and_validate("bad1", TaskResult)
-    assert agent3._repair_strategies_stored >= 0  # May or may not store depending on repair success
+    assert isinstance(agent3._repair_strategies_stored, int)  # Verify counter is tracked
     print("  Test 3: Strategy storage - PASSED")
 
     # Test 4: Epiplexity monitoring

@@ -40,11 +40,12 @@ Usage:
     python examples/47_immunity_healing_router.py --test
 """
 
+import re
 import sys
 from dataclasses import dataclass, field
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from operon_ai import (
     Chaperone,
@@ -55,7 +56,6 @@ from operon_ai import (
 )
 from operon_ai.healing import (
     AutophagyDaemon,
-    ChaperoneLoop,
     create_simple_summarizer,
 )
 from operon_ai.surveillance import (
@@ -356,7 +356,6 @@ class HealingRouter:
 
     def _strip_suspicious_patterns(self, content: str) -> str:
         """Remove known suspicious patterns from content."""
-        import re
         # Strip common injection patterns
         patterns_to_strip = [
             r"\bignore\s+(all\s+)?previous\s+instructions?\b",
@@ -373,8 +372,6 @@ class HealingRouter:
 
     def _extract_intent(self, content: str) -> str:
         """Extract the likely user intent from potentially malicious content."""
-        # Simple heuristic: take the first sentence that isn't an injection
-        import re
         sentences = re.split(r'[.!?\n]', content)
         for sentence in sentences:
             sentence = sentence.strip()

@@ -183,7 +183,7 @@ class TicketClassifier:
         try:
             data = json.loads(response.content)
             return ClassificationResult.model_validate(data)
-        except (json.JSONDecodeError, Exception):
+        except (json.JSONDecodeError, ValueError, KeyError):
             # Fallback classification based on keywords
             return self._keyword_classify(ticket)
 
@@ -276,9 +276,9 @@ class SolutionResearcher:
             def work(task: str, memory: WorkerMemory) -> str:
                 step = len(memory.output_history)
 
-                # Monitor epiplexity
+                # Monitor epiplexity (feeds the stagnation detector)
                 output_text = f"Research step {step} for {classification.category}"
-                ep_result = self.epiplexity.measure(output_text)
+                self.epiplexity.measure(output_text)
 
                 if has_prior and step >= 1:
                     return (
@@ -862,7 +862,7 @@ def run_smoke_test():
     print("  Test 3: Technical classification - PASSED")
 
     # Test 4: Budget tracking
-    assert orch3.budget.atp < 1000, "Should have consumed some budget"
+    assert orch3.budget.atp < orch3.budget.max_atp, "Should have consumed some budget"
     print("  Test 4: Budget tracking - PASSED")
 
     # Test 5: Quality gate
@@ -879,8 +879,8 @@ def run_smoke_test():
     orch4 = SupportOrchestrator(silent=True)
     ticket4 = Ticket(id="test-4", subject="Password reset", body="Can't login")
     report4 = orch4.process_ticket(ticket4)
-    if report4.accepted:
-        assert report4.memory_stored, "Successful resolution should store memory"
+    assert report4.accepted, "Simple ticket should be accepted"
+    assert report4.memory_stored, "Successful resolution should store memory"
     print("  Test 7: Memory storage - PASSED")
 
     # Test 8: Morphogen gradient updates
