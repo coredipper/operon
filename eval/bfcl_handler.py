@@ -1,16 +1,21 @@
 """
-BFCL Model Handler: LLM + Operon Chaperone
-==========================================
+BFCL Model Handler: LLM + Operon Chaperone (OpenAI)
+====================================================
 
 Standalone handler compatible with the gorilla repo's BaseHandler interface.
-Wraps any LLM provider with Operon's Chaperone cascade folding to improve
-function-call accuracy in prompting mode.
+Wraps an OpenAI model in prompting mode with Operon's Chaperone cascade
+folding to improve function-call accuracy.
+
+BFCL v4 Results (GPT-4o-mini + Chaperone):
+  Non-Live: 88.73%  |  Live: 76.98%
 
 To use with BFCL:
 1. Copy this file to gorilla/berkeley-function-call-leaderboard/bfcl_eval/model_handler/api_inference/
 2. Register the model in bfcl_eval/constants/model_config.py
-3. Run: bfcl generate --model operon-chaperone-gpt-4o-mini --test-category simple
-4. Run: bfcl evaluate --model operon-chaperone-gpt-4o-mini --test-category simple
+3. Run: bfcl generate --model operon-chaperone-gpt-4o-mini --test-category non_live
+4. Run: bfcl evaluate --model operon-chaperone-gpt-4o-mini --test-category non_live
+
+See also: eval/bfcl_handler_gemini.py for the Gemini variant.
 """
 from __future__ import annotations
 
