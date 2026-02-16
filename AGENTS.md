@@ -926,6 +926,97 @@ while telomere.tick():
 
 ---
 
+## Evaluation
+
+Operon includes a deterministic evaluation harness that measures motif behavior under controlled perturbations. The harness is designed to be reproducible (seed-based), lightweight, and free of external service dependencies for the core suites.
+
+### Evaluation Philosophy
+
+The synthetic suites do not represent real LLM outputs — they provide a **consistent baseline** for motif behavior. External benchmark suites (BFCL, AgentDojo) bridge the gap to realistic data.
+
+### Internal Suites (Synthetic)
+
+| Suite | Motif Tested | Method | Key Metric |
+|-------|-------------|--------|------------|
+| **Folding** | Chaperone | Generate Pydantic schemas, apply controlled JSON corruptions | Cascade vs. strict success rate |
+| **Immune** | Adaptive Immunity | Simulate baseline + compromised agent signals | Sensitivity (100%) and false-positive rate (0.4%) |
+| **Healing** | ChaperoneLoop | Run retries with/without error-context feedback | Recovery rate (99.6% with context vs. 68.0% blind) |
+
+### External Benchmark Suites
+
+#### BFCL Folding
+
+Uses real function-call schemas from the [Berkeley Function Calling Leaderboard](https://gorilla.cs.berkeley.edu/leaderboard.html) (v3/v4 datasets) to test Chaperone cascade folding. Categories: simple, multiple, and parallel function calls.
+
+Falls back gracefully when BFCL data is unavailable: `BFCL_PROJECT_ROOT` env var → `bfcl_eval` package → bundled data → hardcoded fallback schemas.
+
+#### AgentDojo Immune
+
+Uses prompt injection attack templates from [AgentDojo](https://agentdojo.spylab.ai/) to generate realistic compromised agent behavioral signatures. Attack types include: `important_instructions`, `tool_knowledge`, `direct`, `ignore_previous`, and more.
+
+Falls back to 8 built-in attack templates if the `agentdojo` package is not installed.
+
+#### BFCL Live (Real LLM)
+
+End-to-end evaluation where real LLM outputs (GPT-4o-mini, Anthropic, Gemini) are folded through the Chaperone cascade. Requires API keys.
+
+### BFCL Model Handlers
+
+Operon provides standalone BFCL-compatible handlers that plug into the [gorilla](https://github.com/ShishirPatil/gorilla) evaluation framework:
+
+| Handler | Model | Non-Live | Live |
+|---------|-------|----------|------|
+| `eval/bfcl_handler.py` | GPT-4o-mini + Chaperone | 88.73% | 76.98% |
+| `eval/bfcl_handler_gemini.py` | Gemini-2.5-Flash + Chaperone | 88.65% | 78.31% |
+
+Both handlers embed a self-contained "Chaperone-lite" JSON repair cascade (STRICT → EXTRACTION → REPAIR) so they work in the gorilla repo without requiring `operon-ai` as a dependency.
+
+### Aggregate Results (100 Seeds)
+
+| Metric | Rate | σ | 95% CI |
+|--------|------|---|--------|
+| Folding cascade | 56.2% | 3.5% | [55.6%, 56.9%] |
+| Healing with error context | 99.6% | 0.5% | [99.5%, 99.7%] |
+| Immune sensitivity | 100% | 0.0% | [99.5%, 100%] |
+| Immune false-positive | 0.4% | 1.3% | [0.3%, 0.7%] |
+| BFCL cascade | 56.9% | 3.1% | [56.2%, 57.6%] |
+| AgentDojo sensitivity | 100% | 0.0% | [99.5%, 100%] |
+| AgentDojo false-positive | 0.0% | 0.0% | [0.0%, 0.1%] |
+
+### Running Evaluations
+
+```bash
+# Install eval dependencies
+pip install -e ".[eval]"
+
+# Run all synthetic suites (deterministic)
+python -m eval.run --suite all --seed 42 --out eval/results/seed-42.json
+
+# Run external benchmarks
+python -m eval.run --suite all_external --config eval/configs/default.json
+
+# Run individual suites
+python -m eval.run --suite bfcl_folding
+python -m eval.run --suite agentdojo_immune
+python -m eval.run --suite bfcl_live  # Requires API keys
+
+# Reproduce 100-seed aggregate
+for i in $(seq 1 100); do
+  python -m eval.run --suite all --seed $i --out eval/results/seed-$i.json
+done
+
+# Generate summary
+python -m eval.report --glob "eval/results/seed-*.json" \
+  --out-json eval/results/summary.json \
+  --out-tex eval/results/summary.tex
+```
+
+### Extending the Harness
+
+Add new suites in `eval/suites/`. Each suite is a function that takes a config dict and returns a results dict. Register it in `eval/run.py`.
+
+---
+
 ## Further Reading
 
 - [README.md](README.md) - Quick start and organelle overview

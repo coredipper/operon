@@ -837,6 +837,61 @@ python examples/12_complete_cell_simulation.py
 
 ---
 
+## 🧪 Evaluation
+
+Operon includes a reproducible evaluation harness covering three internal motifs and two external benchmarks.
+
+### Suites
+
+| Suite | Source | What It Tests |
+|-------|--------|---------------|
+| **Folding** | Synthetic | Chaperone strict vs. cascade JSON repair |
+| **Immune** | Synthetic | Adaptive immune sensitivity and false-positive rate |
+| **Healing** | Synthetic | ChaperoneLoop recovery with vs. without error context |
+| **BFCL Folding** | [Berkeley Function Calling Leaderboard](https://gorilla.cs.berkeley.edu/leaderboard.html) | Chaperone cascade on real function-call schemas |
+| **AgentDojo Immune** | [AgentDojo](https://agentdojo.spylab.ai/) | Immune detection against prompt injection attacks |
+| **BFCL Live** | BFCL + LLM | End-to-end Chaperone on real LLM outputs |
+
+### Results (100 Seeds)
+
+| Metric | Rate | 95% CI |
+|--------|------|--------|
+| Folding (cascade) | 56.2% | [55.6%, 56.9%] |
+| Healing (with error context) | 99.6% | [99.5%, 99.7%] |
+| Immune sensitivity | 100% | [99.5%, 100%] |
+| Immune false-positive | 0.4% | [0.3%, 0.7%] |
+| BFCL cascade folding | 56.9% | [56.2%, 57.6%] |
+| AgentDojo sensitivity | 100% | [99.5%, 100%] |
+
+### BFCL v4 Leaderboard Results
+
+| Model + Chaperone | Non-Live | Live |
+|-------------------|----------|------|
+| GPT-4o-mini | 88.73% | 76.98% |
+| Gemini-2.5-Flash | 88.65% | 78.31% |
+
+### Running Evals
+
+```bash
+# Install eval dependencies
+pip install -e ".[eval]"
+
+# Run all synthetic suites
+python -m eval.run --suite all --seed 42
+
+# Run external benchmarks (BFCL + AgentDojo)
+python -m eval.run --suite all_external
+
+# Aggregate 100 seeds into summary
+python -m eval.report --glob "eval/results/seed-*.json" \
+  --out-json eval/results/summary.json \
+  --out-tex eval/results/summary.tex
+```
+
+See [`eval/README.md`](eval/README.md) for full documentation.
+
+---
+
 ## 📚 Theoretical Background
 
 Operon is grounded in a formal isomorphism between Gene Regulatory Networks (GRNs) and agentic architectures. Both can be modeled as polynomial functors in the category **Poly**—typed interfaces where objects represent outputs and morphisms represent interactions. The key mapping:
