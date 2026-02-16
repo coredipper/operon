@@ -8,7 +8,7 @@ sdk_version: "6.5.1"
 app_file: app.py
 pinned: false
 license: mit
-short_description: Swarm workers adapt strategy based on morphogen gradient signals
+short_description: Swarm workers adapt strategy via morphogen gradients
 ---
 
 # Operon Morphogen-Guided Swarm

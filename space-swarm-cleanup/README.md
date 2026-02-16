@@ -8,7 +8,7 @@ sdk_version: "6.5.1"
 app_file: app.py
 pinned: false
 license: mit
-short_description: Dying swarm workers clean context via autophagy before passing state
+short_description: Workers clean context via autophagy before death
 ---
 
 # Operon Swarm Graceful Cleanup

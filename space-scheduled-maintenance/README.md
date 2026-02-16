@@ -8,7 +8,7 @@ sdk_version: "6.5.1"
 app_file: app.py
 pinned: false
 license: mit
-short_description: Oscillator-scheduled autophagy with feedback-controlled noise
+short_description: Oscillator-scheduled autophagy with feedback control
 ---
 
 # Operon Scheduled Maintenance

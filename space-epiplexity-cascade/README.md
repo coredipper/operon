@@ -1,14 +1,14 @@
 ---
 title: Operon Epiplexity Healing Cascade
 emoji: "\U0001F4A1"
-colorFrom: orange
+colorFrom: yellow
 colorTo: blue
 sdk: gradio
 sdk_version: "6.5.1"
 app_file: app.py
 pinned: false
 license: mit
-short_description: Escalating healing interventions triggered by stagnation detection
+short_description: Escalating healing when stagnation is detected
 ---
 
 # Operon Epiplexity Healing Cascade

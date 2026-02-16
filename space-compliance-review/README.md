@@ -8,7 +8,7 @@ sdk_version: "6.5.1"
 app_file: app.py
 pinned: false
 license: mit
-short_description: Multi-stage document review with quorum voting on low confidence
+short_description: Document review with quorum voting on low confidence
 ---
 
 # Operon Compliance Review Pipeline

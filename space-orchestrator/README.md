@@ -8,7 +8,7 @@ sdk_version: "6.5.1"
 app_file: app.py
 pinned: false
 license: mit
-short_description: End-to-end ticket processing combining all 11 biological motifs
+short_description: Ticket processing combining all 11 biological motifs
 ---
 
 # Operon Multi-Agent Orchestrator
