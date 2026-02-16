@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 46: Oscillator-Scheduled Maintenance
+Example 48: Oscillator-Scheduled Maintenance
 =============================================
 
 Demonstrates how to combine Oscillator + Autophagy + NegativeFeedbackLoop
@@ -39,8 +39,8 @@ Prerequisites:
 - Example 02 for Negative Feedback Loop
 
 Usage:
-    python examples/46_oscillator_scheduled_maintenance.py
-    python examples/46_oscillator_scheduled_maintenance.py --test
+    python examples/48_oscillator_scheduled_maintenance.py
+    python examples/48_oscillator_scheduled_maintenance.py --test
 """
 
 import sys
@@ -709,7 +709,7 @@ def run_smoke_test():
 def main():
     """Run all demos."""
     print("\n" + "=" * 60)
-    print("Example 46: Oscillator-Scheduled Maintenance")
+    print("Example 48: Oscillator-Scheduled Maintenance")
     print("Oscillator + Autophagy + NegativeFeedbackLoop")
     print("=" * 60)
 

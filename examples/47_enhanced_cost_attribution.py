@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 45: Enhanced Cost Attribution with Team Rollups
+Example 47: Enhanced Cost Attribution with Team Rollups
 =======================================================
 
 Extends Example 38 with:
@@ -37,13 +37,13 @@ Data Sources
 ```
 
 Usage:
-    python examples/45_enhanced_cost_attribution.py              # Demo with mock
-    python examples/45_enhanced_cost_attribution.py --test       # Smoke test
-    python examples/45_enhanced_cost_attribution.py --csv <file> # Real data
+    python examples/47_enhanced_cost_attribution.py              # Demo with mock
+    python examples/47_enhanced_cost_attribution.py --test       # Smoke test
+    python examples/47_enhanced_cost_attribution.py --csv <file> # Real data
 
 Prerequisites:
 - Example 38 for basic cost attribution patterns
-- Example 42 for Morphogen gradient coordination
+- Example 44 for Morphogen gradient coordination
 """
 
 import sys
@@ -618,7 +618,7 @@ class CostAttributionPipeline:
 def run_demo():
     """Run demonstration with mock data."""
     print("=" * 70)
-    print("Example 45: Enhanced Cost Attribution - Demo")
+    print("Example 47: Enhanced Cost Attribution - Demo")
     print("=" * 70)
 
     # Create pipeline

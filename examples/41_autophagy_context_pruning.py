@@ -380,7 +380,7 @@ def run_smoke_test():
     assert metrics.fill_percentage < 0.5, "Expected low fill"
 
     # Test 2: Automatic pruning
-    large_context = generate_polluted_context(6000, noise_ratio=0.7)
+    large_context = generate_polluted_context(10000, noise_ratio=0.7)
     new_context, result = daemon.check_and_prune(large_context, 2000)
     assert result is not None, "Expected pruning to occur"
     assert result.tokens_freed > 0, "Expected tokens freed"

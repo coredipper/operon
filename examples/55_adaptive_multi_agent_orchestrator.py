@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 53: Adaptive Multi-Agent Orchestrator (Capstone)
+Example 55: Adaptive Multi-Agent Orchestrator (Capstone)
 =========================================================
 
 End-to-end customer support ticket processing combining all major
@@ -47,11 +47,11 @@ Motifs combined (11):
 11. HistoneStore (resolution memory)
 
 Prerequisites:
-- All previous examples, especially 46-52
+- All previous examples, especially 48-54
 
 Usage:
-    python examples/53_adaptive_multi_agent_orchestrator.py
-    python examples/53_adaptive_multi_agent_orchestrator.py --test
+    python examples/55_adaptive_multi_agent_orchestrator.py
+    python examples/55_adaptive_multi_agent_orchestrator.py --test
 """
 
 import sys
@@ -899,7 +899,7 @@ def run_smoke_test():
 def main():
     """Run all demos."""
     print("\n" + "=" * 60)
-    print("Example 53: Adaptive Multi-Agent Orchestrator (Capstone)")
+    print("Example 55: Adaptive Multi-Agent Orchestrator (Capstone)")
     print("InnateImmunity + ATP + Morphogen + Nucleus + Swarm + Epiplexity")
     print("+ Autophagy + Quorum + Chaperone + Feedback + HistoneStore")
     print("=" * 60)

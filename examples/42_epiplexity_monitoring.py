@@ -1,5 +1,5 @@
 """
-Example 40: Epiplexity Monitoring - Epistemic Health Detection
+Example 42: Epiplexity Monitoring - Epistemic Health Detection
 ==============================================================
 
 Demonstrates the Epiplexity module for detecting epistemic stagnation in agents:

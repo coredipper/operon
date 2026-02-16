@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 50: Morphogen Cascade with Quorum
+Example 52: Morphogen Cascade with Quorum
 ==========================================
 
 Demonstrates a multi-stage document/contract review where cascade stages
@@ -37,13 +37,13 @@ Key concepts:
 - Each cascade stage reads and writes morphogen signals
 
 Prerequisites:
-- Example 42 for Morphogen gradient concepts
+- Example 44 for Morphogen gradient concepts
 - Example 06 for Quorum Sensing
 - Example 02 for Negative Feedback Loop
 
 Usage:
-    python examples/50_morphogen_cascade_quorum.py
-    python examples/50_morphogen_cascade_quorum.py --test
+    python examples/52_morphogen_cascade_quorum.py
+    python examples/52_morphogen_cascade_quorum.py --test
 """
 
 import sys
@@ -639,7 +639,7 @@ def run_smoke_test():
 def main():
     """Run all demos."""
     print("\n" + "=" * 60)
-    print("Example 50: Morphogen Cascade with Quorum")
+    print("Example 52: Morphogen Cascade with Quorum")
     print("MorphogenGradient + Cascade + QuorumSensing + NegativeFeedbackLoop")
     print("=" * 60)
 

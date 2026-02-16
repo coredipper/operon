@@ -1,5 +1,5 @@
 """
-Example 41: Innate Immunity - Fast Pattern-Based Defense
+Example 43: Innate Immunity - Fast Pattern-Based Defense
 =========================================================
 
 Demonstrates the InnateImmunity module for fast, pattern-based threat detection:

@@ -1,4 +1,4 @@
-# Example 40: Epiplexity Monitoring
+# Example 42: Epiplexity Monitoring
 
 Detects epistemic stagnation in agents through Bayesian Surprise monitoring.
 Based on the Free Energy Principle: healthy agents minimize surprise through

@@ -1,4 +1,4 @@
-# Example 42: Morphogen Gradients
+# Example 44: Morphogen Gradients
 
 Multi-cellular coordination through shared context variables. Inspired by
 embryonic development where cells coordinate via diffusible morphogens.
