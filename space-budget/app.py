@@ -52,6 +52,18 @@ PRESETS: dict[str, dict] = {
         "atp": 20, "gtp": 0, "nadh": 0,
         "tasks": "Heavy task 1:8\nHeavy task 2:8\nHeavy task 3:8\nHeavy task 4:8",
     },
+    "State transition showcase": {
+        "atp": 150, "gtp": 0, "nadh": 0,
+        "tasks": "Task A:20\nTask B:20\nTask C:20\nTask D:20\nTask E:20\nTask F:20\nTask G:20",
+    },
+    "NADH-heavy rescue": {
+        "atp": 10, "gtp": 0, "nadh": 80,
+        "tasks": "Task 1:10\nTask 2:10\nTask 3:10\nTask 4:10\nTask 5:10\nTask 6:10",
+    },
+    "Critical shortage": {
+        "atp": 5, "gtp": 0, "nadh": 0,
+        "tasks": "Urgent task:10\nCritical task:10\nEmergency task:10",
+    },
 }
 
 

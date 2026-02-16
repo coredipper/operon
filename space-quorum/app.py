@@ -101,6 +101,39 @@ PRESETS: dict[str, dict] = {
         "strategy": "Threshold",
         "threshold": "2",
     },
+    "Byzantine voting": {
+        "agents": [
+            ("Malicious-1", 2.0, "Block", 0.95),
+            ("Malicious-2", 2.0, "Block", 0.90),
+            ("Honest-1", 1.0, "Permit", 0.85),
+            ("Honest-2", 1.0, "Permit", 0.80),
+            ("Honest-3", 1.0, "Permit", 0.75),
+        ],
+        "strategy": "Weighted",
+        "threshold": "",
+    },
+    "Abstention majority": {
+        "agents": [
+            ("Abstainer-1", 1.0, "Abstain", 0.50),
+            ("Abstainer-2", 1.0, "Abstain", 0.50),
+            ("Abstainer-3", 1.0, "Abstain", 0.50),
+            ("Voter-1", 1.0, "Permit", 0.80),
+            ("Voter-2", 1.0, "Block", 0.85),
+        ],
+        "strategy": "Threshold",
+        "threshold": "1",
+    },
+    "Dictatorial weight": {
+        "agents": [
+            ("Dictator", 100.0, "Block", 0.99),
+            ("Citizen-1", 1.0, "Permit", 0.90),
+            ("Citizen-2", 1.0, "Permit", 0.85),
+            ("Citizen-3", 1.0, "Permit", 0.80),
+            ("Citizen-4", 1.0, "Permit", 0.75),
+        ],
+        "strategy": "Weighted",
+        "threshold": "",
+    },
 }
 
 STRATEGY_MAP = {
