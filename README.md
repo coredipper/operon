@@ -768,7 +768,7 @@ Explore the `examples/` directory for runnable demonstrations:
 | [`34_wiring_diagram_nucleus_llm.py`](examples/34_wiring_diagram_nucleus_llm.py) | WAgent | Nucleus LLM wiring with context, validation, and feedback |
 | [`35_wiring_diagram_nucleus_execution.py`](examples/35_wiring_diagram_nucleus_execution.py) | WAgent | Execute a nucleus wiring with guarded tool flow |
 | [`36_wiring_diagram_multi_gemini_allocation.py`](examples/36_wiring_diagram_multi_gemini_allocation.py) | WAgent | Resource allocation across multiple Gemini agents |
-| [`wiring_diagrams.md`](examples/wiring_diagrams.md) | WAgent | ASCII + Mermaid wiring diagrams for examples 17, 26-37 |
+| [`wiring_diagrams.md`](examples/wiring_diagrams.md) | WAgent | ASCII + Mermaid wiring diagrams for examples 17, 26-55 |
 
 ### LLM Integration
 

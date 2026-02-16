@@ -301,6 +301,23 @@ if orchestrator.should_recruit_help():
     pass
 ```
 
+### Orchestration Patterns (v0.11+)
+
+The most powerful systems combine multiple motifs. Operon provides composable orchestration patterns where healing, coordination, and surveillance mechanisms work together:
+
+| Pattern | Motifs Combined | Use Case |
+|---------|----------------|----------|
+| **Oscillator-Scheduled Maintenance** | Oscillator + Autophagy + Feedback | Periodic context pruning with feedback-controlled noise |
+| **Immunity Healing Router** | Immunity + Chaperone + Autophagy | API gateway that heals threats instead of hard-rejecting |
+| **Morphogen-Guided Swarm** | Morphogen + Swarm | Workers adapt strategy via gradient signals from predecessors |
+| **Epiplexity Healing Cascade** | Epiplexity + Swarm + Autophagy | Escalating healing: autophagy → regeneration → abort |
+| **Morphogen Cascade with Quorum** | Morphogen + Cascade + Quorum | Multi-stage review with dynamic quorum on low confidence |
+| **Epigenetic Repair Memory** | Nucleus + Histone + Chaperone | LLM agent remembers which repair strategies worked |
+| **Swarm with Graceful Cleanup** | Nucleus + Swarm + Autophagy | Dying workers clean context before passing state |
+| **Adaptive Multi-Agent Orchestrator** | **11 motifs** | Capstone: end-to-end ticket processing with all mechanisms |
+
+See `examples/48_*` through `examples/55_*` for runnable implementations.
+
 ---
 
 ## Agent Patterns
@@ -669,6 +686,7 @@ response = nucleus.transcribe_with_tools(
 | `MorphogenGradient` | `operon_ai.coordination` | Multi-agent coordination |
 | `GradientOrchestrator` | `operon_ai.coordination` | Gradient-based phenotype control |
 | `ChaperoneLoop` | `operon_ai.healing` | Structural self-repair |
+| `RegenerativeSwarm` | `operon_ai.healing` | Metabolic healing (apoptosis + regeneration) |
 | `AutophagyDaemon` | `operon_ai.healing` | Cognitive healing (context pruning) |
 
 ---
