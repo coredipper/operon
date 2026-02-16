@@ -1,6 +1,6 @@
 # Operon Examples
 
-This directory contains 45 examples demonstrating the operon_ai library,
+This directory contains 55 examples demonstrating the operon_ai library,
 progressing from basic concepts to complete LLM-powered cell simulations.
 
 ## Import Style Guide
@@ -41,9 +41,10 @@ from operon_ai.providers import MockProvider, ProviderConfig
 | 19-25 | LLM Integration | Real providers, Memory, Tools |
 | 26-36 | Wiring Diagrams | Visual architecture, Composition |
 | 37 | Formal Theory | Metabolic Coalgebra, Halting Guarantee |
-| 38-39 | Healing | Budget Tracking, Chaperone Loop |
-| 40-42 | Health & Coordination | Epiplexity, Innate Immunity, Morphogen Gradients |
-| 43-45 | Practical Applications | Code Review, Codebase Q&A, Cost Attribution |
+| 38-41 | Healing | Budget Tracking, Chaperone Loop, Regenerative Swarm, Autophagy |
+| 42-44 | Health & Coordination | Epiplexity, Innate Immunity, Morphogen Gradients |
+| 45-47 | Practical Applications | Code Review, Codebase Q&A, Cost Attribution |
+| 48-55 | Orchestration | Multi-motif composition, LLM integration, capstone |
 
 ## Running Examples
 

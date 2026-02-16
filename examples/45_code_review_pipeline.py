@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 43: Code Review Pipeline (CFFL + Multi-Organelle)
+Example 45: Code Review Pipeline (CFFL + Multi-Organelle)
 =========================================================
 
 Demonstrates a practical code review automation system that uses:
@@ -39,9 +39,9 @@ PR Diff Input
 ```
 
 Usage:
-    python examples/43_code_review_pipeline.py              # Demo with mock data
-    python examples/43_code_review_pipeline.py --test       # Smoke test
-    python examples/43_code_review_pipeline.py --pr <diff>  # Review a diff file
+    python examples/45_code_review_pipeline.py              # Demo with mock data
+    python examples/45_code_review_pipeline.py --test       # Smoke test
+    python examples/45_code_review_pipeline.py --pr <diff>  # Review a diff file
 
 Prerequisites:
 - Example 01 for basic CFFL concepts
@@ -889,7 +889,7 @@ new file mode 100644
 def run_demo():
     """Run demonstration with mock diffs."""
     print("=" * 70)
-    print("Example 43: Code Review Pipeline - Demo")
+    print("Example 45: Code Review Pipeline - Demo")
     print("=" * 70)
 
     pipeline = CodeReviewPipeline(

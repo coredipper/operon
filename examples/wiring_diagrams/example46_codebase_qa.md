@@ -1,4 +1,4 @@
-# Example 44: Codebase Q&A with RAG
+# Example 46: Codebase Q&A with RAG
 
 ## Wiring Diagram
 

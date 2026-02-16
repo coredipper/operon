@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 47: Immunity Healing Router
+Example 49: Immunity Healing Router
 ====================================
 
 Demonstrates an API gateway that classifies threats via InnateImmunity
@@ -31,13 +31,13 @@ Key concepts:
 - Cascade stages create a pipeline with escalating interventions
 
 Prerequisites:
-- Example 44 for InnateImmunity basics
+- Example 43 for InnateImmunity basics
 - Example 03 for Chaperone patterns
 - Example 39 for Autophagy
 
 Usage:
-    python examples/47_immunity_healing_router.py
-    python examples/47_immunity_healing_router.py --test
+    python examples/49_immunity_healing_router.py
+    python examples/49_immunity_healing_router.py --test
 """
 
 import re
@@ -535,7 +535,7 @@ def run_smoke_test():
 def main():
     """Run all demos."""
     print("\n" + "=" * 60)
-    print("Example 47: Immunity Healing Router")
+    print("Example 49: Immunity Healing Router")
     print("InnateImmunity + ChaperoneLoop + Autophagy + Cascade")
     print("=" * 60)
 

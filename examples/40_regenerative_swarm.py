@@ -89,8 +89,8 @@ def create_learning_worker(name: str, memory_hints: list[str]) -> SimpleWorker:
             else:
                 return "SUCCESS: Problem solved with alternative method!"
         else:
-            # No hints - will get stuck like predecessor
-            return f"THINKING: Analyzing... (step {step})"
+            # No hints - stuck repeating same output (triggers summarizer hint)
+            return "THINKING: Analyzing... (no progress)"
 
     return SimpleWorker(id=name, work_function=work)
 

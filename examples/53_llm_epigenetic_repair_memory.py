@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 51: LLM Epigenetic Repair Memory
+Example 53: LLM Epigenetic Repair Memory
 ==========================================
 
 Demonstrates an LLM agent that remembers which repair strategies worked
@@ -35,11 +35,11 @@ Prerequisites:
 - Example 23 for Nucleus + MockProvider patterns
 - Example 03 for Chaperone validation
 - Example 04 for HistoneStore epigenetic memory
-- Example 41 for EpiplexityMonitor
+- Example 42 for EpiplexityMonitor
 
 Usage:
-    python examples/51_llm_epigenetic_repair_memory.py
-    python examples/51_llm_epigenetic_repair_memory.py --test
+    python examples/53_llm_epigenetic_repair_memory.py
+    python examples/53_llm_epigenetic_repair_memory.py --test
 """
 
 import sys
@@ -568,7 +568,7 @@ def run_smoke_test():
 def main():
     """Run all demos."""
     print("\n" + "=" * 60)
-    print("Example 51: LLM Epigenetic Repair Memory")
+    print("Example 53: LLM Epigenetic Repair Memory")
     print("Nucleus + HistoneStore + ChaperoneLoop + EpiplexityMonitor")
     print("=" * 60)
 

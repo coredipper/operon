@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 44: Codebase Q&A with RAG (Retrieval-Augmented Generation)
+Example 46: Codebase Q&A with RAG (Retrieval-Augmented Generation)
 ===================================================================
 
 Demonstrates a practical codebase question-answering system that uses:
@@ -35,9 +35,9 @@ User Question
 ```
 
 Usage:
-    python examples/44_codebase_qa_rag.py                         # Demo mode
-    python examples/44_codebase_qa_rag.py --test                  # Smoke test
-    python examples/44_codebase_qa_rag.py "Where is ATP_Store?"   # Ask a question
+    python examples/46_codebase_qa_rag.py                         # Demo mode
+    python examples/46_codebase_qa_rag.py --test                  # Smoke test
+    python examples/46_codebase_qa_rag.py "Where is ATP_Store?"   # Ask a question
 
 Prerequisites:
 - Example 39 for Chaperone Healing Loop patterns
@@ -829,7 +829,7 @@ class CodebaseQAPipeline:
 def run_demo():
     """Run demonstration with real codebase search."""
     print("=" * 70)
-    print("Example 44: Codebase Q&A with RAG - Demo")
+    print("Example 46: Codebase Q&A with RAG - Demo")
     print("=" * 70)
 
     # Use the operon_ai directory as the codebase
@@ -895,7 +895,7 @@ def run_smoke_test():
     valid_answer = CodeAnswer(
         answer="Test",
         citations=[Citation(
-            file_path="examples/43_code_review_pipeline.py",
+            file_path="examples/45_code_review_pipeline.py",
             line_start=1,
             line_end=10,
             snippet="Test",

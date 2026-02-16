@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 52: LLM Swarm with Graceful Cleanup
+Example 54: LLM Swarm with Graceful Cleanup
 =============================================
 
 Demonstrates an LLM-powered swarm where dying workers clean up their context
@@ -40,8 +40,8 @@ Prerequisites:
 - Example 39 for Autophagy
 
 Usage:
-    python examples/52_llm_swarm_graceful_cleanup.py
-    python examples/52_llm_swarm_graceful_cleanup.py --test
+    python examples/54_llm_swarm_graceful_cleanup.py
+    python examples/54_llm_swarm_graceful_cleanup.py --test
 """
 
 import sys
@@ -511,7 +511,7 @@ def run_smoke_test():
 def main():
     """Run all demos."""
     print("\n" + "=" * 60)
-    print("Example 52: LLM Swarm with Graceful Cleanup")
+    print("Example 54: LLM Swarm with Graceful Cleanup")
     print("Nucleus + RegenerativeSwarm + Autophagy + MorphogenGradient")
     print("=" * 60)
 

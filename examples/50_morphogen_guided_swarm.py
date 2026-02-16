@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Example 48: Morphogen-Guided Swarm
-====================================
+Example 50: Morphogen-Guided Swarm
+===================================
 
 Demonstrates a task-solving swarm where workers adapt strategy based on
 morphogen gradient signals. Failed workers update gradients, and successors
@@ -33,11 +33,11 @@ Key concepts:
 
 Prerequisites:
 - Example 40 for Regenerative Swarm patterns
-- Example 42 for Morphogen gradient basics
+- Example 44 for Morphogen gradient basics
 
 Usage:
-    python examples/48_morphogen_guided_swarm.py
-    python examples/48_morphogen_guided_swarm.py --test
+    python examples/50_morphogen_guided_swarm.py
+    python examples/50_morphogen_guided_swarm.py --test
 """
 
 import sys
@@ -458,7 +458,7 @@ def run_smoke_test():
 def main():
     """Run all demos."""
     print("\n" + "=" * 60)
-    print("Example 48: Morphogen-Guided Swarm")
+    print("Example 50: Morphogen-Guided Swarm")
     print("MorphogenGradient + GradientOrchestrator + RegenerativeSwarm")
     print("=" * 60)
 

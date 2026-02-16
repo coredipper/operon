@@ -1,5 +1,5 @@
 """
-Example 42: Morphogen Gradients - Multi-Cellular Coordination
+Example 44: Morphogen Gradients - Multi-Cellular Coordination
 ==============================================================
 
 Demonstrates the MorphogenGradient module for coordinating multi-agent systems:

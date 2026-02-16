@@ -1,4 +1,4 @@
-# Example 41: Innate Immunity
+# Example 43: Innate Immunity
 
 Fast, pattern-based defense against prompt injection. Complements the adaptive
 Membrane with immediate, non-specific threat detection.

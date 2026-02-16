@@ -790,22 +790,37 @@ Explore the `examples/` directory for runnable demonstrations:
 | [`37_metabolic_swarm_budgeting.py`](examples/37_metabolic_swarm_budgeting.py) | Coalgebra | Metabolic swarm with shared budget and halting guarantee |
 | [`38_linear_budget_tracking.py`](examples/38_linear_budget_tracking.py) | Metabolism | Token cost tracking via git commits and Linear tickets |
 | [`39_chaperone_healing_loop.py`](examples/39_chaperone_healing_loop.py) | Healing | Chaperone Loop with feedback-driven structural repair |
+| [`40_regenerative_swarm.py`](examples/40_regenerative_swarm.py) | Healing | Apoptosis + regeneration with memory inheritance |
+| [`41_autophagy_context_pruning.py`](examples/41_autophagy_context_pruning.py) | Healing | Context pruning with sleep/wake consolidation |
 
 **Health & Coordination (v0.11.0)**
 
 | Example | System | Description |
 |---------|--------|-------------|
-| [`40_epiplexity_monitoring.py`](examples/40_epiplexity_monitoring.py) | Epiplexity | Epistemic health monitoring, stagnation detection |
-| [`41_innate_immunity.py`](examples/41_innate_immunity.py) | Innate Immunity | TLR patterns, inflammation response, structural validators |
-| [`42_morphogen_gradients.py`](examples/42_morphogen_gradients.py) | Morphogen | Multi-cellular coordination via shared context gradients |
+| [`42_epiplexity_monitoring.py`](examples/42_epiplexity_monitoring.py) | Epiplexity | Epistemic health monitoring, stagnation detection |
+| [`43_innate_immunity.py`](examples/43_innate_immunity.py) | Innate Immunity | TLR patterns, inflammation response, structural validators |
+| [`44_morphogen_gradients.py`](examples/44_morphogen_gradients.py) | Morphogen | Multi-cellular coordination via shared context gradients |
 
 **Practical Applications**
 
 | Example | System | Description |
 |---------|--------|-------------|
-| [`43_code_review_pipeline.py`](examples/43_code_review_pipeline.py) | CFFL+Membrane | Automated PR review with dual-approval gate and security scanning |
-| [`44_codebase_qa_rag.py`](examples/44_codebase_qa_rag.py) | Healing+Memory | RAG-based Q&A with citation validation and pattern learning |
-| [`45_enhanced_cost_attribution.py`](examples/45_enhanced_cost_attribution.py) | Morphogen+ATP | Team-level cost tracking with trend analysis and cross-team coordination |
+| [`45_code_review_pipeline.py`](examples/45_code_review_pipeline.py) | CFFL+Membrane | Automated PR review with dual-approval gate and security scanning |
+| [`46_codebase_qa_rag.py`](examples/46_codebase_qa_rag.py) | Healing+Memory | RAG-based Q&A with citation validation and pattern learning |
+| [`47_enhanced_cost_attribution.py`](examples/47_enhanced_cost_attribution.py) | Morphogen+ATP | Team-level cost tracking with trend analysis and cross-team coordination |
+
+**Orchestration Patterns**
+
+| Example | System | Description |
+|---------|--------|-------------|
+| [`48_oscillator_scheduled_maintenance.py`](examples/48_oscillator_scheduled_maintenance.py) | Oscillator+Autophagy+Feedback | Periodic context pruning with feedback-controlled noise ratio |
+| [`49_immunity_healing_router.py`](examples/49_immunity_healing_router.py) | Immunity+Chaperone+Autophagy | API gateway that heals threats instead of hard-rejecting |
+| [`50_morphogen_guided_swarm.py`](examples/50_morphogen_guided_swarm.py) | Morphogen+Swarm | Workers adapt strategy via gradient signals from predecessors |
+| [`51_epiplexity_healing_cascade.py`](examples/51_epiplexity_healing_cascade.py) | Epiplexity+Swarm+Autophagy | Escalating healing: autophagy → regeneration → abort |
+| [`52_morphogen_cascade_quorum.py`](examples/52_morphogen_cascade_quorum.py) | Morphogen+Cascade+Quorum | Contract review with dynamic quorum on low confidence |
+| [`53_llm_epigenetic_repair_memory.py`](examples/53_llm_epigenetic_repair_memory.py) | Nucleus+Histone+Chaperone | LLM agent remembers which repair strategies worked |
+| [`54_llm_swarm_graceful_cleanup.py`](examples/54_llm_swarm_graceful_cleanup.py) | Nucleus+Swarm+Autophagy | Dying workers clean context before passing state to successors |
+| [`55_adaptive_multi_agent_orchestrator.py`](examples/55_adaptive_multi_agent_orchestrator.py) | **11 motifs** | Capstone: end-to-end ticket processing with all mechanisms |
 
 Run any example:
 

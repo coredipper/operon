@@ -46,18 +46,31 @@ Each arrow implies a typed connection with integrity constraints.
 ### Health & Healing (v0.10+)
 
 - [Example 39: Chaperone Healing Loop](wiring_diagrams/example39_chaperone_healing_loop.md)
-- [Example 40: Epiplexity Monitoring](wiring_diagrams/example40_epiplexity_monitoring.md)
+- [Example 40: Regenerative Swarm](wiring_diagrams/example40_regenerative_swarm.md)
+- [Example 41: Autophagy Context Pruning](wiring_diagrams/example41_autophagy_context_pruning.md)
+- [Example 42: Epiplexity Monitoring](wiring_diagrams/example42_epiplexity_monitoring.md)
 
 ### Surveillance (v0.11+)
 
-- [Example 41: Innate Immunity](wiring_diagrams/example41_innate_immunity.md)
-- [Example 42: Morphogen Gradients](wiring_diagrams/example42_morphogen_gradients.md)
+- [Example 43: Innate Immunity](wiring_diagrams/example43_innate_immunity.md)
+- [Example 44: Morphogen Gradients](wiring_diagrams/example44_morphogen_gradients.md)
 
 ### Practical Applications (v0.11+)
 
-- [Example 43: Code Review Pipeline](wiring_diagrams/example43_code_review.md)
-- [Example 44: Codebase Q&A](wiring_diagrams/example44_codebase_qa.md)
-- [Example 45: Enhanced Cost Attribution](wiring_diagrams/example45_cost_attribution.md)
+- [Example 45: Code Review Pipeline](wiring_diagrams/example45_code_review.md)
+- [Example 46: Codebase Q&A](wiring_diagrams/example46_codebase_qa.md)
+- [Example 47: Enhanced Cost Attribution](wiring_diagrams/example47_cost_attribution.md)
+
+### Orchestration Patterns (v0.11+)
+
+- [Example 48: Oscillator-Scheduled Maintenance](wiring_diagrams/example48_scheduled_maintenance.md)
+- [Example 49: Immunity Healing Router](wiring_diagrams/example49_immunity_healing_router.md)
+- [Example 50: Morphogen-Guided Swarm](wiring_diagrams/example50_morphogen_guided_swarm.md)
+- [Example 51: Epiplexity Healing Cascade](wiring_diagrams/example51_epiplexity_healing_cascade.md)
+- [Example 52: Morphogen Cascade with Quorum](wiring_diagrams/example52_morphogen_cascade_quorum.md)
+- [Example 53: LLM Epigenetic Repair Memory](wiring_diagrams/example53_epigenetic_repair_memory.md)
+- [Example 54: LLM Swarm with Graceful Cleanup](wiring_diagrams/example54_swarm_graceful_cleanup.md)
+- [Example 55: Adaptive Multi-Agent Orchestrator](wiring_diagrams/example55_multi_agent_orchestrator.md)
 
 ## Example 17: Typed Wiring (Integrity + Capabilities)
 
@@ -313,7 +326,7 @@ flowchart LR
 Confidence: 1.0 → 0.85 → 0.70 → ... (decay per retry)
 ```
 
-## Example 40: Epiplexity Monitoring
+## Example 42: Epiplexity Monitoring
 
 ```mermaid
 flowchart TB
@@ -350,7 +363,7 @@ flowchart TB
                                                (ê high)             (ê low, H high)      (sustained)
 ```
 
-## Example 41: Innate Immunity
+## Example 43: Innate Immunity
 
 ```mermaid
 flowchart TB
@@ -386,7 +399,7 @@ flowchart TB
                                          [cytokines]    [log_level++]    [rate_limit]
 ```
 
-## Example 42: Morphogen Gradients
+## Example 44: Morphogen Gradients
 
 ```mermaid
 flowchart TB

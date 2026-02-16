@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 49: Epiplexity Healing Cascade
+Example 51: Epiplexity Healing Cascade
 =======================================
 
 Demonstrates an agent that detects when it's stuck (via epiplexity monitoring)
@@ -30,13 +30,13 @@ Key concepts:
 - Diagnostic report captures the full stagnation history
 
 Prerequisites:
-- Example 41 for EpiplexityMonitor basics
+- Example 42 for EpiplexityMonitor basics
 - Example 39 for Autophagy
 - Example 40 for Regenerative Swarm
 
 Usage:
-    python examples/49_epiplexity_healing_cascade.py
-    python examples/49_epiplexity_healing_cascade.py --test
+    python examples/51_epiplexity_healing_cascade.py
+    python examples/51_epiplexity_healing_cascade.py --test
 """
 
 import sys
@@ -547,7 +547,7 @@ def run_smoke_test():
 def main():
     """Run all demos."""
     print("\n" + "=" * 60)
-    print("Example 49: Epiplexity Healing Cascade")
+    print("Example 51: Epiplexity Healing Cascade")
     print("EpiplexityMonitor + RegenerativeSwarm + Autophagy + Cascade")
     print("=" * 60)
 
