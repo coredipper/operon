@@ -33,5 +33,8 @@ htmlcov/
 .env.*
 !.env.example
 
+# Gradio
+.gradio/
+
 # Documentation (generated plans)
 docs/

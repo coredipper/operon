@@ -5,7 +5,7 @@
 > *"Safety from structure, not just strings."*
 
 ![Status](https://img.shields.io/badge/status-experimental-orange)
-![Version](https://img.shields.io/badge/pypi-v0.11.0-blue)
+![Version](https://img.shields.io/badge/pypi-v0.12.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![Publish to PyPI](https://github.com/coredipper/operon/actions/workflows/publish.yml/badge.svg)](https://github.com/coredipper/operon/actions/workflows/publish.yml)
 
@@ -459,6 +459,8 @@ params = orchestrator.get_phenotype_params()
 # {"temperature": 0.7, "max_tokens": 800, ...}
 ```
 
+Note: gradients are global shared state, not locally diffused. Callers are responsible for thread safety in concurrent multi-agent settings. In high-agent-count systems, consider partitioning gradient scopes.
+
 ### 🦠 Innate Immunity (Fast Pattern Defense)
 
 Fast, pattern-based defense against prompt injection—complements the adaptive Membrane.
@@ -524,6 +526,8 @@ response = immune.inspect("agent_alpha")
 if response.threat_level >= ThreatLevel.HIGH:
     print(f"ALERT: {response.recommended_action}")
 ```
+
+Note: surveillance monitors agent outputs and behavioral drift, not tool return values. A compromised tool (e.g., poisoned search results) can bypass detection because the channel itself is trusted. Defense-in-depth requires validating tool outputs independently.
 
 ### 🩹 Healing (Self-Repair Mechanisms)
 
