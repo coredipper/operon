@@ -168,6 +168,14 @@ class DiagramExecutor:
                         raise WiringError(
                             f"Missing output {module_name}.{wire.src_port} for wire"
                         )
+                    # Denaturation: apply wire-level filter (Paper §5.3)
+                    if wire.denature is not None:
+                        denatured_str = wire.denature.denature(str(value.value))
+                        value = TypedValue(
+                            data_type=value.data_type,
+                            integrity=value.integrity,
+                            value=denatured_str,
+                        )
                     dst_spec = self.diagram.modules[wire.dst_module].inputs[wire.dst_port]
                     if enforce_static_checks:
                         if value.data_type != dst_spec.data_type:

@@ -33,6 +33,13 @@ from .wagent import (
     Wire,
     WiringDiagram,
 )
+from .denature import (
+    DenatureFilter,
+    SummarizeFilter,
+    StripMarkupFilter,
+    NormalizeFilter,
+    ChainFilter,
+)
 
 __all__ = [
     "BioAgent",
@@ -53,4 +60,9 @@ __all__ = [
     "ModuleSpec",
     "Wire",
     "WiringDiagram",
+    "DenatureFilter",
+    "SummarizeFilter",
+    "StripMarkupFilter",
+    "NormalizeFilter",
+    "ChainFilter",
 ]

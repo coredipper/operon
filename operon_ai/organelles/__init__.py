@@ -55,6 +55,13 @@ from .nucleus import (
     Transcription,
 )
 
+from .plasmid import (
+    Plasmid,
+    PlasmidRegistry,
+    PlasmidError,
+    AcquisitionResult,
+)
+
 __all__ = [
     # Membrane
     "Membrane",
@@ -93,4 +100,10 @@ __all__ = [
     # Nucleus
     "Nucleus",
     "Transcription",
+
+    # Plasmid (Horizontal Gene Transfer)
+    "Plasmid",
+    "PlasmidRegistry",
+    "PlasmidError",
+    "AcquisitionResult",
 ]
