@@ -8,6 +8,7 @@ A comprehensive guide to building, understanding, and integrating agents using t
 
 - [Theory: The Gene-Agent Isomorphism](#theory-the-gene-agent-isomorphism)
 - [Core Concepts](#core-concepts)
+- [Multi-cellular Organization (v0.13+)](#multi-cellular-organization-v013)
 - [Agent Patterns](#agent-patterns)
 - [API Reference](#api-reference)
 - [Integration Guide](#integration-guide)
@@ -37,6 +38,10 @@ The key insight: a **cell** contains thousands of genes working together. Theref
 | Organelles | Shared infrastructure | Sub-functors |
 | ATP | Token budget | Resource monoid |
 | Signal Transduction | Data pipeline | Composition (∘) |
+| Plasmid / HGT | Dynamic tool acquisition | Tensor product (⊗) |
+| Denaturation | Wire-level sanitization | Natural transformation |
+| Cell Type | Agent phenotype | Expression profile |
+| Tissue | Agent group with boundary | Sub-diagram |
 
 ### The Cell as Orchestrator
 
@@ -197,6 +202,7 @@ Agents maintain state through biologically-inspired systems:
 | **HistoneStore** | Episodic memory with decay | Configurable |
 | **Genome** | Immutable configuration | Permanent |
 | **Telomere** | Lifecycle tracking | Session |
+| **MetabolicAccessPolicy** | Cost-gated memory retrieval | Session |
 
 ### Network Topologies
 
@@ -317,6 +323,162 @@ The most powerful systems combine multiple motifs. Operon provides composable or
 | **Adaptive Multi-Agent Orchestrator** | **11 motifs** | Capstone: end-to-end ticket processing with all mechanisms |
 
 See `examples/48_*` through `examples/55_*` for runnable implementations.
+
+### Multi-cellular Organization (v0.13+)
+
+Beyond single-cell agents, Operon supports higher-order composition:
+
+| Concept | Biological Parallel | Software Pattern | Module |
+|---------|---------------------|------------------|--------|
+| **Metabolic-Epigenetic Coupling** | Starvation silences gene expression | Cost-gated memory retrieval | `state.metabolism.MetabolicAccessPolicy` |
+| **Cell Type Specialization** | Differential gene expression | Same Genome → different agent phenotypes | `multicell.CellType` |
+| **Tissue Architecture** | Cells form tissues with boundaries | Agent groups with capability isolation | `multicell.Tissue` |
+| **Plasmid Registry (HGT)** | Bacteria exchange plasmids | Dynamic tool acquisition with capability gating | `organelles.plasmid.PlasmidRegistry` |
+| **Denaturation Layers** | Protein denaturation disrupts structure | Wire-level sanitization against injection cascades | `core.denature.DenatureFilter` |
+
+#### Metabolic-Epigenetic Coupling
+
+Memory retrieval costs energy. Under metabolic pressure, only deeply embedded memories remain accessible:
+
+```python
+from operon_ai import ATP_Store, HistoneStore, MarkerStrength, MetabolicAccessPolicy
+
+atp = ATP_Store(budget=100, silent=True)
+policy = MetabolicAccessPolicy(retrieval_cost=5)
+histones = HistoneStore(energy_gate=(atp, policy), silent=True)
+
+histones.methylate("NEVER delete without WHERE", strength=MarkerStrength.PERMANENT)
+histones.acetylate("User prefers verbose output", strength=MarkerStrength.WEAK)
+
+# NORMAL state → all markers accessible
+result = histones.retrieve_context()   # costs 5 ATP
+
+# Drain to CONSERVING → only STRONG+ markers accessible
+atp.consume(75, "expensive_op")
+result = histones.retrieve_context()   # weak markers silenced
+```
+
+#### Cell Type Specialization
+
+A single Genome produces different agent phenotypes through differential gene expression:
+
+```python
+from operon_ai import Genome, Gene, ExpressionLevel, Capability
+from operon_ai import ExpressionProfile, CellType
+
+genome = Genome(genes=[
+    Gene("model", "gpt-4", required=True),
+    Gene("classification", "enabled"),
+    Gene("verification", "strict"),
+], silent=True)
+
+classifier = CellType(
+    name="Classifier",
+    expression_profile=ExpressionProfile(overrides={
+        "classification": ExpressionLevel.OVEREXPRESSED,
+        "verification": ExpressionLevel.SILENCED,
+    }),
+    required_capabilities={Capability.NET},
+)
+cell = classifier.differentiate(genome)  # → DifferentiatedCell
+```
+
+#### Tissue Architecture
+
+Cells form tissues — groups sharing a morphogen gradient and security boundary:
+
+```python
+from operon_ai import (
+    Tissue, TissueBoundary, PortType, DataType, IntegrityLabel,
+    Capability, WiringDiagram,
+)
+
+tissue = Tissue(
+    name="ClassificationTissue",
+    boundary=TissueBoundary(
+        inputs={"task": PortType(DataType.JSON, IntegrityLabel.VALIDATED)},
+        outputs={"label": PortType(DataType.JSON, IntegrityLabel.VALIDATED)},
+        allowed_capabilities={Capability.NET},
+    ),
+)
+tissue.register_cell_type(classifier)
+tissue.add_cell("c1", "Classifier", genome)
+
+# Compose tissues into an organism-level diagram
+organism = WiringDiagram()
+organism.add_module(tissue.as_module())
+```
+
+#### Plasmid Registry (Horizontal Gene Transfer)
+
+Dynamic tool acquisition from a searchable registry (Paper §6.2, Eq. 12):
+
+```python
+from operon_ai import Mitochondria, Capability, Plasmid, PlasmidRegistry
+
+registry = PlasmidRegistry()
+registry.register(Plasmid(
+    name="reverse",
+    description="Reverse a string",
+    func=lambda s: s[::-1],
+    tags=frozenset({"text"}),
+))
+registry.register(Plasmid(
+    name="fetch",
+    description="Fetch a URL",
+    func=lambda url: f"<html>{url}</html>",
+    required_capabilities=frozenset({Capability.NET}),
+))
+
+mito = Mitochondria(allowed_capabilities={Capability.READ_FS}, silent=True)
+
+mito.acquire("reverse", registry)         # OK — no caps required
+result = mito.acquire("fetch", registry)   # Blocked — needs NET
+print(result.error)  # "Insufficient capabilities: missing ['net']"
+
+mito.release("reverse")  # Plasmid curing — tool removed
+```
+
+#### Denaturation Layers (Anti-Prion Defense)
+
+Wire-level filters that transform data between agents to disrupt injection cascading (Paper §5.3):
+
+```python
+from operon_ai import (
+    WiringDiagram, ModuleSpec, PortType,
+    DataType, IntegrityLabel, DiagramExecutor,
+    StripMarkupFilter, NormalizeFilter, ChainFilter,
+)
+
+diagram = WiringDiagram()
+diagram.add_module(ModuleSpec(
+    name="agent_a",
+    inputs={"req": PortType(DataType.TEXT, IntegrityLabel.VALIDATED)},
+    outputs={"resp": PortType(DataType.TEXT, IntegrityLabel.VALIDATED)},
+))
+diagram.add_module(ModuleSpec(
+    name="agent_b",
+    inputs={"data": PortType(DataType.TEXT, IntegrityLabel.VALIDATED)},
+))
+
+# Attach denaturation filter to the wire
+diagram.connect(
+    "agent_a", "resp", "agent_b", "data",
+    denature=ChainFilter(filters=(
+        StripMarkupFilter(),   # Remove code blocks, ChatML, [INST], XML role tags
+        NormalizeFilter(),     # Lowercase, strip control chars, NFKC
+    )),
+)
+# Agent B receives sanitized data — injection syntax is stripped
+```
+
+Available filters:
+- **SummarizeFilter** — Truncation with prefix, whitespace collapsing
+- **StripMarkupFilter** — Removes code blocks, ChatML tokens, `[INST]` tags, XML role tags, role delimiters
+- **NormalizeFilter** — Lowercase, strip control chars, Unicode NFKC normalization
+- **ChainFilter** — Compose multiple filters left-to-right
+
+See `examples/56_*` through `examples/60_*` for runnable implementations.
 
 ---
 
@@ -688,6 +850,18 @@ response = nucleus.transcribe_with_tools(
 | `ChaperoneLoop` | `operon_ai.healing` | Structural self-repair |
 | `RegenerativeSwarm` | `operon_ai.healing` | Metabolic healing (apoptosis + regeneration) |
 | `AutophagyDaemon` | `operon_ai.healing` | Cognitive healing (context pruning) |
+| `MetabolicAccessPolicy` | `operon_ai.state.metabolism` | Cost-gated memory retrieval |
+| `CellType` | `operon_ai.multicell` | Agent phenotype from differential expression |
+| `ExpressionProfile` | `operon_ai.multicell` | Gene expression overrides |
+| `DifferentiatedCell` | `operon_ai.multicell` | Specialized agent instance |
+| `Tissue` | `operon_ai.multicell` | Agent group with capability boundary |
+| `TissueBoundary` | `operon_ai.multicell` | Typed I/O ports + capability isolation |
+| `Plasmid` | `operon_ai.organelles.plasmid` | Transferable tool definition |
+| `PlasmidRegistry` | `operon_ai.organelles.plasmid` | Searchable tool registry for HGT |
+| `DenatureFilter` | `operon_ai.core.denature` | Wire-level sanitization protocol |
+| `StripMarkupFilter` | `operon_ai.core.denature` | Remove injection syntax (ChatML, [INST], etc.) |
+| `NormalizeFilter` | `operon_ai.core.denature` | Lowercase, control chars, NFKC |
+| `ChainFilter` | `operon_ai.core.denature` | Compose multiple filters |
 
 ---
 
@@ -922,6 +1096,32 @@ while telomere.tick():
     process_request()
 
 # Agent naturally terminates after 1000 operations
+```
+
+### 7. Denature Inter-Agent Data
+
+When wiring agents together, attach denaturation filters to prevent injection cascading:
+
+```python
+# Good — injection syntax stripped between agents
+diagram.connect("agent_a", "out", "agent_b", "in",
+    denature=ChainFilter(filters=(StripMarkupFilter(), NormalizeFilter())))
+
+# Bad — raw data passes between agents
+diagram.connect("agent_a", "out", "agent_b", "in")  # Vulnerable to prion propagation
+```
+
+### 8. Capability-Gate Dynamic Tools
+
+When using plasmid acquisition, always restrict agent capabilities:
+
+```python
+# Good — agent can only acquire tools within its capability set
+mito = Mitochondria(allowed_capabilities={Capability.READ_FS}, silent=True)
+result = mito.acquire("dangerous_tool", registry)  # Blocked if tool needs NET
+
+# Bad — unrestricted agent can acquire anything
+mito = Mitochondria(silent=True)  # No capability restriction
 ```
 
 ---
