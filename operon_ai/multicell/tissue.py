@@ -34,6 +34,7 @@ from typing import Any
 from operon_ai.core.types import Capability, DataType, IntegrityLabel
 from operon_ai.core.wagent import WiringDiagram, ModuleSpec, PortType
 from operon_ai.coordination.morphogen import MorphogenGradient
+from operon_ai.coordination.diffusion import DiffusionField
 from operon_ai.state.genome import Genome
 from operon_ai.multicell.cell_type import CellType, DifferentiatedCell
 
@@ -105,10 +106,12 @@ class Tissue:
         name: str,
         boundary: TissueBoundary,
         gradient: MorphogenGradient | None = None,
+        diffusion_field: DiffusionField | None = None,
     ):
         self.name = name
         self.boundary = boundary
         self.gradient = gradient or MorphogenGradient()
+        self._diffusion_field = diffusion_field
         self._cell_types: dict[str, CellType] = {}
         self._cells: dict[str, DifferentiatedCell] = {}
         self._diagram = WiringDiagram()
@@ -170,6 +173,10 @@ class Tissue:
         cell = cell_type.differentiate(genome, self.gradient)
         self._cells[name] = cell
 
+        # Register in diffusion field if present
+        if self._diffusion_field is not None:
+            self._diffusion_field.add_node(name)
+
         # Add as module to internal wiring diagram
         module = ModuleSpec(
             name=name,
@@ -205,6 +212,48 @@ class Tissue:
         if dst not in self._cells:
             raise TissueError(f"Destination cell '{dst}' not in tissue '{self.name}'")
         self._diagram.connect(src, src_port, dst, dst_port)
+
+        # Register edge in diffusion field if present
+        if self._diffusion_field is not None:
+            self._diffusion_field.add_edge(src, dst)
+
+    def diffuse(self, steps: int = 1) -> None:
+        """
+        Run morphogen diffusion for the given number of steps.
+
+        Requires a DiffusionField to have been provided at construction.
+
+        Raises:
+            TissueError: If no diffusion field is configured.
+        """
+        if self._diffusion_field is None:
+            raise TissueError(
+                f"No diffusion field configured for tissue '{self.name}'"
+            )
+        self._diffusion_field.run(steps)
+
+    def get_cell_gradient(self, name: str) -> MorphogenGradient:
+        """
+        Get the local morphogen gradient for a specific cell.
+
+        If a DiffusionField is configured, returns the spatially-local
+        gradient from the diffusion field.  Otherwise, falls back to
+        the shared tissue gradient.
+
+        Args:
+            name: Cell name within this tissue
+
+        Returns:
+            MorphogenGradient reflecting local concentrations.
+
+        Raises:
+            TissueError: If the cell doesn't exist.
+        """
+        if name not in self._cells:
+            raise TissueError(f"Cell '{name}' not in tissue '{self.name}'")
+        if self._diffusion_field is not None:
+            return self._diffusion_field.get_local_gradient(name)
+        return self.gradient
 
     def as_module(self) -> ModuleSpec:
         """

@@ -70,6 +70,7 @@ class Wire:
     dst_module: str
     dst_port: str
     denature: Any | None = None  # Optional DenatureFilter
+    optic: Any | None = None  # Optional Optic (Paper §3.3)
 
 
 @dataclass
@@ -91,6 +92,7 @@ class WiringDiagram:
         dst_module: str,
         dst_port: str,
         denature: Any | None = None,
+        optic: Any | None = None,
     ):
         try:
             src = self.modules[src_module].outputs[src_port]
@@ -102,9 +104,12 @@ class WiringDiagram:
         except KeyError as e:
             raise WiringError(f"Unknown input port: {dst_module}.{dst_port}") from e
 
-        src.require_flow_to(dst)
+        # When an optic is attached, it handles type filtering at runtime
+        # (e.g. a prism intentionally connects mismatched DataTypes).
+        if optic is None:
+            src.require_flow_to(dst)
         self.wires.append(
-            Wire(src_module, src_port, dst_module, dst_port, denature=denature)
+            Wire(src_module, src_port, dst_module, dst_port, denature=denature, optic=optic)
         )
 
     def required_capabilities(self) -> set[Capability]:

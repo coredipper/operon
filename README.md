@@ -5,7 +5,7 @@
 > *"Safety from structure, not just strings."*
 
 ![Status](https://img.shields.io/badge/status-experimental-orange)
-![Version](https://img.shields.io/badge/pypi-v0.13.0-blue)
+![Version](https://img.shields.io/badge/pypi-v0.14.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![Publish to PyPI](https://github.com/coredipper/operon/actions/workflows/publish.yml/badge.svg)](https://github.com/coredipper/operon/actions/workflows/publish.yml)
 
@@ -873,6 +873,100 @@ diagram.connect(
 
 > **Note:** Denaturation is defense-in-depth, not a guarantee. Filters target known syntactic patterns; novel injection techniques may require custom DenatureFilter implementations.
 
+### Coalgebraic State Machines (Paper §4.2)
+
+Agents as formal state machines with composable observation (readout) and evolution (update). Existing patterns in HistoneStore, ATP_Store, and CellCycleController are made explicit and composable.
+
+```python
+from operon_ai import (
+    FunctionalCoalgebra, StateMachine, ParallelCoalgebra,
+    check_bisimulation,
+)
+
+# Define a counter coalgebra: readout = state, update = state + input
+counter = FunctionalCoalgebra(
+    readout_fn=lambda s: s,
+    update_fn=lambda s, i: s + i,
+)
+
+# Wrap in a StateMachine for stateful execution with trace
+sm = StateMachine(state=0, coalgebra=counter)
+outputs = sm.run([1, 2, 3, 4, 5])
+print(sm.state)  # 15
+print(len(sm.trace))  # 5 transition records
+
+# Bisimulation: check if two machines are observationally equivalent
+a = StateMachine(state=0, coalgebra=counter)
+b = StateMachine(state=0, coalgebra=counter)
+result = check_bisimulation(a, b, [1, 2, 3])
+print(result.equivalent)  # True
+```
+
+### Morphogen Diffusion (Paper §6.4)
+
+Graph-based spatial model for morphogen concentrations. Agents at different positions in the wiring topology experience different concentrations, enabling local gradient-based coordination.
+
+```python
+from operon_ai import DiffusionField, MorphogenSource, MorphogenType
+
+# Build a linear chain: A - B - C
+field = DiffusionField()
+for n in ["A", "B", "C"]:
+    field.add_node(n)
+field.add_edge("A", "B")
+field.add_edge("B", "C")
+
+# Source at A emits complexity morphogen
+field.add_source(MorphogenSource("A", MorphogenType.COMPLEXITY, 0.5))
+field.run(50)
+
+# Gradient forms: A > B > C
+for n in ["A", "B", "C"]:
+    print(f"{n}: {field.get_concentration(n, MorphogenType.COMPLEXITY):.3f}")
+
+# Bridge to existing MorphogenGradient API
+gradient = field.get_local_gradient("B")
+print(gradient.get_level(MorphogenType.COMPLEXITY))  # "high" or "medium"
+```
+
+### Optic-Based Wiring (Paper §3.3)
+
+Wire-level optics for conditional routing and collection processing. Extends the existing type-checked wiring with prism (route by DataType) and traversal (map over lists).
+
+```python
+from operon_ai import (
+    WiringDiagram, ModuleSpec, PortType,
+    DataType, IntegrityLabel, DiagramExecutor, TypedValue,
+)
+from operon_ai import PrismOptic, TraversalOptic
+
+# Prism: conditional routing by DataType
+json_prism = PrismOptic(accept=frozenset({DataType.JSON}))
+error_prism = PrismOptic(accept=frozenset({DataType.ERROR}))
+
+# Fan-out from one port to prism-filtered wires
+diagram = WiringDiagram()
+diagram.add_module(ModuleSpec(name="Router",
+    inputs={"in": PortType(DataType.JSON, IntegrityLabel.VALIDATED)},
+    outputs={"out": PortType(DataType.JSON, IntegrityLabel.VALIDATED)},
+))
+diagram.add_module(ModuleSpec(name="JSONHandler",
+    inputs={"in": PortType(DataType.JSON, IntegrityLabel.VALIDATED)},
+))
+diagram.add_module(ModuleSpec(name="ErrorHandler",
+    inputs={"in": PortType(DataType.ERROR, IntegrityLabel.VALIDATED)},
+))
+diagram.connect("Router", "out", "JSONHandler", "in", optic=json_prism)
+diagram.connect("Router", "out", "ErrorHandler", "in", optic=error_prism)
+
+# Traversal: map a transform over list elements on a wire
+doubler = TraversalOptic(transform=lambda x: x * 2)
+print(doubler.transmit([1, 2, 3], DataType.JSON, IntegrityLabel.VALIDATED))
+# [2, 4, 6]
+```
+
+> **Note:** Optics are fully backward compatible. Wires without optics work exactly as before. Optics coexist with DenatureFilters on the same wire.
+
 ---
 
 ## 📦 Installation
@@ -990,6 +1084,14 @@ Explore the `examples/` directory for runnable demonstrations:
 | [`58_tissue_architecture.py`](examples/58_tissue_architecture.py) | Tissue+WiringDiagram | Hierarchical multi-agent organization with capability isolation |
 | [`59_plasmid_registry.py`](examples/59_plasmid_registry.py) | Plasmid+Mitochondria | Dynamic tool acquisition with capability gating (HGT) |
 | [`60_denaturation_layers.py`](examples/60_denaturation_layers.py) | Denature+Wire | Wire-level anti-injection filters (anti-prion defense) |
+
+**Coalgebra, Diffusion & Optics (v0.14.0)**
+
+| Example | System | Description |
+|---------|--------|-------------|
+| [`61_coalgebraic_state_machines.py`](examples/61_coalgebraic_state_machines.py) | Coalgebra | Composable observation & evolution with bisimulation |
+| [`62_morphogen_diffusion.py`](examples/62_morphogen_diffusion.py) | Diffusion | Graph-based spatially varying morphogen gradients |
+| [`63_optic_based_wiring.py`](examples/63_optic_based_wiring.py) | Optics+Wire | Prism routing, traversal transforms, composed optics |
 
 Run any example:
 

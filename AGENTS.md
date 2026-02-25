@@ -42,6 +42,11 @@ The key insight: a **cell** contains thousands of genes working together. Theref
 | Denaturation | Wire-level sanitization | Natural transformation |
 | Cell Type | Agent phenotype | Expression profile |
 | Tissue | Agent group with boundary | Sub-diagram |
+| Surface Markers (readout) | Observable output | Coalgebra (readout) |
+| Signal Transduction (update) | State evolution | Coalgebra (update) |
+| Morphogen Diffusion | Spatially varying coordination | Graph Laplacian |
+| Receptor Specificity | Conditional wire routing | Prism (optic) |
+| Polymerase Processivity | Collection processing on wire | Traversal (optic) |
 
 ### The Cell as Orchestrator
 
@@ -480,6 +485,76 @@ Available filters:
 
 See `examples/56_*` through `examples/60_*` for runnable implementations.
 
+### Coalgebraic State Machines (v0.14+)
+
+Agents as formal state machines with composable observation (readout) and evolution (update). Paper §4.2.
+
+```python
+from operon_ai.core.coalgebra import (
+    FunctionalCoalgebra, StateMachine, ParallelCoalgebra, check_bisimulation,
+)
+
+# Counter: readout = state, update = state + input
+counter = FunctionalCoalgebra(readout_fn=lambda s: s, update_fn=lambda s, i: s + i)
+sm = StateMachine(state=0, coalgebra=counter)
+outputs = sm.run([1, 2, 3])  # outputs=[0, 1, 3], state=6
+print(sm.trace)  # Full transition history
+
+# Bisimulation: check observational equivalence
+a = StateMachine(state=0, coalgebra=counter)
+b = StateMachine(state=0, coalgebra=counter)
+result = check_bisimulation(a, b, [1, 2, 3])
+print(result.equivalent)  # True
+```
+
+### Morphogen Diffusion (v0.14+)
+
+Graph-based spatial model for morphogen concentrations. Agents at different positions experience different concentrations. Paper §6.4.
+
+```python
+from operon_ai.coordination.diffusion import DiffusionField, MorphogenSource
+from operon_ai.coordination.morphogen import MorphogenType
+
+field = DiffusionField()
+for n in ["A", "B", "C"]:
+    field.add_node(n)
+field.add_edge("A", "B")
+field.add_edge("B", "C")
+field.add_source(MorphogenSource("A", MorphogenType.COMPLEXITY, 0.5))
+field.run(50)
+
+# Gradient: A > B > C
+for n in ["A", "B", "C"]:
+    print(f"{n}: {field.get_concentration(n, MorphogenType.COMPLEXITY):.3f}")
+
+# Bridge to existing MorphogenGradient API
+gradient = field.get_local_gradient("B")
+```
+
+### Optic-Based Wiring (v0.14+)
+
+Wire-level optics for conditional routing and collection processing. Paper §3.3.
+
+```python
+from operon_ai.core.optics import PrismOptic, TraversalOptic, ComposedOptic
+from operon_ai.core.types import DataType, IntegrityLabel
+
+# Prism: route by DataType
+json_prism = PrismOptic(accept=frozenset({DataType.JSON}))
+json_prism.can_transmit(DataType.JSON, IntegrityLabel.VALIDATED)   # True
+json_prism.can_transmit(DataType.ERROR, IntegrityLabel.VALIDATED)  # False
+
+# Traversal: map over collections
+doubler = TraversalOptic(transform=lambda x: x * 2)
+doubler.transmit([1, 2, 3], DataType.JSON, IntegrityLabel.VALIDATED)  # [2, 4, 6]
+
+# Composition
+composed = ComposedOptic(optics=(json_prism, doubler))
+composed.transmit([1, 2], DataType.JSON, IntegrityLabel.VALIDATED)  # [2, 4]
+```
+
+See `examples/61_*` through `examples/63_*` for runnable implementations.
+
 ---
 
 ## Agent Patterns
@@ -862,6 +937,19 @@ response = nucleus.transcribe_with_tools(
 | `StripMarkupFilter` | `operon_ai.core.denature` | Remove injection syntax (ChatML, [INST], etc.) |
 | `NormalizeFilter` | `operon_ai.core.denature` | Lowercase, control chars, NFKC |
 | `ChainFilter` | `operon_ai.core.denature` | Compose multiple filters |
+| `Coalgebra` | `operon_ai.core.coalgebra` | State observation + evolution protocol |
+| `StateMachine` | `operon_ai.core.coalgebra` | Running state machine with trace |
+| `FunctionalCoalgebra` | `operon_ai.core.coalgebra` | Coalgebra from two functions |
+| `ParallelCoalgebra` | `operon_ai.core.coalgebra` | Product of two coalgebras |
+| `SequentialCoalgebra` | `operon_ai.core.coalgebra` | Pipeline composition |
+| `DiffusionField` | `operon_ai.coordination.diffusion` | Graph-based morphogen diffusion |
+| `MorphogenSource` | `operon_ai.coordination.diffusion` | Localized morphogen emitter |
+| `DiffusionParams` | `operon_ai.coordination.diffusion` | Diffusion dynamics parameters |
+| `Optic` | `operon_ai.core.optics` | Wire-level optic protocol |
+| `LensOptic` | `operon_ai.core.optics` | Pass-through optic |
+| `PrismOptic` | `operon_ai.core.optics` | Conditional routing by DataType |
+| `TraversalOptic` | `operon_ai.core.optics` | Collection processing on wire |
+| `ComposedOptic` | `operon_ai.core.optics` | Sequential optic composition |
 
 ---
 

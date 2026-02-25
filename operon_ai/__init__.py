@@ -66,6 +66,24 @@ from .core.denature import (
     NormalizeFilter,
     ChainFilter,
 )
+from .core.coalgebra import (
+    Coalgebra,
+    StateMachine,
+    FunctionalCoalgebra,
+    ParallelCoalgebra,
+    SequentialCoalgebra,
+    TransitionRecord,
+    BisimulationResult,
+    check_bisimulation,
+)
+from .core.optics import (
+    Optic,
+    OpticError,
+    LensOptic,
+    PrismOptic,
+    TraversalOptic,
+    ComposedOptic,
+)
 from .core.wiring_runtime import (
     TypedValue,
     ModuleExecution,
@@ -282,6 +300,9 @@ from .coordination import (
     GradientUpdate,
     GradientOrchestrator,
     PhenotypeConfig,
+    MorphogenSource,
+    DiffusionParams,
+    DiffusionField,
 )
 
 # =============================================================================
@@ -325,6 +346,22 @@ __all__ = [
     "StripMarkupFilter",
     "NormalizeFilter",
     "ChainFilter",
+    # Coalgebra (Paper §4.2)
+    "Coalgebra",
+    "StateMachine",
+    "FunctionalCoalgebra",
+    "ParallelCoalgebra",
+    "SequentialCoalgebra",
+    "TransitionRecord",
+    "BisimulationResult",
+    "check_bisimulation",
+    # Optics (Paper §3.3)
+    "Optic",
+    "OpticError",
+    "LensOptic",
+    "PrismOptic",
+    "TraversalOptic",
+    "ComposedOptic",
     "TypedValue",
     "ModuleExecution",
     "ExecutionReport",
@@ -504,6 +541,10 @@ __all__ = [
     "GradientUpdate",
     "GradientOrchestrator",
     "PhenotypeConfig",
+    # Diffusion (Paper §6.4)
+    "MorphogenSource",
+    "DiffusionParams",
+    "DiffusionField",
 
     # Multi-cellular Organization
     "ExpressionProfile",
@@ -515,4 +556,4 @@ __all__ = [
     "MetabolicAccessPolicy",
 ]
 
-__version__ = "0.13.0"
+__version__ = "0.14.0"

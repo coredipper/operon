@@ -39,6 +39,11 @@ from .morphogen import (
     GradientOrchestrator,
     PhenotypeConfig,
 )
+from .diffusion import (
+    MorphogenSource,
+    DiffusionParams,
+    DiffusionField,
+)
 
 __all__ = [
     # Cell Cycle (existing)
@@ -71,4 +76,8 @@ __all__ = [
     "GradientUpdate",
     "GradientOrchestrator",
     "PhenotypeConfig",
+    # Diffusion (Paper §6.4)
+    "MorphogenSource",
+    "DiffusionParams",
+    "DiffusionField",
 ]

@@ -108,9 +108,12 @@ class DiagramExecutor:
 
         for (module_name, port_name), wires in incoming_by_port.items():
             if len(wires) > 1:
-                raise WiringError(
-                    f"Multiple sources for input port: {module_name}.{port_name}"
-                )
+                # Multiple prism-bearing wires are allowed (only one matches
+                # at runtime).  Mixed optic/no-optic fan-in is still invalid.
+                if not all(w.optic is not None for w in wires):
+                    raise WiringError(
+                        f"Multiple sources for input port: {module_name}.{port_name}"
+                    )
 
         for module_name, spec in self.diagram.modules.items():
             if spec.outputs and module_name not in self._handlers:
@@ -121,6 +124,19 @@ class DiagramExecutor:
                         raise WiringError(
                             f"Missing input source for {module_name}.{port_name}"
                         )
+
+        # Identify output ports whose wires ALL carry optics.
+        # These ports may produce TypedValues with DataTypes that don't
+        # match the port spec — the optic handles correctness at runtime.
+        _optic_out_ports: set[tuple[str, str]] = set()
+        for mod_name in self.diagram.modules:
+            ports_with_optic: dict[str, bool] = {}
+            for wire in outgoing[mod_name]:
+                prev = ports_with_optic.get(wire.src_port, True)
+                ports_with_optic[wire.src_port] = prev and (wire.optic is not None)
+            for port, all_optic in ports_with_optic.items():
+                if all_optic:
+                    _optic_out_ports.add((mod_name, port))
 
         report = ExecutionReport()
         executed: set[str] = set()
@@ -135,6 +151,26 @@ class DiagramExecutor:
                     port in module_inputs[module_name] for port in spec.inputs
                 )
                 if not ready:
+                    # Check if all missing inputs come from optic wires whose
+                    # sources already executed (= prism rejected the data).
+                    # If so, skip this module gracefully.
+                    all_prism_rejected = True
+                    for port in spec.inputs:
+                        if port in module_inputs[module_name]:
+                            continue
+                        port_wires = incoming_by_port.get((module_name, port), [])
+                        if not port_wires or not all(
+                            w.optic is not None and w.src_module in executed
+                            for w in port_wires
+                        ):
+                            all_prism_rejected = False
+                            break
+                    if all_prism_rejected:
+                        # Module skipped: all inputs were prism-rejected
+                        report.modules[module_name] = ModuleExecution()
+                        report.execution_order.append(module_name)
+                        executed.add(module_name)
+                        progressed = True
                     continue
 
                 handler = self._handlers.get(module_name)
@@ -150,9 +186,13 @@ class DiagramExecutor:
                             f"got {sorted(raw_outputs.keys())}"
                         )
                     for port_name, port_type in spec.outputs.items():
-                        outputs[port_name] = _coerce_output(
-                            raw_outputs[port_name], port_type
-                        )
+                        raw_val = raw_outputs[port_name]
+                        if (module_name, port_name) in _optic_out_ports and isinstance(raw_val, TypedValue):
+                            # Optic-bearing port: accept TypedValue as-is;
+                            # the optic handles type correctness at runtime.
+                            outputs[port_name] = raw_val
+                        else:
+                            outputs[port_name] = _coerce_output(raw_val, port_type)
 
                 report.modules[module_name] = ModuleExecution(
                     inputs=dict(inputs),
@@ -175,6 +215,18 @@ class DiagramExecutor:
                             data_type=value.data_type,
                             integrity=value.integrity,
                             value=denatured_str,
+                        )
+                    # Optic: apply wire-level optic routing/transform (Paper §3.3)
+                    if wire.optic is not None:
+                        if not wire.optic.can_transmit(value.data_type, value.integrity):
+                            continue  # Prism rejection: skip this wire
+                        transformed = wire.optic.transmit(
+                            value.value, value.data_type, value.integrity
+                        )
+                        value = TypedValue(
+                            data_type=value.data_type,
+                            integrity=value.integrity,
+                            value=transformed,
                         )
                     dst_spec = self.diagram.modules[wire.dst_module].inputs[wire.dst_port]
                     if enforce_static_checks:

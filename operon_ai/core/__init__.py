@@ -40,6 +40,24 @@ from .denature import (
     NormalizeFilter,
     ChainFilter,
 )
+from .coalgebra import (
+    Coalgebra,
+    StateMachine,
+    FunctionalCoalgebra,
+    ParallelCoalgebra,
+    SequentialCoalgebra,
+    TransitionRecord,
+    BisimulationResult,
+    check_bisimulation,
+)
+from .optics import (
+    Optic,
+    OpticError,
+    LensOptic,
+    PrismOptic,
+    TraversalOptic,
+    ComposedOptic,
+)
 
 __all__ = [
     "BioAgent",
@@ -65,4 +83,20 @@ __all__ = [
     "StripMarkupFilter",
     "NormalizeFilter",
     "ChainFilter",
+    # Coalgebra (Paper §4.2)
+    "Coalgebra",
+    "StateMachine",
+    "FunctionalCoalgebra",
+    "ParallelCoalgebra",
+    "SequentialCoalgebra",
+    "TransitionRecord",
+    "BisimulationResult",
+    "check_bisimulation",
+    # Optics (Paper §3.3)
+    "Optic",
+    "OpticError",
+    "LensOptic",
+    "PrismOptic",
+    "TraversalOptic",
+    "ComposedOptic",
 ]
