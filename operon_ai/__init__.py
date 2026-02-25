@@ -59,6 +59,13 @@ from .core.wagent import (
     Wire,
     WiringDiagram,
 )
+from .core.denature import (
+    DenatureFilter,
+    SummarizeFilter,
+    StripMarkupFilter,
+    NormalizeFilter,
+    ChainFilter,
+)
 from .core.wiring_runtime import (
     TypedValue,
     ModuleExecution,
@@ -182,6 +189,12 @@ from .organelles.nucleus import (
     Nucleus,
     Transcription,
 )
+from .organelles.plasmid import (
+    Plasmid,
+    PlasmidRegistry,
+    PlasmidError,
+    AcquisitionResult,
+)
 
 # =============================================================================
 # Memory
@@ -272,6 +285,19 @@ from .coordination import (
 )
 
 # =============================================================================
+# Multi-cellular Organization
+# =============================================================================
+from .multicell import (
+    ExpressionProfile,
+    CellType,
+    DifferentiatedCell,
+    TissueBoundary,
+    TissueError,
+    Tissue,
+)
+from .state.metabolism import MetabolicAccessPolicy
+
+# =============================================================================
 # Public API
 # =============================================================================
 __all__ = [
@@ -294,6 +320,11 @@ __all__ = [
     "ModuleSpec",
     "Wire",
     "WiringDiagram",
+    "DenatureFilter",
+    "SummarizeFilter",
+    "StripMarkupFilter",
+    "NormalizeFilter",
+    "ChainFilter",
     "TypedValue",
     "ModuleExecution",
     "ExecutionReport",
@@ -404,6 +435,12 @@ __all__ = [
     "Nucleus",
     "Transcription",
 
+    # Plasmid (Horizontal Gene Transfer)
+    "Plasmid",
+    "PlasmidRegistry",
+    "PlasmidError",
+    "AcquisitionResult",
+
     # Memory
     "MemoryTier",
     "MemoryEntry",
@@ -467,6 +504,15 @@ __all__ = [
     "GradientUpdate",
     "GradientOrchestrator",
     "PhenotypeConfig",
+
+    # Multi-cellular Organization
+    "ExpressionProfile",
+    "CellType",
+    "DifferentiatedCell",
+    "TissueBoundary",
+    "TissueError",
+    "Tissue",
+    "MetabolicAccessPolicy",
 ]
 
-__version__ = "0.11.0"
+__version__ = "0.13.0"

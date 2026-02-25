@@ -13,6 +13,7 @@ not execute the diagram.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 from .types import Capability, DataType, IntegrityLabel
 
@@ -57,12 +58,18 @@ class ModuleSpec:
 
 @dataclass(frozen=True)
 class Wire:
-    """A connection between two module ports."""
+    """A connection between two module ports.
+
+    The optional ``denature`` field accepts a DenatureFilter that
+    transforms data in transit, disrupting prompt-injection cascades
+    (Paper §5.3 — anti-prion defense).
+    """
 
     src_module: str
     src_port: str
     dst_module: str
     dst_port: str
+    denature: Any | None = None  # Optional DenatureFilter
 
 
 @dataclass
@@ -77,7 +84,14 @@ class WiringDiagram:
             raise WiringError(f"Module already exists: {module.name}")
         self.modules[module.name] = module
 
-    def connect(self, src_module: str, src_port: str, dst_module: str, dst_port: str):
+    def connect(
+        self,
+        src_module: str,
+        src_port: str,
+        dst_module: str,
+        dst_port: str,
+        denature: Any | None = None,
+    ):
         try:
             src = self.modules[src_module].outputs[src_port]
         except KeyError as e:
@@ -89,7 +103,9 @@ class WiringDiagram:
             raise WiringError(f"Unknown input port: {dst_module}.{dst_port}") from e
 
         src.require_flow_to(dst)
-        self.wires.append(Wire(src_module, src_port, dst_module, dst_port))
+        self.wires.append(
+            Wire(src_module, src_port, dst_module, dst_port, denature=denature)
+        )
 
     def required_capabilities(self) -> set[Capability]:
         """Union of capabilities across all modules (effect aggregation)."""

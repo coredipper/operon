@@ -657,6 +657,80 @@ class Mitochondria:
             ))
         return schemas
 
+    # ------------------------------------------------------------------
+    # Horizontal Gene Transfer (Paper §6.2, Eq. 12)
+    # ------------------------------------------------------------------
+
+    def acquire(
+        self,
+        plasmid_name: str,
+        registry: "PlasmidRegistry",
+    ) -> "AcquisitionResult":
+        """Acquire a tool from a PlasmidRegistry (horizontal gene transfer).
+
+        The plasmid is fetched from the registry, capability-gated, and
+        engulfed as a live tool.
+
+        Args:
+            plasmid_name: Name of the plasmid to acquire.
+            registry: The registry to fetch the plasmid from.
+
+        Returns:
+            AcquisitionResult indicating success or failure.
+        """
+        from .plasmid import AcquisitionResult, PlasmidError
+
+        try:
+            plasmid = registry.get(plasmid_name)
+        except PlasmidError as e:
+            return AcquisitionResult(
+                success=False,
+                plasmid_name=plasmid_name,
+                error=str(e),
+            )
+
+        # Capability gating
+        required = set(plasmid.required_capabilities)
+        if self.allowed_capabilities is not None and not required.issubset(
+            self.allowed_capabilities
+        ):
+            missing = sorted(
+                c.value if isinstance(c, Capability) else str(c)
+                for c in (required - self.allowed_capabilities)
+            )
+            return AcquisitionResult(
+                success=False,
+                plasmid_name=plasmid_name,
+                error=f"Insufficient capabilities: missing {missing}",
+            )
+
+        # Duplicate check
+        if plasmid_name in self.tools:
+            return AcquisitionResult(
+                success=False,
+                plasmid_name=plasmid_name,
+                error=f"Tool already present: {plasmid_name}",
+            )
+
+        tool = plasmid.to_tool()
+        self.engulf_tool(tool)
+        return AcquisitionResult(success=True, plasmid_name=plasmid_name)
+
+    def release(self, plasmid_name: str) -> None:
+        """Release a previously acquired tool (plasmid curing).
+
+        Args:
+            plasmid_name: Name of the tool to release.
+
+        Raises:
+            ValueError: If the tool is not present.
+        """
+        if plasmid_name not in self.tools:
+            raise ValueError(f"Tool not present: {plasmid_name}")
+        del self.tools[plasmid_name]
+        if not self.silent:
+            print(f"🧬 [Mitochondria] Released tool: {plasmid_name}")
+
     def execute_tool_call(self, call: "ToolCall") -> "ToolResult":
         """Execute a tool call from an LLM."""
         from ..providers import ToolCall, ToolResult

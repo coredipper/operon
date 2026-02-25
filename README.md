@@ -5,7 +5,7 @@
 > *"Safety from structure, not just strings."*
 
 ![Status](https://img.shields.io/badge/status-experimental-orange)
-![Version](https://img.shields.io/badge/pypi-v0.12.0-blue)
+![Version](https://img.shields.io/badge/pypi-v0.13.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![Publish to PyPI](https://github.com/coredipper/operon/actions/workflows/publish.yml/badge.svg)](https://github.com/coredipper/operon/actions/workflows/publish.yml)
 
@@ -17,6 +17,7 @@
 
 - [The Problem: Fragile Agents](#-the-problem-fragile-agents)
 - [Core Organelles](#-core-organelles)
+- [Multi-cellular Organization](#-multi-cellular-organization)
 - [Installation](#-installation)
 - [Examples](#-examples)
 - [Theoretical Background](#-theoretical-background)
@@ -720,6 +721,160 @@ diagram.connect("membrane", "clean_text", "executor", "prompt")  # raises Wiring
 print(diagram.required_capabilities())
 ```
 
+## 🧫 Multi-cellular Organization
+
+Higher-order abstractions for multi-agent systems (Paper §6.5).
+
+### Metabolic-Epigenetic Coupling (Cost-Gated Retrieval)
+
+Memory retrieval costs energy. When the cell is starving, only deeply embedded memories remain accessible — metabolism directs cognition, not just limits it.
+
+```python
+from operon_ai import ATP_Store, HistoneStore, MarkerStrength, MetabolicAccessPolicy
+
+atp = ATP_Store(budget=100, silent=True)
+policy = MetabolicAccessPolicy(retrieval_cost=5)
+histones = HistoneStore(energy_gate=(atp, policy), silent=True)
+
+histones.methylate("NEVER delete without WHERE", strength=MarkerStrength.PERMANENT)
+histones.acetylate("User prefers verbose output", strength=MarkerStrength.WEAK)
+
+# NORMAL state → all markers accessible
+result = histones.retrieve_context()   # costs 5 ATP
+
+# Drain to CONSERVING → only STRONG+ markers accessible
+atp.consume(75, "expensive_op")
+result = histones.retrieve_context()   # weak markers silenced
+```
+
+> **Note:** The coupling is optional and backward compatible. HistoneStore without `energy_gate` behaves exactly as before.
+
+### Cell Type Specialization
+
+A single Genome produces different agent phenotypes through differential gene expression — just like how every cell in your body shares the same DNA but expresses different gene programs.
+
+```python
+from operon_ai import Genome, Gene, ExpressionLevel, Capability
+from operon_ai import ExpressionProfile, CellType
+
+genome = Genome(genes=[
+    Gene("model", "gpt-4", required=True),
+    Gene("classification", "enabled"),
+    Gene("verification", "strict"),
+], silent=True)
+
+classifier = CellType(
+    name="Classifier",
+    expression_profile=ExpressionProfile(overrides={
+        "classification": ExpressionLevel.OVEREXPRESSED,
+        "verification": ExpressionLevel.SILENCED,
+    }),
+    required_capabilities={Capability.NET},
+)
+cell = classifier.differentiate(genome)  # → DifferentiatedCell
+# cell.config has classification active, verification silenced
+```
+
+### Tissue Architecture
+
+Cells form tissues — groups sharing a morphogen gradient and security boundary. Tissues compose into organism-level diagrams through typed boundary ports.
+
+```python
+from operon_ai import (
+    Tissue, TissueBoundary, PortType, DataType, IntegrityLabel,
+    Capability, WiringDiagram, MorphogenGradient,
+)
+
+tissue = Tissue(
+    name="ClassificationTissue",
+    boundary=TissueBoundary(
+        inputs={"task": PortType(DataType.JSON, IntegrityLabel.VALIDATED)},
+        outputs={"label": PortType(DataType.JSON, IntegrityLabel.VALIDATED)},
+        allowed_capabilities={Capability.NET},
+    ),
+)
+tissue.register_cell_type(classifier)  # from above
+tissue.add_cell("c1", "Classifier", genome)
+
+# Compose tissues into an organism-level diagram
+organism = WiringDiagram()
+organism.add_module(tissue.as_module())  # tissue exports as a single ModuleSpec
+```
+
+> **Note:** Tissue boundaries enforce capability isolation — a cell's capabilities must be a subset of the tissue's allowed capabilities. This provides defense-in-depth at the organizational level.
+
+### Plasmid Registry (Horizontal Gene Transfer)
+
+Dynamic tool acquisition from a searchable registry (Paper §6.2, Eq. 12). Agents can discover, acquire, and release tools at runtime — like bacteria exchanging plasmids. Capability gating prevents privilege escalation.
+
+```python
+from operon_ai import Mitochondria, Capability
+from operon_ai import Plasmid, PlasmidRegistry
+
+registry = PlasmidRegistry()
+registry.register(Plasmid(
+    name="reverse",
+    description="Reverse a string",
+    func=lambda s: s[::-1],
+    tags=frozenset({"text"}),
+))
+registry.register(Plasmid(
+    name="fetch",
+    description="Fetch a URL",
+    func=lambda url: f"<html>{url}</html>",
+    required_capabilities=frozenset({Capability.NET}),
+))
+
+# Agent with limited capabilities
+mito = Mitochondria(allowed_capabilities={Capability.READ_FS}, silent=True)
+
+mito.acquire("reverse", registry)         # OK — no caps required
+result = mito.acquire("fetch", registry)   # Blocked — needs NET
+print(result.error)  # "Insufficient capabilities: missing ['net']"
+
+r = mito.metabolize('reverse("hello")')
+print(r.atp.value)  # "olleh"
+
+mito.release("reverse")  # Plasmid curing — tool removed
+```
+
+### Denaturation Layers (Anti-Prion Defense)
+
+Wire-level filters that transform data between agents to disrupt prompt injection cascading (Paper §5.3). Like protein denaturation destroys tertiary structure, these filters strip the syntactic structure that injections rely on.
+
+```python
+from operon_ai import (
+    WiringDiagram, ModuleSpec, PortType,
+    DataType, IntegrityLabel, DiagramExecutor,
+)
+from operon_ai import StripMarkupFilter, NormalizeFilter, ChainFilter
+
+diagram = WiringDiagram()
+diagram.add_module(ModuleSpec(
+    name="agent_a",
+    inputs={"req": PortType(DataType.TEXT, IntegrityLabel.VALIDATED)},
+    outputs={"resp": PortType(DataType.TEXT, IntegrityLabel.VALIDATED)},
+))
+diagram.add_module(ModuleSpec(
+    name="agent_b",
+    inputs={"data": PortType(DataType.TEXT, IntegrityLabel.VALIDATED)},
+))
+
+# Attach denaturation filter to the wire
+diagram.connect(
+    "agent_a", "resp", "agent_b", "data",
+    denature=ChainFilter(filters=(
+        StripMarkupFilter(),   # Remove code blocks, ChatML, [INST], XML role tags
+        NormalizeFilter(),     # Lowercase, strip control chars, NFKC
+    )),
+)
+# Agent B now receives sanitized data — injection syntax is stripped
+```
+
+> **Note:** Denaturation is defense-in-depth, not a guarantee. Filters target known syntactic patterns; novel injection techniques may require custom DenatureFilter implementations.
+
+---
+
 ## 📦 Installation
 
 ```bash
@@ -825,6 +980,16 @@ Explore the `examples/` directory for runnable demonstrations:
 | [`53_llm_epigenetic_repair_memory.py`](examples/53_llm_epigenetic_repair_memory.py) | Nucleus+Histone+Chaperone | LLM agent remembers which repair strategies worked |
 | [`54_llm_swarm_graceful_cleanup.py`](examples/54_llm_swarm_graceful_cleanup.py) | Nucleus+Swarm+Autophagy | Dying workers clean context before passing state to successors |
 | [`55_adaptive_multi_agent_orchestrator.py`](examples/55_adaptive_multi_agent_orchestrator.py) | **11 motifs** | Capstone: end-to-end ticket processing with all mechanisms |
+
+**Multi-cellular & Security (v0.13.0)**
+
+| Example | System | Description |
+|---------|--------|-------------|
+| [`56_metabolic_epigenetic_coupling.py`](examples/56_metabolic_epigenetic_coupling.py) | ATP+Histone | Cost-gated memory retrieval under metabolic pressure |
+| [`57_cell_type_specialization.py`](examples/57_cell_type_specialization.py) | Genome+CellType | Differential gene expression produces agent phenotypes |
+| [`58_tissue_architecture.py`](examples/58_tissue_architecture.py) | Tissue+WiringDiagram | Hierarchical multi-agent organization with capability isolation |
+| [`59_plasmid_registry.py`](examples/59_plasmid_registry.py) | Plasmid+Mitochondria | Dynamic tool acquisition with capability gating (HGT) |
+| [`60_denaturation_layers.py`](examples/60_denaturation_layers.py) | Denature+Wire | Wire-level anti-injection filters (anti-prion defense) |
 
 Run any example:
 

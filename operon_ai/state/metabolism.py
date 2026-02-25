@@ -65,6 +65,39 @@ class MetabolicReport:
     health_score: float
 
 
+@dataclass
+class MetabolicAccessPolicy:
+    """
+    Cost-Gated Retrieval: defines which marker strengths are accessible
+    at each metabolic state (Paper §6.1.1, Eq. 15).
+
+    When coupled with HistoneStore, this policy silences expensive context
+    under resource pressure — metabolism directs cognition, not just limits it.
+
+    Access(d) = Open      if MetabolicState allows marker strength
+              = Silenced  if MetabolicState blocks marker strength
+
+    The mapping uses MarkerStrength integer values (WEAK=1, MODERATE=2,
+    STRONG=3, PERMANENT=4). A threshold of STRONG means only markers with
+    strength >= 3 are accessible. A threshold of None means nothing is
+    accessible (full silencing in DORMANT state).
+    """
+    # Minimum marker strength accessible at each metabolic state.
+    # None = nothing accessible (full silencing).
+    state_thresholds: dict[MetabolicState, int | None] = field(default_factory=lambda: {
+        MetabolicState.FEASTING: 1,     # All accessible (WEAK+)
+        MetabolicState.NORMAL: 1,       # All accessible (WEAK+)
+        MetabolicState.CONSERVING: 3,   # Only STRONG+ accessible
+        MetabolicState.STARVING: 4,     # Only PERMANENT accessible
+        MetabolicState.DORMANT: None,   # Nothing accessible
+    })
+    retrieval_cost: int = 5  # ATP cost per retrieval operation
+
+    def get_min_strength(self, state: MetabolicState) -> int | None:
+        """Get minimum marker strength accessible at this metabolic state."""
+        return self.state_thresholds.get(state, 1)
+
+
 class ATP_Store:
     """
     Advanced Metabolic Budget Manager.

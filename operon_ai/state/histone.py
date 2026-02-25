@@ -15,12 +15,17 @@ storing learned lessons, preferences, and constraints that bias future
 behavior without changing the fundamental "DNA" (configuration).
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Callable, Any
+from typing import Callable, Any, TYPE_CHECKING
 from enum import Enum
 from datetime import datetime, timedelta
 import hashlib
 import re
+
+if TYPE_CHECKING:
+    from operon_ai.state.metabolism import ATP_Store, MetabolicAccessPolicy
 
 
 class MarkerType(Enum):
@@ -153,6 +158,7 @@ class HistoneStore:
         context_window: int = 10,
         decay_check_interval: int = 100,  # Check decay every N operations
         on_marker_expired: Callable[[EpigeneticMarker], None] | None = None,
+        energy_gate: tuple[ATP_Store, MetabolicAccessPolicy] | None = None,
         silent: bool = False,
     ):
         """
@@ -163,12 +169,16 @@ class HistoneStore:
             context_window: Default number of markers in retrieval
             decay_check_interval: How often to check for expired markers
             on_marker_expired: Callback when markers expire
+            energy_gate: Optional (ATP_Store, MetabolicAccessPolicy) tuple.
+                When set, retrieval costs ATP and metabolic state gates
+                which marker strengths are accessible (Paper §6.1.1).
             silent: Suppress console output
         """
         self.max_markers = max_markers
         self.context_window = context_window
         self.decay_check_interval = decay_check_interval
         self.on_marker_expired = on_marker_expired
+        self._energy_gate = energy_gate
         self.silent = silent
 
         # Marker storage
@@ -179,6 +189,7 @@ class HistoneStore:
         self._total_added = 0
         self._total_expired = 0
         self._total_retrievals = 0
+        self._gated_retrievals = 0  # Retrievals blocked by energy gate
 
         # Legacy compatibility
         self.methylations: list[str] = []  # For backward compat
@@ -368,6 +379,39 @@ class HistoneStore:
         self._operation_count += 1
         self._total_retrievals += 1
         self._maybe_check_decay()
+
+        # --- Energy gate: Cost-Gated Retrieval (Paper §6.1.1) ---
+        if self._energy_gate is not None:
+            atp_store, policy = self._energy_gate
+            metabolic_state = atp_store.get_state()
+            gate_threshold = policy.get_min_strength(metabolic_state)
+
+            # DORMANT or fully silenced → return empty
+            if gate_threshold is None:
+                self._gated_retrievals += 1
+                if not self.silent:
+                    print(f"🔇 [Epigenetics] Retrieval blocked: {metabolic_state.value} state")
+                return RetrievalResult(
+                    markers=[], formatted_context="",
+                    relevance_scores={}, total_markers=len(self._markers),
+                    active_markers=len([m for m in self._markers.values() if not m.is_expired()]),
+                )
+
+            # Consume ATP for retrieval (priority=5 to bypass STARVING filter;
+            # the state_thresholds already control what's accessible)
+            if not atp_store.consume(policy.retrieval_cost, "histone_retrieval", priority=5):
+                self._gated_retrievals += 1
+                if not self.silent:
+                    print("🔇 [Epigenetics] Retrieval blocked: insufficient ATP")
+                return RetrievalResult(
+                    markers=[], formatted_context="",
+                    relevance_scores={}, total_markers=len(self._markers),
+                    active_markers=len([m for m in self._markers.values() if not m.is_expired()]),
+                )
+
+            # Raise effective min_strength to the metabolic threshold
+            if gate_threshold > min_strength.value:
+                min_strength = MarkerStrength(gate_threshold)
 
         limit = limit or self.context_window
         query_lower = query.lower()
@@ -615,6 +659,7 @@ class HistoneStore:
             "total_added": self._total_added,
             "total_expired": self._total_expired,
             "total_retrievals": self._total_retrievals,
+            "gated_retrievals": self._gated_retrievals,
             "by_type": by_type,
             "by_strength": by_strength,
         }
