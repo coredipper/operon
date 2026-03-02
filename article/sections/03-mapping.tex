@@ -84,6 +84,33 @@ If the input signal does not match the Schema (Promoter), the Lens fails to focu
 to an explicit \textbf{inactive/error} case (equivalently, one works with a \textbf{partial} lens, or a total lens
 into $V+\mathrm{Error}$) (the agent does not run; the gene is not expressed).
 
+\subsection{Wire-Level Optics: Beyond Lenses}
+
+The Lens formalism models constitutive access: a promoter that either admits or blocks a signal. Biological systems employ richer signal-processing at the interface level. We extend the wiring diagram with two additional optic types from the categorical optics literature.
+
+\paragraph{Prism: Receptor Specificity.}
+A membrane receptor does not merely pass or block signals; it selects signals by molecular shape. A Prism on a wire admits values of specific data types and rejects others:
+\begin{equation}
+\mathrm{prism}_A(\tau, v) =
+\begin{cases}
+v & \text{if } \tau \in A \\
+\bot & \text{if } \tau \notin A
+\end{cases}
+\tag{21}
+\end{equation}
+where $A \subseteq T$ is the set of accepted types. This enables fan-out routing: a single output port connects to multiple wires, each guarded by a different prism, directing JSON to one handler and errors to another---analogous to how different receptor types on a cell surface route different ligands to different intracellular pathways.
+
+\paragraph{Traversal: Polymerase Processivity.}
+A ribosome does not translate an entire mRNA at once; it processes codons sequentially, applying the same read-translate operation to each element. A Traversal maps a transform $f$ over collection elements on a wire:
+\begin{equation}
+\mathrm{traversal}_f(\mathbf{x}) = [f(x_i) \mid x_i \in \mathbf{x}]
+\tag{22}
+\end{equation}
+This models batch processing at the wire level: a list of candidate outputs is transformed element-wise before reaching the downstream agent.
+
+\paragraph{Composition and Coexistence.}
+Optics compose: a \textbf{ComposedOptic} applies its constituent optics left-to-right, transmitting only if all accept. A wire may carry both a DenatureFilter (\S5.3) and an Optic, applied in sequence: denaturation strips syntactic structure, then the optic routes or transforms the sanitized content. This layered processing models the biological reality that signal reception involves multiple sequential steps (ligand binding $\to$ receptor conformational change $\to$ intracellular cascade).
+
 \subsection{Epigenetics and State: The Coalgebra}
 
 Neither genes nor agents are stateless functions. They possess memory.
@@ -110,6 +137,21 @@ $i\in I_{o(s)}$ compatible with its current output $o(s)$, what is my new state?
 
 By establishing this formal dictionary (Table 1), we \textbf{can regard} GRNs and Agentic Systems as distinct
 implementations of the same abstract dynamical system \textbf{under this interface-level abstraction}.
+
+\paragraph{Composable Coalgebras.}
+The coalgebra formalism becomes most useful when made composable. We define two composition operations that mirror the parallel and serial composition of the Operad (\S4):
+\begin{itemize}[leftmargin=*]
+\item \textbf{Parallel Coalgebra:} Given $(S_1, \alpha_1)$ and $(S_2, \alpha_2)$, their parallel composition has state $S_1 \times S_2$ and applies both readout/update operations to the same input---like two signaling pathways activated by the same ligand.
+\item \textbf{Sequential Coalgebra:} Given $(S_1, \alpha_1)$ over $P_1$ and $(S_2, \alpha_2)$ over $P_2$, the sequential composition pipes the readout of the first as input to the second, with joint state $S_1 \times S_2$---modeling signal transduction cascades.
+\end{itemize}
+
+\paragraph{Bisimulation: Observational Equivalence.}
+Two state machines $(S_1, \alpha_1)$ and $(S_2, \alpha_2)$ are \textbf{bisimilar} if, for every input sequence, they produce identical output sequences. We write $M_1 \sim M_2$ when
+\begin{equation}
+\forall \, \mathbf{i} \in I^*: \quad \mathrm{readout}_1^*(\mathbf{i}) = \mathrm{readout}_2^*(\mathbf{i})
+\tag{23}
+\end{equation}
+where $\mathrm{readout}^*$ denotes the lifted readout over the input sequence. A diverging input (witness) constitutes a proof of non-equivalence. This enables formal verification: two agent implementations are interchangeable if they are bisimilar, regardless of their internal state representations.
 
 \begin{figure}[h]
 \centering
@@ -203,7 +245,11 @@ Apoptosis & Agent Termination & State $\to \bot$\\
 Genome & Base Model Weights & Shared Parameters\\
 Epigenome & System Prompt + RAG & Phenotype Context\\
 Morphogen Gradient & Shared Context Variables & JSON State\\
-Tissue Boundary & Trust Boundary & Type Barrier\\
+Morphogen Diffusion & Gradient Propagation on Agent Graph & Discrete PDE on $G$\\
+Tissue Boundary & Trust Boundary / Capability Ceiling & Type Barrier\\
+Prism Optic & Conditional Wire Routing & Partial Optic\\
+Traversal Optic & Batch Wire Transform & Endofunctor on Lists\\
+Bisimulation & Agent Equivalence Testing & Observational Equivalence\\
 \bottomrule
 \end{tabular}
 \caption{Extended Isomorphism Dictionary: Security, Metabolism, and Organization}

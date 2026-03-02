@@ -11,11 +11,25 @@ The implementation follows the biological organization:
 \begin{itemize}[leftmargin=*]
 \item \textbf{Core Types} (\texttt{core/types.py}): Signal, ActionProtein, FoldedProtein, CellState---the
 categorical objects with their biological semantics.
+\item \textbf{Core Wiring} (\texttt{core/wagent.py}): WiringDiagram, ModuleSpec, PortType, Wire,
+DiagramExecutor---typed wiring with integrity labels and capabilities.
+\item \textbf{Core Optics} (\texttt{core/optics.py}): PrismOptic, TraversalOptic,
+ComposedOptic---wire-level conditional routing and batch transforms.
+\item \textbf{Core Denaturation} (\texttt{core/denature.py}): StripMarkupFilter, NormalizeFilter,
+ChainFilter---wire-level anti-injection sanitization.
+\item \textbf{Core Coalgebra} (\texttt{core/coalgebra.py}): FunctionalCoalgebra, StateMachine,
+ParallelCoalgebra, SequentialCoalgebra, bisimulation checking.
 \item \textbf{Surveillance} (\texttt{surveillance/}): The immune system implementation with MHCDisplay,
 TCell, Thymus, and ImmuneMemory components.
 \item \textbf{Healing} (\texttt{healing/}): ChaperoneLoop implementing the structural self-healing pattern.
 \item \textbf{Quality} (\texttt{quality/}): Chaperone protein with multi-strategy folding.
 \item \textbf{Topology} (\texttt{topology/}): Network motifs including Quorum, Cascade, and Oscillator.
+\item \textbf{Organelles} (\texttt{organelles/plasmid.py}): Plasmid,
+PlasmidRegistry---capability-gated dynamic tool acquisition.
+\item \textbf{Coordination} (\texttt{coordination/diffusion.py}): DiffusionField,
+MorphogenSource---graph-based spatially varying morphogen gradients.
+\item \textbf{Multi-cellular} (\texttt{multicell/}): CellType, ExpressionProfile, Tissue,
+TissueBoundary---hierarchical multi-agent organization.
 \end{itemize}
 
 \subsection{Immune System Implementation}
@@ -120,6 +134,129 @@ class ApprovalToken:
 This implements the Trust-Gated Lens: actions requiring high integrity must present a valid
 ApprovalToken with sufficient integrity level.
 
+\subsection{Plasmid Registry Implementation}
+
+The Horizontal Gene Transfer mechanism (\S6.2) is implemented as a \texttt{PlasmidRegistry} with capability-gated acquisition:
+
+\begin{verbatim}
+@dataclass(frozen=True)
+class Plasmid:
+    name: str
+    func: Callable[..., Any]
+    required_capabilities: frozenset[Capability]
+    tags: frozenset[str] = frozenset()
+
+    def to_tool(self) -> SimpleTool:
+        return SimpleTool(name=self.name, func=self.func,
+                          required_capabilities=set(self.required_capabilities))
+\end{verbatim}
+
+The \texttt{Mitochondria} class is extended with \texttt{acquire()} and \texttt{release()} methods. Acquisition checks $C_{\text{plasmid}} \subseteq C_{\text{agent}}$ before engulfing the tool; release implements plasmid curing. The registry supports search by text query or tag filtering.
+
+\subsection{Denaturation Layers Implementation}
+
+The anti-prion defense (\S5.3) is implemented as wire-level filters conforming to a \texttt{DenatureFilter} protocol:
+
+\begin{verbatim}
+class DenatureFilter(Protocol):
+    @property
+    def name(self) -> str: ...
+    def denature(self, value: str) -> str: ...
+\end{verbatim}
+
+Three concrete filters are provided:
+\begin{itemize}[leftmargin=*]
+\item \textbf{StripMarkupFilter}: Removes code blocks, ChatML tokens (\texttt{<|...|>}), \texttt{[INST]} tags, XML role tags (\texttt{<system>}, \texttt{<user>}), and role delimiters using compiled regex patterns.
+\item \textbf{NormalizeFilter}: Applies Unicode normalization (NFKC), lowercasing, and control character removal to collapse homoglyph-based evasion.
+\item \textbf{ChainFilter}: Composes multiple filters left-to-right.
+\end{itemize}
+
+Filters attach to wires in the \texttt{WiringDiagram}. The \texttt{DiagramExecutor} applies denaturation before optics: \texttt{denature} $\to$ \texttt{optic} $\to$ destination. This ensures that downstream agents receive sanitized data regardless of what the upstream agent produces.
+
+\subsection{Multi-Cellular Organization Implementation}
+
+The multi-cellular abstractions (\S6.3) are implemented in the \texttt{multicell/} package:
+
+\paragraph{Cell Type Specialization.}
+The \texttt{CellType} class encapsulates an \texttt{ExpressionProfile}---a mapping from gene names to expression levels (\texttt{OVEREXPRESSED}, \texttt{SILENCED}, etc.). Calling \texttt{differentiate(genome)} applies the profile to a shared \texttt{Genome}, producing a \texttt{DifferentiatedCell} with role-specific configuration. This implements the biological principle that a single genotype produces many
+phenotypes.
+
+\paragraph{Tissue Architecture.}
+The \texttt{Tissue} class provides:
+\begin{itemize}[leftmargin=*]
+\item A \texttt{TissueBoundary} with typed input/output ports and a capability ceiling
+\item Cell type registration with capability validation ($C_{\text{cell}} \subseteq C_{\text{tissue}}$)
+\item Internal wiring via an embedded \texttt{WiringDiagram}
+\item Optional \texttt{DiffusionField} for spatially varying morphogen gradients
+\item Export as a \texttt{ModuleSpec} for organism-level composition
+\end{itemize}
+
+\paragraph{Metabolic-Epigenetic Coupling.}
+The \texttt{HistoneStore} accepts an optional \texttt{energy\_gate} parameter pairing an \texttt{ATP\_Store} with a \texttt{MetabolicAccessPolicy}. When set, each \texttt{retrieve\_context()} call costs ATP. Under metabolic stress, only strongly embedded markers remain accessible---implementing Eq.~17.
+
+\subsection{Coalgebraic State Machines Implementation}
+
+The coalgebra formalism (\S3.5) is made explicit and composable:
+
+\begin{verbatim}
+class Coalgebra(Protocol[S, I, O]):
+    def readout(self, state: S) -> O: ...
+    def update(self, state: S, inp: I) -> S: ...
+
+@dataclass
+class StateMachine(Generic[S, I, O]):
+    state: S
+    coalgebra: Coalgebra[S, I, O]
+    trace: list[TransitionRecord] = field(default_factory=list)
+
+    def step(self, inp: I) -> O: ...
+    def run(self, inputs: list[I]) -> list[O]: ...
+\end{verbatim}
+
+\texttt{ParallelCoalgebra} and \texttt{SequentialCoalgebra} implement the composition operations from \S3.5. The \texttt{check\_bisimulation()} function tests observational equivalence (Eq.~23) over an input sequence, returning a witness on divergence. Existing organelles (\texttt{HistoneStore}, \texttt{ATP\_Store}, \texttt{CellCycleController}) can be wrapped as coalgebras, enabling formal composition and verification of multi-organelle systems.
+
+\subsection{Morphogen Diffusion Implementation}
+
+The \texttt{DiffusionField} class implements the discrete-time diffusion dynamics (Eq.~25):
+
+\begin{verbatim}
+class DiffusionField:
+    def add_node(self, node_id: str): ...
+    def add_edge(self, a: str, b: str, bidirectional=True): ...
+    def add_source(self, source: MorphogenSource): ...
+    def step(self):  # emit -> diffuse -> decay -> clamp
+    def run(self, steps: int): ...
+    def get_local_gradient(self, node_id) -> MorphogenGradient: ...
+\end{verbatim}
+
+Each \texttt{step()} applies four phases: emission (sources add morphogen), diffusion (concentration flows along edges, split evenly among neighbors), decay (uniform degradation), and clamping (enforce bounds). The \texttt{get\_local\_gradient()} method bridges to the existing \texttt{MorphogenGradient} API, enabling agents to read their local concentrations without awareness of the underlying graph dynamics.
+
+\subsection{Optic-Based Wiring Implementation}
+
+The wire-level optics (\S3.4) are implemented via an \texttt{Optic} protocol:
+
+\begin{verbatim}
+class Optic(Protocol):
+    def can_transmit(self, data_type: DataType,
+                     integrity: IntegrityLabel) -> bool: ...
+    def transmit(self, value: Any, data_type: DataType,
+                 integrity: IntegrityLabel) -> Any: ...
+\end{verbatim}
+
+Four concrete optics are provided:
+\begin{itemize}[leftmargin=*]
+\item \textbf{LensOptic}: Identity pass-through (equivalent to no optic).
+\item \textbf{PrismOptic}: Transmits only if $\tau \in A$ (Eq.~21). Enables fan-out routing.
+\item \textbf{TraversalOptic}: Maps a transform over list elements (Eq.~22).
+\item \textbf{ComposedOptic}: Chains optics left-to-right; all must accept.
+\end{itemize}
+
+Optics coexist with \texttt{DenatureFilter}s on the same wire. The \texttt{DiagramExecutor} processes them in order: denaturation $\to$ optic $\to$ destination. Prism rejection causes the wire to be skipped (not an error), enabling conditional routing patterns where different data types flow to different handlers.
+
+\subsection{Interactive Demonstrations}
+
+The repository includes 27 interactive Gradio demonstrations deployed as Hugging Face Spaces\footnote{\url{https://huggingface.co/spaces}}. Each Space provides a self-contained, browser-based demo of a specific organelle or composition pattern---from individual motifs (Membrane, Chaperone, Quorum Sensing) to multi-organelle orchestrations combining all 11 biological motifs. No API keys or local installation are required.
+
 \subsection{Evaluation Protocol (Synthetic Harness)}
 
 We define a synthetic evaluation harness to exercise three motifs with reproducible procedures:
@@ -177,11 +314,16 @@ The current implementation has several limitations:
 \item \textbf{Epiplexity:} Implemented with a mock embedding provider (\texttt{MockEmbeddingProvider}).
 Integration with production embedding APIs and empirical calibration of the $\alpha$ mixing parameter
 and threshold $\delta$ across diverse task types remain future work.
-\item \textbf{Multi-cellular coordination:} The morphogen gradient orchestrator
-(\texttt{GradientOrchestrator}) is implemented for single-process deployments. Cross-agent gradient
-propagation in distributed multi-process deployments remains future work.
-\item \textbf{Benchmarking:} Synthetic harness is implemented, but real-world validation with LLM outputs
-and adversarial inputs is still in progress.
+\item \textbf{Morphogen Diffusion:} The \texttt{DiffusionField} operates in a single process. Cross-agent
+gradient propagation in distributed multi-process deployments with eventual consistency remains future work.
+\item \textbf{Denaturation:} Filters target known syntactic patterns (ChatML, XML role tags, markdown
+code blocks). Novel injection techniques using previously unseen syntax may bypass denaturation; custom
+\texttt{DenatureFilter} implementations should be added as new attack patterns emerge.
+\item \textbf{Bisimulation:} The \texttt{check\_bisimulation()} function tests over finite input sequences.
+Coinductive bisimulation for infinite-trace systems is not yet supported.
+\item \textbf{Benchmarking:} The evaluation harness covers synthetic suites and external benchmarks (BFCL,
+AgentDojo). Real-world validation of the multi-cellular and diffusion components at production scale is
+still in progress.
 \end{itemize}
 
 We release the implementation to enable community validation and extension of the framework.

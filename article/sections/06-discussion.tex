@@ -60,8 +60,19 @@ problem for which its ``genomic'' (pre-trained) capabilities are insufficient.
 \end{equation}
 By dynamically retrieving a tool definition (e.g., a Calculator API or SQL Interface) from a registry and
 injecting it into the Context Window, the agent undergoes a topological transformation, acquiring a new
-input/output modality instantly. This suggests that robust agentic architectures should support a ``Plasmid
-Registry''---a marketplace of ephemeral tools that agents can ingest and discard as needed.
+input/output modality instantly.
+
+\paragraph{Capability-Gated Acquisition.}
+The reference implementation provides a \textbf{PlasmidRegistry} with capability gating. Each Plasmid declares a set of required capabilities $C_p \subseteq \mathcal{C}$. An agent with allowed capabilities $C_a$ can only acquire the plasmid if $C_p \subseteq C_a$:
+\begin{equation}
+\mathrm{acquire}(p, a) =
+\begin{cases}
+a \otimes p & \text{if } C_p \subseteq C_a \\
+\bot_{\text{insufficient}} & \text{otherwise}
+\end{cases}
+\tag{24}
+\end{equation}
+This prevents privilege escalation: an agent restricted to read-only file access cannot acquire a tool requiring network capabilities. Plasmid curing (release) removes the tool, restoring the original topology.
 
 \subsection{The Cost of State: The Metabolic Bound}
 
@@ -168,6 +179,14 @@ Agents read their local concentration via a standardized preamble in the system 
 The orchestrator updates gradients after each step, and agents condition their behavior on the current values.
 This is analogous to cells reading morphogen concentrations through membrane receptors.
 
+\paragraph{Diffusion Dynamics.}
+The preceding description treats morphogens as globally shared variables. In biological development, morphogens \textit{diffuse} through tissue, creating spatially varying concentration profiles. We formalize this as a discrete-time dynamical system on the agent graph $G = (V, E)$. Let $c_v^t(m)$ denote the concentration of morphogen $m$ at node $v$ at time $t$. The update rule is:
+\begin{equation}
+c_v^{t+1}(m) = (1 - \gamma)\left[c_v^t(m) + \sigma_v(m) - d \cdot c_v^t(m) + d \sum_{u \in N(v)} \frac{c_u^t(m)}{|N(u)|}\right]
+\tag{25}
+\end{equation}
+where $\sigma_v(m)$ is the emission rate at source nodes (zero for non-sources), $d$ is the diffusion coefficient (fraction flowing to neighbors per step), $\gamma$ is the decay rate, and $N(v)$ is the neighbor set of $v$. The resulting concentration profile provides \textit{local} coordination signals: agents near sources experience high concentrations; distant agents experience low concentrations. This enables position-dependent behavior without requiring a central controller or global state.
+
 \subsubsection{Tissue Architecture: The Agent Graph as Organism}
 
 We propose a hierarchy of organizational levels:
@@ -186,6 +205,12 @@ The key insight is that \textbf{boundaries matter}. In biology, tissue boundarie
 leakage between subsystems with different security requirements. The wiring diagram's type system enforces
 these boundaries: an agent in the ``User-Facing Tissue'' cannot directly wire to an agent in the ``Database
 Tissue'' without passing through a ``Membrane'' (API boundary with provenance tagging).
+
+\paragraph{Capability Isolation.}
+The reference implementation enforces a capability ceiling at the tissue level: each \texttt{TissueBoundary} declares its \texttt{allowed\_capabilities} $\subseteq \mathcal{C}$. A cell type can only be registered in a tissue if its required capabilities are a subset of the tissue's allowed capabilities. This provides defense-in-depth: even if an individual agent is compromised, it cannot escalate privileges beyond its tissue boundary. Tissues compose into organism-level wiring diagrams through typed boundary ports, enabling hierarchical security policies.
+
+\paragraph{Morphogen Diffusion in Tissues.}
+Tissues optionally embed a \texttt{DiffusionField} (Eq.~25). When cells are added, they become nodes in the diffusion graph; when cells are connected, edges are added. The tissue's \texttt{diffuse()} method runs the simulation, and each cell reads its local gradient via \texttt{get\_cell\_gradient()}. This couples the organizational structure (wiring topology) to the coordination mechanism (morphogen concentrations), creating a biologically faithful model where position in the tissue influences cell behavior.
 
 \subsection{Bioenergetic Intelligence: Beyond the Battery Metaphor}
 

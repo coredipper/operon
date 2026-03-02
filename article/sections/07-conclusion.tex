@@ -50,6 +50,21 @@ selective pressures: adversarial robustness (Red Queen dynamics with attackers),
 (environmental pressure toward ``aerobic'' multi-step reasoning), and resource efficiency (metabolic
 selection toward the Pareto frontier). Architectures lacking proper immune defense and metabolic regulation
 will be outcompeted.
+
+\item \textbf{Wire-Level Optics:} Prism optics enable conditional type-based routing (receptor specificity),
+Traversal optics enable batch processing (polymerase processivity), and DenatureFilters provide
+anti-injection sanitization---all composable on the same wire.
+
+\item \textbf{Morphogen Diffusion:} A discrete-time dynamical system on the agent graph produces spatially
+varying concentration profiles, enabling position-dependent coordination without central control or global
+state sharing.
+
+\item \textbf{Composable Coalgebras:} The coalgebraic formalism is made explicit with parallel and sequential
+composition, full transition traces, and bisimulation-based equivalence checking, enabling formal
+verification that two agent implementations are observationally interchangeable.
+
+\item \textbf{Capability-Gated Tool Acquisition:} The Plasmid Registry implements Horizontal Gene Transfer
+with capability gating, preventing privilege escalation when agents dynamically acquire tools.
 \end{enumerate}
 
 \subsection*{The Mathematical Foundation}
@@ -79,14 +94,17 @@ biological evolution.
 Several directions remain open:
 \begin{itemize}[leftmargin=*]
 \item \textbf{Epiplexity Validation:} Empirical calibration of the $\alpha$ mixing parameter and threshold
-$\delta$ across diverse task types and LLM families.
+$\delta$ across diverse task types and LLM families. The current implementation uses a mock embedding
+provider; integration with production embedding APIs remains future work.
 \item \textbf{Correlation Estimation:} Lightweight methods for estimating $\rho$ between agent error modes
 without exhaustive pairwise testing.
-\item \textbf{Developmental Programs:} Higher-level DSLs for specifying multi-agent ``body plans'' that
-compile to wiring diagrams with automatic type checking.
+\item \textbf{Distributed Diffusion:} The morphogen diffusion field currently operates in a single process.
+Extending to distributed multi-process deployments with eventual consistency remains open.
 \item \textbf{Adversarial Robustness:} Red-team evaluation of immune evasion vectors, including novel
 injection syntax, tool poisoning, and behavioral mimicry attacks. Development of continuous adaptation
 mechanisms (signature updates, thymic retraining, threat intelligence sharing).
 \item \textbf{Production Benchmarks:} Validation on real LLM outputs at scale, measuring both security
 efficacy and performance overhead of the defense layers.
+\item \textbf{Bisimulation at Scale:} The current bisimulation check operates over finite input sequences.
+Extending to infinite-trace coinductive bisimulation for continuous agent systems is an open challenge.
 \end{itemize}
