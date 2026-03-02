@@ -20,6 +20,7 @@
 - [Multi-cellular Organization](#-multi-cellular-organization)
 - [Installation](#-installation)
 - [Examples](#-examples)
+- [Hugging Face Spaces](#-hugging-face-spaces)
 - [Theoretical Background](#-theoretical-background)
 - [Architecture](#-architecture)
 
@@ -1105,6 +1106,68 @@ pip install -e .
 python examples/07_adaptive_membrane_defense.py
 python examples/12_complete_cell_simulation.py
 ```
+
+---
+
+## 🤗 Hugging Face Spaces
+
+Interactive demos for each organelle and composition pattern, built with [Gradio](https://gradio.app/). No installation or API keys required — try them directly in your browser.
+
+All Spaces live under the [`huggingface/`](huggingface/) directory. Each contains an `app.py`, `README.md` (with HF metadata), and `requirements.txt`.
+
+### Core Organelles
+
+| Space | Demo | Description |
+|-------|------|-------------|
+| [`space`](huggingface/space) | Chaperone | Recover structured data from malformed LLM output |
+| [`space-membrane`](huggingface/space-membrane) | Prompt Injection Detector | Two-layer defense (Membrane + InnateImmunity) |
+| [`space-mitochondria`](huggingface/space-mitochondria) | Safe Calculator | AST-based math parsing — no injection risk |
+| [`space-quorum`](huggingface/space-quorum) | Quorum Sensing | Multi-agent voting with 7 consensus strategies |
+| [`space-morphogen`](huggingface/space-morphogen) | Morphogen Gradients | Gradient-based agent coordination |
+| [`space-oscillator`](huggingface/space-oscillator) | Biological Oscillators | Waveform visualization of periodic task patterns |
+| [`space-lifecycle`](huggingface/space-lifecycle) | Lifecycle Manager | Telomere lifecycle and genome configuration |
+| [`space-budget`](huggingface/space-budget) | Budget Simulator | Multi-currency metabolic energy management |
+| [`space-epiplexity`](huggingface/space-epiplexity) | Epistemic Stagnation Monitor | Detect pathological loops via Bayesian surprise |
+| [`space-feedback`](huggingface/space-feedback) | Feedback Loop Homeostasis | Negative feedback loop simulation |
+| [`space-cascade`](huggingface/space-cascade) | Signal Cascade | Multi-stage amplification with checkpoints |
+| [`space-plasmid`](huggingface/space-plasmid) | Plasmid Registry | Dynamic tool acquisition with capability gating (HGT) |
+| [`space-denature`](huggingface/space-denature) | Denaturation Layers | Wire-level anti-injection filters |
+| [`space-coalgebra`](huggingface/space-coalgebra) | Coalgebra | Composable state machines with bisimulation checking |
+| [`space-diffusion`](huggingface/space-diffusion) | Morphogen Diffusion | Gradient formation on graph topologies |
+| [`space-optics`](huggingface/space-optics) | Wire Optics | Prism routing and traversal transforms |
+
+### Healing & Repair
+
+| Space | Demo | Description |
+|-------|------|-------------|
+| [`space-healing`](huggingface/space-healing) | Chaperone Healing & Autophagy | Healing loop and context pruning |
+| [`space-swarm`](huggingface/space-swarm) | Regenerative Swarm | Apoptosis + worker regeneration with memory inheritance |
+| [`space-swarm-cleanup`](huggingface/space-swarm-cleanup) | Swarm Graceful Cleanup | Workers clean context via autophagy before death |
+| [`space-repair-memory`](huggingface/space-repair-memory) | Repair Memory Agent | LLM agent that remembers which repair strategies worked |
+| [`space-scheduled-maintenance`](huggingface/space-scheduled-maintenance) | Scheduled Maintenance | Oscillator-scheduled autophagy with feedback control |
+
+### Multi-Organelle Compositions
+
+| Space | Demo | Description |
+|-------|------|-------------|
+| [`space-cell`](huggingface/space-cell) | Complete Cell | Full 5-organelle pipeline from input to output |
+| [`space-orchestrator`](huggingface/space-orchestrator) | Multi-Agent Orchestrator | Ticket processing combining all 11 biological motifs |
+| [`space-compliance-review`](huggingface/space-compliance-review) | Compliance Review Pipeline | Document review with quorum voting on low confidence |
+| [`space-immunity-router`](huggingface/space-immunity-router) | Immunity Healing Router | Classify threats and route to healing mechanisms |
+| [`space-morphogen-swarm`](huggingface/space-morphogen-swarm) | Morphogen-Guided Swarm | Workers adapt strategy via gradient signals |
+| [`space-epiplexity-cascade`](huggingface/space-epiplexity-cascade) | Epiplexity Healing Cascade | Escalating healing when stagnation is detected |
+
+### Running Locally
+
+```bash
+cd huggingface/space-membrane
+pip install -r requirements.txt
+python app.py
+```
+
+### Deploying to Hugging Face
+
+Copy any space directory to a new [Hugging Face Space](https://huggingface.co/spaces) with `sdk=gradio`. The `README.md` frontmatter is pre-configured.
 
 ---
 
