@@ -23,6 +23,30 @@ class WiringError(ValueError):
 
 
 @dataclass(frozen=True)
+class ResourceCost:
+    """Cost annotation for modules and wires.
+
+    Models resource consumption as enrichment of the wiring category
+    over (R_+, +, 0) — costs compose additively along paths.
+
+    Biological Analogy:
+    ATP cost of enzyme catalysis, latency of signal transduction,
+    memory footprint of protein complexes.
+    """
+
+    atp: int = 0
+    latency_ms: float = 0.0
+    memory_mb: float = 0.0
+
+    def __add__(self, other: "ResourceCost") -> "ResourceCost":
+        return ResourceCost(
+            atp=self.atp + other.atp,
+            latency_ms=self.latency_ms + other.latency_ms,
+            memory_mb=self.memory_mb + other.memory_mb,
+        )
+
+
+@dataclass(frozen=True)
 class PortType:
     """A decorated port type: (data type, integrity label)."""
 
@@ -54,6 +78,8 @@ class ModuleSpec:
     inputs: dict[str, PortType] = field(default_factory=dict)
     outputs: dict[str, PortType] = field(default_factory=dict)
     capabilities: set[Capability] = field(default_factory=set)
+    cost: ResourceCost | None = None
+    essential: bool = True
 
 
 @dataclass(frozen=True)
@@ -71,6 +97,7 @@ class Wire:
     dst_port: str
     denature: Any | None = None  # Optional DenatureFilter
     optic: Any | None = None  # Optional Optic (Paper §3.3)
+    cost: int = 0  # Transmission cost in ATP
 
 
 @dataclass

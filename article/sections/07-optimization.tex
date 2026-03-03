@@ -1,0 +1,141 @@
+\section{Diagram Optimization via Categorical Rewriting}
+
+Cells do not merely execute metabolic pathways---they \emph{optimize} them.
+Flux Balance Analysis identifies rate-limiting enzymes, allosteric regulation
+redirects flux through cheaper branches, and pathway rewiring eliminates
+dead-end metabolites. The result is not a different pathway, but a more
+efficient execution of the same input-output behavior. In this section we
+show that wiring diagrams admit analogous optimizations: cost annotations
+make resource consumption explicit, static analysis identifies structural
+opportunities, and rewriting rules transform diagrams while preserving
+observational equivalence.
+
+\subsection{Cost-Annotated Diagrams}
+
+We extend the WAgent operad (Section~4) with resource annotations.
+Define a \emph{resource cost} monoid $(\mathbb{R}_{\geq 0}^3, +, \mathbf{0})$
+where each element is a triple $(\text{atp}, \text{latency}, \text{memory})$.
+A cost-annotated wiring diagram enriches the category of wiring diagrams
+over this monoid: each module $m$ carries a cost $c(m) \in \mathbb{R}_{\geq 0}^3$,
+and each wire $w$ carries a transmission cost $c(w) \in \mathbb{Z}_{\geq 0}$
+(measured in ATP units).
+
+\begin{definition}[Cost-Annotated Wiring Diagram]
+A \emph{cost-annotated wiring diagram} is a tuple $(M, W, c_M, c_W)$ where:
+\begin{itemize}[leftmargin=*]
+\item $M$ is a finite set of modules, each with typed input/output ports;
+\item $W \subseteq \{(m_s.p_s, m_d.p_d) \mid m_s, m_d \in M\}$ is a set of wires;
+\item $c_M : M \to \mathbb{R}_{\geq 0}^3$ assigns resource costs to modules;
+\item $c_W : W \to \mathbb{Z}_{\geq 0}$ assigns transmission costs to wires.
+\end{itemize}
+The \emph{path cost} of a directed path $m_1 \xrightarrow{w_1} m_2 \xrightarrow{w_2} \cdots \xrightarrow{w_{n-1}} m_n$
+is $\sum_{i=1}^{n} c_M(m_i) + \sum_{i=1}^{n-1} c_W(w_i)$.
+\end{definition}
+
+Biologically, $c_M$ corresponds to the ATP cost of enzyme catalysis,
+while $c_W$ models the energetic cost of metabolite transport between
+cellular compartments.
+
+\subsection{Rewriting Rules as Endofunctors}
+
+Each optimization pass is an endofunctor $F : \mathbf{WDiag} \to \mathbf{WDiag}$
+on the category of wiring diagrams that preserves input-output behavior.
+Two diagrams $D_1, D_2$ are \emph{behaviorally equivalent} if for all
+input assignments they produce the same outputs---i.e., they are bisimilar
+in the coalgebraic sense of Section~3.5.
+
+\begin{theorem}[Optimization Soundness]
+Let $F$ be an optimization pass. If $F$ only removes wires that provably
+never transmit data (dead wire elimination) or reorders modules within
+the same topological layer (cost-order scheduling), then $F(D)$ is
+bisimilar to $D$ for all diagrams $D$.
+\end{theorem}
+
+\noindent Three concrete passes are implemented:
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Dead Wire Elimination.} A wire carrying a PrismOptic
+whose accepted types have no intersection with the source port's
+DataType can never transmit. Removing it does not change behavior.
+This corresponds to pruning vestigial metabolic branches---enzymes
+that never encounter their substrate are downregulated.
+
+\item \textbf{Parallel Grouping.} Modules with no mutual dependencies
+form a \emph{parallel group} and can execute concurrently. This is
+identified via topological layering of the dependency DAG. Biologically,
+independent metabolic pathways (e.g., glycolysis and fatty acid oxidation)
+operate simultaneously in different cellular compartments.
+
+\item \textbf{Cost-Order Scheduling.} Within each parallel group,
+modules are sorted by ascending cost. Cheaper modules execute first,
+allowing early termination or budget reallocation if expensive modules
+would exceed available ATP. This mirrors cellular enzyme kinetics:
+low-$K_m$ (high-affinity, low-cost) enzymes are preferentially activated.
+\end{enumerate}
+
+\subsection{Critical Path Analysis}
+
+The \emph{critical path} of a cost-annotated diagram is the longest
+cost-weighted path through the dependency DAG:
+
+\[
+\text{CP}(D) = \arg\max_{P \in \text{Paths}(D)} \sum_{m \in P} c_M(m) + \sum_{w \in P} c_W(w)
+\]
+
+The critical path determines the minimum execution time under maximal
+parallelism---no schedule can complete faster than the critical path
+cost. In metabolic terms, this is the rate-limiting pathway: the
+bottleneck whose throughput constrains the entire system. Identifying
+it enables targeted optimization (e.g., caching expensive modules,
+splitting them into cheaper sub-diagrams).
+
+\subsection{Resource-Aware Execution}
+
+The \texttt{ResourceAwareExecutor} gates module execution on MetabolicState,
+implementing the biological principle that pathway activity is regulated
+by cellular energy availability:
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{STARVING}: Only essential modules execute; non-essential
+modules are skipped. This mirrors the starvation response where cells
+shut down biosynthetic pathways to conserve ATP for survival functions.
+
+\item \textbf{CONSERVING}: Expensive non-essential modules are deferred.
+Cheap modules execute normally. This corresponds to metabolic triage
+under moderate stress.
+
+\item \textbf{NORMAL/FEASTING}: Full execution with parallel scheduling.
+Independent module groups execute concurrently via thread pools. This
+mirrors the fed state where abundant ATP enables all pathways.
+\end{itemize}
+
+\noindent A \texttt{BudgetOptic} provides wire-level cost capping:
+once cumulative transmission cost through a wire exceeds a threshold,
+further data flow is blocked. This implements pathway-level budget
+caps analogous to allosteric feedback inhibition.
+
+\subsection{Relation to Abbott \& Zardini}
+
+Abbott and Zardini~\cite{abbott2025categorical} demonstrate that
+category-theoretic string diagrams are optimizable formal objects,
+deriving FlashAttention ``on a napkin'' through diagram analysis.
+Our approach extends this insight in two directions:
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Dynamic state.} Where Abbott \& Zardini optimize static
+algorithm pipelines, operon optimizes \emph{coalgebraic} systems
+with internal state (Section~3.5). The MetabolicState-gated executor
+makes optimization decisions that depend on runtime state---a feature
+absent from purely structural diagram analysis.
+
+\item \textbf{Resource enrichment.} Our cost annotations form a
+monoidal enrichment of the wiring category, making resource consumption
+a first-class categorical concept rather than an external analysis.
+This enables compositional cost reasoning: the cost of a composite
+diagram is determined by the costs of its components.
+\end{enumerate}
+
+\noindent Both approaches share the core insight that diagram structure
+reveals optimization opportunities invisible to sequential code analysis.
+The categorical framework ensures that optimizations preserve the
+compositional semantics of the system.

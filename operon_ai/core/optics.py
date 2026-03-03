@@ -154,6 +154,58 @@ class TraversalOptic:
         return self.transform(value)
 
 
+@dataclass
+class BudgetOptic:
+    """
+    Cost-aware optic — blocks transmission if cumulative cost exceeds budget.
+
+    Tracks cumulative wire cost across transmissions. When the running
+    total exceeds max_cost, further transmissions are blocked.
+
+    Biological Analogy: ATP budget cap on a signaling pathway — once
+    the cell has spent its energy budget on a pathway, further signal
+    transduction is inhibited.
+
+    Example:
+        >>> budget = BudgetOptic(max_cost=10)
+        >>> budget.can_transmit(DataType.JSON, IntegrityLabel.VALIDATED)
+        True
+        >>> budget.add_cost(8)
+        >>> budget.can_transmit(DataType.JSON, IntegrityLabel.VALIDATED)
+        True
+        >>> budget.add_cost(5)
+        >>> budget.can_transmit(DataType.JSON, IntegrityLabel.VALIDATED)
+        False
+    """
+
+    max_cost: int
+    _spent: int = 0
+
+    @property
+    def name(self) -> str:
+        return f"budget({self._spent}/{self.max_cost})"
+
+    @property
+    def remaining(self) -> int:
+        return max(0, self.max_cost - self._spent)
+
+    def add_cost(self, cost: int) -> None:
+        """Record cost spent through this optic."""
+        self._spent += cost
+
+    def can_transmit(self, data_type: DataType, integrity: IntegrityLabel) -> bool:
+        return self._spent < self.max_cost
+
+    def transmit(
+        self, value: Any, data_type: DataType, integrity: IntegrityLabel
+    ) -> Any:
+        if self._spent >= self.max_cost:
+            raise OpticError(
+                f"BudgetOptic exhausted: spent {self._spent} of {self.max_cost}"
+            )
+        return value
+
+
 @dataclass(frozen=True)
 class ComposedOptic:
     """
