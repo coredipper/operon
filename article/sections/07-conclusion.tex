@@ -65,6 +65,14 @@ verification that two agent implementations are observationally interchangeable.
 
 \item \textbf{Capability-Gated Tool Acquisition:} The Plasmid Registry implements Horizontal Gene Transfer
 with capability gating, preventing privilege escalation when agents dynamically acquire tools.
+
+\item \textbf{Diagram Optimization via Categorical Rewriting:} Cost annotations enrich the wiring category
+over $(\mathbb{R}_{\geq 0}, +, 0)$, making resource consumption a first-class compositional concept.
+Rewriting passes---dead wire elimination, parallel grouping, cost-order scheduling---are endofunctors
+that preserve input-output bisimulation while improving resource utilization. The ResourceAwareExecutor
+gates module execution on MetabolicState, connecting diagram optimization to the metabolic intelligence
+framework: under ATP depletion, non-essential pathway branches are downregulated, mirroring cellular
+starvation responses.
 \end{enumerate}
 
 \subsection*{The Mathematical Foundation}
@@ -107,4 +115,7 @@ mechanisms (signature updates, thymic retraining, threat intelligence sharing).
 efficacy and performance overhead of the defense layers.
 \item \textbf{Bisimulation at Scale:} The current bisimulation check operates over finite input sequences.
 Extending to infinite-trace coinductive bisimulation for continuous agent systems is an open challenge.
+\item \textbf{Learned Rewriting Rules:} The current optimization passes are hand-crafted. Learning
+rewriting rules from execution traces---identifying recurring subdiagram patterns and their optimized
+replacements---would connect diagram optimization to program synthesis and equality saturation techniques.
 \end{itemize}
