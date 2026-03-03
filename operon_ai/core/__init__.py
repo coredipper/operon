@@ -28,6 +28,7 @@ from .types import (
 )
 from .wagent import (
     WiringError,
+    ResourceCost,
     PortType,
     ModuleSpec,
     Wire,
@@ -56,7 +57,25 @@ from .optics import (
     LensOptic,
     PrismOptic,
     TraversalOptic,
+    BudgetOptic,
     ComposedOptic,
+)
+from .analyzer import (
+    Optimization,
+    dependency_graph,
+    find_independent_groups,
+    find_dead_wires,
+    critical_path,
+    total_cost,
+    suggest_optimizations,
+)
+from .optimizer import (
+    OptimizedDiagram,
+    OptimizationPass,
+    EliminateDeadWires,
+    ParallelGrouping,
+    CostOrderSchedule,
+    optimize,
 )
 
 __all__ = [
@@ -74,6 +93,7 @@ __all__ = [
     "CellState",
     "Pathway",
     "WiringError",
+    "ResourceCost",
     "PortType",
     "ModuleSpec",
     "Wire",
@@ -98,5 +118,21 @@ __all__ = [
     "LensOptic",
     "PrismOptic",
     "TraversalOptic",
+    "BudgetOptic",
     "ComposedOptic",
+    # Analyzer (Paper §9)
+    "Optimization",
+    "dependency_graph",
+    "find_independent_groups",
+    "find_dead_wires",
+    "critical_path",
+    "total_cost",
+    "suggest_optimizations",
+    # Optimizer (Paper §9)
+    "OptimizedDiagram",
+    "OptimizationPass",
+    "EliminateDeadWires",
+    "ParallelGrouping",
+    "CostOrderSchedule",
+    "optimize",
 ]
