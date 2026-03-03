@@ -5,7 +5,7 @@
 > *"Safety from structure, not just strings."*
 
 ![Status](https://img.shields.io/badge/status-experimental-orange)
-![Version](https://img.shields.io/badge/pypi-v0.14.0-blue)
+![Version](https://img.shields.io/badge/pypi-v0.15.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![Publish to PyPI](https://github.com/coredipper/operon/actions/workflows/publish.yml/badge.svg)](https://github.com/coredipper/operon/actions/workflows/publish.yml)
 
@@ -18,6 +18,7 @@
 - [The Problem: Fragile Agents](#-the-problem-fragile-agents)
 - [Core Organelles](#-core-organelles)
 - [Multi-cellular Organization](#-multi-cellular-organization)
+- [Diagram Optimization](#-diagram-optimization)
 - [Installation](#-installation)
 - [Examples](#-examples)
 - [Hugging Face Spaces](#-hugging-face-spaces)
@@ -970,6 +971,52 @@ print(doubler.transmit([1, 2, 3], DataType.JSON, IntegrityLabel.VALIDATED))
 
 ---
 
+## ⚙️ Diagram Optimization
+
+Cost-annotated wiring diagrams with static analysis, rewriting passes, and resource-aware execution. Cells don't blindly run all metabolic pathways — they analyze flux, prune dead-end reactions, parallelize independent branches, and downregulate non-essential pathways under ATP depletion. Operon diagrams do the same.
+
+**Features:**
+- **ResourceCost** annotations (ATP, latency, memory) on modules and wires
+- **Static analysis**: dependency graphs, parallel group detection, dead wire identification, critical path, cost hotspots
+- **Rewriting passes**: dead wire elimination, parallel grouping, cost-order scheduling — each an endofunctor preserving input-output bisimulation
+- **ResourceAwareExecutor**: ATP-gated scheduling that adapts to MetabolicState (skip non-essential modules when STARVING, defer expensive ones when CONSERVING, parallelize when NORMAL/FEASTING)
+- **BudgetOptic**: wire-level cumulative cost cap (allosteric feedback inhibition)
+
+```python
+from operon_ai.core.wagent import ModuleSpec, PortType, ResourceCost, WiringDiagram
+from operon_ai.core.analyzer import critical_path, suggest_optimizations, total_cost
+from operon_ai.core.optimizer import optimize
+from operon_ai.core.wiring_runtime import ResourceAwareExecutor
+from operon_ai.core.types import DataType, IntegrityLabel
+from operon_ai.state.metabolism import ATP_Store
+
+pt = PortType(DataType.JSON, IntegrityLabel.VALIDATED)
+
+# Build a cost-annotated diagram
+diagram = WiringDiagram()
+diagram.add_module(ModuleSpec("Parser", inputs={"raw": pt}, outputs={"out": pt},
+                              cost=ResourceCost(atp=5)))
+diagram.add_module(ModuleSpec("Validator", inputs={"in": pt}, outputs={"out": pt},
+                              cost=ResourceCost(atp=10), essential=True))
+diagram.add_module(ModuleSpec("Enricher", inputs={"in": pt}, outputs={"out": pt},
+                              cost=ResourceCost(atp=30), essential=False))
+diagram.connect("Parser", "out", "Validator", "in")
+diagram.connect("Parser", "out", "Enricher", "in")
+
+# Analyze
+path, cost = critical_path(diagram)     # ["Parser", "Enricher"], 35 ATP
+suggestions = suggest_optimizations(diagram)  # parallel group, cost hotspot
+
+# Optimize and execute with ATP awareness
+optimized = optimize(diagram)
+store = ATP_Store(budget=100, silent=True)
+executor = ResourceAwareExecutor(optimized, store)
+# ... register handlers and execute
+# Under STARVING: Enricher (non-essential) is skipped automatically
+```
+
+---
+
 ## 📦 Installation
 
 ```bash
@@ -1093,6 +1140,12 @@ Explore the `examples/` directory for runnable demonstrations:
 | [`61_coalgebraic_state_machines.py`](examples/61_coalgebraic_state_machines.py) | Coalgebra | Composable observation & evolution with bisimulation |
 | [`62_morphogen_diffusion.py`](examples/62_morphogen_diffusion.py) | Diffusion | Graph-based spatially varying morphogen gradients |
 | [`63_optic_based_wiring.py`](examples/63_optic_based_wiring.py) | Optics+Wire | Prism routing, traversal transforms, composed optics |
+
+**Diagram Optimization (v0.15.0)**
+
+| Example | System | Description |
+|---------|--------|-------------|
+| [`65_diagram_optimization.py`](examples/65_diagram_optimization.py) | Analyzer+Optimizer | Cost analysis, rewriting passes, resource-aware execution |
 
 Run any example:
 
