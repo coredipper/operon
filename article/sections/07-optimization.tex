@@ -116,26 +116,50 @@ caps analogous to allosteric feedback inhibition.
 
 \subsection{Relation to Abbott \& Zardini}
 
-Abbott and Zardini~\cite{abbott2025flashattention} demonstrate that
-category-theoretic string diagrams are optimizable formal objects,
-deriving FlashAttention ``on a napkin'' through diagram analysis.
-Our approach extends this insight in two directions:
+Abbott and Zardini~\cite{abbott2025flashattention} derive FlashAttention
+``on a napkin'' using Neural Circuit Diagrams~\cite{abbott2023neural}---a
+diagrammatic scheme for representing deep learning algorithms with explicit
+memory hierarchy awareness. Their core contribution is a performance model
+for IO transfer costs across GPU memory levels (SRAM $\leftrightarrow$ HBM),
+with cost $H^*(a, M) = \sum_t \alpha_t(a) \cdot M^{-\beta_t}$. Two
+concrete optimization techniques drive the derivation: \emph{stream
+partitioning}, which proves that SoftMax-Contraction is streamable via
+an accumulator maintaining running max and sum; and \emph{group
+partitioning}, which tiles query blocks across GPU cores to minimize
+HBM transfers.
+
+Our approach shares their insight that diagrammatic representations are
+not merely notation but formal objects admitting cost-reducing
+transformations. Both build on the broader lineage of categorical
+methods in deep learning~\cite{fong2019seven}. The frameworks diverge
+in three respects:
 
 \begin{enumerate}[leftmargin=*]
-\item \textbf{Dynamic state.} Where Abbott \& Zardini optimize static
-algorithm pipelines, operon optimizes \emph{coalgebraic} systems
-with internal state (Section~3.5). The MetabolicState-gated executor
-makes optimization decisions that depend on runtime state---a feature
-absent from purely structural diagram analysis.
+\item \textbf{Optimization target.} Abbott \& Zardini optimize
+\emph{IO transfer costs} across a fixed GPU memory hierarchy---bandwidth
+between SRAM and HBM is the scarce resource. Operon optimizes
+\emph{agent execution} under metabolic resource constraints (ATP budgets,
+latency caps, memory limits). Same categorical insight---diagram structure
+reveals optimization opportunities---but different cost models.
 
-\item \textbf{Resource enrichment.} Our cost annotations form a
-monoidal enrichment of the wiring category, making resource consumption
-a first-class categorical concept rather than an external analysis.
-This enables compositional cost reasoning: the cost of a composite
-diagram is determined by the costs of its components.
+\item \textbf{Dynamic state.} Their functional equivalence ($\equiv$)
+preserves input-output mappings: two diagrams are equivalent when they
+produce the same outputs for the same inputs, differing only in resource
+profile. Our bisimulation (Section~3.5) preserves observable behavior of
+\emph{stateful} coalgebraic systems---a strictly stronger condition, since
+state evolution must also match across transitions, not just terminal
+outputs.
+
+\item \textbf{Scope of composition.} Neural Circuit Diagrams represent
+\emph{algorithm pipelines}---fixed dataflow graphs where boxes are
+functions composed via typed wire columns. Operon's wiring diagrams
+represent \emph{agent networks} where modules may be acquired at runtime
+(plasmid registry), conditionally routed (prism optics), and subject to
+resource-gated execution. The diagram itself is a dynamic object, not a
+static specification.
 \end{enumerate}
 
-\noindent Both approaches share the core insight that diagram structure
-reveals optimization opportunities invisible to sequential code analysis.
-The categorical framework ensures that optimizations preserve the
-compositional semantics of the system.
+\noindent In short, Abbott \& Zardini demonstrate that diagrammatic
+reasoning scales to deriving hardware-efficient algorithms; Operon extends
+the same principle from algorithm-level optimization to system-level
+orchestration of stateful, resource-constrained agents.
