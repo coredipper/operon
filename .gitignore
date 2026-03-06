@@ -22,6 +22,9 @@ venv/
 .coverage
 htmlcov/
 
+# Claude Code
+.claude/
+
 # Worktrees
 .worktrees/
 
@@ -38,3 +41,5 @@ htmlcov/
 
 # Documentation (generated plans)
 docs/
+.beadhub
+.aw/
