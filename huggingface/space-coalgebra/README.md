@@ -11,18 +11,20 @@ license: mit
 short_description: Composable state machines with bisimulation checking
 ---
 
-# ⚙️ Coalgebra — State Machine Explorer
+# ⚙️ Coalgebra -- State Machine Explorer
 
-Build, compose, and compare **coalgebraic state machines** — the formal backbone of agent state management in Operon.
+Build, compose, and compare coalgebraic state machines -- the formal backbone of agent state management in Operon.
 
-## Features
+## What to Try
 
-- **Tab 1 — Step-by-Step**: Drive a counter coalgebra with manual inputs or comma-separated sequences and inspect the full transition trace
-- **Tab 2 — Composition**: Run two machines in parallel (shared input) or sequentially (output feeds input) and watch both states evolve
-- **Tab 3 — Bisimulation**: Check observational equivalence of two machines over an input sequence; see witness on divergence
+1. Open the **Step-by-Step** tab, pick a machine type (e.g. "Counter" or "Modular mod 10"), enter a comma-separated input sequence like `1,2,3,4,5`, and click **Run Sequence** to see the full transition trace.
+2. Switch to the **Composition** tab, select two different machine types and a mode (Parallel or Sequential), then run inputs to watch both machines evolve together.
+3. In the **Bisimulation** tab, pick two machines, enter an input sequence, and click **Check Bisimulation** to see if they produce identical outputs or find the divergence witness.
 
 ## How It Works
 
-A `Coalgebra[S, I, O]` defines a Mealy machine with `readout: S → O` (observation) and `update: S × I → S` (transition). `StateMachine` wraps a coalgebra with mutable state and a trace log. `ParallelCoalgebra` runs two machines on shared input; `SequentialCoalgebra` pipes the first machine's output into the second. `check_bisimulation` tests whether two machines produce identical outputs over a given input sequence.
+A coalgebra defines a state machine with observation (`readout`) and transition (`update`) functions. Machines can be composed in parallel (shared input) or sequentially (output feeds input), and bisimulation checks whether two machines are observationally equivalent -- a core concept from process algebra applied to agent state management.
 
-[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/)
+## Learn More
+
+[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/) | [Paper](https://github.com/coredipper/operon/tree/main/article)

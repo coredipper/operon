@@ -11,19 +11,20 @@ license: mit
 short_description: Classify threats and route to different healing mechanisms
 ---
 
-# Operon Immunity Healing Router
+# 🛡 Operon Immunity Healing Router
 
-An API gateway pattern that classifies threats using InnateImmunity and routes to different healing mechanisms based on severity.
+Classify threats via InnateImmunity and route to escalating healing mechanisms -- passthrough, chaperone repair, autophagy cleanup, or hard reject -- like an immune system triaging pathogens by severity.
 
-## Features
+## What to Try
 
-- **Threat classification**: InnateImmunity detects injection, abuse, and structural issues
-- **Severity routing**: CLEAN -> passthrough, LOW -> chaperone repair, MEDIUM -> autophagy, HIGH -> reject
-- **Healing pipeline**: ChaperoneLoop for structural repair, AutophagyDaemon for content cleanup
-- **Presets**: Clean input, mild issues, moderate pollution, injection attack
+1. Select a preset from the **Preset** dropdown (e.g. "Clean input", "Mild issues", or "Injection attack") and click **Run Router** to see how the immunity layer classifies the threat and routes it to the appropriate healing mechanism.
+2. Type your own text into the **Input** textbox -- try mixing legitimate questions with injection attempts to see how the router heals instead of rejecting.
+3. Compare the "Moderate pollution" preset (routed to autophagy) vs. "Injection attack" (hard reject) to see how severity determines the response.
 
-## Motifs Combined
+## How It Works
 
-InnateImmunity + ChaperoneLoop + AutophagyDaemon + Cascade
+InnateImmunity scans input for injection patterns and abuse, assigning an inflammation level. Clean input passes through; low-severity issues get chaperone structural repair; medium-severity triggers autophagy cleanup; high-severity is rejected outright -- healing what can be saved while blocking genuine threats.
 
-[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/)
+## Learn More
+
+[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/) | [Paper](https://github.com/coredipper/operon/tree/main/article)

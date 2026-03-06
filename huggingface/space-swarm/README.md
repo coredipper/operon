@@ -13,16 +13,18 @@ short_description: Regenerative swarm with apoptosis and worker regeneration
 
 # 🧬 Regenerative Swarm
 
-Simulate a swarm of workers that detect when they're stuck (entropy collapse), self-terminate (apoptosis), and respawn with summarized learnings from predecessors.
+Workers detect entropy collapse, self-terminate via apoptosis, and respawn with summarized learnings -- like biological tissue regeneration where dying cells pass signals to their replacements.
 
-## Features
+## What to Try
 
-- **5 presets**: Stuck worker, quick solver, gradual convergence, error-prone recovery, max regenerations exhausted
-- **Tunable parameters**: Entropy threshold, max steps, max regenerations
-- **Full instrumentation**: Worker timeline, apoptosis events, regeneration events with injected hints
+1. Select a preset from the **Preset** dropdown (e.g. "Stuck worker (entropy collapse)" or "Error-prone recovery") and click **Run Swarm** to see workers spawn, get stuck, die, and regenerate.
+2. Adjust the **Entropy threshold** slider to control how quickly stuck workers are killed -- lower values trigger apoptosis faster.
+3. Try "Max regenerations exhausted" to see what happens when the swarm runs out of regeneration attempts and fails, then compare with "Stuck worker" where the successor solves it with inherited hints.
 
 ## How It Works
 
-The `RegenerativeSwarm` supervisor monitors worker entropy. When a worker's output becomes repetitive (entropy collapse), it triggers apoptosis — the worker self-terminates, its memory is summarized, and a successor is spawned with those learnings injected as hints.
+The RegenerativeSwarm supervisor monitors worker output entropy. When output becomes repetitive (entropy collapse), it triggers apoptosis -- the worker self-terminates, its memory is summarized, and a successor spawns with those learnings as hints. This mirrors how tissues regenerate: dying cells release signals that guide replacement cells.
 
-[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/)
+## Learn More
+
+[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/) | [Paper](https://github.com/coredipper/operon/tree/main/article)

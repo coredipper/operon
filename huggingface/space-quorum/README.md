@@ -11,20 +11,20 @@ license: mit
 short_description: Multi-agent voting simulator with 7 consensus strategies
 ---
 
-# Operon Quorum Sensing -- Voting Simulator
+# 🗳️ Operon Quorum Sensing
 
-Configure a panel of agents and see how multi-agent consensus works across 7 voting strategies:
+Multi-agent voting simulator with 7 consensus strategies -- like bacterial quorum sensing where cells coordinate behavior based on population-level signals.
 
-1. **Majority** -- Simple >50% majority
-2. **Supermajority** -- >66% (two-thirds) required
-3. **Unanimous** -- All must agree (zero blocks)
-4. **Weighted** -- Weight-adjusted majority (weight * confidence)
-5. **Confidence** -- Only votes above minimum confidence threshold count
-6. **Bayesian** -- Bayesian belief aggregation from uniform prior
-7. **Threshold** -- Fixed count of permits required
+## What to Try
 
-Run a vote and see both the result for your chosen strategy and a comparison across all strategies.
+1. Select a preset from the **Preset** dropdown (e.g. "Unanimous agreement", "Split decision", or "Confidence filtering") and click **Run Vote** to see the result and a comparison across all 7 strategies.
+2. Configure the 5 agent rows manually -- set each agent's **Name**, **Weight**, **Vote** (Permit/Block/Abstain), and **Confidence** slider, then pick a **Strategy** and run the vote.
+3. Switch between strategies (Majority, Supermajority, Unanimous, Weighted, Confidence, Bayesian, Threshold) to see how the same set of votes produces different outcomes.
 
-No API keys required -- runs entirely locally.
+## How It Works
 
-[GitHub](https://github.com/coredipper/operon) | [Paper](https://github.com/coredipper/operon/tree/main/article)
+QuorumSensing aggregates agent votes using the selected strategy -- from simple majority to Bayesian belief aggregation. Weights and confidence scores influence the outcome, and the strategy comparison table shows how the same votes would be decided under each of the 7 available strategies.
+
+## Learn More
+
+[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/) | [Paper](https://github.com/coredipper/operon/tree/main/article)

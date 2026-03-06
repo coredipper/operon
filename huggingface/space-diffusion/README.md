@@ -11,18 +11,20 @@ license: mit
 short_description: Morphogen gradient formation on graph topologies
 ---
 
-# 🌊 Diffusion — Morphogen Gradient Visualizer
+# 🌊 Diffusion -- Morphogen Gradient Visualizer
 
-Simulate **morphogen diffusion** across graph topologies and watch concentration gradients form — the spatial coordination layer of Operon.
+Simulate morphogen diffusion across graph topologies and watch concentration gradients form -- the spatial coordination layer that lets distributed agents sense their position.
 
-## Features
+## What to Try
 
-- **Tab 1 — Linear Chain**: Emit morphogen from a chosen node in a linear graph, run N diffusion steps, and visualize concentration bars per node
-- **Tab 2 — Topologies**: Choose from Linear, Star, Ring, Grid (2×3), or Binary Tree graphs and see how topology shapes the gradient
-- **Tab 3 — Competing Sources**: Place two different morphogens at different nodes and observe overlapping gradients
+1. Open the **Linear Chain** tab, set the **Source Node** and **Diffusion Steps** sliders, and click **Run Diffusion** to watch concentration spread from the source along a line of nodes.
+2. Switch to the **Topologies** tab and select different graph shapes (Star, Ring, Grid, Binary Tree) to see how network structure shapes gradient formation.
+3. In the **Competing Sources** tab, place two morphogens at different nodes and run diffusion to observe overlapping gradients and competition zones.
 
 ## How It Works
 
-`DiffusionField` manages a graph of nodes connected by edges. `MorphogenSource` objects emit at fixed rates. Each step: (1) emit, (2) diffuse — a fraction flows to neighbors, (3) decay — concentrations degrade, (4) clamp — cap at 1.0, snap near-zero to 0. `get_local_gradient()` bridges each node's concentrations to the `MorphogenGradient` API for agent-level strategy hints.
+A DiffusionField manages a graph where MorphogenSource objects emit signals that spread to neighbors, decay over time, and clamp at saturation. Each node's local concentration maps to the MorphogenGradient API, giving agents position-aware strategy hints -- like how cells in a developing embryo read morphogen concentrations to determine their fate.
 
-[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/)
+## Learn More
+
+[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/) | [Paper](https://github.com/coredipper/operon/tree/main/article)

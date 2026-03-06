@@ -13,16 +13,18 @@ short_description: Chaperone healing loop and autophagy context pruning
 
 # 🩹 Chaperone Healing Loop & Autophagy
 
-Two demos in one: **structural healing** of invalid LLM output via the Chaperone Loop, and **context pruning** via the Autophagy Daemon.
+Two self-repair mechanisms in one demo: structural healing of invalid LLM output and context pruning to prevent memory bloat -- like protein refolding and cellular autophagy.
 
-## Features
+## What to Try
 
-- **Tab 1 — Healing Loop**: Mock LLM generates invalid JSON → Chaperone validates → error feedback triggers refolding
-- **Tab 2 — Autophagy**: Monitor context window fullness and prune when critical
-- **7 presets**: Valid first try, healed after retry, degraded, complex schema healing, healthy context, critical context, force prune
+1. Open the **Healing Loop** tab, select a preset (e.g. "Healed after retry" or "Complex schema"), and click **Run Healing** to watch the Chaperone validate output, detect errors, and refold until it produces valid JSON.
+2. Switch to the **Autophagy** tab, select "Critical context" or "Force prune", and click **Run Autophagy** to see the daemon detect context pollution and prune noisy tokens.
+3. Try the "Degraded (unfixable)" preset in the Healing tab to see what happens when all refolding attempts fail.
 
 ## How It Works
 
-The `ChaperoneLoop` wraps a generator + Chaperone validator. Invalid output triggers refolding attempts where error messages are fed back to the generator. The `AutophagyDaemon` monitors context fill percentage and triggers pruning when toxicity threshold is exceeded.
+The ChaperoneLoop wraps an LLM generator with a Chaperone validator -- invalid output triggers refolding where error messages guide the next attempt. The AutophagyDaemon monitors context fill percentage and triggers pruning when toxicity exceeds a threshold, recycling waste through the Lysosome.
 
-[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/)
+## Learn More
+
+[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/) | [Paper](https://github.com/coredipper/operon/tree/main/article)

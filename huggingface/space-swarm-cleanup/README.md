@@ -11,19 +11,20 @@ license: mit
 short_description: Workers clean context via autophagy before death
 ---
 
-# Operon Swarm Graceful Cleanup
+# 🧹 Operon Swarm Graceful Cleanup
 
-LLM-powered swarm where dying workers clean up their context via autophagy before passing state to successors. Successors inherit clean summaries instead of raw noise.
+Dying workers clean up context via autophagy before passing state to successors -- inheriting clean summaries instead of raw noise, like apoptotic cells packaging their contents for recycling.
 
-## Features
+## What to Try
 
-- **Graceful cleanup**: AutophagyDaemon prunes context before worker death
-- **Clean state transfer**: HistoneStore saves summaries for successor inheritance
-- **Noise disposal**: Lysosome disposes extracted noise
-- **Presets**: Research with cleanup, context pollution comparison
+1. Select a preset from the **Preset** dropdown (e.g. "Research with cleanup" or "Context pollution comparison") and click **Run Swarm** to see workers accumulate context, clean up before death, and pass clean summaries to successors.
+2. Adjust the **Entropy threshold** and **Max steps per worker** sliders to control how quickly workers get stuck and how many steps they take before cleanup.
+3. Try "Multi-generation" to see how multiple generations of workers build a rich HistoneStore of clean summaries, each inheriting from the last.
 
-## Motifs Combined
+## How It Works
 
-Nucleus + RegenerativeSwarm + AutophagyDaemon + MorphogenGradient + HistoneStore
+Before a worker dies, the AutophagyDaemon prunes noisy context, the Lysosome disposes of waste, and the HistoneStore saves a clean summary. Successor workers inherit these summaries instead of raw accumulated noise, solving tasks faster because they start from distilled knowledge rather than polluted context.
 
-[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/)
+## Learn More
+
+[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/) | [Paper](https://github.com/coredipper/operon/tree/main/article)

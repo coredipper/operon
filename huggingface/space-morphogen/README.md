@@ -13,16 +13,18 @@ short_description: Gradient-based agent coordination without central control
 
 # 🧪 Morphogen Gradients
 
-Explore **gradient-based coordination** where agents adapt behavior based on local chemical signals — no central controller needed.
+Explore gradient-based agent coordination where six chemical signals guide behavior without a central controller -- like morphogen gradients directing cell differentiation in developing embryos.
 
-## Features
+## What to Try
 
-- **Tab 1 — Manual Gradient**: Set 6 morphogen values and see strategy hints, context injection, and phenotype adaptation
-- **Tab 2 — Orchestrator Simulation**: Watch gradients evolve step-by-step as the orchestrator reacts to successes and failures
-- **7 presets**: Easy task, crisis mode, exploration, budget crunch, smooth sailing, cascading failures, recovery arc
+1. Open the **Manual Gradient** tab, adjust the six morphogen sliders (complexity, confidence, budget, error_rate, urgency, risk), and click **Analyze** to see strategy hints and phenotype adaptation.
+2. Switch to the **Orchestrator Simulation** tab, pick a preset (e.g. "Crisis mode" or "Cascading failures"), and click **Run Simulation** to watch gradients evolve step-by-step as the orchestrator reacts.
+3. Try "Budget crunch" to see how low budget signals change the agent's strategy, then compare with "Easy task" where all signals are favorable.
 
 ## How It Works
 
-The `MorphogenGradient` holds 6 signal types (complexity, confidence, budget, error_rate, urgency, risk). The `GradientOrchestrator` adjusts these signals after each step result, producing strategy hints and phenotype parameters that shape agent behavior.
+The MorphogenGradient holds six signal types that the GradientOrchestrator adjusts after each step based on outcomes. These signals produce strategy hints and phenotype parameters that shape agent behavior -- enabling decentralized coordination without explicit orchestration rules.
 
-[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/)
+## Learn More
+
+[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/) | [Paper](https://github.com/coredipper/operon/tree/main/article)

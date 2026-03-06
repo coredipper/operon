@@ -11,18 +11,20 @@ license: mit
 short_description: Multi-currency metabolic energy management simulator
 ---
 
-# Operon Budget Simulator
+# 🔋 Operon Budget Simulator
 
-Multi-currency metabolic energy management with three currencies:
+Simulate multi-currency metabolic energy management where agents consume ATP, GTP, and NADH to execute tasks -- like cellular metabolism powering biological processes.
 
-- **ATP** -- Primary energy for general operations
-- **GTP** -- Premium energy for specialized operations
-- **NADH** -- Reserve that auto-converts to ATP when needed
+## What to Try
 
-Watch metabolic state transitions (FEASTING > NORMAL > CONSERVING > STARVING), NADH-to-ATP conversion, and graceful degradation under resource pressure.
+1. Select a preset from the **Preset** dropdown (e.g. "NADH reserve rescue" or "Multi-currency") and click **Run Simulation** to see how tasks drain each currency.
+2. Adjust the **ATP**, **GTP**, and **NADH** budget sliders, then edit the **Task queue** to add custom tasks with specific costs and watch metabolic state transitions (NORMAL, CONSERVING, STARVING).
+3. Try the "Constrained agent" preset to see how the system gracefully degrades when budget runs out mid-queue.
 
-Configure budgets, queue tasks with custom costs, and see exactly when and why agents exhaust their resources.
+## How It Works
 
-No API keys required -- runs entirely locally.
+The ATP_Store tracks three energy currencies with automatic NADH-to-ATP conversion when primary reserves deplete. As resources drop, the agent transitions through metabolic states that restrict which operations are allowed -- mirroring how cells shift from growth to conservation under energy stress.
 
-[GitHub](https://github.com/coredipper/operon) | [Paper](https://github.com/coredipper/operon/tree/main/article)
+## Learn More
+
+[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/) | [Paper](https://github.com/coredipper/operon/tree/main/article)

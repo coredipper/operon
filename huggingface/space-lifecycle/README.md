@@ -11,13 +11,20 @@ license: mit
 short_description: Agent telomere lifecycle and genome configuration management
 ---
 
-# Operon Lifecycle Manager
+# 🧬 Operon Lifecycle Manager
 
-Agent lifecycle management with biological telomere shortening and genome configuration.
+Manage agent lifespan with biological telomere shortening and genome configuration -- like chromosomal aging and gene expression controlling a cell's fate.
 
-1. **Telomere Lifecycle** -- Watch telomeres shorten as operations execute, phase transitions (NASCENT > ACTIVE > SENESCENT), and optional renewal
-2. **Genome** -- Configure agent genes (STRUCTURAL, REGULATORY, HOUSEKEEPING, CONDITIONAL, DORMANT), express active config, replicate with mutations
+## What to Try
 
-No API keys required -- runs entirely locally.
+1. Open the **Telomere Lifecycle** tab, select a preset (e.g. "Fragile agent" or "Renewable agent"), set the **Operations** slider, and click **Run Lifecycle** to watch telomeres shorten and the agent transition through NASCENT, ACTIVE, and SENESCENT phases.
+2. Enable the **Allow Renewal** toggle and re-run to see how telomere renewal extends the agent's lifespan beyond its normal limit.
+3. Switch to the **Genome** tab, configure genes with different types (STRUCTURAL, REGULATORY, CONDITIONAL, DORMANT), click **Express** to see the active configuration, then click **Replicate** to produce a child genome with random mutations.
 
-[GitHub](https://github.com/coredipper/operon) | [Paper](https://github.com/coredipper/operon/tree/main/article)
+## How It Works
+
+The Telomere tracks remaining operational capacity -- each operation shortens it, triggering phase transitions that restrict behavior as the agent ages. The Genome holds typed genes that can be expressed (active config) or replicated with mutations, modeling how biological cells differentiate and age.
+
+## Learn More
+
+[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/) | [Paper](https://github.com/coredipper/operon/tree/main/article)

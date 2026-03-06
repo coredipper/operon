@@ -11,19 +11,21 @@ license: mit
 short_description: Prism routing and traversal transforms on wiring diagrams
 ---
 
-# 🔬 Optics — Wire Optic Router
+# 🔬 Optics -- Wire Optic Router
 
-Explore **optic-based wiring** where prisms route data by type and traversals transform collections — the type-safe routing layer of Operon.
+Type-safe data routing and transformation on wires -- prisms filter by data type, traversals map over collections, and composed optics chain into pipelines.
 
-## Features
+## What to Try
 
-- **Tab 1 — Prism Routing**: Configure two prism wires with different accepted DataTypes, send data through, and see which destination receives it
-- **Tab 2 — Traversal Transform**: Apply element-wise transforms (double, uppercase, square, negate) to lists via TraversalOptic
-- **Tab 3 — Composed Optics**: Chain a prism filter with a traversal transform and test the pipeline with various DataTypes
-- **Tab 4 — Optic + Denature**: Attach both a DenatureFilter and an Optic to a wire and see both layers compose in sequence
+1. Open the **Prism Routing** tab, configure two prism wires with different accepted DataTypes, send data through, and see which destination receives it based on type matching.
+2. Switch to the **Traversal Transform** tab, enter a list of values, pick a transform (double, uppercase, square, negate), and click **Apply** to see element-wise processing.
+3. In the **Composed Optics** tab, chain a prism filter with a traversal transform and test the pipeline with various DataType values to see how both layers compose.
+4. Try the **Optic + Denature** tab to see denaturation filters and optic routing working together on the same wire.
 
 ## How It Works
 
-`PrismOptic` accepts a set of `DataType` values and rejects everything else — enabling fan-out routing. `TraversalOptic` maps a transform over list elements. `ComposedOptic` chains optics sequentially: all must accept, transforms apply left-to-right. On a `Wire`, denaturation runs first (stripping injection vectors), then the optic routes and transforms.
+PrismOptic accepts specific DataType values and rejects everything else, enabling type-safe fan-out routing. TraversalOptic maps transforms over collections. ComposedOptic chains optics sequentially -- all must accept, and transforms apply left-to-right. On a Wire, denaturation runs first to strip injection vectors, then the optic routes and transforms.
 
-[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/)
+## Learn More
+
+[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/) | [Paper](https://github.com/coredipper/operon/tree/main/article)

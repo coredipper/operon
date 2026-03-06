@@ -11,20 +11,20 @@ license: mit
 short_description: Ticket processing combining all 11 biological motifs
 ---
 
-# Operon Multi-Agent Orchestrator
+# 🏭 Operon Multi-Agent Orchestrator
 
-End-to-end customer support ticket processing combining all 11 biological motifs into a complete adaptive system.
+End-to-end ticket processing combining all 11 biological motifs into a complete adaptive system -- security, budget, morphogen coordination, healing, and memory working together.
 
-## Features
+## What to Try
 
-- **Security gate**: InnateImmunity filters injection and abuse
-- **Budget management**: ATP_Store tracks token spending
-- **Adaptive pipeline**: Morphogen gradients guide stage behavior
-- **Quality gate**: Chaperone validation with feedback loop correction
-- **Presets**: Simple ticket, complex investigation, abusive input, memory reuse
+1. Select a preset from the **Preset** dropdown (e.g. "Simple ticket", "Complex investigation", or "Abusive input") and click **Process Ticket** to see all 11 motifs working together.
+2. Type your own support ticket text into the **Ticket** input and process it to see how the pipeline adapts -- security scanning, budget allocation, morphogen-guided processing, and quality validation.
+3. Try the "Memory reuse" preset to see how HistoneStore recalls successful repair strategies from previous runs to accelerate healing.
 
-## Motifs Combined
+## How It Works
 
-InnateImmunity + ATP_Store + MorphogenGradient + Nucleus + RegenerativeSwarm + EpiplexityMonitor + AutophagyDaemon + QuorumSensing + Chaperone + NegativeFeedbackLoop + HistoneStore
+The orchestrator chains all major Operon components: InnateImmunity gates input, ATP_Store manages budget, MorphogenGradient guides pipeline behavior, RegenerativeSwarm handles task solving with apoptosis recovery, and Chaperone validates output with NegativeFeedbackLoop corrections. HistoneStore provides epigenetic memory across runs.
 
-[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/)
+## Learn More
+
+[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/) | [Paper](https://github.com/coredipper/operon/tree/main/article)

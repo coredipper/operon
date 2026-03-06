@@ -13,16 +13,19 @@ short_description: Negative feedback loop homeostasis simulation
 
 # ⚖️ Feedback Loop Homeostasis
 
-Simulate a **NegativeFeedbackLoop** controlling a value toward a setpoint. Configure gain, damping, and disturbances to watch convergence, oscillation, or overdamping in real time.
+Simulate a negative feedback loop driving a value toward a setpoint -- like a thermostat, blood sugar regulation, or any biological homeostasis mechanism.
 
-## Features
+## What to Try
 
-- **6 presets**: Temperature control, oscillating convergence, overdamped, underdamped, disturbance rejection
-- **Tunable parameters**: Setpoint, gain, damping, iterations, disturbance injection
-- **Convergence analysis**: Steps to within 1% of setpoint, loop statistics
+1. Select a preset from the **Preset** dropdown (e.g. "Temperature control" or "Underdamped oscillation") and click **Run Simulation** to see the value converge toward the setpoint over time.
+2. Increase the **Gain** slider to see faster convergence, or push it too high to trigger oscillation. Raise **Damping** to suppress overshoot.
+3. Set a **Disturbance step** and **Disturbance magnitude** to inject a sudden perturbation mid-simulation and watch the loop reject it.
+4. Compare "Overdamped" vs. "Underdamped" presets to see the tradeoff between speed and stability.
 
 ## How It Works
 
-The `NegativeFeedbackLoop` computes a correction at each step based on the error (distance from setpoint), scaled by gain and damped to prevent oscillation. This mirrors biological homeostasis — thermostats, blood sugar regulation, and neural feedback.
+The NegativeFeedbackLoop computes a correction at each step based on the error (distance from setpoint), scaled by gain and damped to prevent oscillation. This mirrors how biological systems maintain homeostasis -- applying proportional corrections that self-regulate toward equilibrium.
 
-[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/)
+## Learn More
+
+[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/) | [Paper](https://github.com/coredipper/operon/tree/main/article)

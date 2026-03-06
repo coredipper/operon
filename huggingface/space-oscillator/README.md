@@ -13,16 +13,18 @@ short_description: Biological oscillator patterns and waveform visualization
 
 # 🔃 Biological Oscillator Patterns
 
-Compute and visualize oscillator waveforms (sine, square, sawtooth, triangle, pulse) with damping, plus explore biological oscillator phase structures.
+Visualize oscillator waveforms and biological phase structures -- the timing mechanisms that drive periodic maintenance, heartbeat monitoring, and cell cycle control in Operon agents.
 
-## Features
+## What to Try
 
-- **Tab 1 — Waveform Explorer**: 5 waveform types with configurable frequency, amplitude, damping, and cycles
-- **Tab 2 — Biological Oscillators**: Circadian (day/night), Heartbeat (BPM), and Cell Cycle (G1/S/G2/M) phase breakdowns
-- **8 presets**: Sine wave, square pulse, damped sine, fast triangle, sawtooth, circadian, heartbeat, cell division
+1. Open the **Waveform Explorer** tab, select a waveform type from the dropdown (Sine, Square, Sawtooth, Triangle, or Pulse), adjust **Frequency**, **Amplitude**, and **Damping** sliders, and click **Generate** to see the waveform.
+2. Try the "Damped sine" preset to see how oscillations decay over time, or "Fast triangle" for rapid cycling.
+3. Switch to the **Biological Oscillators** tab and explore Circadian (day/night phases), Heartbeat (BPM-based), and Cell Cycle (G1/S/G2/M phase breakdowns) patterns.
 
 ## How It Works
 
-Waveforms are computed mathematically (matching `oscillator.py` internals) without starting background threads. Biological oscillators show phase structures that map to real-world patterns like circadian rhythms and cell division cycles.
+Waveforms are computed mathematically from sine-based functions with configurable damping. Biological oscillators map these waveforms to real-world phase structures -- circadian rhythms, heartbeat intervals, and cell division cycles -- providing the timing backbone for Operon's scheduled maintenance and lifecycle management.
 
-[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/)
+## Learn More
+
+[GitHub](https://github.com/coredipper/operon) | [PyPI](https://pypi.org/project/operon-ai/) | [Paper](https://github.com/coredipper/operon/tree/main/article)
