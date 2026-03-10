@@ -20,37 +20,54 @@ class OpenAICompatibleProvider(OpenAIBaseProvider):
     services that expose an OpenAI-compatible chat completions API.
 
     Args:
+        api_key: Required API key (must be non-empty). For local servers that don't require
+            authentication, pass any non-empty string like "not-needed" or "dummy".
         base_url: The API base URL (e.g. "http://localhost:1234/v1" for LM Studio).
-        model: The model name to use (e.g. "local-model" or as listed by the server).
-        api_key: Optional API key. Many local servers don't require one.
     """
+    api_key: str = ""
     base_url: str = ""
-    model: str = ""
-    api_key: str | None = None
 
     @property
     def name(self) -> str:
         return "openai-compatible"
 
     def is_available(self) -> bool:
-        """Check if base_url is configured."""
-        return bool(self.base_url)
+        """Check if required configuration is set."""
+        if not self.model:
+            return False
+        if not self.base_url:
+            return False
+        if not self.api_key:
+            return False
+        return True
 
     def _get_client(self):
         """Lazy-load the OpenAI client with custom base_url."""
         if self._client is None:
-            if not self.is_available():
-                raise ProviderUnavailableError(
-                    "base_url is required for OpenAICompatibleProvider."
-                )
             try:
                 from openai import OpenAI
-                self._client = OpenAI(
-                    base_url=self.base_url,
-                    api_key=self.api_key or "not-needed",
-                )
             except ImportError:
                 raise ProviderUnavailableError(
                     "openai package not installed. Run: pip install openai"
                 )
+
+            # Validate model is set
+            if not self.model:
+                raise ProviderUnavailableError(
+                    "model is required for OpenAICompatibleProvider."
+                )
+
+            # Validate api_key is non-empty (user can pass dummy value for local servers)
+            if not self.api_key:
+                raise ProviderUnavailableError(
+                    "api_key must be a non-empty string. For local servers that don't require authentication, pass any non-empty string like 'not-needed' or 'dummy'."
+                )
+
+            # Check base_url last (was original check)
+            if not self.base_url:
+                raise ProviderUnavailableError(
+                    "base_url is required for OpenAICompatibleProvider."
+                )
+
+            self._client = OpenAI(base_url=self.base_url, api_key=self.api_key)
         return self._client

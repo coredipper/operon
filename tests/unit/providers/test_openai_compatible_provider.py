@@ -11,43 +11,39 @@ class TestOpenAICompatibleProvider:
 
     def test_name(self):
         provider = OpenAICompatibleProvider(
-            base_url="http://localhost:1234/v1", model="local-model"
+            api_key="not-needed", base_url="http://localhost:1234/v1", model="local-model"
         )
         assert provider.name == "openai-compatible"
 
     def test_is_available_with_base_url(self):
         provider = OpenAICompatibleProvider(
-            base_url="http://localhost:1234/v1", model="local-model"
+            api_key="not-needed", base_url="http://localhost:1234/v1", model="local-model"
         )
         assert provider.is_available() is True
+
+    def test_model_and_api_key_required(self):
+        # Both model and api_key are required (no defaults)
+        with pytest.raises(TypeError, match="missing 1 required positional argument"):
+            OpenAICompatibleProvider(base_url="http://localhost:1234/v1")
 
     def test_is_not_available_without_base_url(self):
-        provider = OpenAICompatibleProvider(base_url="", model="local-model")
+        provider = OpenAICompatibleProvider(api_key="not-needed", base_url="", model="local-model")
         assert provider.is_available() is False
 
-    def test_api_key_is_optional(self):
+    def test_accepts_custom_api_key(self):
         provider = OpenAICompatibleProvider(
-            base_url="http://localhost:1234/v1", model="local-model"
-        )
-        assert provider.api_key is None
-        assert provider.is_available() is True
-
-    def test_accepts_explicit_api_key(self):
-        provider = OpenAICompatibleProvider(
-            base_url="http://localhost:1234/v1",
-            model="local-model",
-            api_key="sk-custom",
+            api_key="sk-custom", base_url="http://localhost:1234/v1", model="local-model"
         )
         assert provider.api_key == "sk-custom"
 
     def test_get_client_raises_without_base_url(self):
-        provider = OpenAICompatibleProvider(base_url="", model="local-model")
+        provider = OpenAICompatibleProvider(api_key="not-needed", base_url="", model="local-model")
         with pytest.raises(ProviderUnavailableError, match="base_url is required"):
             provider._get_client()
 
-    def test_get_client_passes_base_url(self):
+    def test_get_client_passes_api_key_as_is(self):
         provider = OpenAICompatibleProvider(
-            base_url="http://localhost:1234/v1", model="local-model"
+            api_key="not-needed", base_url="http://localhost:1234/v1", model="local-model"
         )
         mock_openai = MagicMock()
         with patch.dict(
@@ -60,11 +56,9 @@ class TestOpenAICompatibleProvider:
                 api_key="not-needed",
             )
 
-    def test_get_client_passes_api_key_when_provided(self):
+    def test_get_client_passes_custom_api_key(self):
         provider = OpenAICompatibleProvider(
-            base_url="http://localhost:1234/v1",
-            model="local-model",
-            api_key="sk-custom",
+            api_key="sk-custom", base_url="http://localhost:1234/v1", model="local-model"
         )
         mock_openai = MagicMock()
         with patch.dict(
@@ -79,6 +73,28 @@ class TestOpenAICompatibleProvider:
 
     def test_complete_with_tools_signature(self):
         provider = OpenAICompatibleProvider(
-            base_url="http://localhost:1234/v1", model="local-model"
+            api_key="not-needed", base_url="http://localhost:1234/v1", model="local-model"
         )
         assert hasattr(provider, "complete_with_tools")
+
+    def test_get_client_rejects_empty_api_key(self):
+        provider = OpenAICompatibleProvider(
+            api_key="", base_url="http://localhost:1234/v1", model="local-model"
+        )
+        with pytest.raises(ProviderUnavailableError, match="api_key must be a non-empty string"):
+            provider._get_client()
+
+    def test_get_client_passes_api_key_for_remote(self):
+        provider = OpenAICompatibleProvider(
+            api_key="sk-together", base_url="https://api.together.ai/v1", model="mistral-7b"
+        )
+        mock_openai = MagicMock()
+        with patch.dict(
+            "sys.modules",
+            {"openai": MagicMock(OpenAI=mock_openai)},
+        ):
+            provider._get_client()
+            mock_openai.assert_called_once_with(
+                base_url="https://api.together.ai/v1",
+                api_key="sk-together",
+            )

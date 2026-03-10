@@ -21,6 +21,7 @@ from operon_ai.providers import OpenAICompatibleProvider, ProviderConfig
 def main():
     # Point to your local LM Studio server
     provider = OpenAICompatibleProvider(
+        api_key="not-needed",
         base_url="http://localhost:1234/v1",
         model="qwen/qwen3.5-35b-a3b",
     )

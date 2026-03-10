@@ -25,7 +25,7 @@ class OpenAIBaseProvider:
     Subclasses must set `_client` via their own `_get_client()` and
     define `model`, `name`, and `is_available()`.
     """
-    model: str = ""
+    model: str
     _client: object = field(init=False, repr=False, default=None)
 
     @property
