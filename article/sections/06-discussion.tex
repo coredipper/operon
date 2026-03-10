@@ -212,6 +212,44 @@ The reference implementation enforces a capability ceiling at the tissue level: 
 \paragraph{Morphogen Diffusion in Tissues.}
 Tissues optionally embed a \texttt{DiffusionField} (Eq.~25). When cells are added, they become nodes in the diffusion graph; when cells are connected, edges are added. The tissue's \texttt{diffuse()} method runs the simulation, and each cell reads its local gradient via \texttt{get\_cell\_gradient()}. This couples the organizational structure (wiring topology) to the coordination mechanism (morphogen concentrations), creating a biologically faithful model where position in the tissue influences cell behavior.
 
+\subsubsection{Epistemic Topology of Wiring Diagrams}
+
+The preceding subsections define \textit{what} agents communicate (morphogens, typed signals) and \textit{how} they are organized (tissues, organs). We now formalize \textit{what agents know}---deriving epistemic properties directly from the wiring diagram's observation structure, without introducing new primitives. This follows the Operon philosophy: safety (and knowledge) from structure, not strings.
+
+The key insight is that the membrane and optics already \textit{are} an epistemic accessibility relation. We make this precise using the framework of epistemic logic \cite{fagin1995reasoning}.
+
+\begin{definition}[Observation Function]
+Given a wiring diagram $D = (M, W)$ and agent $i \in M$, the \textbf{observation function} $\mathrm{obs}_i: S_D \to O_i$ maps the global system state to agent $i$'s local observation---the values on $i$'s input wires, as filtered by their optics. Formally:
+\begin{equation}
+\mathrm{obs}_i(s) = \bigl(\mathrm{optic}_w(\pi_{w}(s))\bigr)_{w \in W_{\to i}}
+\tag{26}
+\end{equation}
+where $W_{\to i}$ is the set of wires targeting $i$'s input ports, $\pi_w(s)$ projects the global state to wire $w$'s source value, and $\mathrm{optic}_w$ is the wire's optic (identity for Lens, conditional for Prism, cost-gated for BudgetOptic).
+\end{definition}
+
+\begin{definition}[Epistemic Indistinguishability]
+Two global states $s, s' \in S_D$ are \textbf{indistinguishable to agent $i$} (written $s \sim_i s'$) iff $\mathrm{obs}_i(s) = \mathrm{obs}_i(s')$. This is an equivalence relation. Agent $i$ \textbf{knows} proposition $\varphi$ in state $s$ (written $K_i(\varphi)$ at $s$) iff $\varphi$ holds in all states $s'$ such that $s \sim_i s'$ \cite{fagin1995reasoning}.
+\end{definition}
+
+The group epistemic operators follow from the individual accessibility relations:
+
+\begin{definition}[Group Epistemic Operators]
+For a group of agents $G \subseteq M$:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Mutual Knowledge:} $E_G(\varphi) = \bigwedge_{i \in G} K_i(\varphi)$. Every agent in $G$ individually knows $\varphi$.
+\item \textbf{Common Knowledge:} $C_G(\varphi) = \bigwedge_{k=1}^{\infty} E_G^k(\varphi)$. Everyone knows that everyone knows$\ldots$ ad infinitum. Strictly stronger than mutual knowledge and famously difficult to achieve in asynchronous systems \cite{halpern1990knowledge}.
+\item \textbf{Distributed Knowledge:} $D_G(\varphi)$ holds iff $\varphi$ is true in all states indistinguishable under $\sim_D = \bigcap_{i \in G} \sim_i$. This is the finest partition achievable by pooling all agents' observations.
+\end{itemize}
+\end{definition}
+
+\paragraph{Topology Determines Epistemic Capacity.}
+The wiring diagram's topology directly determines which epistemic operators a multi-agent system can achieve:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Independent ($\otimes$, no inter-agent wires):} Each $\sim_i$ is independent. $D_G$ can be rich (agents observe different aspects), but $E_G$ is limited to propositions in the shared initial input. No path to $C_G$.
+\item \textbf{Centralized ($\circ$ with hub):} The hub observes all worker outputs, so its partition refines toward $D_G$. Workers observe only their own results---$E_G$ requires the hub to broadcast aggregated information back.
+\item \textbf{Decentralized ($\otimes$ with $\mathrm{Tr}$ feedback):} Peer-to-peer wires create overlapping observation partitions. Each feedback round refines mutual knowledge toward common knowledge, at communication cost proportional to the number of rounds.
+\end{itemize}
+
 \subsection{Bioenergetic Intelligence: Beyond the Battery Metaphor}
 
 Recent work in mitochondrial psychobiology \cite{allen2022energy, picard2022signaling} challenges the view of
