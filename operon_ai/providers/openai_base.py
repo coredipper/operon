@@ -39,15 +39,15 @@ class OpenAIBaseProvider:
         raise NotImplementedError
 
     def _handle_error(self, e: Exception) -> None:
-        """Categorize and re-raise exceptions."""
+        """Categorize and re-raise exceptions, chaining the original cause."""
         error_str = str(e).lower()
         if "rate" in error_str or "quota" in error_str:
-            raise QuotaExhaustedError(f"{self.name} rate limit: {e}")
+            raise QuotaExhaustedError(f"{self.name} rate limit: {e}") from e
         if "api key" in error_str or "authentication" in error_str:
-            raise ProviderUnavailableError(f"{self.name} auth error: {e}")
+            raise ProviderUnavailableError(f"{self.name} auth error: {e}") from e
         if "connection" in error_str or "refused" in error_str:
-            raise ProviderUnavailableError(f"{self.name} connection error: {e}")
-        raise TranscriptionFailedError(f"{self.name} error: {e}")
+            raise ProviderUnavailableError(f"{self.name} connection error: {e}") from e
+        raise TranscriptionFailedError(f"{self.name} error: {e}") from e
 
     def complete(
         self,
@@ -129,6 +129,7 @@ class OpenAIBaseProvider:
                 temperature=config.temperature,
                 max_tokens=config.max_tokens,
                 tools=openai_tools if openai_tools else None,
+                timeout=config.timeout_seconds,
             )
 
             elapsed_ms = (time.perf_counter() - start) * 1000
