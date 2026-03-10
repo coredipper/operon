@@ -20,6 +20,7 @@ from .base import (
 )
 from .mock import MockProvider
 from .openai_provider import OpenAIProvider
+from .openai_compatible_provider import OpenAICompatibleProvider
 from .anthropic_provider import AnthropicProvider
 from .gemini_provider import GeminiProvider
 
@@ -36,6 +37,7 @@ __all__ = [
     "TranscriptionFailedError",
     "MockProvider",
     "OpenAIProvider",
+    "OpenAICompatibleProvider",
     "AnthropicProvider",
     "GeminiProvider",
 ]
