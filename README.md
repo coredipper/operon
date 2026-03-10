@@ -248,7 +248,7 @@ from operon_ai import Nucleus, Mitochondria, ProviderConfig
 
 # Auto-detects provider from environment variables
 nucleus = Nucleus()
-print(f"Using: {nucleus.provider.name}")  # anthropic, openai, gemini, or mock
+print(f"Using: {nucleus.provider.name}")  # anthropic, openai, gemini, openai-compatible, or mock
 
 # Simple transcription
 response = nucleus.transcribe("Explain DNA replication")
@@ -286,6 +286,7 @@ Swappable LLM backends with a unified interface:
 | `AnthropicProvider` | claude-sonnet-4-20250514 | `ANTHROPIC_API_KEY` | Tool use, streaming |
 | `OpenAIProvider` | gpt-4o-mini | `OPENAI_API_KEY` | Tool use, JSON mode |
 | `GeminiProvider` | gemini-flash-latest | `GEMINI_API_KEY` | Native function calling |
+| `OpenAICompatibleProvider` | (custom) | (custom) | LM Studio, Ollama, vLLM, Together AI, Groq |
 | `MockProvider` | mock | (none) | Testing, deterministic responses |
 
 ```python
@@ -293,6 +294,7 @@ from operon_ai import (
     Nucleus,
     AnthropicProvider,
     OpenAIProvider,
+    OpenAICompatibleProvider,
     GeminiProvider,
     MockProvider,
 )
@@ -302,6 +304,13 @@ nucleus = Nucleus(provider=GeminiProvider(model="gemini-flash-latest"))
 
 # Or use auto-detection (checks env vars in order)
 nucleus = Nucleus()  # Anthropic → OpenAI → Gemini → Mock
+
+# Use any OpenAI-compatible server (LM Studio, Ollama, vLLM, etc.)
+nucleus = Nucleus(provider=OpenAICompatibleProvider(
+    api_key="not-needed",
+    base_url="http://localhost:1234/v1",
+    model="qwen/qwen3.5-35b-a3b",
+))
 ```
 
 ---

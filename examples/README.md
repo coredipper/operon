@@ -1,6 +1,6 @@
 # Operon Examples
 
-This directory contains 55 examples demonstrating the operon_ai library,
+This directory contains 65 examples demonstrating the operon_ai library,
 progressing from basic concepts to complete LLM-powered cell simulations.
 
 ## Import Style Guide
@@ -45,6 +45,8 @@ from operon_ai.providers import MockProvider, ProviderConfig
 | 42-44 | Health & Coordination | Epiplexity, Innate Immunity, Morphogen Gradients |
 | 45-47 | Practical Applications | Code Review, Codebase Q&A, Cost Attribution |
 | 48-55 | Orchestration | Multi-motif composition, LLM integration, capstone |
+| 56-63 | Advanced Biology | Epigenetic coupling, Cell types, Tissue, Plasmids, Morphogens |
+| 65-66 | Optimization & Providers | Diagram optimization, OpenAI-compatible servers |
 
 ## Running Examples
 
