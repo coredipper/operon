@@ -44,29 +44,28 @@ class OpenAICompatibleProvider(OpenAIBaseProvider):
     def _get_client(self):
         """Lazy-load the OpenAI client with custom base_url."""
         if self._client is None:
-            try:
-                from openai import OpenAI
-            except ImportError:
-                raise ProviderUnavailableError(
-                    "openai package not installed. Run: pip install openai"
-                )
-
-            # Validate model is set
+            # Validate config before attempting the import so users get
+            # clear configuration errors even when openai is not installed.
             if not self.model:
                 raise ProviderUnavailableError(
                     "model is required for OpenAICompatibleProvider."
                 )
 
-            # Validate api_key is non-empty (user can pass dummy value for local servers)
             if not self.api_key:
                 raise ProviderUnavailableError(
                     "api_key must be a non-empty string. For local servers that don't require authentication, pass any non-empty string like 'not-needed' or 'dummy'."
                 )
 
-            # Check base_url last (was original check)
             if not self.base_url:
                 raise ProviderUnavailableError(
                     "base_url is required for OpenAICompatibleProvider."
+                )
+
+            try:
+                from openai import OpenAI
+            except ImportError:
+                raise ProviderUnavailableError(
+                    "openai package not installed. Run: pip install openai"
                 )
 
             self._client = OpenAI(base_url=self.base_url, api_key=self.api_key)
