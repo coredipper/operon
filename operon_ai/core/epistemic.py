@@ -33,12 +33,19 @@ from .wagent import ResourceCost, Wire, WiringDiagram
 
 
 class TopologyClass(Enum):
-    """Classification of wiring diagram topology."""
+    """Classification of wiring diagram topology.
 
-    INDEPENDENT = "independent"
-    CENTRALIZED = "centralized"
-    SEQUENTIAL = "sequential"
-    HYBRID = "hybrid"
+    Biological Analogy:
+    Tissue architecture — independent cells (epithelial sheet),
+    centralized hub (nervous system star topology), sequential
+    pipeline (digestive tract), or hybrid (immune system with
+    both local and centralized coordination).
+    """
+
+    INDEPENDENT = "independent"   # No wires: fully parallel, no coordination
+    CENTRALIZED = "centralized"   # Fan-in: one hub aggregates all sources
+    SEQUENTIAL = "sequential"     # Linear chain: each module feeds the next
+    HYBRID = "hybrid"             # Mixed: fan-out/fan-in with parallelism
 
 
 # ── Data Types ─────────────────────────────────────────────────────
@@ -46,99 +53,182 @@ class TopologyClass(Enum):
 
 @dataclass(frozen=True)
 class ObservationProfile:
-    """Per-module epistemic observation profile."""
+    """Per-module epistemic observation profile.
 
-    module_name: str
-    direct_sources: frozenset[str]
-    transitive_sources: frozenset[str]
-    input_wires: tuple[Wire, ...]
-    has_optic_filter: bool
-    has_denature_filter: bool
+    Biological Analogy:
+    A cell's receptor profile — which signals it can detect and
+    from how far away. A cell with many receptor types has a wide
+    observation profile; one with few receptors is epistemically
+    narrow.
+
+    In Kripke semantics, this is the accessibility relation for
+    a single agent: which worlds (module states) it can distinguish.
+    """
+
+    module_name: str                       # Module this profile describes
+    direct_sources: frozenset[str]         # Immediate predecessors (one hop)
+    transitive_sources: frozenset[str]     # All reachable predecessors (any path)
+    input_wires: tuple[Wire, ...]          # Actual wire objects carrying data in
+    has_optic_filter: bool                 # True if any input wire has an optic
+    has_denature_filter: bool              # True if any input wire has a denature filter
 
     @property
     def observation_width(self) -> int:
+        """Number of transitively observable modules (epistemic reach)."""
         return len(self.transitive_sources)
 
 
 @dataclass(frozen=True)
 class EpistemicPartition:
-    """Groups modules by observation equivalence."""
+    """Groups modules by observation equivalence.
 
-    equivalence_classes: tuple[frozenset[str], ...]
+    Two modules are observation-equivalent if they see the same
+    transitive sources through the same filter types. Equivalent
+    modules cannot distinguish between worlds that differ only
+    outside their shared observation set.
+
+    Biological Analogy:
+    Cell types defined by shared receptor profiles — two cells
+    with identical receptor sets respond to the same signals
+    and are functionally equivalent for signal processing.
+    """
+
+    equivalence_classes: tuple[frozenset[str], ...]  # Groups of equivalent modules
 
 
 @dataclass(frozen=True)
 class TopologyClassification:
-    """Result of classifying a diagram's topology."""
+    """Result of classifying a diagram's wiring topology.
 
-    topology_class: TopologyClass
-    hub_module: str | None
-    chain_length: int
-    parallelism_width: int
-    num_sources: int
+    Classification rules (checked in order):
+    - INDEPENDENT: no wires at all
+    - SEQUENTIAL: critical path spans all modules
+    - CENTRALIZED: one hub with all other modules as sources (fan-in)
+    - HYBRID: everything else (fan-out + fan-in, mixed patterns)
+    """
+
+    topology_class: TopologyClass  # The classified topology type
+    hub_module: str | None         # Central module name if CENTRALIZED/HYBRID, else None
+    chain_length: int              # Length of the critical path (longest module chain)
+    parallelism_width: int         # Max modules executable in parallel (widest layer)
+    num_sources: int               # Modules with no input wires (entry points)
 
 
 @dataclass(frozen=True)
 class ErrorAmplificationBound:
-    """Theorem 1: Error amplification bounds."""
+    """Theorem 1: Error amplification bounds.
 
-    n_agents: int
-    independent_bound: int
-    centralized_bound: float
-    detection_rate: float
-    amplification_ratio: float
+    Predicts worst-case error propagation through the wiring topology.
+    Independent agents each fail independently (bound = n); a centralized
+    hub with detection rate d catches errors before propagation
+    (bound = n * (1 - d)).
+
+    Biological Analogy:
+    Immune error detection — without a thymus (centralized checker),
+    each T-cell can independently produce autoimmune errors. With
+    central tolerance checking, error rate drops by detection fraction.
+    """
+
+    n_agents: int               # Number of non-source modules (workers)
+    independent_bound: int      # Worst-case errors without central detection (= n)
+    centralized_bound: float    # Worst-case errors with central detection (= n*(1-d))
+    detection_rate: float       # Fraction of errors caught by hub (d)
+    amplification_ratio: float  # Independent / centralized ratio (= 1/(1-d))
 
 
 @dataclass(frozen=True)
 class SequentialPenalty:
-    """Theorem 2: Sequential communication overhead."""
+    """Theorem 2: Sequential communication overhead.
 
-    chain_length: int
-    num_handoffs: int
-    comm_cost_ratio: float
-    overhead_ratio: float
+    Each handoff along the critical path adds communication cost.
+    Overhead ratio = (handoffs * comm_cost_ratio) / chain_length,
+    representing the fraction of total path cost spent on
+    inter-module communication rather than useful work.
+
+    Biological Analogy:
+    Signal transduction cascades — each kinase→kinase handoff
+    in a MAPK cascade has latency and fidelity cost. Longer
+    cascades amplify signal but accumulate handoff overhead.
+    """
+
+    chain_length: int        # Number of modules on the critical path (k)
+    num_handoffs: int        # Number of edges on the critical path (k - 1)
+    comm_cost_ratio: float   # Per-handoff cost as fraction of module cost
+    overhead_ratio: float    # Total communication overhead fraction
 
 
 @dataclass(frozen=True)
 class ParallelSpeedup:
-    """Theorem 3: Parallel speedup from independent groups."""
+    """Theorem 3: Parallel speedup from independent groups.
 
-    num_subtasks: int
-    speedup: float
-    max_layer_cost: ResourceCost
-    total_cost: ResourceCost
+    Amdahl's-law-style bound: speedup = total_work / bottleneck_path.
+    The bottleneck path is the sum of the most expensive module in
+    each topological layer (since modules within a layer run in parallel,
+    only the slowest matters).
+
+    Biological Analogy:
+    Parallel metabolic pathways — glycolysis and the pentose phosphate
+    pathway run concurrently, but total throughput is limited by the
+    slowest shared step (bottleneck enzyme).
+    """
+
+    num_subtasks: int            # Total number of modules in the diagram
+    speedup: float               # total_cost / bottleneck_cost (>= 1.0)
+    max_layer_cost: ResourceCost # Cost of the single most expensive layer
+    total_cost: ResourceCost     # Sum of all module costs
 
 
 @dataclass(frozen=True)
 class ToolDensityAnalysis:
-    """Theorem 4: Tool density scaling."""
+    """Theorem 4: Tool density scaling.
 
-    total_tools: int
-    num_modules: int
-    tools_per_module: float
-    remote_fraction: float
-    planning_cost_ratio: float
+    Distributing capabilities across modules increases coordination
+    cost: each module must plan across remote tools it cannot directly
+    invoke. Planning cost scales linearly with the number of modules
+    that hold capabilities.
+
+    Biological Analogy:
+    Organ specialization — a single-celled organism has all enzymes
+    locally (no coordination cost). A multicellular organism distributes
+    enzymes across organs, requiring hormonal signaling (planning cost)
+    to coordinate metabolic activity.
+    """
+
+    total_tools: int           # Distinct Capability values across all modules
+    num_modules: int           # Modules that have at least one capability
+    tools_per_module: float    # Average tools per capability-bearing module
+    remote_fraction: float     # Fraction of tools not locally available ((n-1)/n)
+    planning_cost_ratio: float # Multi-agent planning cost vs single-agent (= n)
 
 
 @dataclass(frozen=True)
 class TopologyRecommendation:
-    """Recommendation for optimal topology given constraints."""
+    """Recommendation for optimal topology given task constraints.
 
-    recommended: TopologyClass
-    rationale: str
+    Standalone result from ``recommend_topology()`` — no diagram needed,
+    just task properties (subtask count, independence, tool count,
+    error tolerance).
+    """
+
+    recommended: TopologyClass  # Suggested topology type
+    rationale: str              # Human-readable explanation of the recommendation
 
 
 @dataclass(frozen=True)
 class EpistemicAnalysis:
-    """Complete epistemic analysis of a wiring diagram."""
+    """Complete epistemic analysis bundle from ``analyze()``.
 
-    profiles: dict[str, ObservationProfile]
-    partition: EpistemicPartition
-    classification: TopologyClassification
-    error_bound: ErrorAmplificationBound
-    sequential: SequentialPenalty
-    speedup: ParallelSpeedup
-    density: ToolDensityAnalysis
+    Combines all epistemic properties and theorem predictions
+    computed from a single ``WiringDiagram`` in one pass.
+    """
+
+    profiles: dict[str, ObservationProfile]   # Per-module observation profiles
+    partition: EpistemicPartition              # Observation equivalence classes
+    classification: TopologyClassification    # Topology type and structural metrics
+    error_bound: ErrorAmplificationBound      # Theorem 1: error amplification
+    sequential: SequentialPenalty              # Theorem 2: sequential overhead
+    speedup: ParallelSpeedup                  # Theorem 3: parallel speedup
+    density: ToolDensityAnalysis              # Theorem 4: tool density
 
 
 # ── Internal helpers ───────────────────────────────────────────────
@@ -164,7 +254,14 @@ def _transitive_closure(deps: dict[str, set[str]]) -> dict[str, frozenset[str]]:
 
 
 def observation_profiles(diagram: WiringDiagram) -> dict[str, ObservationProfile]:
-    """Compute per-module epistemic observation profiles."""
+    """Compute per-module epistemic observation profiles.
+
+    For each module, determines which other modules it can observe
+    (directly and transitively) and what filters exist on its input
+    wires. This is the foundation for all other epistemic analysis.
+
+    Returns a dict mapping module name -> ObservationProfile.
+    """
     deps = dependency_graph(diagram)
     closure = _transitive_closure(deps)
 
@@ -204,7 +301,17 @@ def epistemic_partition(diagram: WiringDiagram) -> EpistemicPartition:
 
 
 def classify_topology(diagram: WiringDiagram) -> TopologyClassification:
-    """Classify the diagram's topology."""
+    """Classify the diagram's wiring topology into one of four classes.
+
+    Classification rules (checked in priority order):
+    1. No wires → INDEPENDENT
+    2. Critical path spans all modules → SEQUENTIAL
+    3. One hub with all others as sources (pure fan-in) → CENTRALIZED
+    4. Everything else → HYBRID
+
+    Also computes structural metrics: chain length, parallelism width,
+    hub module identity, and number of source modules.
+    """
     n = len(diagram.modules)
     deps = dependency_graph(diagram)
     closure = _transitive_closure(deps)
@@ -267,7 +374,15 @@ def classify_topology(diagram: WiringDiagram) -> TopologyClassification:
 def error_amplification_bound(
     diagram: WiringDiagram, *, detection_rate: float = 0.75
 ) -> ErrorAmplificationBound:
-    """Theorem 1: Error amplification bounds from topology."""
+    """Theorem 1: Error amplification bounds from topology.
+
+    Computes worst-case error propagation for independent vs centralized
+    architectures. ``detection_rate`` (0-1) is the fraction of errors
+    a centralized hub catches before they propagate downstream.
+
+    Independent bound = n (each worker fails independently).
+    Centralized bound = n * (1 - d) (hub catches fraction d).
+    """
     deps = dependency_graph(diagram)
     # Non-source modules (workers that receive input)
     n = sum(1 for preds in deps.values() if len(preds) > 0)
@@ -287,7 +402,14 @@ def error_amplification_bound(
 def sequential_penalty(
     diagram: WiringDiagram, *, comm_cost_ratio: float = 0.4
 ) -> SequentialPenalty:
-    """Theorem 2: Sequential communication overhead."""
+    """Theorem 2: Sequential communication overhead.
+
+    Measures the overhead of inter-module handoffs along the critical path.
+    ``comm_cost_ratio`` (0-1) is the per-handoff communication cost as a
+    fraction of average module execution cost.
+
+    Overhead = (handoffs * comm_cost_ratio) / chain_length.
+    """
     path, _ = critical_path(diagram)
     k = len(path)
     h = max(k - 1, 0)  # Handoffs = edges on critical path
@@ -301,7 +423,15 @@ def sequential_penalty(
 
 
 def parallel_speedup(diagram: WiringDiagram) -> ParallelSpeedup:
-    """Theorem 3: Parallel speedup from independent groups."""
+    """Theorem 3: Parallel speedup from independent groups.
+
+    Computes speedup = total_cost / bottleneck_cost, where the
+    bottleneck is the sum of the most expensive module per
+    topological layer. Modules within the same layer execute
+    concurrently, so only the slowest determines layer cost.
+
+    Returns speedup >= 1.0 (1.0 means no parallelism benefit).
+    """
     groups = find_independent_groups(diagram)
     tc = total_cost(diagram)
 
@@ -335,7 +465,14 @@ def parallel_speedup(diagram: WiringDiagram) -> ParallelSpeedup:
 
 
 def tool_density(diagram: WiringDiagram) -> ToolDensityAnalysis:
-    """Theorem 4: Tool density scaling."""
+    """Theorem 4: Tool density scaling.
+
+    Analyzes how capabilities (tools) are distributed across modules.
+    More modules with capabilities means higher coordination cost:
+    each module must plan around tools it cannot directly invoke.
+
+    Only counts modules that have at least one Capability annotation.
+    """
     all_caps: set = set()
     modules_with_caps = 0
     for spec in diagram.modules.values():
@@ -360,7 +497,16 @@ def recommend_topology(
     num_tools: int,
     error_tolerance: float = 0.1,
 ) -> TopologyRecommendation:
-    """Recommend optimal topology given constraints (no diagram needed)."""
+    """Recommend optimal topology given task constraints.
+
+    Pure decision function — no diagram needed. Uses task properties
+    to suggest the best topology class:
+
+    - Independent subtasks + few tools → INDEPENDENT (parallel)
+    - Dependent subtasks + many tools or low error tolerance → CENTRALIZED
+    - Dependent subtasks → SEQUENTIAL
+    - Otherwise → HYBRID
+    """
     if subtasks_independent and num_tools <= num_subtasks:
         return TopologyRecommendation(
             recommended=TopologyClass.INDEPENDENT,
@@ -399,7 +545,13 @@ def analyze(
     detection_rate: float = 0.75,
     comm_cost_ratio: float = 0.4,
 ) -> EpistemicAnalysis:
-    """Complete epistemic analysis of a wiring diagram."""
+    """Run all epistemic analyses on a wiring diagram.
+
+    Single entry point that computes observation profiles, partition,
+    topology classification, and all four theorem predictions.
+    Parameters ``detection_rate`` and ``comm_cost_ratio`` are forwarded
+    to the respective theorem functions.
+    """
     return EpistemicAnalysis(
         profiles=observation_profiles(diagram),
         partition=epistemic_partition(diagram),
