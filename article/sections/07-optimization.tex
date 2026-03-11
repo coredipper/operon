@@ -20,7 +20,7 @@ over this monoid: each module $m$ carries a cost $c(m) \in \mathbb{R}_{\geq 0}^3
 and each wire $w$ carries a transmission cost $c(w) \in \mathbb{Z}_{\geq 0}$
 (measured in ATP units).
 
-\begin{definition}[Cost-Annotated Wiring Diagram]
+\begin{definition}[Cost-Annotated Wiring Diagram]\label{def:cost-annotated-diagram}
 A \emph{cost-annotated wiring diagram} is a tuple $(M, W, c_M, c_W)$ where:
 \begin{itemize}[leftmargin=*]
 \item $M$ is a finite set of modules, each with typed input/output ports;
@@ -44,7 +44,7 @@ Two diagrams $D_1, D_2$ are \emph{behaviorally equivalent} if for all
 input assignments they produce the same outputs---i.e., they are bisimilar
 in the coalgebraic sense of Section~3.5.
 
-\begin{theorem}[Optimization Soundness]
+\begin{theorem}[Optimization Soundness]\label{thm:optimization-soundness}
 Let $F$ be an optimization pass. If $F$ only removes wires that provably
 never transmit data (dead wire elimination) or reorders modules within
 the same topological layer (cost-order scheduling), then $F(D)$ is

@@ -192,7 +192,7 @@ The \texttt{Tissue} class provides:
 \end{itemize}
 
 \paragraph{Metabolic-Epigenetic Coupling.}
-The \texttt{HistoneStore} accepts an optional \texttt{energy\_gate} parameter pairing an \texttt{ATP\_Store} with a \texttt{MetabolicAccessPolicy}. When set, each \texttt{retrieve\_context()} call costs ATP. Under metabolic stress, only strongly embedded markers remain accessible---implementing Eq.~17.
+The \texttt{HistoneStore} accepts an optional \texttt{energy\_gate} parameter pairing an \texttt{ATP\_Store} with a \texttt{MetabolicAccessPolicy}. When set, each \texttt{retrieve\_context()} call costs ATP. Under metabolic stress, only strongly embedded markers remain accessible---implementing Eq.~\eqref{eq:cost-gated-retrieval}.
 
 \subsection{Coalgebraic State Machines Implementation}
 
@@ -213,11 +213,11 @@ class StateMachine(Generic[S, I, O]):
     def run(self, inputs: list[I]) -> list[O]: ...
 \end{verbatim}
 
-\texttt{ParallelCoalgebra} and \texttt{SequentialCoalgebra} implement the composition operations from \S3.5. The \texttt{check\_bisimulation()} function tests observational equivalence (Eq.~23) over an input sequence, returning a witness on divergence. Existing organelles (\texttt{HistoneStore}, \texttt{ATP\_Store}, \texttt{CellCycleController}) can be wrapped as coalgebras, enabling formal composition and verification of multi-organelle systems.
+\texttt{ParallelCoalgebra} and \texttt{SequentialCoalgebra} implement the composition operations from \S3.5. The \texttt{check\_bisimulation()} function tests observational equivalence (Eq.~\eqref{eq:bisimulation}) over an input sequence, returning a witness on divergence. Existing organelles (\texttt{HistoneStore}, \texttt{ATP\_Store}, \texttt{CellCycleController}) can be wrapped as coalgebras, enabling formal composition and verification of multi-organelle systems.
 
 \subsection{Morphogen Diffusion Implementation}
 
-The \texttt{DiffusionField} class implements the discrete-time diffusion dynamics (Eq.~25):
+The \texttt{DiffusionField} class implements the discrete-time diffusion dynamics (Eq.~\eqref{eq:morphogen-diffusion}):
 
 \begin{verbatim}
 class DiffusionField:
@@ -246,8 +246,8 @@ class Optic(Protocol):
 Four concrete optics are provided:
 \begin{itemize}[leftmargin=*]
 \item \textbf{LensOptic}: Identity pass-through (equivalent to no optic).
-\item \textbf{PrismOptic}: Transmits only if $\tau \in A$ (Eq.~21). Enables fan-out routing.
-\item \textbf{TraversalOptic}: Maps a transform over list elements (Eq.~22).
+\item \textbf{PrismOptic}: Transmits only if $\tau \in A$ (Eq.~\eqref{eq:prism-optic}). Enables fan-out routing.
+\item \textbf{TraversalOptic}: Maps a transform over list elements (Eq.~\eqref{eq:traversal-optic}).
 \item \textbf{ComposedOptic}: Chains optics left-to-right; all must accept.
 \end{itemize}
 

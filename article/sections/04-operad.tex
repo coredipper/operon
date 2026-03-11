@@ -1,4 +1,4 @@
-\section{Formal Syntax: The Agentic Operad}
+\section{Formal Syntax: The Agentic Operad}\label{sec:operad}
 
 To formalize the composition of agents, we define the Operad of Wiring Diagrams, denoted as WAgent. An operad
 can be understood as a ``grammar'' for connecting operations (boxes) via typed wires. It defines which agent
@@ -10,7 +10,7 @@ properties of its components~\cite{vagner2015algebras}.
 In WAgent, every wire carries a specific Type $\tau\in T$.
 \begin{equation}
 T = \{\text{Text}, \text{JSON}, \text{Image}, \text{Error}, \text{ToolCall}, \text{Stop}, \text{Approval}\}.
-\tag{6}
+\label{eq:wire-types}
 \end{equation}
 These types correspond to biological molecular specificity (e.g., a specific transcription factor only binds to
 a specific DNA sequence). A connection is valid if and only if the type of the output port of Agent $A$ matches
@@ -26,7 +26,7 @@ matter how large, can be decomposed into these three primitives.
 Two agents, $A$ and $B$, execute simultaneously with no information exchange:
 \begin{equation}
 A \otimes B.
-\tag{7}
+\label{eq:parallel-composition}
 \end{equation}
 \begin{itemize}[leftmargin=*]
 \item \textbf{Biological Analogy:} Two genes located on different chromosomes expressing proteins independently.
@@ -41,7 +41,7 @@ decorator).
 The output of Agent $A$ is piped directly into the input of Agent $B$:
 \begin{equation}
 B \circ A.
-\tag{8}
+\label{eq:serial-composition}
 \end{equation}
 \begin{itemize}[leftmargin=*]
 \item \textbf{Biological Analogy:} A Signal Transduction Pathway (Protein A activates Protein B).
@@ -55,7 +55,7 @@ Natural Language but Agent $B$ expects JSON Schema, the composition is undefined
 A feedback loop where an output port of Agent $A$ is wired back into one of its own input ports:
 \begin{equation}
 Tr(A).
-\tag{9}
+\label{eq:trace-feedback}
 \end{equation}
 \begin{itemize}[leftmargin=*]
 \item \textbf{Biological Analogy:} Autoregulation (Homeostasis) or Positive Feedback.
@@ -73,7 +73,7 @@ guarantees than a direct connection for high-stakes tasks.
 A topological structure where Signal $X$ activates $Z$ directly, but also activates $Y$ which gates $Z$. The node
 $Z$ functions as an AND gate: it fires if and only if $X \wedge Y$.
 
-\paragraph{Theorem 1 (Error Suppression in CFFL).}
+\paragraph{Theorem 1 (Error Suppression in CFFL).}\label{thm:cffl-error-suppression}
 Let $A_{\mathrm{gen}}$ be a generator agent and $A_{\mathrm{ver}}$ be a verifier agent. Let
 $P(E_{\mathrm{gen}})$ (resp.\ $P(E_{\mathrm{ver}})$) be the probability of a hallucination (error) in any single
 generation step of $A_{\mathrm{gen}}$ (resp.\ $A_{\mathrm{ver}}$).
@@ -254,12 +254,12 @@ put(s, m) =
 s' & \text{if } \mathcal{P}(m) \ge \tau_{\text{action}} \\
 \bot & \text{otherwise}
 \end{cases}
-\tag{10}
+\label{eq:trust-gated-lens}
 \end{equation}
 where $\tau_{\text{action}}$ is the minimum trust level required for the action.
 \end{itemize}
 
-\paragraph{Theorem 2 (Injection Resistance).}
+\paragraph{Theorem 2 (Injection Resistance).}\label{thm:injection-resistance}
 Let $\mathcal{I}$ be an injection attack that attempts to insert a message $m_{\text{mal}}$ with forged provenance $\mathcal{P}'(m_{\text{mal}}) = U$. If the provenance labels are \textbf{structurally enforced} (i.e., $\mathcal{P}$ is computed from message metadata, not content), then:
 \[
 \mathcal{P}(m_{\text{mal}}) = R \quad \text{(actual provenance)}
@@ -285,7 +285,7 @@ A topology generates periodic behavior via delayed negative feedback. Node $A$ a
 \item \textbf{Formal Structure:} An oscillator is a Trace operation with a built-in delay element $\delta$:
 \begin{equation}
 \mathrm{Osc}(A) = Tr(A \circ \delta)
-\tag{11}
+\label{eq:oscillator-trace}
 \end{equation}
 where $\delta: S \to S$ introduces temporal separation between activation and inhibition, preventing the system from reaching a fixed point.
 \end{itemize}

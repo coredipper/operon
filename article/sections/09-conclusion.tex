@@ -63,11 +63,16 @@ state sharing.
 composition, full transition traces, and bisimulation-based equivalence checking, enabling formal
 verification that two agent implementations are observationally interchangeable.
 
+\item \textbf{Epistemic Topology:} Kripke-style knowledge operators ($K_i$, $E_G$, $C_G$, $D_G$) derived
+from wiring diagram structure yield four predictive theorems for multi-agent scaling---error amplification,
+sequential penalty, parallel acceleration, tool density---validated against empirical results from
+large-scale architecture evaluations~\cite{kim2025scaling}.
+
 \item \textbf{Capability-Gated Tool Acquisition:} The Plasmid Registry implements Horizontal Gene Transfer
 with capability gating, preventing privilege escalation when agents dynamically acquire tools.
 
 \item \textbf{Diagram Optimization via Categorical Rewriting:} Cost annotations enrich the wiring category
-over $(\mathbb{R}_{\geq 0}, +, 0)$, making resource consumption a first-class compositional concept.
+over the resource monoid $(\mathcal{R}, +, 0)$, making resource consumption a first-class compositional concept.
 Rewriting passes---dead wire elimination, parallel grouping, cost-order scheduling---are endofunctors
 that preserve input-output bisimulation while improving resource utilization. The ResourceAwareExecutor
 gates module execution on MetabolicState, connecting diagram optimization to the metabolic intelligence
@@ -77,7 +82,8 @@ starvation responses.
 
 \subsection*{The Mathematical Foundation}
 
-The isomorphism rests on the category $\mathbf{Poly}$ of polynomial functors, where both genes and agents are
+The isomorphism rests on the category $\mathbf{Poly}$ of polynomial functors, where biological and software
+components at every scale---genes and capabilities, cells and agents, tissues and multi-agent systems---are
 modeled as interfaces $(O, I)$ consuming observations and producing actions. The Operad of Wiring Diagrams
 provides the grammar for composition, with type-checking at the topological level preventing classes of
 runtime errors. The Metabolic Coalgebra enriches this with resource constraints, providing a decidable
@@ -96,6 +102,8 @@ to implementable code patterns, as demonstrated by the reference implementation.
 agent frameworks will be evaluated not just on capability benchmarks, but on their metabolic efficiency,
 immune resistance, and homeostatic robustness---the same criteria that determine organismal fitness in
 biological evolution.
+
+The epistemic topology formalization provides predictive power that has been validated against empirical scaling results~\cite{kim2025scaling}, demonstrating that the framework captures real structure rather than post-hoc rationalization. The connection between morphogen-driven topology switching and epistemic optimization suggests a path toward formally verified adaptive multi-agent systems, where topological transitions are not merely heuristic but provably optimal under specified epistemic constraints.
 
 \subsection*{Future Work}
 
