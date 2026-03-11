@@ -274,7 +274,15 @@ A_{\circ} \le n \cdot (1 - d).
 \end{enumerate}
 \end{theorem}
 
-\textit{Proof sketch.} In the independent case, the hub's observation function $\mathrm{obs}_{\mathrm{hub}}$ factors through only the final outputs---the hub's equivalence classes $[s]_{\sim_{\mathrm{hub}}}$ are too coarse to distinguish ``agent $j$ erred at step 3'' from ``agent $j$ received different input.'' In the centralized case, the hub observes each worker's output before aggregation. Its partition $\sim_{\mathrm{hub}}$ is strictly finer, enabling detection of inter-worker inconsistencies. The detection rate $d$ is bounded by the mutual information $I(\mathrm{obs}_{\mathrm{hub}}; \mathrm{error}_j)$---the more the hub's observations are informative about each worker's internal error state, the higher $d$. \qed
+\begin{proof}
+\textbf{Part (a).} Let $E_j$ denote the event that agent $j$ produces an erroneous output, with $P(E_j) = p$ independently across agents. In the independent topology, the aggregator's observation function is $\mathrm{obs}_{\mathrm{agg}}(s) = (o_1, \ldots, o_n)$ where $o_j$ is agent $j$'s final output. Crucially, $\mathrm{obs}_{\mathrm{agg}}$ does not include intermediate reasoning states---the aggregator's indistinguishability relation satisfies $s \sim_{\mathrm{agg}} s'$ whenever all final outputs coincide, regardless of whether those outputs contain errors. Thus $\neg K_{\mathrm{agg}}(\neg E_j)$ for any $j$: the aggregator cannot know that agent $j$ did \textit{not} err.
+
+The aggregate output fails if any component contains an undetected error. By the union bound, $P(\text{aggregate failure}) \le \sum_{j=1}^{n} P(E_j) = np$. Since a single agent fails with probability $p$, the amplification factor $A_{\otimes} = P(\text{failure}_{\otimes})/p \le n$.
+
+\textbf{Part (b).} In the centralized topology, the hub's observation function covers all worker outputs \textit{before} aggregation: $\mathrm{obs}_{\mathrm{hub}}(s) = (o_1, \ldots, o_n, \mathbf{x})$ where $\mathbf{x}$ includes the original task decomposition. The hub's partition $\sim_{\mathrm{hub}}$ is strictly finer than $\sim_{\mathrm{agg}}$ from part (a), because the hub can compare outputs against each other and against the task specification. Define the detection rate $d = P(K_{\mathrm{hub}}(E_j) \mid E_j)$---the probability that the hub's finer partition enables it to identify the error. An error in subtask $j$ reaches the aggregate output only if it occurs ($P = p$) \textit{and} escapes detection ($P = 1-d$). By independence of detection across subtasks, $P(\text{failure}_{\circ}) \le \sum_{j=1}^{n} p(1-d) = np(1-d)$. Hence $A_{\circ} = P(\text{failure}_{\circ})/p \le n(1-d)$.
+
+The ratio $A_{\otimes}/A_{\circ} \ge 1/(1-d)$ quantifies the epistemic advantage: the centralized hub's finer information partition translates directly into error suppression.
+\end{proof}
 
 \paragraph{Parametric Corollary.} For $n \approx 3\text{--}5$ agents and hub detection rate $d \approx 0.75$ (empirically reasonable for an LLM cross-checking outputs), $A_{\otimes} / A_{\circ} \approx 1/(1-d) = 4$. Kim et al.~\cite{kim2025scaling} observed amplification factors of $17.2\times$ (independent) vs.\ $4.4\times$ (centralized), yielding a ratio of $\approx 3.9\times$. The qualitative ordering $A_{\otimes} \gg A_{\circ}$ holds universally; the quantitative ratio depends on hub capability.
 
@@ -292,7 +300,21 @@ which is strictly positive whenever the wire does not carry the sender's full st
 \end{enumerate}
 \end{theorem}
 
-\textit{Proof sketch.} The single agent's coalgebraic state $S$ is a superset of the information in any result $r_j$ (it computed $r_j$). Thus $K_i(r_j)$ holds trivially with zero communication. For multi-agent handoffs, the receiver's observation function $\mathrm{obs}_{\mathrm{receiver}}$ maps the sender's state $S_{\mathrm{sender}}$ through a wire with finite bandwidth (the message). By the data processing inequality, $I(\mathrm{obs}_{\mathrm{receiver}}; r_j) \le I(S_{\mathrm{sender}}; r_j)$ with equality only if the wire is lossless. The information deficit $\Delta I_j$ must be compensated by additional reasoning tokens in the receiver. \qed
+\begin{proof}
+\textbf{Part (a).} A single agent executing all $k$ steps maintains coalgebraic state $S = (L, \mathcal{R})$ throughout. After computing step $j$, the result $r_j$ is a deterministic function of $S$, so $r_j \in \mathrm{obs}_i(s)$ trivially---the agent's indistinguishability class $[s]_{\sim_i}$ distinguishes all states that differ in $r_j$. Hence $K_i(r_j)$ holds with zero communication cost. The total cost is exactly $k \cdot c_{\mathrm{step}}$.
+
+\textbf{Part (b).} When step $j$ is performed by agent $a$ and step $j+1$ by agent $b$, establishing $K_b(r_j)$ requires transmitting $r_j$ across a wire $w: a \to b$. The receiver's observation is $\mathrm{obs}_b(s) = \mathrm{optic}_w(\pi_w(s))$, which maps the sender's full state through the wire's optic. By the data processing inequality applied to the Markov chain $S_a \to \mathrm{optic}_w(\pi_w(S_a)) \to \hat{r}_j$ (where $\hat{r}_j$ is the receiver's reconstruction):
+\[
+I(\hat{r}_j; r_j) \le I(\mathrm{obs}_b; r_j) \le I(S_a; r_j) = H(r_j)
+\]
+with equality iff the wire is lossless ($\mathrm{optic}_w \circ \pi_w$ is a sufficient statistic for $r_j$). In practice, context windows are finite and messages summarize rather than replicate the sender's full reasoning trace, so the inequality is strict. The epistemic reconstruction loss $\Delta I_j = H(S_a) - H(\mathrm{obs}_b(S_a)) > 0$ represents information about the sender's reasoning process that is lost in transmission.
+
+Each of $h$ handoffs incurs: (i) communication cost $c_{\mathrm{comm}}$ for message construction and parsing, and (ii) reconstruction cost $c_{\mathrm{recon},j}$ proportional to $\Delta I_j$, as the receiver must expend reasoning tokens to compensate for the missing context. The total multi-agent cost is:
+\[
+C_{\mathrm{multi}} = k \cdot c_{\mathrm{step}} + \sum_{j=1}^{h} \bigl(c_{\mathrm{comm}} + c_{\mathrm{recon},j}\bigr)
+\]
+The overhead ratio $(C_{\mathrm{multi}} - C_{\mathrm{single}})/C_{\mathrm{single}} = \sum_j (c_{\mathrm{comm}} + c_{\mathrm{recon},j}) / (k \cdot c_{\mathrm{step}})$ grows with $h$ and with the per-handoff information loss $\Delta I_j$. Since $\Delta I_j > 0$ at every handoff and reconstruction failures at step $j$ degrade the input quality for step $j+1$, the errors compound: later handoffs operate on progressively more lossy representations, producing superadditive degradation.
+\end{proof}
 
 \paragraph{Parametric Corollary.} With $c_{\mathrm{comm}} / c_{\mathrm{step}} \approx 0.3\text{--}0.5$ (handoff messages must summarize reasoning) and $h \approx k/n$ handoffs, the overhead reaches 30--50\%. Context reconstruction failures compound across handoffs, producing total degradation of 39--70\%---matching Kim et al.'s observed range on the PlanCraft sequential planning benchmark \cite{kim2025scaling}. The penalty is a direct consequence of \textbf{manufacturing knowledge} that a single agent obtains for free.
 
@@ -311,7 +333,15 @@ where $c_{\mathrm{assign}}$ is the coordinator's distribution cost and $c_{\math
 \end{enumerate}
 \end{theorem}
 
-\textit{Proof sketch.} Epistemic independence means each agent's observation partition is sufficient for its subtask: $K_i(\varphi_i)$ can be achieved from $\mathrm{obs}_i$ alone, without needing $K_i(K_j(\varphi_j))$. The coordinator's aggregation naturally achieves distributed knowledge $D_G$ because $\sim_{\mathrm{hub}} \subseteq \bigcap_{i} \sim_i$ (the hub observes all outputs). For part (c), when $I(\varphi_i; \varphi_j) > 0$, the optimal solution of subtask $i$ depends on information in agent $j$'s partition---information that is absent from $\mathrm{obs}_i$ under independent execution. \qed
+\begin{proof}
+\textbf{Part (a).} Let subtasks $\varphi_1, \ldots, \varphi_m$ be epistemically independent: for all $i \ne j$, agent $i$ can achieve $K_i(\varphi_i)$ from $\mathrm{obs}_i$ alone without requiring $K_i(\varphi_j)$. Formally, let $f_i^*$ denote the optimal solution function for subtask $i$. Epistemic independence means $f_i^*$ depends only on the initial task description and agent $i$'s local observations: $f_i^*(s) = f_i^*(\mathrm{obs}_i(s))$ for all global states $s$.
+
+Under parallel execution, all $m$ subtasks run concurrently. The wall-clock cost is determined by the slowest subtask plus coordination overhead: $C_{\mathrm{parallel}} = \max_i(c_{\mathrm{sub}_i}) + c_{\mathrm{assign}} + c_{\mathrm{agg}}$. Sequential execution by a single agent costs $C_{\mathrm{sequential}} = \sum_{i=1}^m c_{\mathrm{sub}_i}$. The speedup $S = C_{\mathrm{sequential}}/C_{\mathrm{parallel}}$ yields the stated formula. With equal subtask costs, $C_{\mathrm{sequential}} = m \cdot c_{\mathrm{sub}}$ and $C_{\mathrm{parallel}} = c_{\mathrm{sub}} + c_{\mathrm{assign}} + c_{\mathrm{agg}}$, so $S = m \cdot c_{\mathrm{sub}} / (c_{\mathrm{sub}} + c_{\mathrm{assign}} + c_{\mathrm{agg}}) \approx m$ when coordinator overhead is small relative to subtask cost.
+
+\textbf{Part (b).} The coordinator receives all $m$ outputs $(o_1, \ldots, o_m)$ as part of the aggregation step. Its observation function satisfies $\mathrm{obs}_{\mathrm{hub}}(s) \supseteq (o_1, \ldots, o_m)$. For any two global states $s, s'$: if $s \sim_{\mathrm{hub}} s'$ then $o_j(s) = o_j(s')$ for all $j$, which implies $s \sim_j s'$ for every agent $j$ (since each agent's output is determined by its local state). Therefore ${\sim_{\mathrm{hub}}} \subseteq \bigcap_{j \in G} {\sim_j}$, and by definition $D_G(\varphi) \Rightarrow K_{\mathrm{hub}}(\varphi)$---the hub knows at least as much as the distributed knowledge of the group. Error detection from Theorem~\ref{thm:error-amplification}(b) follows because the hub can cross-check outputs at no additional communication cost.
+
+\textbf{Part (c).} When $I(\varphi_i; \varphi_j) > 0$, the optimal solution $f_i^*$ depends on the value of $\varphi_j$: there exist global states $s, s'$ with $\mathrm{obs}_i(s) = \mathrm{obs}_i(s')$ but $f_i^*(s) \ne f_i^*(s')$, because the states differ in $\varphi_j$ which affects $\varphi_i$'s optimal answer. Under independent execution, agent $i$ cannot distinguish $s$ from $s'$ and must choose a single action, incurring expected quality loss proportional to $I(\varphi_i; \varphi_j)$---the unresolved mutual information between subtask solutions.
+\end{proof}
 
 \paragraph{Parametric Corollary.} For Kim et al.'s Finance-Agent benchmark \cite{kim2025scaling}, the task decomposes into $m = 3\text{--}4$ epistemically independent subtasks (revenue, costs, market comparison). With small coordinator overhead, $S \approx 2\text{--}3\times$. Combined with the hub's error-detection benefit (Theorem~\ref{thm:error-amplification}), the net improvement reaches $\sim$80\%. Kim et al.\ observed $+80.8\%$.
 
@@ -335,7 +365,29 @@ yielding disproportionate overhead as tool density increases.
 \end{enumerate}
 \end{theorem}
 
-\textit{Proof sketch.} The root cause is \textbf{knowledge fragmentation}. Each agent added to the system partitions the tool-knowledge space: agent $i$'s observation function covers only $T_i$'s outputs. The system's distributed knowledge $D_G$ grows (more tools covered), but \textit{accessing} $D_G$ requires communication proportional to the fragmentation. The second-order epistemic cost arises because planning requires modeling other agents' capabilities, not just their outputs. This is strictly harder: $K_i(K_j(\varphi))$ requires $i$ to reason about $j$'s observation partition, adding a multiplicative factor of $n$. \qed
+\begin{proof}
+\textbf{Part (a).} A single agent holds all $t$ tools in its context. Its observation function $\mathrm{obs}(s) = (o_1(s), \ldots, o_t(s))$ covers all tool outputs. At each planning step, the agent selects the next tool by scanning descriptions in context. This is a linear search over $t$ candidates: each tool description must be evaluated against the current subgoal, yielding $O(t)$ planning cost per step.
+
+\textbf{Part (b).} With $n$ agents and a balanced partition $T_1, \ldots, T_n$ where $|T_i| = t/n$, agent $i$'s observation function covers only $T_i$'s outputs: $\mathrm{obs}_i(s) = (o_k(s))_{k \in T_i}$. When agent $i$ needs tool $k \in T_j$ ($j \ne i$), three epistemic gaps must be bridged:
+
+\begin{enumerate}
+\item \textbf{Discovery:} Agent $i$ must establish $K_i(\exists k \in T_j : k \text{ solves subproblem})$. Since $k \notin T_i$, this requires communication---agent $i$ cannot determine tool $k$'s existence from $\mathrm{obs}_i$ alone. There exist global states $s, s'$ where $\mathrm{obs}_i(s) = \mathrm{obs}_i(s')$ but $T_j$ differs, so $s \sim_i s'$ yet the available remote tools are different.
+\item \textbf{Delegation:} Agent $i$ must transmit the subproblem context to agent $j$ and receive the result, incurring communication cost $c_{\mathrm{comm}}$ per remote tool invocation.
+\item \textbf{Reconstruction:} Agent $j$'s output $o_k$ is interpreted by $i$ without $j$'s full execution context. By the data processing inequality, $I(\text{subproblem}; o_k|_{\mathrm{received}}) \le I(\text{subproblem}; o_k|_{\mathrm{full context}})$, yielding information loss $\Delta I \ge 0$.
+\end{enumerate}
+
+The fraction of tools requiring remote access is $1 - |T_i \cap T_{\mathrm{needed}}|/|T_{\mathrm{needed}}|$. For each remote tool, the coordination cost is $c_{\mathrm{comm}}$. Over all $t$ potentially needed tools, the total coordination overhead is:
+\[
+C_{\mathrm{coord}} = t \cdot \left(1 - \frac{|T_i \cap T_{\mathrm{needed}}|}{|T_{\mathrm{needed}}|}\right) \cdot c_{\mathrm{comm}}.
+\]
+As $t$ grows with fixed $n$ and balanced partitions, the local coverage fraction $|T_i|/t = 1/n$ is constant, so the remote fraction approaches $(n-1)/n$ and $C_{\mathrm{coord}} \to O(t \cdot c_{\mathrm{comm}})$.
+
+\textbf{Part (c).} Planning requires not just first-order knowledge of tool outputs but second-order knowledge of other agents' capabilities. Specifically, to construct a multi-step plan, agent $i$ must evaluate propositions of the form $K_i(K_j(\mathrm{tool}_k \text{ can solve subproblem } \varphi))$---``I know that agent $j$ knows that tool $k$ is applicable.''
+
+Consider the Kripke structure. For agent $i$ to establish $K_i(K_j(\varphi))$, we need: for all $s'$ with $s \sim_i s'$, and for all $s''$ with $s' \sim_j s''$, $\varphi$ holds at $s''$. Agent $i$ must reason over $j$'s indistinguishability classes, which requires a model of $j$'s observation partition. This model has size $O(|T_j|) = O(t/n)$ per agent. Since $i$ must model all $n-1$ remote agents, the total planning state is $O((n-1) \cdot t/n) = O(t)$ per planning step---but each model must be queried against each candidate tool, yielding $O(t \cdot n)$ comparisons in the worst case (when the planner considers all tools across all agents for each subgoal).
+
+Contrast with the single-agent case: planning cost is $O(t)$ (linear scan, no modeling of other agents' capabilities). The multi-agent case introduces a multiplicative factor of $n$ from the second-order epistemic reasoning, so $C_{\mathrm{plan}} = O(t \cdot n) \gg O(t)$ for $n > 1$. This superlinear scaling in the product $t \cdot n$ explains why increasing tool density in multi-agent systems produces disproportionate overhead that can negate parallelism benefits.
+\end{proof}
 
 \paragraph{Parametric Corollary.} At $t = 16$ tools and $n = 3\text{--}4$ agents: the remote tool fraction approaches 0.7, and second-order planning cost reaches $\sim$64 reasoning units per step vs.\ 16 for a single agent. This $4\times$ overhead negates parallelism benefits. Below $t \approx 8$, most needed tools are local and the overhead is manageable. Kim et al.~\cite{kim2025scaling} observe a strong negative efficiency--tool interaction ($\hat{\beta} = -0.267$, $p < 0.001$) that is most pronounced at $T = 16$ tools, where coordination overhead negates parallelism benefits.
 
