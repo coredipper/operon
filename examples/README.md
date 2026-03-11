@@ -47,6 +47,7 @@ from operon_ai.providers import MockProvider, ProviderConfig
 | 48-55 | Orchestration | Multi-motif composition, LLM integration, capstone |
 | 56-63 | Advanced Biology | Epigenetic coupling, Cell types, Tissue, Plasmids, Morphogens |
 | 65-66 | Optimization & Providers | Diagram optimization, OpenAI-compatible servers |
+| 67 | Epistemic Topology | Classification, error bounds, parallelism, recommendations |
 
 ## Running Examples
 

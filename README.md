@@ -5,7 +5,7 @@
 > *"Safety from structure, not just strings."*
 
 ![Status](https://img.shields.io/badge/status-experimental-orange)
-![Version](https://img.shields.io/badge/pypi-v0.15.0-blue)
+![Version](https://img.shields.io/badge/pypi-v0.17.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![Publish to PyPI](https://github.com/coredipper/operon/actions/workflows/publish.yml/badge.svg)](https://github.com/coredipper/operon/actions/workflows/publish.yml)
 
@@ -22,7 +22,6 @@
 - [Installation](#-installation)
 - [Examples](#-examples)
 - [Hugging Face Spaces](#-hugging-face-spaces)
-- [Theoretical Background](#-theoretical-background)
 - [Architecture](#-architecture)
 
 ## 🦠 The Problem: Fragile Agents
@@ -1155,6 +1154,7 @@ Explore the `examples/` directory for runnable demonstrations:
 | Example | System | Description |
 |---------|--------|-------------|
 | [`65_diagram_optimization.py`](examples/65_diagram_optimization.py) | Analyzer+Optimizer | Cost analysis, rewriting passes, resource-aware execution |
+| [`67_epistemic_topology.py`](examples/67_epistemic_topology.py) | Epistemic Analyzer | Topology classification, error bounds, parallelism, recommendations |
 
 Run any example:
 
@@ -1197,6 +1197,8 @@ All Spaces live under the [`huggingface/`](huggingface/) directory. Each contain
 | [`space-coalgebra`](huggingface/space-coalgebra) | Coalgebra | Composable state machines with bisimulation checking |
 | [`space-diffusion`](huggingface/space-diffusion) | Morphogen Diffusion | Gradient formation on graph topologies |
 | [`space-optics`](huggingface/space-optics) | Wire Optics | Prism routing and traversal transforms |
+| [`space-epistemic`](huggingface/space-epistemic) | Epistemic Topology | Topology classification, error bounds, parallelism predictions |
+| [`space-diagram-builder`](huggingface/space-diagram-builder) | Diagram Builder | Build custom diagrams via text with full epistemic analysis |
 
 ### Healing & Repair
 
@@ -1285,43 +1287,6 @@ python -m eval.report --glob "eval/results/seed-*.json" \
 ```
 
 See [`eval/README.md`](eval/README.md) for full documentation.
-
----
-
-## 📚 Theoretical Background
-
-Operon is grounded in a formal isomorphism between Gene Regulatory Networks (GRNs) and agentic architectures. Both can be modeled as polynomial functors in the category **Poly**—typed interfaces where objects represent outputs and morphisms represent interactions. The key mapping:
-
-- **Gene** ↔ **Agent** (individual polynomial functor)
-- **Cell** ↔ **Multi-agent system** (composite of genes/agents)
-
-| Biological Concept | Software Equivalent | Mathematical Object |
-|-------------------|---------------------|---------------------|
-| Gene Interface | Agent Interface | Polynomial Functor (P) |
-| Protein (output) | Tool Call / Message | Output Position (O) |
-| Transcription Factor | Observation / Prompt | Input Direction (I) |
-| Promoter Region | API Schema / Context Window | Lens (Optic) |
-| Epigenetic Markers | Vector Store / Chat History | State Coalgebra |
-| Signal Transduction | Data Pipeline | Morphism (∘) |
-
-**Organelles** (shared infrastructure within a cell/system):
-
-| Organelle | Biological Function | Software Function |
-|-----------|---------------------|-------------------|
-| Ribosome | mRNA → Protein synthesis | Prompt Template Engine |
-| Chaperone | Protein folding/validation | Schema Validator / JSON Parser |
-| Lysosome | Waste processing (autophagy) | Error Handler / Garbage Collector |
-| Nucleus | Transcription control | LLM Provider Wrapper |
-| Membrane | Immune system (self/non-self) | Prompt Injection Defense |
-| Mitochondria | ATP synthesis | Deterministic Tool Execution |
-
-**Lifecycle**:
-
-| Biological | Software | Function |
-|------------|----------|----------|
-| Telomere Shortening | Operation Counter | Limits agent lifespan |
-| Circadian Oscillator | Health Checks | Periodic maintenance |
-| Apoptosis | Clean Shutdown | Graceful termination |
 
 ---
 
