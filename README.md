@@ -22,7 +22,6 @@
 - [Installation](#-installation)
 - [Examples](#-examples)
 - [Hugging Face Spaces](#-hugging-face-spaces)
-- [Theoretical Background](#-theoretical-background)
 - [Architecture](#-architecture)
 
 ## 🦠 The Problem: Fragile Agents
@@ -1285,43 +1284,6 @@ python -m eval.report --glob "eval/results/seed-*.json" \
 ```
 
 See [`eval/README.md`](eval/README.md) for full documentation.
-
----
-
-## 📚 Theoretical Background
-
-Operon is grounded in a formal isomorphism between Gene Regulatory Networks (GRNs) and agentic architectures. Both can be modeled as polynomial functors in the category **Poly**—typed interfaces where objects represent outputs and morphisms represent interactions. The key mapping:
-
-- **Gene** ↔ **Agent** (individual polynomial functor)
-- **Cell** ↔ **Multi-agent system** (composite of genes/agents)
-
-| Biological Concept | Software Equivalent | Mathematical Object |
-|-------------------|---------------------|---------------------|
-| Gene Interface | Agent Interface | Polynomial Functor (P) |
-| Protein (output) | Tool Call / Message | Output Position (O) |
-| Transcription Factor | Observation / Prompt | Input Direction (I) |
-| Promoter Region | API Schema / Context Window | Lens (Optic) |
-| Epigenetic Markers | Vector Store / Chat History | State Coalgebra |
-| Signal Transduction | Data Pipeline | Morphism (∘) |
-
-**Organelles** (shared infrastructure within a cell/system):
-
-| Organelle | Biological Function | Software Function |
-|-----------|---------------------|-------------------|
-| Ribosome | mRNA → Protein synthesis | Prompt Template Engine |
-| Chaperone | Protein folding/validation | Schema Validator / JSON Parser |
-| Lysosome | Waste processing (autophagy) | Error Handler / Garbage Collector |
-| Nucleus | Transcription control | LLM Provider Wrapper |
-| Membrane | Immune system (self/non-self) | Prompt Injection Defense |
-| Mitochondria | ATP synthesis | Deterministic Tool Execution |
-
-**Lifecycle**:
-
-| Biological | Software | Function |
-|------------|----------|----------|
-| Telomere Shortening | Operation Counter | Limits agent lifespan |
-| Circadian Oscillator | Health Checks | Periodic maintenance |
-| Apoptosis | Clean Shutdown | Graceful termination |
 
 ---
 

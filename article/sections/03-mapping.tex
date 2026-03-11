@@ -58,6 +58,24 @@ P_{\text{Agent}}(y) = \sum_{\text{action}\in \text{Actions}} y^{I_{\text{action}
 \label{eq:poly-agent}
 \end{equation}
 
+\paragraph{Multi-Scale Composition.}
+The polynomial functor formalism applies at every level of biological and software organization. Definitions~1 and~2 establish the \textit{atomic} isomorphism: a single gene and a single agent capability share the same interface structure. But polynomial functors compose---via the parallel ($\otimes$), serial ($\circ$), and trace ($\mathrm{Tr}$) operations of \S\ref{sec:operad}---yielding the same mathematical object at each successive scale:
+
+\begin{center}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Biological Scale} & \textbf{Software Scale} & \textbf{Composition}\\
+\midrule
+Gene & Capability (tool / behavior) & Atomic polynomial functor\\
+Cell & Agent & Composite of genes $+$ organelles\\
+Tissue & Multi-agent system & Wiring diagram of cells (\S\ref{sec:multi-cellular})\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent A cell is not merely a bag of genes; it is a structured composition with shared infrastructure (organelles) and a boundary (membrane). Likewise, an agent is a structured composition of capabilities with shared components (LLM provider, memory, error handling) and a security boundary. The organelle mappings below describe this cell-level architecture. The multi-cellular organization of \S\ref{sec:multi-cellular} then composes cells into tissues via wiring diagrams---the same formalism, one level up.
+
 \subsection{The Interface: Promoters as Lenses}
 
 In biology, a gene is not universally accessible. It is guarded by a Promoter Region---a specific DNA sequence
