@@ -1,8 +1,11 @@
 \section{The Mapping: Biology $\leftrightarrow$ Software}
 
-To treat Agentic Systems and Gene Regulatory Networks (GRNs) as isomorphic \textbf{at the level of their typed
-interfaces}, we must map them to a common mathematical object. We utilize the category $\mathbf{Poly}$, where
-objects are polynomial functors representing interfaces, and morphisms represent interaction protocols.
+To compare Agentic Systems and Gene Regulatory Networks (GRNs) under a common typed-interface
+abstraction, we map selected components from both domains to a shared mathematical object. We
+utilize the category $\mathbf{Poly}$, where objects are polynomial functors representing interfaces, and
+morphisms represent interaction protocols. The claim in this section is a correspondence of interface
+descriptions, not a proof that the full biological and software domains are equivalent in mechanism,
+implementation, or dynamics.
 
 \subsection{Preliminaries: The Category $\mathbf{Poly}$}
 
@@ -37,7 +40,7 @@ for a specific type of input $i\in I_o$ before it can proceed.
 offers an Output (the cap) and exposes specific Input ports (the stalks) dependent on that output.}
 \end{figure}
 
-\subsection{The Isomorphism: Genes and Agents}
+\subsection{The Correspondence: Genes and Agent Capabilities}
 
 We now apply this abstract definition to our specific domains.
 
@@ -46,20 +49,20 @@ A gene $G$ is a polynomial functor where $O_G$ is the set of expressed proteins 
 $I_G=(I_{\text{prot}})_{\text{prot}\in O_G}$ is the \textbf{family} of regulatory-signal sets (transcription factors)
 available at each expressed protein:
 \begin{equation}
-P_{\text{Gene}}(y) = \sum_{\text{prot}\in \text{Proteins}} y^{I_{\text{prot}}}.
+P_{\text{Gene}}(y) = \sum_{\text{prot}\in O_G} y^{I_{\text{prot}}}.
 \label{eq:poly-gene}
 \end{equation}
 
-\paragraph{Definition 2 (The Agent Object).}
-An autonomous agent $A$ is a polynomial functor where $O_A$ is the set of generated messages/actions, and
+\paragraph{Definition 2 (The Agent-Capability Object).}
+An agent capability $A$ is a polynomial functor where $O_A$ is the set of generated messages/actions, and
 $I_A=(I_{\text{action}})_{\text{action}\in O_A}$ is the \textbf{family} of observation sets available at each action:
 \begin{equation}
-P_{\text{Agent}}(y) = \sum_{\text{action}\in \text{Actions}} y^{I_{\text{action}}}.
+P_{\text{Agent}}(y) = \sum_{\text{action}\in O_A} y^{I_{\text{action}}}.
 \label{eq:poly-agent}
 \end{equation}
 
 \paragraph{Multi-Scale Composition.}
-The polynomial functor formalism applies at every level of biological and software organization. Definitions~1 and~2 establish the \textit{atomic} isomorphism: a single gene and a single agent capability share the same interface structure. But polynomial functors compose---via the parallel ($\otimes$), serial ($\circ$), and trace ($\mathrm{Tr}$) operations of \S\ref{sec:operad}---yielding the same mathematical object at each successive scale:
+The polynomial functor formalism applies at every level of biological and software organization. Definitions~1 and~2 establish the \textit{atomic} correspondence: a single gene and a single agent capability share the same interface form. Polynomial functors then compose---via the parallel ($\otimes$), serial ($\circ$), and trace ($\mathrm{Tr}$) operations of \S\ref{sec:operad}---allowing the same interface language to describe progressively richer assemblies:
 
 \begin{center}
 \small
@@ -67,14 +70,14 @@ The polynomial functor formalism applies at every level of biological and softwa
 \toprule
 \textbf{Biological Scale} & \textbf{Software Scale} & \textbf{Composition}\\
 \midrule
-Gene & Capability (tool / behavior) & Atomic polynomial functor\\
-Cell & Agent & Composite of genes $+$ organelles\\
-Tissue & Multi-agent system & Wiring diagram of cells (\S\ref{sec:multi-cellular})\\
+Gene & Agent capability & Atomic polynomial functor\\
+Cell & Agent runtime & Composite of capabilities $+$ organelles\\
+Tissue & Multi-agent subsystem & Wiring diagram of agents (\S\ref{sec:multi-cellular})\\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\noindent A cell is not merely a bag of genes; it is a structured composition with shared infrastructure (organelles) and a boundary (membrane). Likewise, an agent is a structured composition of capabilities with shared components (LLM provider, memory, error handling) and a security boundary. The organelle mappings below describe this cell-level architecture. The multi-cellular organization of \S\ref{sec:multi-cellular} then composes cells into tissues via wiring diagrams---the same formalism, one level up.
+\noindent A cell is not merely a bag of genes; it is a structured composition with shared infrastructure (organelles) and a boundary (membrane). Likewise, an agent runtime is a structured composition of capabilities with shared components (LLM provider, memory, error handling) and a security boundary. To reduce ambiguity, the rest of the paper uses \textit{capability} for the atomic interface and \textit{agent} for the composed runtime-level object, even though later wiring-diagram examples sometimes use ``agent'' informally for executable boxes. The organelle mappings below describe this cell-level architecture. The multi-cellular organization of \S\ref{sec:multi-cellular} then composes agents into tissues via wiring diagrams---the same formalism, one level up.
 
 \subsection{The Interface: Promoters as Lenses}
 
@@ -86,7 +89,7 @@ We model this gating mechanism using Optics, specifically Lenses. A Lens consist
 state $S$ and a local view $V$:
 \begin{enumerate}[leftmargin=*]
 \item Get (View): $\mathrm{get}: S \to V$ (Extracting relevant signal from global state).
-\item Put (Update): $\mathrm{put}: S\times V' \to S$ (Updating global state based on local change).
+\item Put (Update): $\mathrm{put}: S\times V \to S$ (Updating global state based on local change).
 \end{enumerate}
 
 The ``Promoter'' acts as a filter that determines which part of the global cellular environment ($S$) is visible
@@ -153,8 +156,9 @@ By expanding $P(S)$, we derive the two fundamental operations of the state machi
 $i\in I_{o(s)}$ compatible with its current output $o(s)$, what is my new state?)
 \end{enumerate}
 
-By establishing this formal dictionary (Table 1), we \textbf{can regard} GRNs and Agentic Systems as distinct
-implementations of the same abstract dynamical system \textbf{under this interface-level abstraction}.
+By establishing this formal dictionary (Table~1), we can compare selected GRN components and agentic
+components as instances of the same abstract class of typed dynamical interfaces \textbf{under this
+interface-level abstraction}.
 
 \paragraph{Composable Coalgebras.}
 The coalgebra formalism becomes most useful when made composable. We define two composition operations that mirror the parallel and serial composition of the Operad (\S4):
@@ -164,12 +168,14 @@ The coalgebra formalism becomes most useful when made composable. We define two 
 \end{itemize}
 
 \paragraph{Bisimulation: Observational Equivalence.}
-Two state machines $(S_1, \alpha_1)$ and $(S_2, \alpha_2)$ are \textbf{bisimilar} if, for every input sequence, they produce identical output sequences. We write $M_1 \sim M_2$ when
+For the deterministic state machines considered here, we use the following observational criterion:
+two state machines $(S_1, \alpha_1)$ and $(S_2, \alpha_2)$ are equivalent if, for every input sequence,
+they produce identical output sequences. We write $M_1 \sim M_2$ when
 \begin{equation}
 \forall \, \mathbf{i} \in I^*: \quad \mathrm{readout}_1^*(\mathbf{i}) = \mathrm{readout}_2^*(\mathbf{i})
 \label{eq:bisimulation}
 \end{equation}
-where $\mathrm{readout}^*$ denotes the lifted readout over the input sequence. A diverging input (witness) constitutes a proof of non-equivalence. This enables formal verification: two agent implementations are interchangeable if they are bisimilar, regardless of their internal state representations.
+where $\mathrm{readout}^*$ denotes the lifted readout over the input sequence. A diverging input (witness) constitutes a proof of non-equivalence. This supports formal comparison of deterministic implementations within the input model considered here; stronger coinductive verification claims are left for future work.
 
 \begin{figure}[h]
 \centering
@@ -191,7 +197,7 @@ Generation
 \end{tabular}
 \end{tabular}
 \\[0.5em]
-\caption{The Structural Isomorphism. Both Genes and Agents act as transducers converting Input Contexts ($I$) into
+\caption{The Structural Correspondence. Both Genes and Agent Capabilities act as transducers converting Input Contexts ($I$) into
 Output Expressions ($O$), governed by the same categorical laws (at the level of polynomial-interface models).}
 \end{figure}
 
@@ -225,7 +231,7 @@ Lifespan Limit & Telomere Shortening & Operation Counter / Max Iterations\\
 Periodic Scheduling & Circadian Oscillator & Health Checks / Heartbeat\\
 \bottomrule
 \end{tabular}
-\caption{The Isomorphism Dictionary (Extended)}
+\caption{The Correspondence Dictionary (Extended)}
 \end{table}
 
 \begin{table}[h]
@@ -270,7 +276,7 @@ Traversal Optic & Batch Wire Transform & Endofunctor on Lists\\
 Bisimulation & Agent Equivalence Testing & Observational Equivalence\\
 \bottomrule
 \end{tabular}
-\caption{Extended Isomorphism Dictionary: Security, Metabolism, and Organization}
+\caption{Extended Correspondence Dictionary: Security, Metabolism, and Organization}
 \end{table}
 
 \subsection{Metabolic Coalgebras: Formalizing Resource Constraints}
@@ -280,7 +286,7 @@ Finally, we address the physical constraints of computation. Just as biological 
 We align this definition with the theory of \textbf{Quantitative Polynomial Functors} \cite{nakov2021quantitative}, treating the system as a state machine enriched over a resource monoid.
 
 \begin{definition}[The Resource Monoid]\label{def:resource-monoid}
-Let $(\mathcal{R}, +, 0, \ge)$ be an ordered commutative monoid representing computational resources. For a single resource dimension (e.g., token counts), $\mathcal{R} \cong \mathbb{N}$; for multi-dimensional accounting (latency, memory), $\mathcal{R} \cong \mathbb{R}_{\ge 0}^k$.
+Let $(\mathcal{R}, +, 0, \ge)$ be an ordered commutative monoid representing computational resources, equipped with a partial subtraction $r \ominus c$ defined whenever $r \ge c$. For a single resource dimension (e.g., token counts), $\mathcal{R} \cong \mathbb{N}$; for multi-dimensional accounting (latency, memory), $\mathcal{R} \cong \mathbb{R}_{\ge 0}^k$.
 \end{definition}
 
 \begin{definition}[Metabolic Coalgebra]\label{def:metabolic-coalgebra}
@@ -288,33 +294,28 @@ A resource-constrained agent is a coalgebra $(S, \alpha)$ over a polynomial func
 \begin{equation*}
     S \cong L \times \mathcal{R}
 \end{equation*}
-The structure map $\alpha: S \to P(S) + \bot$ is defined as a \textbf{partial map} guarded by cost. For a transition requiring cost $c \in \mathcal{R}$:
+The structure map $\alpha: S \to P(S) + \bot$ is defined as a \textbf{partial map} guarded by cost. Writing only the continuation state and suppressing the output/readout coordinate of $P(S)$, a transition requiring cost $c \in \mathcal{R}$ has the guarded form:
 \begin{equation*}
-    \alpha(l, r) =
+    \alpha_{\mathrm{cont}}(l, r) =
     \begin{cases}
-      (l', r - c) & \text{if } r \ge c \\
+      (l', r \ominus c) & \text{if } r \ge c \\
       \bot & \text{if } r < c \quad \text{(Apoptosis)}
     \end{cases}
 \end{equation*}
 \end{definition}
 
-This structure maps to the energetics of transcriptional elongation. A gene (Agent) cannot express its protein (Action) instantaneously; it must transcribe an mRNA sequence (Chain of Thought) nucleotide by nucleotide. This process consumes a distinct amount of chemical energy (NTPs) per step. The Metabolic Coalgebra models this dependency: if the cellular energy budget is exhausted, transcription stalls (Ischemia), and the gene fails to execute its function, regardless of its regulatory logic.
+This structure maps to the energetics of transcriptional elongation. A gene or agent capability cannot produce its output instantaneously; it must carry out a sequence of state transitions, each with a cost. The Metabolic Coalgebra models this dependency: if the cellular or computational energy budget is exhausted, execution stalls (Ischemia), and the component fails to execute its function, regardless of its regulatory logic.
 
 This formalism establishes that ``Ischemia'' (Token Starvation) is not merely a runtime error, but a reachable terminal state $\bot$ in the system's dynamics. This mirrors the biological mechanism where failure to meet metabolic costs triggers p53-mediated apoptosis \cite{aubrey2018p53}.
 
 
 \begin{theorem}[The Metabolic Bound (Qualified)]\label{thm:metabolic-bound}
-Assume a resource-cost function assigns each non-identity transition a cost $c \ge c_{\min} > 0$, the resource
-state is monotone nonincreasing (no regeneration), and identity morphisms are the only zero-cost transitions.
-Then for any agentic topology with total budget $R_{total}$, every execution has length at most
-$\lfloor R_{total} / c_{\min} \rfloor$, so termination is decidable. If regeneration or zero-cost cycles are
-permitted, termination requires an additional well-founded potential or an explicit budget/termination
-certificate \cite{boreale2023weighted}.
+Assume either a single scalar resource budget $\mathcal{R} \cong \mathbb{N}$ or, more generally, a well-founded scalar potential $\mu: \mathcal{R} \to \mathbb{R}_{\ge 0}$ such that every non-identity transition of cost $c$ satisfies $\mu(r \ominus c) \le \mu(r) - c_{\min}$ for some $c_{\min} > 0$. Assume also that the resource state is monotone nonincreasing (no regeneration), and that infinite executions may not consist solely of stutter / identity steps. Then any execution contains at most $\lfloor \mu(R_{\mathrm{total}}) / c_{\min} \rfloor$ non-identity transitions; in the scalar-budget case this is $\lfloor R_{\mathrm{total}} / c_{\min} \rfloor$. Hence termination is decidable up to stuttering. If regeneration, zero-cost cycles, or unrestricted stutter loops are permitted, termination requires an additional well-founded potential or an explicit budget/termination certificate \cite{boreale2023weighted}.
 \end{theorem}
 
 \subsection{Additional Organelles: Completing the Cellular Architecture}
 
-Beyond the core interface mapping, biological cells contain specialized organelles that handle distinct aspects of cellular function. We extend our isomorphism to four additional structures that map directly to agentic software components.
+Beyond the core interface mapping, biological cells contain specialized organelles that handle distinct aspects of cellular function. We extend the correspondence to four additional structures that map directly to agentic software components.
 
 \paragraph{Ribosome: Template-to-Output Synthesis.}
 In biology, the ribosome reads messenger RNA (mRNA) sequences and synthesizes proteins by assembling amino acids according to the genetic code. Transfer RNA (tRNA) molecules carry amino acids to the ribosome, where codons (three-nucleotide sequences) specify which amino acid to add.

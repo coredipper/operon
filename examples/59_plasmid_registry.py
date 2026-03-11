@@ -3,23 +3,23 @@ Example 59: Plasmid Registry — Horizontal Gene Transfer
 ========================================================
 
 Demonstrates dynamic tool acquisition from a searchable registry,
-implementing Paper §6.2, Eq. 12: Agent_new = Agent_old ⊗ ToolSchema.
+implementing the paper's horizontal gene transfer construction in §6.2.
 
 Biological Analogy:
 - Plasmid = small circular DNA encoding a useful gene (tool)
 - Registry = environmental pool of plasmids
 - Acquisition = bacterial conjugation / transformation
-- Capability gating = restriction enzymes (only compatible plasmids accepted)
+- Optional capability gating = restriction enzymes (when capability envelopes are configured)
 - Release = plasmid curing
 
 Key points:
 1. Tools are no longer static at construction time
 2. Agents can dynamically discover and acquire new capabilities
-3. Capability gating prevents privilege escalation
+3. Optional capability gating prevents privilege escalation when enabled
 4. Released tools are cleanly removed
 
 References:
-- Article Section 6.2: Horizontal Gene Transfer
+- Article Section 6.2: Horizontal Gene Transfer - Dynamic Tool Loading
 """
 
 from operon_ai.core.types import Capability
@@ -72,7 +72,7 @@ def main():
         # =================================================================
         print("\n--- Section 2: Search ---")
 
-        text_tools = registry.search("text", tags={"text"})
+        text_tools = registry.search(tags={"text"})
         print(f"  Text tools: {[p.name for p in text_tools]}")
 
         net_tools = registry.search("fetch")

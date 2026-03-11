@@ -3,7 +3,7 @@ Example 56: Metabolic-Epigenetic Coupling — Cost-Gated Retrieval
 ================================================================
 
 Demonstrates how metabolic state gates access to epigenetic memory,
-implementing the paper's Equation 15 (Section 6.1.1).
+implementing the paper's cost-gated retrieval model in Section 6.1.1.
 
 Core idea: Memory retrieval isn't free. When the cell is starving,
 only deeply embedded (permanent) memories remain accessible, while
@@ -20,7 +20,8 @@ Biological Analogy:
 - This is how biology achieves "graceful degradation" under stress
 
 References:
-- Article Section 6.1.1: RAG as Digital Methylation
+- Article Section 6.1: RAG as Digital Methylation
+- Article Section 6.1.1: Metabolic-Epigenetic Coupling
 - Article Section 6.6: Bioenergetic Intelligence
 """
 
@@ -78,7 +79,7 @@ def main():
         # =================================================================
         print("\n--- Section 2: NORMAL state — all memories accessible ---")
 
-        result = histones.retrieve_context(tags=["safety"])
+        result = histones.retrieve_context()
         print(f"  Retrieved {len(result.markers)} markers:")
         for m in result.markers:
             print(f"    [{m.strength.name:10s}] {m.content}")
@@ -92,12 +93,10 @@ def main():
         atp.consume(70, "expensive_operation")
         print(f"  ATP: {atp.atp}/{atp.max_atp} → {atp.get_state().value}")
 
-        result = histones.retrieve_context(tags=["safety"])
+        result = histones.retrieve_context()
         print(f"  Retrieved {len(result.markers)} markers (STRONG+ only):")
         for m in result.markers:
             print(f"    [{m.strength.name:10s}] {m.content}")
-        print(f"  Silenced: 'User prefers concise responses' (WEAK)")
-        print(f"  Silenced: 'Always validate SQL' (MODERATE)")
 
         # =================================================================
         # SECTION 4: Drain to STARVING — Only permanent memories
@@ -109,7 +108,7 @@ def main():
         atp.consume(15, "critical_op", priority=5)
         print(f"  ATP: {atp.atp}/{atp.max_atp} → {atp.get_state().value}")
 
-        result = histones.retrieve_context(tags=["safety"])
+        result = histones.retrieve_context()
         print(f"  Retrieved {len(result.markers)} markers (PERMANENT only):")
         for m in result.markers:
             print(f"    [{m.strength.name:10s}] {m.content}")
@@ -124,7 +123,7 @@ def main():
         atp.regenerate(80)
         print(f"  ATP: {atp.atp}/{atp.max_atp} → {atp.get_state().value}")
 
-        result = histones.retrieve_context(tags=["safety"])
+        result = histones.retrieve_context()
         print(f"  Retrieved {len(result.markers)} markers (full access restored):")
         for m in result.markers:
             print(f"    [{m.strength.name:10s}] {m.content}")

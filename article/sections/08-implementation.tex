@@ -1,8 +1,10 @@
 \section{Reference Implementation}
 
-To validate the framework's feasibility, we provide a reference implementation in Python.
+To instantiate the framework in executable form, we provide a reference implementation in Python.
 The implementation, \texttt{operon-ai}\footnote{\url{https://github.com/coredipper/operon}}, is described in this section,
-which summarizes key components and demonstrates that the biological motifs translate into practical code.
+which summarizes key components and demonstrates that the abstractions in the paper translate into practical code.
+It should be read as an executable prototype plus synthetic evaluation harness, not as complete empirical
+validation of every biological analogy in the manuscript.
 
 \subsection{Architecture Overview}
 
@@ -18,7 +20,7 @@ ComposedOptic---wire-level conditional routing and batch transforms.
 \item \textbf{Core Denaturation} (\texttt{core/denature.py}): StripMarkupFilter, NormalizeFilter,
 ChainFilter---wire-level anti-injection sanitization.
 \item \textbf{Core Coalgebra} (\texttt{core/coalgebra.py}): FunctionalCoalgebra, StateMachine,
-ParallelCoalgebra, SequentialCoalgebra, bisimulation checking.
+ParallelCoalgebra, SequentialCoalgebra, finite-trace observational checking.
 \item \textbf{Surveillance} (\texttt{surveillance/}): The immune system implementation with MHCDisplay,
 TCell, Thymus, and ImmuneMemory components.
 \item \textbf{Healing} (\texttt{healing/}): ChaperoneLoop implementing the structural self-healing pattern.
@@ -98,7 +100,7 @@ class ChaperoneLoop:
         return HealingResult(DEGRADED, ubiquitin_tagged=True)
 \end{verbatim}
 
-This directly implements the GroEL/GroES cage metaphor: the error trace becomes input to the
+This operationalizes the GroEL/GroES cage metaphor: the error trace becomes input to the
 repair process, enabling context-aware correction.
 
 \subsection{Trust and Provenance}
@@ -118,7 +120,7 @@ reflecting the common case where all non-tool sources require validation before 
 full 4-level model can be recovered by subclassing \texttt{IntegrityLabel} with additional levels when
 finer-grained provenance tracking is required.
 
-The \texttt{ApprovalToken} provides proof-carrying authorization for privileged operations:
+The \texttt{ApprovalToken} carries explicit authorization metadata for privileged operations:
 
 \begin{verbatim}
 @dataclass(frozen=True)
@@ -131,8 +133,8 @@ class ApprovalToken:
     timestamp: datetime = field(default_factory=now)
 \end{verbatim}
 
-This implements the Trust-Gated Lens: actions requiring high integrity must present a valid
-ApprovalToken with sufficient integrity level.
+This operationalizes the Trust-Gated Lens: actions requiring high integrity must present an
+\texttt{ApprovalToken} with sufficient integrity level.
 
 \subsection{Plasmid Registry Implementation}
 
@@ -151,7 +153,7 @@ class Plasmid:
                           required_capabilities=set(self.required_capabilities))
 \end{verbatim}
 
-The \texttt{Mitochondria} class is extended with \texttt{acquire()} and \texttt{release()} methods. Acquisition checks $C_{\text{plasmid}} \subseteq C_{\text{agent}}$ before engulfing the tool; release implements plasmid curing. The registry supports search by text query or tag filtering.
+The \texttt{Mitochondria} class is extended with \texttt{acquire()} and \texttt{release()} methods. When a \texttt{Mitochondria} instance is configured with an \texttt{allowed\_capabilities} envelope, acquisition checks $C_{\text{plasmid}} \subseteq C_{\text{agent}}$ before engulfing the tool; release implements plasmid curing. The registry supports both text search and pure tag filtering.
 
 \subsection{Denaturation Layers Implementation}
 
@@ -175,7 +177,7 @@ Filters attach to wires in the \texttt{WiringDiagram}. The \texttt{DiagramExecut
 
 \subsection{Multi-Cellular Organization Implementation}
 
-The multi-cellular abstractions (\S6.3) are implemented in the \texttt{multicell/} package:
+The multi-cellular abstractions (\S6.5) are implemented in the \texttt{multicell/} package:
 
 \paragraph{Cell Type Specialization.}
 The \texttt{CellType} class encapsulates an \texttt{ExpressionProfile}---a mapping from gene names to expression levels (\texttt{OVEREXPRESSED}, \texttt{SILENCED}, etc.). Calling \texttt{differentiate(genome)} applies the profile to a shared \texttt{Genome}, producing a \texttt{DifferentiatedCell} with role-specific configuration. This implements the biological principle that a single genotype produces many
@@ -192,7 +194,7 @@ The \texttt{Tissue} class provides:
 \end{itemize}
 
 \paragraph{Metabolic-Epigenetic Coupling.}
-The \texttt{HistoneStore} accepts an optional \texttt{energy\_gate} parameter pairing an \texttt{ATP\_Store} with a \texttt{MetabolicAccessPolicy}. When set, each \texttt{retrieve\_context()} call costs ATP. Under metabolic stress, only strongly embedded markers remain accessible---implementing Eq.~\eqref{eq:cost-gated-retrieval}.
+The \texttt{HistoneStore} accepts an optional \texttt{energy\_gate} parameter pairing an \texttt{ATP\_Store} with a \texttt{MetabolicAccessPolicy}. When set, each \texttt{retrieve\_context()} call costs ATP. Under metabolic stress, only strongly embedded markers remain accessible; in the current implementation, marker strength serves as the cost proxy used to approximate Eq.~\eqref{eq:cost-gated-retrieval}.
 
 \subsection{Coalgebraic State Machines Implementation}
 
@@ -213,7 +215,7 @@ class StateMachine(Generic[S, I, O]):
     def run(self, inputs: list[I]) -> list[O]: ...
 \end{verbatim}
 
-\texttt{ParallelCoalgebra} and \texttt{SequentialCoalgebra} implement the composition operations from \S3.5. The \texttt{check\_bisimulation()} function tests observational equivalence (Eq.~\eqref{eq:bisimulation}) over an input sequence, returning a witness on divergence. Existing organelles (\texttt{HistoneStore}, \texttt{ATP\_Store}, \texttt{CellCycleController}) can be wrapped as coalgebras, enabling formal composition and verification of multi-organelle systems.
+\texttt{ParallelCoalgebra} and \texttt{SequentialCoalgebra} implement the composition operations from \S3.5. The \texttt{check\_bisimulation()} function tests observational equivalence (Eq.~\eqref{eq:bisimulation}) over an input sequence, returning a witness on divergence. Existing organelles (\texttt{HistoneStore}, \texttt{ATP\_Store}, \texttt{CellCycleController}) can be wrapped as coalgebras, enabling formal composition and finite-trace comparison of multi-organelle systems.
 
 \subsection{Morphogen Diffusion Implementation}
 
@@ -229,7 +231,7 @@ class DiffusionField:
     def get_local_gradient(self, node_id) -> MorphogenGradient: ...
 \end{verbatim}
 
-Each \texttt{step()} applies four phases: emission (sources add morphogen), diffusion (concentration flows along edges, split evenly among neighbors), decay (uniform degradation), and clamping (enforce bounds). The \texttt{get\_local\_gradient()} method bridges to the existing \texttt{MorphogenGradient} API, enabling agents to read their local concentrations without awareness of the underlying graph dynamics.
+Each \texttt{step()} applies four phases: emission (sources add morphogen), diffusion (concentration flows along edges, split evenly among neighbors), decay (uniform degradation), and clamping (enforce bounds). Nodes with no neighbors skip diffusion outflow, matching Eq.~\eqref{eq:morphogen-diffusion}'s isolated-node case. The \texttt{get\_local\_gradient()} method bridges to the existing \texttt{MorphogenGradient} API, enabling agents to read their local concentrations without awareness of the underlying graph dynamics.
 
 \subsection{Optic-Based Wiring Implementation}
 
@@ -255,7 +257,9 @@ Optics coexist with \texttt{DenatureFilter}s on the same wire. The \texttt{Diagr
 
 \subsection{Interactive Demonstrations}
 
-The repository includes 27 interactive Gradio demonstrations deployed as Hugging Face Spaces\footnote{\url{https://huggingface.co/spaces}}. Each Space provides a self-contained, browser-based demo of a specific organelle or composition pattern---from individual motifs (Membrane, Chaperone, Quorum Sensing) to multi-organelle orchestrations combining all 11 biological motifs. No API keys or local installation are required.
+The repository also includes interactive Gradio demonstrations for individual organelles and composition
+patterns---from single motifs (Membrane, Chaperone, Quorum Sensing) to multi-organelle orchestrations.
+These demos are illustrative artifacts rather than controlled benchmarks.
 
 \subsection{Evaluation Protocol (Synthetic Harness)}
 
@@ -272,6 +276,8 @@ Measure sensitivity and false positive rate under the two-signal activation rule
 \item \textbf{Healing Loop.} Generate malformed outputs and run the ChaperoneLoop with and without
 error-context feedback. Measure recovery within $k$ attempts (default $k=3$).
 \end{enumerate}
+These suites test whether the implemented motifs behave as intended under controlled corruption and anomaly
+models; they do not estimate in-the-wild failure rates of production LLM systems.
 
 \paragraph{Implementation.}
 The harness is implemented in \texttt{eval/} with a JSON-configured CLI:
@@ -283,7 +289,7 @@ The output is a machine-readable JSON report (per-suite config + metrics) suitab
 in tables or plots.
 
 \paragraph{Status.}
-Synthetic runs indicate consistent qualitative gains (cascade $>$ strict, error-context $>$ blind retry,
+Synthetic runs indicate consistent qualitative gains within this harness (cascade $>$ strict, error-context $>$ blind retry,
 immune detection $>$ chance). Table~\ref{tab:eval-summary} reports aggregated numeric results across
 multiple seeds; real-world validation with LLM outputs remains ongoing.
 
@@ -319,11 +325,11 @@ gradient propagation in distributed multi-process deployments with eventual cons
 \item \textbf{Denaturation:} Filters target known syntactic patterns (ChatML, XML role tags, markdown
 code blocks). Novel injection techniques using previously unseen syntax may bypass denaturation; custom
 \texttt{DenatureFilter} implementations should be added as new attack patterns emerge.
-\item \textbf{Bisimulation:} The \texttt{check\_bisimulation()} function tests over finite input sequences.
+\item \textbf{Finite-Trace Equivalence:} The \texttt{check\_bisimulation()} function tests over finite input sequences.
 Coinductive bisimulation for infinite-trace systems is not yet supported.
 \item \textbf{Benchmarking:} The evaluation harness covers synthetic suites and external benchmarks (BFCL,
 AgentDojo). Real-world validation of the multi-cellular and diffusion components at production scale is
 still in progress.
 \end{itemize}
 
-We release the implementation to enable community validation and extension of the framework.
+We release the implementation to enable further scrutiny and extension of the framework.

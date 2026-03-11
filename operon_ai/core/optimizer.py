@@ -12,7 +12,7 @@ This module transforms a WiringDiagram into an equivalent but
 more efficient OptimizedDiagram via composable rewriting passes.
 
 References:
-- Article Section 9: Diagram Optimization via Categorical Rewriting
+- Article Section 7: Diagram Optimization via Categorical Rewriting
 - Abbott & Zardini (2025): Category-theoretic diagram optimization
 """
 

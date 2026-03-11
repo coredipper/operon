@@ -19,7 +19,7 @@ Key points:
 5. BudgetOptic caps cumulative wire cost
 
 References:
-- Article Section 9: Diagram Optimization via Categorical Rewriting
+- Article Section 7: Diagram Optimization via Categorical Rewriting
 """
 
 from operon_ai.core.analyzer import (

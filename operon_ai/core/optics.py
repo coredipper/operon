@@ -2,7 +2,7 @@
 Optic-Based Wiring: Lens, Prism, Traversal
 ============================================
 
-Paper §3.3: Wiring diagrams with optic-based routing.
+Paper §3.4: Wire-level optics beyond basic lenses.
 
 Biological Analogy:
 - Lens  = constitutive expression — always active, passes through
@@ -20,7 +20,7 @@ compatible with existing wiring — a wire without an optic behaves
 exactly as before.
 
 References:
-- Article Section 3.3: Optic-Based Wiring
+- Article Section 3.4: Wire-Level Optics - Beyond Lenses
 """
 
 from __future__ import annotations

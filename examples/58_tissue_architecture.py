@@ -22,7 +22,7 @@ Biological Analogy:
 - Organism = coordinated tissue system
 
 References:
-- Article Section 6.5.3: Multi-Cellular Organization - Tissue Architecture
+- Article Section 6.5.3: Tissue Architecture - The Agent Graph as Organism
 """
 
 from operon_ai.state.genome import Genome, Gene, GeneType, ExpressionLevel

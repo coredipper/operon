@@ -2,21 +2,24 @@
 The transition of Large Language Models (LLMs) from passive generators to autonomous agents
 has introduced significant challenges in reliability, security, and state management. Current agentic
 architectures are often constructed ad-hoc, prone to ``hallucination cascades,'' infinite loops, and
-prompt injection attacks. This paper proposes that these failure modes are not unique to software
-but are instances of universal control problems solved by biological systems over billions of years.
+prompt injection attacks. This paper argues that many of these failure modes can be analyzed using
+control motifs long studied in systems biology, provided the comparison is made at the level of typed
+interfaces and coordination structure rather than literal biological mechanism.
 
-We present a formal isomorphism, \emph{at the level of their polynomial-interface models}, between Gene
-Regulatory Networks (GRNs) and Agentic Software Systems using Applied Category Theory. We model
-agents as Polynomial Functors within the category $\mathbf{Poly}$, and their interactions via the Operad
-of Wiring Diagrams. We derive a rigorous syntax for agent composition by mapping biological
+We develop a typed interface correspondence, expressed in the language of polynomial functors and
+wiring diagrams, between Gene Regulatory Networks (GRNs) and agentic software systems. At the
+atomic level, genes and agent capabilities are modeled as polynomial interfaces; at the composite
+level, cells and agents are modeled as structured compositions of those interfaces plus shared
+organelles; tissues correspond to multi-agent subsystems. On top of this abstraction, we derive a typed
+syntax for agent composition by mapping biological
 mechanisms---including Quorum Sensing for consensus, Chaperone Proteins for structural validation,
 Innate and Adaptive Immunity for layered security, Mitochondrial Signaling for bioenergetic resource
 governance, and Endosymbiosis for neuro-symbolic integration---to software design patterns. This framework
 provides a mathematical basis for ``Epigenetic'' state management (RAG), a \textit{Provenance Functor} for
-injection resistance, \textit{Epiplexity} for detecting epistemic stagnation, a \textit{Metabolic
-Coalgebra} that provides a decidable termination criterion under explicit resource-monotonicity
+trust-gated resistance to content-level trust forgery, \textit{Epiplexity} for detecting epistemic stagnation, a \textit{Metabolic
+Coalgebra} that provides a qualified termination criterion under explicit resource-monotonicity
 assumptions, wire-level \textit{Optics} (Prisms and Traversals) for conditional routing, graph-based
 \textit{Morphogen Diffusion} for spatially varying coordination, and composable \textit{Coalgebraic State
-Machines} with bisimulation-based equivalence checking. A reference implementation with 27 interactive
-demonstrations validates the framework's practical feasibility.
+Machines} with observational equivalence criteria. A reference implementation, interactive
+demonstrations, and a synthetic evaluation harness illustrate the framework's practical feasibility.
 \end{abstract}

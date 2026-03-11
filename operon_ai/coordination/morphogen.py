@@ -37,7 +37,7 @@ class MorphogenType(Enum):
     """Types of morphogens for agent coordination."""
     COMPLEXITY = "complexity"      # Task difficulty (0.0 = simple, 1.0 = complex)
     CONFIDENCE = "confidence"      # Solution certainty (0.0 = uncertain, 1.0 = certain)
-    BUDGET = "budget"              # Token budget remaining (absolute)
+    BUDGET = "budget"              # Fraction of token budget remaining (0.0 = exhausted, 1.0 = full)
     ERROR_RATE = "error_rate"      # Recent failure rate (0.0 = no errors, 1.0 = all failing)
     URGENCY = "urgency"            # Time pressure (0.0 = relaxed, 1.0 = critical)
     RISK = "risk"                  # Operation risk level (0.0 = safe, 1.0 = dangerous)
@@ -191,10 +191,10 @@ class MorphogenGradient:
 
         # Budget hints
         budget = self.get(MorphogenType.BUDGET)
-        if budget <= 0.2:
-            hints.append("Token budget low - be concise and efficient.")
-        elif budget <= 0.1:
+        if budget <= 0.1:
             hints.append("CRITICAL: Token budget nearly exhausted. Summarize and conclude.")
+        elif budget <= 0.2:
+            hints.append("Token budget low - be concise and efficient.")
 
         # Error rate hints
         error_rate = self.get(MorphogenType.ERROR_RATE)
@@ -309,19 +309,17 @@ class GradientOrchestrator:
         current_confidence = self.gradient.get(MorphogenType.CONFIDENCE)
         if success:
             new_confidence = min(1.0, current_confidence + self.confidence_boost_on_success)
-            updates.append(GradientUpdate(
-                MorphogenType.CONFIDENCE,
-                self.confidence_boost_on_success,
-                "Step succeeded",
-            ))
+            confidence_reason = "Step succeeded"
         else:
             new_confidence = max(0.0, current_confidence - self.confidence_drop_on_failure)
+            confidence_reason = "Step failed"
+        if new_confidence != current_confidence:
+            self.gradient.set(MorphogenType.CONFIDENCE, new_confidence)
             updates.append(GradientUpdate(
                 MorphogenType.CONFIDENCE,
-                -self.confidence_drop_on_failure,
-                "Step failed",
+                new_confidence - current_confidence,
+                confidence_reason,
             ))
-        self.gradient.set(MorphogenType.CONFIDENCE, new_confidence)
 
         # Update error rate
         current_error = self.gradient.get(MorphogenType.ERROR_RATE)
@@ -339,22 +337,27 @@ class GradientOrchestrator:
 
         # Update budget
         if total_budget > 0:
+            current_budget = self.gradient.get(MorphogenType.BUDGET)
             remaining_ratio = max(0.0, (total_budget - tokens_used) / total_budget)
-            self.gradient.set(MorphogenType.BUDGET, remaining_ratio)
-            updates.append(GradientUpdate(
-                MorphogenType.BUDGET,
-                remaining_ratio - self.gradient.get(MorphogenType.BUDGET),
-                f"Budget: {tokens_used}/{total_budget} used",
-            ))
+            if remaining_ratio != current_budget:
+                self.gradient.set(MorphogenType.BUDGET, remaining_ratio)
+                updates.append(GradientUpdate(
+                    MorphogenType.BUDGET,
+                    remaining_ratio - current_budget,
+                    f"Budget: {tokens_used}/{total_budget} used",
+                ))
 
         # Update complexity if estimated
         if complexity_estimate is not None:
-            self.gradient.set(MorphogenType.COMPLEXITY, complexity_estimate)
-            updates.append(GradientUpdate(
-                MorphogenType.COMPLEXITY,
-                complexity_estimate - self.gradient.get(MorphogenType.COMPLEXITY),
-                f"Complexity estimate: {complexity_estimate:.2f}",
-            ))
+            new_complexity = max(0.0, min(1.0, complexity_estimate))
+            current_complexity = self.gradient.get(MorphogenType.COMPLEXITY)
+            if new_complexity != current_complexity:
+                self.gradient.set(MorphogenType.COMPLEXITY, new_complexity)
+                updates.append(GradientUpdate(
+                    MorphogenType.COMPLEXITY,
+                    new_complexity - current_complexity,
+                    f"Complexity estimate: {new_complexity:.2f}",
+                ))
 
         self.update_history.extend(updates)
 
@@ -366,16 +369,22 @@ class GradientOrchestrator:
 
     def set_urgency(self, urgency: float, reason: str = "Manual adjustment") -> None:
         """Set urgency level."""
+        current_urgency = self.gradient.get(MorphogenType.URGENCY)
         self.gradient.set(MorphogenType.URGENCY, urgency)
         self.update_history.append(GradientUpdate(
-            MorphogenType.URGENCY, urgency, reason
+            MorphogenType.URGENCY,
+            self.gradient.get(MorphogenType.URGENCY) - current_urgency,
+            reason,
         ))
 
     def set_risk(self, risk: float, reason: str = "Manual adjustment") -> None:
         """Set risk level."""
+        current_risk = self.gradient.get(MorphogenType.RISK)
         self.gradient.set(MorphogenType.RISK, risk)
         self.update_history.append(GradientUpdate(
-            MorphogenType.RISK, risk, reason
+            MorphogenType.RISK,
+            self.gradient.get(MorphogenType.RISK) - current_risk,
+            reason,
         ))
 
     def get_agent_context(self) -> str:

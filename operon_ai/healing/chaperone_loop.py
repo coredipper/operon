@@ -265,7 +265,10 @@ def create_mock_healing_generator(
 
     def generator(prompt: str, error_context: str | None = None) -> str:  # noqa: ARG001
         _ = prompt  # Unused in mock - real generator would use this
-        if error_context and heal_on_error_containing in error_context:
+        if (
+            error_context
+            and heal_on_error_containing.lower() in error_context.lower()
+        ):
             return healed_output
         return initial_output
 

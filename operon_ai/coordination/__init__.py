@@ -76,7 +76,7 @@ __all__ = [
     "GradientUpdate",
     "GradientOrchestrator",
     "PhenotypeConfig",
-    # Diffusion (Paper §6.4)
+    # Diffusion (Paper §6.5.2 / §6.5.3)
     "MorphogenSource",
     "DiffusionParams",
     "DiffusionField",

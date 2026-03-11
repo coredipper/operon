@@ -2,9 +2,9 @@
 Morphogen Diffusion: Spatially Varying Concentrations on Graphs
 ================================================================
 
-Paper §6.4: Agents at different positions in the wiring topology
-experience different morphogen concentrations, enabling local
-gradient-based coordination.
+Paper §6.5.2 and §6.5.3: agents at different positions in the
+wiring topology experience different morphogen concentrations, enabling
+local gradient-based coordination.
 
 Biological Analogy:
 In embryonic development, morphogens diffuse from localized sources
@@ -12,8 +12,9 @@ through tissue.  Cells near the source see high concentration; cells
 far away see low concentration.  The resulting gradient drives
 spatially patterned gene expression (e.g., Bicoid in Drosophila).
 
-Since Operon agents don't have physical positions (Paper §6.5 line 135),
-we use **graph adjacency** from the wiring topology as the spatial model.
+Since Operon agents occupy graph-topological rather than physical
+positions, we use **graph adjacency** from the wiring topology as the
+spatial model.
 Each node in the graph represents an agent/cell; edges represent
 connections through which morphogens can diffuse.
 
@@ -25,8 +26,8 @@ Diffusion algorithm (per step):
 4. Clamp  — values > 1.0 clamped to 1.0, values < min_concentration set to 0.0
 
 References:
-- Article Section 6.4: Morphogen Diffusion
-- Article Section 6.5: Graph-Based Spatial Model
+- Article Section 6.5.2: Morphogen Gradients - Coordination Without Central Control
+- Article Section 6.5.3: Tissue Architecture - The Agent Graph as Organism
 """
 
 from __future__ import annotations

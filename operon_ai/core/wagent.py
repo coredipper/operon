@@ -96,7 +96,7 @@ class Wire:
     dst_module: str
     dst_port: str
     denature: Any | None = None  # Optional DenatureFilter
-    optic: Any | None = None  # Optional Optic (Paper §3.3)
+    optic: Any | None = None  # Optional Optic (Paper §3.4)
     cost: int = 0  # Transmission cost in ATP
 
 
@@ -145,4 +145,3 @@ class WiringDiagram:
         for module in self.modules.values():
             required |= module.capabilities
         return required
-

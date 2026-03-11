@@ -358,7 +358,7 @@ __all__ = [
     "StripMarkupFilter",
     "NormalizeFilter",
     "ChainFilter",
-    # Coalgebra (Paper §4.2)
+    # Coalgebra (Paper §3.5)
     "Coalgebra",
     "StateMachine",
     "FunctionalCoalgebra",
@@ -367,14 +367,14 @@ __all__ = [
     "TransitionRecord",
     "BisimulationResult",
     "check_bisimulation",
-    # Optics (Paper §3.3)
+    # Optics (Paper §3.4)
     "Optic",
     "OpticError",
     "LensOptic",
     "PrismOptic",
     "TraversalOptic",
     "ComposedOptic",
-    # Epistemic Topology (Paper §6.2)
+    # Epistemic Topology (Paper §6.5.4)
     "TopologyClass",
     "EpistemicAnalysis",
     "ObservationProfile",
@@ -564,7 +564,7 @@ __all__ = [
     "GradientUpdate",
     "GradientOrchestrator",
     "PhenotypeConfig",
-    # Diffusion (Paper §6.4)
+    # Diffusion (Paper §6.5.2 / §6.5.3)
     "MorphogenSource",
     "DiffusionParams",
     "DiffusionField",

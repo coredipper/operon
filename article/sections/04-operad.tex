@@ -1,9 +1,10 @@
 \section{Formal Syntax: The Agentic Operad}\label{sec:operad}
 
-To formalize the composition of agents, we define the Operad of Wiring Diagrams, denoted as WAgent. An operad
-can be understood as a ``grammar'' for connecting operations (boxes) via typed wires. It defines which agent
-topologies are valid and allows us to reason about the properties of the composite system based solely on the
-properties of its components~\cite{vagner2015algebras}.
+To formalize admissible agent compositions, we define a typed operad of wiring diagrams, denoted as
+\textbf{WAgent}. Here the operad serves primarily as a syntax: a ``grammar'' for connecting operations
+(boxes) via typed wires. It specifies which agent topologies are well-formed. When we make probabilistic
+or behavioral claims below, those claims rely on additional assumptions about the implementations
+inhabiting the boxes, not on the operadic syntax alone~\cite{vagner2015algebras}.
 
 \subsection{The Typing Rules}
 
@@ -45,7 +46,7 @@ B \circ A.
 \end{equation}
 \begin{itemize}[leftmargin=*]
 \item \textbf{Biological Analogy:} A Signal Transduction Pathway (Protein A activates Protein B).
-\item \textbf{Formal Verification:} This allows for static type checking of agent graphs. If Agent $A$ outputs
+\item \textbf{Static Type Checking:} This allows for static type checking of agent graphs. If Agent $A$ outputs
 Natural Language but Agent $B$ expects JSON Schema, the composition is undefined in WAgent. This moves runtime
 \textbf{type/schema mismatch} errors to ``compile-time'' architectural errors.
 \end{itemize}
@@ -66,8 +67,9 @@ modeled as hidden state in the coalgebra, not by Trace itself.
 
 \subsection{Theorem: Topological Error Suppression}
 
-We now use this formalism to show that the Coherent Feed-Forward Loop (CFFL) provides stronger error suppression
-guarantees than a direct connection for high-stakes tasks.
+We now combine the wiring syntax with a simple stochastic failure model to analyze when the Coherent
+Feed-Forward Loop (CFFL) suppresses errors more effectively than a direct serial connection on
+high-stakes tasks.
 
 \paragraph{Network Motif 1 (Coherent Feed-Forward Loop).}
 A topological structure where Signal $X$ activates $Z$ directly, but also activates $Y$ which gates $Z$. The node
@@ -75,8 +77,8 @@ $Z$ functions as an AND gate: it fires if and only if $X \wedge Y$.
 
 \paragraph{Theorem 1 (Error Suppression in CFFL).}\label{thm:cffl-error-suppression}
 Let $A_{\mathrm{gen}}$ be a generator agent and $A_{\mathrm{ver}}$ be a verifier agent. Let
-$P(E_{\mathrm{gen}})$ (resp.\ $P(E_{\mathrm{ver}})$) be the probability of a hallucination (error) in any single
-generation step of $A_{\mathrm{gen}}$ (resp.\ $A_{\mathrm{ver}}$).
+$E_{\mathrm{gen}}$ denote the event that the generator emits an erroneous candidate, and let
+$M_{\mathrm{ver}}$ denote the event that the verifier \emph{misses} that error and still emits an approval token.
 \begin{itemize}[leftmargin=*]
 \item \textbf{Case 1: Direct Link (Serial).} The system fails if $A_{\mathrm{gen}}$ hallucinates.
 \[
@@ -84,15 +86,15 @@ P(\mathrm{Fail}_{\mathrm{direct}}) = P(E_{\mathrm{gen}}).
 \]
 \item \textbf{Case 2: CFFL Topology (Independent).} Under the assumption of independence:
 \[
-P(\mathrm{Fail}_{\mathrm{CFFL}}) = P(E_{\mathrm{gen}})\times P(E_{\mathrm{ver}}).
+P(\mathrm{Fail}_{\mathrm{CFFL}}) = P(E_{\mathrm{gen}})\times P(M_{\mathrm{ver}}).
 \]
-\item \textbf{Case 3: CFFL Topology (Correlated).} In practice, LLM errors are often correlated---if the generator hallucinates a plausible-sounding function, the verifier (especially if using the same base model or training distribution) may accept it. Let $\rho$ be the (Pearson/phi) correlation between the Bernoulli error variables $E_{\mathrm{gen}}$ and $E_{\mathrm{ver}}$, with $p = P(E_{\mathrm{gen}})$ and $q = P(E_{\mathrm{ver}})$ (assume $p,q\in(0,1)$ so $\rho$ is well-defined). Then:
+\item \textbf{Case 3: CFFL Topology (Correlated).} In practice, generator errors and verifier misses are often correlated---if the generator hallucinates a plausible-sounding function, the verifier (especially if using the same base model or training distribution) may be more likely to accept it. Let $\rho$ be the (Pearson/phi) correlation between the Bernoulli variables $E_{\mathrm{gen}}$ and $M_{\mathrm{ver}}$, with $p = P(E_{\mathrm{gen}})$ and $q = P(M_{\mathrm{ver}})$ (assume $p,q\in(0,1)$ so $\rho$ is well-defined). Then:
 \[
-P(E_{\mathrm{gen}} \wedge E_{\mathrm{ver}}) = pq + \rho\sqrt{p(1-p)q(1-q)}.
+P(E_{\mathrm{gen}} \wedge M_{\mathrm{ver}}) = pq + \rho\sqrt{p(1-p)q(1-q)}.
 \]
-Because $E_{\mathrm{gen}}$ and $E_{\mathrm{ver}}$ are Bernoulli, $\rho$ is \textbf{not free in} $[-1,1]$; it is constrained by the Fr\'echet--Hoeffding bounds
+Because $E_{\mathrm{gen}}$ and $M_{\mathrm{ver}}$ are Bernoulli, $\rho$ is \textbf{not free in} $[-1,1]$; it is constrained by the Fr\'echet--Hoeffding bounds
 \[
-P(E_{\mathrm{gen}} \wedge E_{\mathrm{ver}}) \in [\max(0,p+q-1),\;\min(p,q)],
+P(E_{\mathrm{gen}} \wedge M_{\mathrm{ver}}) \in [\max(0,p+q-1),\;\min(p,q)],
 \]
 equivalently
 \[
@@ -101,7 +103,7 @@ equivalently
 \end{itemize}
 
 \paragraph{Corollary (Correlation Degradation).}
-Let $p = P(E_{\mathrm{gen}}) = P(E_{\mathrm{ver}})$ for simplicity. The failure probability becomes:
+Let $p = P(E_{\mathrm{gen}}) = P(M_{\mathrm{ver}})$ for simplicity. The failure probability becomes:
 \[
 P(\mathrm{Fail}) = p^2 + \rho p(1-p) = p^2(1-\rho) + \rho p
 \]
@@ -110,12 +112,16 @@ with $\rho \in \left[-\min\!\left(\frac{p}{1-p},\frac{1-p}{p}\right),\,1\right]$
 \paragraph{Architectural Implications.}
 This result makes precise when the CFFL topology provides genuine safety benefits:
 \begin{itemize}[leftmargin=*]
-\item \textbf{Same model, same prompt:} $\rho \approx 1$. Minimal benefit.
-\item \textbf{Same model, different prompt/temperature:} $\rho \in [0.3, 0.7]$. Moderate benefit.
-\item \textbf{Different model families:} $\rho \in [0, 0.3]$. Strong benefit.
-\item \textbf{LLM + Symbolic verifier:} $\rho \approx 0$. Maximum benefit (orthogonal error modes).
+\item \textbf{High correlation:} Reusing the same model family, prompt structure, or evidence sources can
+make verifier misses positively correlated with generator errors, erasing much of the gain.
+\item \textbf{Heterogeneous generators and verifiers:} Prompt diversity or model-family diversity can
+reduce correlation, but the magnitude is empirical rather than universal.
+\item \textbf{Orthogonal checks:} Symbolic or tool-grounded verifiers are a useful limiting case because
+their failure modes need not mirror the generator's linguistic ones.
 \end{itemize}
-The topological structure (conjunctive gating) is necessary but not sufficient; diversity in the components populating that topology determines the actual error suppression achieved.
+These are architectural heuristics rather than fitted universal ranges for $\rho$. The topological structure
+(conjunctive gating) is necessary but not sufficient; diversity in the components populating that topology
+determines the actual error suppression achieved.
 
 \paragraph{Proof.}
 In WAgent, the CFFL is defined as a morphism involving a ``Copy'' operation $\Delta_X:X\to X\otimes X$ and an
@@ -142,8 +148,8 @@ diversity determines the correlation coefficient.
 	  \node[below=0mm of AND] {\small Validation Token};
 	\end{tikzpicture}
 	\caption{The CFFL implemented in WAgent. The Executor ($Z$) cannot act without the token from the Risk Assessor
-	($Y$), topologically preventing unilateral execution without approval.}
-	\end{figure}
+	($Y$), so the wiring diagram encodes an approval dependency rather than allowing execution by $Z$ alone.}
+		\end{figure}
 
 \subsection{Quorum Sensing (Consensus \& Voting)}
 
@@ -155,7 +161,7 @@ node $E$ activates if and only if the concentration $[\sigma] > \theta$.
 Individual bacteria do not react to low concentrations. However, once the population density reaches a threshold
 (Quorum), the concentration of auto-inducers triggers a simultaneous, coordinated gene expression event (e.g.,
 bioluminescence or biofilm formation).
-\item \textbf{Agentic Isomorphism (Voting Ensembles):} In non-deterministic systems, a single agent's output is
+\item \textbf{Agentic Correspondence (Voting Ensembles):} In non-deterministic systems, a single agent's output is
 noisy. By instantiating $N$ parallel agents (a Mixture of Experts), the system aggregates their outputs. The
 final action is taken only if the ``concentration'' of a specific semantic token exceeds a confidence threshold.
 This transforms weak, noisy individual signals into a robust, high-confidence collective action.
@@ -168,7 +174,7 @@ This transforms weak, noisy individual signals into a robust, high-confidence co
 precise 3D structures to function. Chaperone Proteins (e.g., GroEL-GroES) sequester unfolded proteins,
 preventing aggregation and facilitating correct folding. If a protein fails to fold repeatedly, it is tagged for
 degradation (Ubiquitination) to prevent toxic buildup.
-\item \textbf{Agentic Isomorphism (Retry \& Repair Loops):} Generative models output unstructured token streams
+\item \textbf{Agentic Correspondence (Retry \& Repair Loops):} Generative models output unstructured token streams
 (``linear chains''). However, downstream agents require strictly structured inputs (e.g., valid JSON Schemas).
 A Validator Agent acts as a Chaperone: it intercepts the raw output, attempts to parse it into a formal schema
 (``folding''), and if validation fails, returns the error trace to the generator for re-synthesis. This turns a
@@ -189,7 +195,7 @@ Toll-like receptors (TLRs) and other PRRs recognize motifs common to pathogens, 
 double-stranded RNA, and unmethylated CpG DNA. These patterns are ``hardcoded'' through evolution, not learned per
 infection. The innate response is immediate (seconds to minutes) but non-specific.
 
-\paragraph{Agentic Isomorphism (Input Sanitization).}
+\paragraph{Agentic Correspondence (Input Sanitization).}
 Innate immunity maps to \textbf{fast, heuristic filters} that reject obvious attacks before expensive processing:
 \begin{itemize}[leftmargin=*]
 \item \textbf{TLR $\to$ Regex Filters:} Pattern matchers for known injection signatures: \texttt{IGNORE PREVIOUS},
@@ -211,12 +217,13 @@ that trades throughput for security until the threat is neutralized.
 \paragraph{Defense in Depth.}
 The innate and adaptive systems form layers:
 \begin{enumerate}[leftmargin=*]
-\item \textbf{Innate (Pattern)} $\to$ Fast regex/structural rejection (microseconds)
-\item \textbf{Adaptive (Provenance)} $\to$ Trust-Gated access control (milliseconds)
-\item \textbf{Behavioral (T-cell)} $\to$ Statistical anomaly detection (accumulated over time)
+\item \textbf{Innate (Pattern)} $\to$ Low-latency regex/structural rejection
+\item \textbf{Adaptive (Provenance)} $\to$ Trust-gated access control
+\item \textbf{Behavioral (T-cell)} $\to$ Statistical anomaly detection accumulated over time
 \end{enumerate}
-Most attacks are blocked by innate defenses; only sophisticated attacks that evade patterns require the full
-adaptive machinery. This mirrors biology: innate immunity handles $>99\%$ of pathogen encounters.
+In practice, inexpensive front-line filters absorb many routine attacks, while provenance and behavioral
+layers handle ambiguous cases that survive the first pass. The exact split is deployment-dependent and is
+not estimated here.
 
 \subsection{Adaptive Immunity: Self/Non-Self Discrimination}
 
@@ -231,9 +238,9 @@ A topology that maintains a dynamic repertoire of ``detectors'' capable of disti
 \item \textbf{Regulatory T-cells:} A population that actively suppresses immune responses to prevent autoimmunity.
 \end{itemize}
 
-\item \textbf{Agentic Isomorphism (Provenance Tracking):} In multi-agent systems, the Self/Non-Self distinction maps to the origin and trust level of information:
+\item \textbf{Agentic Correspondence (Provenance Tracking):} In multi-agent systems, the Self/Non-Self distinction maps to the origin and trust level of information:
 \begin{itemize}
-\item \textbf{MHC Tags $\to$ Provenance Labels:} Every message in the context carries metadata indicating its source: \texttt{User}, \texttt{Tool}, \texttt{Agent\_Self}, \texttt{Agent\_Other}, \texttt{Retrieved}. These labels are cryptographically signed or structurally enforced (not inferrable from content alone).
+\item \textbf{MHC Tags $\to$ Provenance Labels:} Every message in the context carries metadata indicating its source class: \texttt{User}, \texttt{Tool}, \texttt{Self}, or \texttt{Retrieved}. In the reference design these labels are structurally attached to the message flow rather than inferred from content; cryptographic signing is an optional stronger implementation, not an assumption of the theorem.
 \item \textbf{T-Cell Inspection $\to$ Trust Gating:} Before an agent acts on information, a Trust Gate inspects the provenance label. Actions with high consequence (file deletion, API calls) require \texttt{Tool} provenance or an explicit, authenticated \texttt{User} approval token routed through a separate gate; \texttt{Agent\_Self} provenance (the agent's own prior reasoning) cannot authorize irreversible actions.
 \item \textbf{Negative Selection $\to$ Prompt Injection Training:} During development, agents are exposed to known injection patterns. Responses that ``accept'' injected instructions are penalized, training the system to reject Self-mimicking Non-Self.
 \item \textbf{Regulatory Suppression $\to$ Confidence Dampening:} When \texttt{Retrieved} content conflicts with \texttt{Tool} outputs, a regulatory mechanism dampens confidence in the retrieved signal to prevent cascades.
@@ -247,11 +254,11 @@ A topology that maintains a dynamic repertoire of ``detectors'' capable of disti
 \end{itemize}
 The ordering is a \textbf{parameter} of the system specification, not a fixed constraint.
 
-A \textbf{Trust-Gated Lens} is a lens $(get, put)$ where $put$ is partial. Let $s' = update(s, m)$ denote the state transition:
+A \textbf{Trust-Gated Lens} is a lens $(get, put)$ where $put$ is partial. Let $\succeq$ denote the policy preorder on provenance labels, and let $s' = update(s, m)$ denote the state transition:
 \begin{equation}
 put(s, m) =
 \begin{cases}
-s' & \text{if } \mathcal{P}(m) \ge \tau_{\text{action}} \\
+s' & \text{if } \mathcal{P}(m) \succeq \tau_{\text{action}} \\
 \bot & \text{otherwise}
 \end{cases}
 \label{eq:trust-gated-lens}
@@ -259,15 +266,21 @@ s' & \text{if } \mathcal{P}(m) \ge \tau_{\text{action}} \\
 where $\tau_{\text{action}}$ is the minimum trust level required for the action.
 \end{itemize}
 
-\paragraph{Theorem 2 (Injection Resistance).}\label{thm:injection-resistance}
-Let $\mathcal{I}$ be an injection attack that attempts to insert a message $m_{\text{mal}}$ with forged provenance $\mathcal{P}'(m_{\text{mal}}) = U$. If the provenance labels are \textbf{structurally enforced} (i.e., $\mathcal{P}$ is computed from message metadata, not content), then:
+\paragraph{Theorem 2 (Resistance to Content-Level Trust Forgery).}\label{thm:injection-resistance}
+Let $\mathcal{I}$ be an injection attack that attempts to insert a message $m_{\text{mal}}$ while forging a higher-trust provenance label in its \emph{content}. If the provenance labels are \textbf{structurally enforced} (i.e., $\mathcal{P}$ is computed from message metadata / ingress channel, not content), then:
 \[
-\mathcal{P}(m_{\text{mal}}) = R \quad \text{(actual provenance)}
+\mathcal{P}(m_{\text{mal}}) = \chi(m_{\text{mal}}) \quad \text{(actual ingress-channel provenance)}
 \]
-and Trust-Gated actions requiring $\tau \ge T$ will reject $m_{\text{mal}}$ regardless of its content.
+where $\chi(m_{\text{mal}}) \in \{U, R, S, T\}$ is fixed by the wire through which the message enters. Therefore any Trust-Gated action whose threshold satisfies $\chi(m_{\text{mal}}) \nsucceq \tau_{\text{action}}$ will reject $m_{\text{mal}}$ regardless of its content.
 
 \paragraph{Proof.}
-The injection can only enter through an input channel (user input, tool output, retrieval). Each channel has a fixed provenance assignment in the wiring diagram. Content-based attacks cannot elevate provenance because $\mathcal{P}$ is a functor on the \textit{structure} of the message flow, not its content. The attack surface reduces to compromising the channel itself (e.g., a malicious tool), which is outside the agent topology.
+The injection can only enter through an input channel (user input, tool output, retrieval, or internal state). Each channel has a fixed provenance assignment in the wiring diagram. Content-based attacks cannot elevate provenance because $\mathcal{P}$ is a functor on the \textit{structure} of the message flow, not its content. The only way to obtain a higher-trust label is to compromise the trusted channel itself (e.g., a malicious tool), which is outside the agent topology.
+
+\paragraph{Scope.}
+The theorem is intentionally narrow. It shows that content alone cannot promote a message into a
+higher-trust class when provenance is assigned by structure. It does \emph{not} imply that low-trust
+content cannot still confuse or distract an agent; it only shows that such content cannot satisfy a
+higher-integrity gate without access to a genuinely higher-trust channel.
 
 \subsection{Oscillator: Periodic Rhythms and Scheduling}
 
@@ -276,7 +289,7 @@ A topology generates periodic behavior via delayed negative feedback. Node $A$ a
 
 \begin{itemize}[leftmargin=*]
 \item \textbf{Biological Function:} Oscillators underlie fundamental biological rhythms. The circadian clock regulates 24-hour gene-expression cycles. The cell-cycle oscillator (Cyclin-CDK) drives periodic division. Heartbeats emerge from pacemaker cells with intrinsic oscillatory dynamics. These rhythms provide temporal organization to cellular processes.
-\item \textbf{Agentic Isomorphism (Scheduled Tasks):} In agentic systems, oscillators map to periodic scheduling patterns:
+\item \textbf{Agentic Correspondence (Scheduled Tasks):} In agentic systems, oscillators map to periodic scheduling patterns:
 \begin{itemize}
 \item \textbf{Heartbeat Oscillator} $\to$ Health checks that verify system liveness at regular intervals
 \item \textbf{Circadian Oscillator} $\to$ Daily maintenance tasks (log rotation, cache clearing, model refresh)

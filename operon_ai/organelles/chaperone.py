@@ -305,10 +305,13 @@ class Chaperone:
                 attempts.append(FoldingAttempt(strategy, False, duration, str(e)))
 
         # All strategies failed
+        error_summary = "; ".join(
+            f"{a.strategy.value}: {a.error}" for a in attempts if a.error
+        )
         result = EnhancedFoldedProtein(
             valid=False,
             raw_peptide_chain=raw_peptide_chain,
-            error_trace=f"All {len(strategies)} folding strategies failed",
+            error_trace=f"All {len(strategies)} folding strategies failed. {error_summary}",
             attempts=attempts,
             confidence=0.0
         )

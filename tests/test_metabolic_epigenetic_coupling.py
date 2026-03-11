@@ -1,4 +1,4 @@
-"""Tests for Metabolic-Epigenetic Coupling (Paper Section 6.1.1, Eq. 15).
+"""Tests for Metabolic-Epigenetic Coupling (Paper Section 6.1.1).
 
 Cost-Gated Retrieval: metabolic state gates which marker strengths
 are accessible from HistoneStore. Low energy silences expensive context.

@@ -3,7 +3,7 @@ Example 63: Optic-Based Wiring — Lens, Prism, Traversal
 =========================================================
 
 Demonstrates optic-based wire routing and transformation,
-implementing Paper §3.3.
+implementing Paper §3.4.
 
 Biological Analogy:
 - Lens  = constitutive expression — always active, data passes through
@@ -19,7 +19,7 @@ Key points:
 6. Optics coexist with DenatureFilters on the same wire
 
 References:
-- Article Section 3.3: Optic-Based Wiring
+- Article Section 3.4: Wire-Level Optics - Beyond Lenses
 """
 
 from operon_ai.core.optics import (

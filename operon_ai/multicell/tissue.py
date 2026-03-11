@@ -9,7 +9,8 @@ In multicellular organisms, cells don't exist in isolation. They form
 to perform a function.
 
 Tissue boundaries enforce security isolation:
-- Cells within a tissue share a MorphogenGradient (common context)
+- Cells within a tissue share a baseline MorphogenGradient
+- Optional DiffusionField state refines that baseline into local per-cell gradients
 - Cells can only use capabilities the tissue boundary allows
 - Inter-tissue communication happens through typed boundary ports
 - A tissue can appear as a single module in a higher-level diagram
@@ -23,7 +24,7 @@ The 4-level hierarchy:
 - Organism → complete system with homeostatic regulation (future)
 
 References:
-- Article Section 6.5.3: Multi-Cellular Organization - Tissue Architecture
+- Article Section 6.5.3: Tissue Architecture - The Agent Graph as Organism
 """
 
 from __future__ import annotations
@@ -71,8 +72,9 @@ class Tissue:
     Tissue is the fundamental multi-cellular abstraction. It provides:
 
     1. Shared Environment
-       All cells within a tissue read the same MorphogenGradient.
-       Changes to the gradient affect all cells simultaneously.
+       All cells within a tissue share the same baseline MorphogenGradient.
+       If a DiffusionField is configured, each cell can also read a
+       spatially localized gradient derived from the tissue topology.
 
     2. Security Boundary
        Cell capabilities must be a subset of the tissue's

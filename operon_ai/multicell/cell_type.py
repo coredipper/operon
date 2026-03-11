@@ -17,7 +17,7 @@ In multi-agent systems:
 This implements Paper Section 6.5.1: Cell Types and Agent Specialization.
 
 References:
-- Article Section 6.5.1: Multi-Cellular Organization - Cell Types
+- Article Section 6.5.1: Cell Types and Agent Specialization
 """
 
 from __future__ import annotations

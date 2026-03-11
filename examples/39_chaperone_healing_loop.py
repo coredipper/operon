@@ -25,7 +25,7 @@ Prerequisites:
 
 See Also:
 - operon_ai/healing/chaperone_loop.py for the core implementation
-- Article Section 5.5: Homeostasis - Structural Healing
+- Article Section 5.5.1: Homeostasis - Structural Healing
 
 Usage:
     python examples/39_chaperone_healing_loop.py

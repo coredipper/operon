@@ -27,7 +27,7 @@ Prerequisites:
 
 See Also:
 - operon_ai/healing/regenerative_swarm.py for the core implementation
-- Article Section 5.5: Homeostasis - Metabolic Healing
+- Article Section 5.5.2: Homeostasis - Metabolic Healing
 
 Usage:
     python examples/40_regenerative_swarm.py

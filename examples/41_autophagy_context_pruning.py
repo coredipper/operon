@@ -26,7 +26,7 @@ Prerequisites:
 
 See Also:
 - operon_ai/healing/autophagy_daemon.py for the core implementation
-- Article Section 5.5: Homeostasis - Cognitive Healing
+- Article Section 5.5.3: Homeostasis - Cognitive Healing
 
 Usage:
     python examples/41_autophagy_context_pruning.py

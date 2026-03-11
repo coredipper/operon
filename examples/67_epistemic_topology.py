@@ -26,7 +26,7 @@ Key points:
 6. Theorems 3 & 4: Parallel speedup and tool density scaling
 
 References:
-- Article Section 6.2: Epistemic Topology of Multi-Cellular Agents
+- Article Section 6.5.4: Epistemic Topology of Wiring Diagrams
 - Theorems 1-4: Error amplification, sequential penalty, parallel
   speedup, tool density scaling
 """

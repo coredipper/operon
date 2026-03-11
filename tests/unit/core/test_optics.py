@@ -1,4 +1,4 @@
-"""Tests for optic-based wiring (Paper §3.3)."""
+"""Tests for optic-based wiring (Paper §3.4)."""
 
 import pytest
 

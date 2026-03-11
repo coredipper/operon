@@ -2,7 +2,7 @@
 Coalgebraic State Machines: Composable Observation & Evolution
 ==============================================================
 
-Paper §4.2: Agents as state machines with coalgebraic structure.
+Paper §3.5: Agents as state machines with coalgebraic structure.
 
 Biological Analogy:
 A cell's internal state is never accessed directly — it is *observed*
@@ -28,7 +28,7 @@ Key types:
 - BisimulationResult — Outcome of a bisimulation check
 
 References:
-- Article Section 4.2: Coalgebraic State Machines
+- Article Section 3.5: Epigenetics and State - The Coalgebra
 """
 
 from __future__ import annotations
@@ -161,8 +161,9 @@ class SequentialCoalgebra(Generic[S1, S2, I, O1, O2]):
     Sequential composition: output of first feeds as input to second.
 
     State is (S1, S2).  Input goes to the first coalgebra; its
-    *output* becomes the input to the second coalgebra.  The final
-    output is the second coalgebra's readout.
+    current readout becomes the input to the second coalgebra's
+    update.  The composite readout returns both component readouts,
+    preserving observability of the joint state.
 
     Biological Analogy:
     Signal transduction cascade — receptor activation (first) produces

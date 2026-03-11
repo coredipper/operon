@@ -11,7 +11,7 @@ Higher-order biological abstractions for multi-agent systems:
 - **TissueBoundary**: Typed ports for inter-tissue communication
 
 References:
-- Article Section 6.5: Multi-Cellular Organization
+- Article Section 6.5: Multi-Cellular Organization - From Agents to Tissues
 """
 
 from .cell_type import (

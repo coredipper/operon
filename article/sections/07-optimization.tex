@@ -18,7 +18,8 @@ where each element is a triple $(\text{atp}, \text{latency}, \text{memory})$.
 A cost-annotated wiring diagram enriches the category of wiring diagrams
 over this monoid: each module $m$ carries a cost $c(m) \in \mathbb{R}_{\geq 0}^3$,
 and each wire $w$ carries a transmission cost $c(w) \in \mathbb{Z}_{\geq 0}$
-(measured in ATP units).
+(measured in ATP units), embedded into the resource vector as
+$c_W^\uparrow(w) = (c(w), 0, 0)$ when added to path costs.
 
 \begin{definition}[Cost-Annotated Wiring Diagram]\label{def:cost-annotated-diagram}
 A \emph{cost-annotated wiring diagram} is a tuple $(M, W, c_M, c_W)$ where:
@@ -29,7 +30,7 @@ A \emph{cost-annotated wiring diagram} is a tuple $(M, W, c_M, c_W)$ where:
 \item $c_W : W \to \mathbb{Z}_{\geq 0}$ assigns transmission costs to wires.
 \end{itemize}
 The \emph{path cost} of a directed path $m_1 \xrightarrow{w_1} m_2 \xrightarrow{w_2} \cdots \xrightarrow{w_{n-1}} m_n$
-is $\sum_{i=1}^{n} c_M(m_i) + \sum_{i=1}^{n-1} c_W(w_i)$.
+is $\sum_{i=1}^{n} c_M(m_i) + \sum_{i=1}^{n-1} c_W^\uparrow(w_i)$.
 \end{definition}
 
 Biologically, $c_M$ corresponds to the ATP cost of enzyme catalysis,
@@ -40,15 +41,17 @@ cellular compartments.
 
 Each optimization pass is an endofunctor $F : \mathbf{WDiag} \to \mathbf{WDiag}$
 on the category of wiring diagrams that preserves input-output behavior.
-Two diagrams $D_1, D_2$ are \emph{behaviorally equivalent} if for all
-input assignments they produce the same outputs---i.e., they are bisimilar
-in the coalgebraic sense of Section~3.5.
+Two diagrams $D_1, D_2$ are \emph{behaviorally equivalent} if, for all
+admissible input assignments under the deterministic execution model fixed
+in Section~3.5, they produce the same observable outputs. In the current
+implementation this notion is checked over finite supplied input suites
+rather than by a general coinductive procedure.
 
 \begin{theorem}[Optimization Soundness]\label{thm:optimization-soundness}
 Let $F$ be an optimization pass. If $F$ only removes wires that provably
 never transmit data (dead wire elimination) or reorders modules within
-the same topological layer (cost-order scheduling), then $F(D)$ is
-bisimilar to $D$ for all diagrams $D$.
+the same topological layer \emph{and those modules are pairwise observationally independent} (equivalently: no shared writable state and no order-sensitive side effects), then $F(D)$ is
+behaviorally equivalent to $D$ for all diagrams $D$.
 \end{theorem}
 
 \noindent Three concrete passes are implemented:
@@ -62,12 +65,15 @@ that never encounter their substrate are downregulated.
 
 \item \textbf{Parallel Grouping.} Modules with no mutual dependencies
 form a \emph{parallel group} and can execute concurrently. This is
-identified via topological layering of the dependency DAG. Biologically,
+identified via topological layering of the dependency DAG, subject to
+the disjoint-state assumption of parallel composition from Section~4.
+Biologically,
 independent metabolic pathways (e.g., glycolysis and fatty acid oxidation)
 operate simultaneously in different cellular compartments.
 
 \item \textbf{Cost-Order Scheduling.} Within each parallel group,
-modules are sorted by ascending cost. Cheaper modules execute first,
+modules are sorted by ascending cost. When the parallel group satisfies
+the same observational-independence assumption, cheaper modules may execute first,
 allowing early termination or budget reallocation if expensive modules
 would exceed available ATP. This mirrors cellular enzyme kinetics:
 low-$K_m$ (high-affinity, low-cost) enzymes are preferentially activated.
@@ -75,16 +81,22 @@ low-$K_m$ (high-affinity, low-cost) enzymes are preferentially activated.
 
 \subsection{Critical Path Analysis}
 
-The \emph{critical path} of a cost-annotated diagram is the longest
-cost-weighted path through the dependency DAG:
+Because path costs are vector-valued, critical-path analysis requires a
+monotone scalarization $\lambda : \mathbb{R}_{\geq 0}^3 \to \mathbb{R}_{\geq 0}$
+(for example, the latency projection $\lambda(a,\ell,m)=\ell$ for wall-clock
+analysis, or a weighted sum when ATP and latency are jointly optimized).
+The \emph{critical path} under scalarization $\lambda$ is the longest
+scalarized path through the dependency DAG:
 
 \[
-\text{CP}(D) = \arg\max_{P \in \text{Paths}(D)} \sum_{m \in P} c_M(m) + \sum_{w \in P} c_W(w)
+\text{CP}_{\lambda}(D) = \arg\max_{P \in \text{Paths}(D)}
+\left(\sum_{m \in P} \lambda(c_M(m)) + \sum_{w \in P} \lambda(c_W^\uparrow(w))\right)
 \]
 
-The critical path determines the minimum execution time under maximal
-parallelism---no schedule can complete faster than the critical path
-cost. In metabolic terms, this is the rate-limiting pathway: the
+Under the latency projection, the critical path determines a lower bound
+on execution time under maximal parallelism---no schedule can complete
+faster than that latency-critical path. Under other scalarizations, it
+identifies the bottleneck for the chosen objective. In metabolic terms, this is the rate-limiting pathway: the
 bottleneck whose throughput constrains the entire system. Identifying
 it enables targeted optimization (e.g., caching expensive modules,
 splitting them into cheaper sub-diagrams).
@@ -145,10 +157,9 @@ reveals optimization opportunities---but different cost models.
 \item \textbf{Dynamic state.} Their functional equivalence ($\equiv$)
 preserves input-output mappings: two diagrams are equivalent when they
 produce the same outputs for the same inputs, differing only in resource
-profile. Our bisimulation (Section~3.5) preserves observable behavior of
-\emph{stateful} coalgebraic systems---a strictly stronger condition, since
-state evolution must also match across transitions, not just terminal
-outputs.
+profile. Our coalgebraic observational semantics (Section~3.5) is aimed at
+\emph{stateful} systems and tracks observable behavior across transitions
+under a chosen input schedule, not just terminal outputs.
 
 \item \textbf{Scope of composition.} Neural Circuit Diagrams represent
 \emph{algorithm pipelines}---fixed dataflow graphs where boxes are

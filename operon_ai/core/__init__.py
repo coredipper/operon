@@ -103,7 +103,7 @@ __all__ = [
     "StripMarkupFilter",
     "NormalizeFilter",
     "ChainFilter",
-    # Coalgebra (Paper §4.2)
+    # Coalgebra (Paper §3.5)
     "Coalgebra",
     "StateMachine",
     "FunctionalCoalgebra",
@@ -112,7 +112,7 @@ __all__ = [
     "TransitionRecord",
     "BisimulationResult",
     "check_bisimulation",
-    # Optics (Paper §3.3)
+    # Optics (Paper §3.4)
     "Optic",
     "OpticError",
     "LensOptic",
@@ -120,7 +120,7 @@ __all__ = [
     "TraversalOptic",
     "BudgetOptic",
     "ComposedOptic",
-    # Analyzer (Paper §9)
+    # Analyzer (Paper §7)
     "Optimization",
     "dependency_graph",
     "find_independent_groups",
@@ -128,7 +128,7 @@ __all__ = [
     "critical_path",
     "total_cost",
     "suggest_optimizations",
-    # Optimizer (Paper §9)
+    # Optimizer (Paper §7)
     "OptimizedDiagram",
     "OptimizationPass",
     "EliminateDeadWires",

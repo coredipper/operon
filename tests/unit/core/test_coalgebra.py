@@ -1,4 +1,4 @@
-"""Tests for coalgebraic state machines (Paper §4.2)."""
+"""Tests for coalgebraic state machines (Paper §3.5)."""
 
 import pytest
 

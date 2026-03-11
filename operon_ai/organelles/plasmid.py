@@ -2,7 +2,7 @@
 Plasmid Registry: Horizontal Gene Transfer for Agents
 =====================================================
 
-Paper §6.2, Eq. 12: Agent_new = Agent_old ⊗ ToolSchema
+Paper §6.2: Agent_new = Agent_old ⊗ ToolSchema
 
 In biology, plasmids are small DNA molecules that bacteria exchange
 via horizontal gene transfer (HGT).  A bacterium can acquire new
@@ -112,18 +112,20 @@ class PlasmidRegistry:
         ]
 
     def search(
-        self, query: str, tags: set[str] | None = None
+        self, query: str = "", tags: set[str] | None = None
     ) -> list[Plasmid]:
         """Search plasmids by name/description text and optional tags.
 
         Matching is case-insensitive.  If ``tags`` is provided, only
         plasmids whose tags intersect with the query tags are returned.
+        Passing an empty query enables pure tag filtering.
         """
         query_lower = query.lower()
         results: list[Plasmid] = []
         for p in self._plasmids.values():
             text_match = (
-                query_lower in p.name.lower()
+                not query_lower
+                or query_lower in p.name.lower()
                 or query_lower in p.description.lower()
             )
             if not text_match:

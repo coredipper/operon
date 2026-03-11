@@ -19,7 +19,7 @@ The key insight: If an agent's outputs stabilize (low embedding distance) while
 its perplexity remains high (model is uncertain), it's in a pathological loop.
 
 References:
-- Article Section 5: The Epistemic Starvation Pathology
+- Article Section 5.1: Oncology - Infinite Loops as Epistemic Starvation
 - Friston, K. (2010). The free-energy principle: a unified brain theory?
 """
 

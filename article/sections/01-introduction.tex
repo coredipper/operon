@@ -7,12 +7,13 @@ scaled predictably, the engineering of systems of agents remains a fragile art. 
 non-deterministic outputs, infinite loops, adversarial attacks, and the difficulty of maintaining global
 coherence in distributed, stochastic systems.
 
-We argue that these challenges are not novel engineering problems, but fundamental constraints of
-distributed information processing systems. The closest existing analogue to a multi-agent software
-architecture is not a traditional computer program, but a Gene Regulatory Network (GRN). In a biological
-cell, thousands of genes operate as autonomous functional units, each reading local chemical signals (context)
-and expressing proteins (actions/tools) that regulate other genes. The cell itself---the composite of these
-genes plus shared infrastructure (organelles, membrane)---is the autonomous agent.
+We argue that these challenges are not purely ad-hoc engineering problems, but recurring constraints of
+distributed information processing systems. A useful formal analogue is provided by Gene Regulatory
+Networks (GRNs). At the atomic level, a gene and an agent capability both expose typed interfaces that
+consume local signals and produce downstream effects. At the composite level, a biological cell organizes
+many genes plus shared infrastructure (organelles, membrane); analogously, an executable agent organizes
+many capabilities plus shared runtime components. This multi-scale correspondence, rather than a literal
+identity of mechanisms, is the organizing hypothesis of the paper.
 
 \subsection{The Biological Heuristic}
 
@@ -33,10 +34,14 @@ access control, relevant to preventing Prompt Injection attacks and hallucinatio
 
 \subsection{The Categorical Bridge}
 
-To move this observation from metaphor to discipline, we utilize Applied Category Theory. We define the
-category of agents using the language of $\mathbf{Poly}$ (Polynomial Functors) as described by Spivak~\cite{spivak2021learners}.
-An agent is not defined by its weights, but by its interface---a dynamical system consuming observations
-and producing actions:
+To move this observation from metaphor to discipline, we utilize Applied Category Theory. We define a
+category-theoretic model of agentic interfaces using the language of $\mathbf{Poly}$ (Polynomial Functors)
+as described by Spivak~\cite{spivak2021learners}.
+We use $\mathbf{Poly}$ as a common language for typed interfaces and wiring diagrams as a language for
+composition. The claim is not that GRNs and software agents are identical physical systems, but that
+selected biological and agentic components can be compared within the same interface-level formalism.
+A capability is then described not by its weights, but by its interface---a dynamical system consuming
+observations and producing actions:
 \begin{equation}
 P_A(y) = \sum_{o\in O} y^{I_o}.
 \label{eq:poly-functor-agent}
@@ -46,14 +51,14 @@ P_A(y) = \sum_{o\in O} y^{I_o}.
 
 This paper makes the following contributions:
 \begin{enumerate}[leftmargin=*]
-\item \textbf{A Formal Dictionary:} We establish a rigorous mapping between biological components
-(Genes, Promoters, Plasmids, Organelles) and software components (Agents, Schemas, Tools, Runtimes),
+\item \textbf{A Typed Correspondence:} We establish a disciplined mapping between biological components
+(Genes, Promoters, Plasmids, Organelles) and software components (Capabilities, Schemas, Tools, Runtimes),
 including multi-cellular organization for multi-agent systems.
 \item \textbf{The Agentic Operad:} We define WAgent, a syntax for agent wiring that forbids specific classes
 of \textbf{ill-typed wirings} at the topological level. We prove error suppression bounds for the CFFL
 topology, explicitly accounting for correlation between error modes.
 \item \textbf{Adaptive Immunity:} We formalize the Provenance Functor and Trust-Gated Lens, providing
-structural injection resistance where content-based attacks cannot elevate trust levels.
+structural resistance to content-level trust forgery, where content-based attacks cannot elevate trust levels.
 \item \textbf{Epistemic Health:} We define Epiplexity (Bayesian Surprise) with operational approximations
 using embedding similarity and perplexity, connecting agent dynamics to the Free Energy Principle.
 \item \textbf{Metabolic Intelligence:} We distinguish fast (Apoptosis) and slow (Retrograde Response)
@@ -67,10 +72,10 @@ and Traversal (batch element-wise processing) optics, enabling richer signal pro
 \item \textbf{Morphogen Diffusion:} We formalize spatially varying coordination as a discrete-time
 dynamical system on the agent graph, producing position-dependent behavior without central control.
 \item \textbf{Composable Coalgebras:} We make the coalgebraic state machine framework explicit and
-composable, with parallel/sequential composition and bisimulation-based equivalence checking.
+composable, with parallel/sequential composition and observational equivalence criteria.
 \item \textbf{Epistemic Topology:} We derive Kripke-style knowledge operators from wiring diagram
 structure and prove four predictive theorems for multi-agent scaling (error amplification, sequential
-penalty, parallel acceleration, tool density), validated against empirical results.
+penalty, parallel acceleration, tool density), then compare their qualitative predictions to empirical results.
 \item \textbf{Capability-Gated Tool Acquisition:} The Plasmid Registry implements Horizontal Gene
 Transfer with capability gating, preventing privilege escalation when agents dynamically acquire tools.
 \item \textbf{Diagram Optimization:} Cost-annotated wiring diagrams admit categorical rewriting
@@ -78,4 +83,4 @@ rules that preserve observational equivalence while improving resource utilizati
 \end{enumerate}
 
 By viewing agentic engineering through the lens of theoretical biology and category theory, we aim to provide a
-foundation for building robust software systems whose stability properties derive from their network topology.
+framework for building robust software systems whose stability properties derive in part from their network topology.

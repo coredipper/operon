@@ -18,7 +18,7 @@ Key points:
 4. Backward compatible — existing wires without filters work unchanged
 
 References:
-- Article Section 5.3: Denaturation Layers (Anti-Prion Defense)
+- Article Section 5.3: Prion Disease - Topological Corruption via Prompt Injection
 """
 
 from operon_ai.core.denature import (

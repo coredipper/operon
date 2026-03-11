@@ -2,7 +2,7 @@
 Example 62: Morphogen Diffusion — Spatially Varying Gradients
 ==============================================================
 
-Demonstrates graph-based morphogen diffusion, implementing Paper §6.4.
+Demonstrates graph-based morphogen diffusion, implementing Paper §6.5.2 / §6.5.3.
 
 Biological Analogy:
 In embryonic development, morphogens (e.g., Bicoid in Drosophila) are
@@ -22,7 +22,8 @@ Key points:
 5. Tissue integration provides per-cell gradients
 
 References:
-- Article Section 6.4: Morphogen Diffusion
+- Article Section 6.5.2: Morphogen Gradients - Coordination Without Central Control
+- Article Section 6.5.3: Tissue Architecture - The Agent Graph as Organism
 """
 
 from operon_ai.coordination.diffusion import (

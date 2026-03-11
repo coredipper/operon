@@ -5,7 +5,7 @@ component, but by the dysregulation of network dynamics. A cancerous cell still 
 too well, reproducing indefinitely. Similarly, catastrophic failures in agentic systems often arise from
 functional agents interacting in topologically pathological ways.
 
-We classify four primary classes of agentic pathology based on their biological isomorphisms.
+We classify four primary classes of agentic pathology based on their biological correspondences.
 
 \subsection{Oncology: Infinite Loops as Epistemic Starvation}
 
@@ -45,8 +45,9 @@ We normalize perplexity to $[0,1]$ via an exponential saturation: $\sigma(H) = 1
 perplexity (e.g., median perplexity over a validation corpus of normal conversations).
 
 The mixing parameter $\alpha \in [0,1]$ balances semantic novelty (embedding distance) against linguistic
-surprise (perplexity). We recommend $\alpha = 0.5$ as a default, calibrated on a validation set where both
-terms contribute equally to variance. In practice:
+surprise (perplexity). In the absence of task-specific calibration, we use $\alpha = 0.5$ as a neutral
+default that weights the two signals equally. The choice of $\alpha$ and threshold $\delta$ is empirical
+and may vary across models and task families. In practice:
 \begin{itemize}[leftmargin=*]
 \item High $\alpha$: Sensitive to semantic repetition (same meaning, different words)
 \item Low $\alpha$: Sensitive to linguistic repetition (same phrases, possibly different context)
@@ -56,7 +57,7 @@ Both terms approaching zero indicate stagnation.
 \textbf{Windowed Detection.} To distinguish genuine convergence (task completion) from pathological
 loops, we compute the \textbf{Epiplexic Integral} over a sliding window of $k$ steps:
 \begin{equation}
-\mathcal{E}_{\text{window}} = \frac{1}{k}\sum_{i=t-k}^{t} \hat{\mathcal{E}}_i
+\mathcal{E}_{\text{window}} = \frac{1}{k}\sum_{i=t-k+1}^{t} \hat{\mathcal{E}}_i
 \label{eq:epiplexic-integral}
 \end{equation}
 Apoptosis triggers when $\mathcal{E}_{\text{window}} < \delta$ \textit{and} no terminal action

@@ -20,7 +20,7 @@ Epiplexity measures the *absence* of this healthy pattern.
 
 References:
 - Friston, K. (2010). The free-energy principle: a unified brain theory?
-- Article Section 5: The Epistemic Starvation Pathology
+- Article Section 5.1: Oncology - Infinite Loops as Epistemic Starvation
 """
 from dataclasses import dataclass, field
 from typing import Protocol, Sequence
@@ -128,7 +128,8 @@ class EpiplexityMonitor:
     """
     Monitor for detecting epistemic stagnation.
 
-    Implements the operational Epiplexity approximation (Equation 13):
+    Implements the operational Epiplexity approximation from the
+    oncology / epistemic-starvation section:
 
         Ê_t = α·½(1 - cos(e_t, e_{t-1})) + (1-α)·σ(H(m_t|m_{<t}))
 

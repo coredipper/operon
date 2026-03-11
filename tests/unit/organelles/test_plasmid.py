@@ -1,4 +1,4 @@
-"""Tests for Plasmid Registry / Horizontal Gene Transfer (Paper §6.2, Eq. 12).
+"""Tests for Plasmid Registry / Horizontal Gene Transfer (Paper §6.2).
 
 Dynamic tool acquisition from a searchable registry with capability gating.
 """
@@ -117,6 +117,14 @@ class TestPlasmidRegistry:
         registry.register(_make_plasmid("a", tags=frozenset({"math"})))
         registry.register(_make_plasmid("b", tags=frozenset({"text"})))
         results = registry.search("A", tags={"math"})
+        assert len(results) == 1
+        assert results[0].name == "a"
+
+    def test_search_by_tags_only(self):
+        registry = PlasmidRegistry()
+        registry.register(_make_plasmid("a", tags=frozenset({"math"})))
+        registry.register(_make_plasmid("b", tags=frozenset({"text"})))
+        results = registry.search(tags={"math"})
         assert len(results) == 1
         assert results[0].name == "a"
 

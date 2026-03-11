@@ -69,7 +69,7 @@ class MetabolicReport:
 class MetabolicAccessPolicy:
     """
     Cost-Gated Retrieval: defines which marker strengths are accessible
-    at each metabolic state (Paper §6.1.1, Eq. 15).
+    at each metabolic state (Paper §6.1.1).
 
     When coupled with HistoneStore, this policy silences expensive context
     under resource pressure — metabolism directs cognition, not just limits it.

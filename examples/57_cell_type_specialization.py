@@ -17,7 +17,7 @@ Biological Analogy:
 - DifferentiatedCell = mature cell ready to function
 
 References:
-- Article Section 6.5.1: Multi-Cellular Organization - Cell Types
+- Article Section 6.5.1: Cell Types and Agent Specialization
 """
 
 from operon_ai.state.genome import Genome, Gene, GeneType, ExpressionLevel

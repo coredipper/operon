@@ -658,7 +658,7 @@ class Mitochondria:
         return schemas
 
     # ------------------------------------------------------------------
-    # Horizontal Gene Transfer (Paper §6.2, Eq. 12)
+    # Horizontal Gene Transfer (Paper §6.2)
     # ------------------------------------------------------------------
 
     def acquire(

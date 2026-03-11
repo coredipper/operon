@@ -4,22 +4,24 @@ The transition from ``Prompt Engineering'' to ``Agentic Engineering'' requires m
 optimization toward principled architectural design. Current methodologies often lack the formal foundations
 needed to reason about system-level properties like termination, error suppression, and graceful degradation.
 
-In this paper, we have demonstrated that Gene Regulatory Networks (GRNs) provide a proven architectural blueprint
-for distributed, stochastic information processing. By formalizing this analogy through Applied Category Theory,
-we have derived a comprehensive suite of design patterns:
+In this paper, we have argued that Gene Regulatory Networks (GRNs) provide a useful source of control motifs
+for distributed, stochastic information processing. By expressing selected biological and software components
+within a shared interface language from Applied Category Theory, we derived a corresponding suite of design
+patterns. The result is a modeling and design framework, not a claim that biological and software systems are
+identical in mechanism:
 
 \subsection*{Core Contributions}
 
 \begin{enumerate}[leftmargin=*]
 \item \textbf{Robustness via Topology:} The Coherent Feed-Forward Loop provides error suppression proportional
 to $(1-\rho)$, where $\rho$ is the correlation between component error modes. We make precise the conditions
-under which topological redundancy provides genuine safety benefits: diversity in model families yields
-$\rho \approx 0$; same-model verification yields $\rho \approx 1$ with minimal improvement. The topology is
-necessary but not sufficient; component diversity determines actual error suppression.
+under which topological redundancy provides genuine safety benefits: highly correlated generator/verifier
+pairs yield limited improvement, while more heterogeneous pairs can suppress errors more effectively. The
+topology is necessary but not sufficient; component diversity determines actual error suppression.
 
 \item \textbf{Adaptive Immunity:} We formalize the Self/Non-Self distinction as a \textbf{Provenance Functor}
 $\mathcal{P}: \mathbf{Msg} \to \mathbf{Trust}$ with structurally-enforced labels. The Trust-Gated Lens
-provides injection resistance by ensuring that content-based attacks cannot elevate provenance. This extends
+provides resistance to content-level trust forgery by ensuring that content-based attacks cannot elevate provenance. This extends
 the Prion metaphor into a full immunological framework with MHC-like tagging, negative selection during
 training, and regulatory suppression of conflicting sources.
 
@@ -48,8 +50,8 @@ error-context feedback), Metabolic (Apoptosis + Regeneration with state summariz
 \item \textbf{Evolutionary Dynamics:} The Vermeij Trend predicts that agentic architectures face three
 selective pressures: adversarial robustness (Red Queen dynamics with attackers), task complexity
 (environmental pressure toward ``aerobic'' multi-step reasoning), and resource efficiency (metabolic
-selection toward the Pareto frontier). Architectures lacking proper immune defense and metabolic regulation
-will be outcompeted.
+selection toward the Pareto frontier). In our framing, these pressures motivate architectures that balance
+immune defense, task complexity, and metabolic regulation rather than treating those concerns as separable add-ons.
 
 \item \textbf{Wire-Level Optics:} Prism optics enable conditional type-based routing (receptor specificity),
 Traversal optics enable batch processing (polymerase processivity), and DenatureFilters provide
@@ -60,13 +62,13 @@ varying concentration profiles, enabling position-dependent coordination without
 state sharing.
 
 \item \textbf{Composable Coalgebras:} The coalgebraic formalism is made explicit with parallel and sequential
-composition, full transition traces, and bisimulation-based equivalence checking, enabling formal
-verification that two agent implementations are observationally interchangeable.
+composition, full transition traces, and observational equivalence criteria, enabling structured comparison
+of agent implementations.
 
 \item \textbf{Epistemic Topology:} Kripke-style knowledge operators ($K_i$, $E_G$, $C_G$, $D_G$) derived
 from wiring diagram structure yield four predictive theorems for multi-agent scaling---error amplification,
-sequential penalty, parallel acceleration, tool density---validated against empirical results from
-large-scale architecture evaluations~\cite{kim2025scaling}.
+sequential penalty, parallel acceleration, tool density---and these theorems are qualitatively consistent
+with empirical results from large-scale architecture evaluations~\cite{kim2025scaling}.
 
 \item \textbf{Capability-Gated Tool Acquisition:} The Plasmid Registry implements Horizontal Gene Transfer
 with capability gating, preventing privilege escalation when agents dynamically acquire tools.
@@ -74,7 +76,7 @@ with capability gating, preventing privilege escalation when agents dynamically 
 \item \textbf{Diagram Optimization via Categorical Rewriting:} Cost annotations enrich the wiring category
 over the resource monoid $(\mathcal{R}, +, 0)$, making resource consumption a first-class compositional concept.
 Rewriting passes---dead wire elimination, parallel grouping, cost-order scheduling---are endofunctors
-that preserve input-output bisimulation while improving resource utilization. The ResourceAwareExecutor
+that preserve input-output observational equivalence while improving resource utilization. The ResourceAwareExecutor
 gates module execution on MetabolicState, connecting diagram optimization to the metabolic intelligence
 framework: under ATP depletion, non-essential pathway branches are downregulated, mirroring cellular
 starvation responses.
@@ -82,28 +84,32 @@ starvation responses.
 
 \subsection*{The Mathematical Foundation}
 
-The isomorphism rests on the category $\mathbf{Poly}$ of polynomial functors, where biological and software
-components at every scale---genes and capabilities, cells and agents, tissues and multi-agent systems---are
-modeled as interfaces $(O, I)$ consuming observations and producing actions. The Operad of Wiring Diagrams
+The correspondence rests on the category $\mathbf{Poly}$ of polynomial functors as a language for typed
+interfaces. Within that language, biological and software components at several scales---genes and agent
+capabilities, cells and agent runtimes, tissues and multi-agent subsystems---can be modeled as interfaces
+$(O, I)$ consuming observations and producing actions. The Operad of Wiring Diagrams
 provides the grammar for composition, with type-checking at the topological level preventing classes of
 runtime errors. The Metabolic Coalgebra enriches this with resource constraints, providing a decidable
 termination criterion when costs are strictly decreasing and regeneration is excluded (or separately bounded).
-The Provenance Functor layers trust semantics onto message flow, providing formal injection resistance.
+The Provenance Functor layers trust semantics onto message flow, providing a structural account of
+trust-gated resistance to content-level trust forgery.
 
 \subsection*{Implications}
 
-The Operon framework is not merely a safety feature; it is the necessary evolutionary adaptation---the
-``vascularization'' of software---that enables high-power cognition to function without thermodynamic
-collapse. The control structures that emerged over billions of years of evolution address the same fundamental
-challenges of distributed, stochastic information processing that agentic architectures face today.
+The Operon framework should be read as a structured design language for robust agent architectures. Its
+value is that some biological analogies can be made precise enough to guide implementation: topology
+constrains coordination, resource models constrain execution, and provenance labels constrain trust
+elevation.
 
-The isomorphism is not metaphorical; it is mathematical. And it is actionable: each biological motif maps
-to implementable code patterns, as demonstrated by the reference implementation. We anticipate that future
-agent frameworks will be evaluated not just on capability benchmarks, but on their metabolic efficiency,
-immune resistance, and homeostatic robustness---the same criteria that determine organismal fitness in
-biological evolution.
+The correspondence is therefore neither a loose metaphor nor a full biological equivalence. It is a
+disciplined abstraction that makes a subset of biologically inspired design patterns precise enough to
+analyze and implement, as demonstrated by the reference implementation.
 
-The epistemic topology formalization provides predictive power that has been validated against empirical scaling results~\cite{kim2025scaling}, demonstrating that the framework captures real structure rather than post-hoc rationalization. The connection between morphogen-driven topology switching and epistemic optimization suggests a path toward formally verified adaptive multi-agent systems, where topological transitions are not merely heuristic but provably optimal under specified epistemic constraints.
+The epistemic-topology formalization is qualitatively consistent with external scaling evidence such as
+Kim et al.~\cite{kim2025scaling}, but it does not by itself constitute complete empirical validation of the
+framework. The connection between morphogen-driven topology switching and epistemic optimization instead
+suggests a path toward more formally analyzed adaptive multi-agent systems, where topological transitions
+can be justified under explicit epistemic and resource assumptions.
 
 \subsection*{Future Work}
 
@@ -121,8 +127,8 @@ injection syntax, tool poisoning, and behavioral mimicry attacks. Development of
 mechanisms (signature updates, thymic retraining, threat intelligence sharing).
 \item \textbf{Production Benchmarks:} Validation on real LLM outputs at scale, measuring both security
 efficacy and performance overhead of the defense layers.
-\item \textbf{Bisimulation at Scale:} The current bisimulation check operates over finite input sequences.
-Extending to infinite-trace coinductive bisimulation for continuous agent systems is an open challenge.
+\item \textbf{Finite-Trace Equivalence at Scale:} The current equivalence check operates over finite input sequences.
+Extending it to coinductive bisimulation for infinite-trace or continuously interacting agent systems is an open challenge.
 \item \textbf{Learned Rewriting Rules:} The current optimization passes are hand-crafted. Learning
 rewriting rules from execution traces---identifying recurring subdiagram patterns and their optimized
 replacements---would connect diagram optimization to program synthesis and equality saturation techniques.

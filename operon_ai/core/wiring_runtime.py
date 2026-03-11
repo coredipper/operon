@@ -217,7 +217,7 @@ class DiagramExecutor:
                             integrity=value.integrity,
                             value=denatured_str,
                         )
-                    # Optic: apply wire-level optic routing/transform (Paper §3.3)
+                    # Optic: apply wire-level optic routing/transform (Paper §3.4)
                     if wire.optic is not None:
                         if not wire.optic.can_transmit(value.data_type, value.integrity):
                             continue  # Prism rejection: skip this wire

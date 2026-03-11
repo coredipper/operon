@@ -1,0 +1,147 @@
+\begin{thebibliography}{10}
+
+\bibitem{abbott2023neural}
+Vincent Abbott.
+\newblock Neural circuit diagrams: Robust diagrams for the communication,
+  implementation, and analysis of deep learning architectures.
+\newblock {\em arXiv preprint arXiv:2402.05424}, 2023.
+\newblock Foundation for the diagrammatic scheme used in FlashAttention on a
+  Napkin.
+
+\bibitem{abbott2025flashattention}
+Vincent Abbott and Gioele Zardini.
+\newblock Flashattention on a napkin: A diagrammatic approach to deep learning
+  io-awareness.
+\newblock 2025.
+\newblock Derives FlashAttention via Neural Circuit Diagrams with IO-aware
+  performance model.
+
+\bibitem{allen2022energy}
+John~F Allen.
+\newblock Energy transduction and the mind: mitochondria in brain function.
+\newblock {\em The Biochemist}, 44(4):8--13, 2022.
+
+\bibitem{alon2007network}
+Uri Alon.
+\newblock Network motifs: theory and experimental approaches.
+\newblock {\em Nature Reviews Genetics}, 8(6):450--461, 2007.
+
+\bibitem{aubrey2018p53}
+B.J. Aubrey, A.~Strasser, and G.L. Kelly.
+\newblock How does p53 induce apoptosis and how does this relate to
+  p53-mediated tumour suppression?
+\newblock {\em Cell Death \& Differentiation}, 25:104--113, 2018.
+
+\bibitem{boreale2023weighted}
+Michele Boreale.
+\newblock Coalgebras for bisimulation of weighted automata.
+\newblock {\em Logical Methods in Computer Science}, 19, 2023.
+
+\bibitem{chandel2024mitochondria}
+Navdeep~S Chandel.
+\newblock Mitochondria as signaling organelles.
+\newblock {\em BMC Biology}, 12:34, 2014.
+\newblock Revisited in 2024 work on metabolic-epigenetic coupling.
+
+\bibitem{debenedetti2024agentdojo}
+Edoardo Debenedetti, Giorgio Severi, Nicholas Carlini, Scott Coull, and Florian
+  Tram\`{e}r.
+\newblock Agentdojo: A dynamic environment to evaluate prompt injection attacks
+  and defenses for llm agents.
+\newblock In {\em NeurIPS}, 2024.
+
+\bibitem{fong2019seven}
+Brendan Fong and David~I Spivak.
+\newblock {\em Seven sketches in compositionality: An invitation to applied
+  category theory}.
+\newblock Cambridge University Press, 2019.
+
+\bibitem{friston2010}
+Karl Friston.
+\newblock The free-energy principle: a unified brain theory?
+\newblock {\em Nature Reviews Neuroscience}, 11(2):127--138, 2010.
+
+\bibitem{kempes2017thermodynamic}
+Christopher~P Kempes, David~H Wolpert, Zachary Cohen, and Juan
+  P{\'e}rez-Mercader.
+\newblock The thermodynamic efficiency of computations made in cells across the
+  range of life.
+\newblock {\em Philosophical Transactions of the Royal Society A}, 375(2109),
+  2017.
+
+\bibitem{lynch2015bioenergetic}
+Michael Lynch and Georgi~K Marinov.
+\newblock The bioenergetic costs of a gene.
+\newblock {\em Proceedings of the National Academy of Sciences},
+  112(51):15690--15695, 2015.
+
+\bibitem{maturana1980autopoiesis}
+Humberto~R Maturana and Francisco~J Varela.
+\newblock {\em Autopoiesis and cognition: The realization of the living}.
+\newblock Reidel, 1980.
+
+\bibitem{milo2002network}
+Ron Milo, Shai Shen-Orr, Shalev Itzkovitz, Nadav Kashtan, Dmitri Chklovskii,
+  and Uri Alon.
+\newblock Network motifs: simple building blocks of complex networks.
+\newblock {\em Science}, 298(5594):824--827, 2002.
+
+\bibitem{nakov2021quantitative}
+Georgi Nakov and Fredrik~Nordvall Forsberg.
+\newblock Quantitative polynomial functors.
+\newblock In {\em Conference on Algebra and Coalgebra in Computer Science
+  (CALCO)}. Schloss Dagstuhl-Leibniz-Zentrum f{\"u}r Informatik, 2021.
+
+\bibitem{niu2023polynomial}
+Nelson Niu and David~I Spivak.
+\newblock Polynomial functors: A mathematical theory of interaction.
+\newblock {\em arXiv preprint arXiv:2312.00990}, 2023.
+
+\bibitem{patil2023gorilla}
+Shishir~G. Patil, Tianjun Zhang, Xin Wang, and Joseph~E. Gonzalez.
+\newblock Gorilla: Large language model connected with massive apis.
+\newblock {\em arXiv preprint arXiv:2305.15334}, 2023.
+
+\bibitem{picard2022mips}
+Martin Picard and Orian~S Shirihai.
+\newblock The mitochondrial information processing system: A new model of
+  mitochondrial-nuclear communication.
+\newblock {\em Trends in Neurosciences}, 41(4):206--208, 2018.
+\newblock Revisited and expanded in 2022-2024 work.
+
+\bibitem{picard2022signaling}
+Martin Picard and Orian~S Shirihai.
+\newblock Mitochondria as multifaceted regulators of cell death.
+\newblock {\em Cell Metabolism}, 34(11):1607--1627, 2022.
+
+\bibitem{spivak2021learners}
+David~I Spivak.
+\newblock Learners' languages.
+\newblock {\em Compositionality}, 3(4), 2021.
+
+\bibitem{vagner2015algebras}
+Dmitry Vagner, David~I Spivak, and Eugene Lerman.
+\newblock Algebras of open dynamical systems on the operad of wiring diagrams.
+\newblock {\em Theory and Applications of Categories}, 30(51):1793--1822, 2015.
+
+\bibitem{vermeij2023power}
+Geerat~J Vermeij.
+\newblock {\em The Evolution of Power: A New Understanding of the History of
+  Life}.
+\newblock Princeton University Press, 2023.
+
+\bibitem{waddington1957}
+Conrad~H Waddington.
+\newblock {\em The Strategy of the Genes}.
+\newblock Allen \& Unwin, 1957.
+\newblock Introduced the concept of the ``epigenetic landscape''.
+
+\bibitem{wei2022chain}
+Jason Wei, Xuezhi Yi, Maarten Zhang, Yiming Liu, Xinyu Li, Xing Wang, Yujia
+  Zhou, Yiming Li, Yuyang Wang, Zhi Li, et~al.
+\newblock Chain-of-thought prompting elicits reasoning in large language
+  models.
+\newblock {\em arXiv preprint arXiv:2201.11903}, 2022.
+\newblock Available at: \url{https://arxiv.org/abs/2201.11903}.
+
+\end{thebibliography}

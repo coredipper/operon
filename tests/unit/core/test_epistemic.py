@@ -236,18 +236,18 @@ def test_classify_hub_correctly_identified():
 
 
 def test_error_amplification_independent():
-    """Independent bound = n (number of non-source workers)."""
-    d = _fan_in()  # 3 sources + 1 hub
+    """Independent bound scales with the number of isolated worker modules."""
+    d = _independent()
     bound = error_amplification_bound(d)
-    # D is the only non-source module
-    assert bound.n_agents == 1
-    assert bound.independent_bound == 1
+    assert bound.n_agents == 3
+    assert bound.independent_bound == 3
 
 
 def test_error_amplification_centralized():
-    """Centralized bound = n * (1 - detection_rate)."""
+    """Centralized bound counts worker sources, not the aggregator hub."""
     d = _fan_in()
     bound = error_amplification_bound(d, detection_rate=0.75)
+    assert bound.n_agents == 3
     assert bound.centralized_bound == bound.n_agents * (1 - 0.75)
     assert bound.detection_rate == 0.75
 

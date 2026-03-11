@@ -815,7 +815,7 @@ organism.add_module(tissue.as_module())  # tissue exports as a single ModuleSpec
 
 ### Plasmid Registry (Horizontal Gene Transfer)
 
-Dynamic tool acquisition from a searchable registry (Paper §6.2, Eq. 12). Agents can discover, acquire, and release tools at runtime — like bacteria exchanging plasmids. Capability gating prevents privilege escalation.
+Dynamic tool acquisition from a searchable registry (Paper §6.2). Agents can discover, acquire, and release tools at runtime — like bacteria exchanging plasmids. Optional capability gating prevents privilege escalation when capability envelopes are configured.
 
 ```python
 from operon_ai import Mitochondria, Capability
@@ -883,7 +883,7 @@ diagram.connect(
 
 > **Note:** Denaturation is defense-in-depth, not a guarantee. Filters target known syntactic patterns; novel injection techniques may require custom DenatureFilter implementations.
 
-### Coalgebraic State Machines (Paper §4.2)
+### Coalgebraic State Machines (Paper §3.5)
 
 Agents as formal state machines with composable observation (readout) and evolution (update). Existing patterns in HistoneStore, ATP_Store, and CellCycleController are made explicit and composable.
 
@@ -912,7 +912,7 @@ result = check_bisimulation(a, b, [1, 2, 3])
 print(result.equivalent)  # True
 ```
 
-### Morphogen Diffusion (Paper §6.4)
+### Morphogen Diffusion (Paper §6.5.2 / §6.5.3)
 
 Graph-based spatial model for morphogen concentrations. Agents at different positions in the wiring topology experience different concentrations, enabling local gradient-based coordination.
 
@@ -939,7 +939,7 @@ gradient = field.get_local_gradient("B")
 print(gradient.get_level(MorphogenType.COMPLEXITY))  # "high" or "medium"
 ```
 
-### Optic-Based Wiring (Paper §3.3)
+### Optic-Based Wiring (Paper §3.4)
 
 Wire-level optics for conditional routing and collection processing. Extends the existing type-checked wiring with prism (route by DataType) and traversal (map over lists).
 

@@ -12,7 +12,7 @@ This module provides static analysis of WiringDiagram structure
 to identify optimization opportunities before execution.
 
 References:
-- Article Section 9: Diagram Optimization via Categorical Rewriting
+- Article Section 7: Diagram Optimization via Categorical Rewriting
 """
 
 from __future__ import annotations

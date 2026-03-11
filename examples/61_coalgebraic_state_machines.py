@@ -3,7 +3,7 @@ Example 61: Coalgebraic State Machines — Composable Observation & Evolution
 ============================================================================
 
 Demonstrates the coalgebraic interface for state machines, implementing
-Paper §4.2.
+Paper §3.5.
 
 Biological Analogy:
 - Cell state = internal biochemistry (never directly accessible)
@@ -19,7 +19,7 @@ Key points:
 5. check_bisimulation tests observational equivalence
 
 References:
-- Article Section 4.2: Coalgebraic State Machines
+- Article Section 3.5: Epigenetics and State - The Coalgebra
 """
 
 from operon_ai.core.coalgebra import (
