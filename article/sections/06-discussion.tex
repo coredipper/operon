@@ -255,7 +255,7 @@ The wiring diagram's topology directly determines which epistemic operators a mu
 
 \subsubsection{Predictive Theorems for Multi-Agent Coordination}
 
-We now derive four results connecting topology class to coordination performance. Each theorem has a qualitative statement (universally true for the topology class) and a parametric corollary (producing bounds that match recent empirical findings \cite{google2026scaling}).
+We now derive four results connecting topology class to coordination performance. Each theorem has a qualitative statement (universally true for the topology class) and a parametric corollary (producing bounds that match recent empirical findings \cite{kim2025scaling}).
 
 \begin{theorem}[Error Amplification Bound]
 \label{thm:error-amplification}
@@ -276,7 +276,7 @@ A_{\circ} \le n \cdot (1 - d).
 
 \textit{Proof sketch.} In the independent case, the hub's observation function $\mathrm{obs}_{\mathrm{hub}}$ factors through only the final outputs---the hub's equivalence classes $[s]_{\sim_{\mathrm{hub}}}$ are too coarse to distinguish ``agent $j$ erred at step 3'' from ``agent $j$ received different input.'' In the centralized case, the hub observes each worker's output before aggregation. Its partition $\sim_{\mathrm{hub}}$ is strictly finer, enabling detection of inter-worker inconsistencies. The detection rate $d$ is bounded by the mutual information $I(\mathrm{obs}_{\mathrm{hub}}; \mathrm{error}_j)$---the more the hub's observations are informative about each worker's internal error state, the higher $d$. \qed
 
-\paragraph{Parametric Corollary.} For $n \approx 3\text{--}5$ agents and hub detection rate $d \approx 0.75$ (empirically reasonable for an LLM cross-checking outputs), $A_{\otimes} / A_{\circ} \approx 1/(1-d) = 4$. Google Research \cite{google2026scaling} observed amplification factors of $17.2\times$ (independent) vs.\ $4.4\times$ (centralized), yielding a ratio of $\approx 3.9\times$. The qualitative ordering $A_{\otimes} \gg A_{\circ}$ holds universally; the quantitative ratio depends on hub capability.
+\paragraph{Parametric Corollary.} For $n \approx 3\text{--}5$ agents and hub detection rate $d \approx 0.75$ (empirically reasonable for an LLM cross-checking outputs), $A_{\otimes} / A_{\circ} \approx 1/(1-d) = 4$. Kim et al.~\cite{kim2025scaling} observed amplification factors of $17.2\times$ (independent) vs.\ $4.4\times$ (centralized), yielding a ratio of $\approx 3.9\times$. The qualitative ordering $A_{\otimes} \gg A_{\circ}$ holds universally; the quantitative ratio depends on hub capability.
 
 \begin{theorem}[Sequential Coordination Penalty]
 \label{thm:sequential-penalty}
@@ -294,7 +294,7 @@ which is strictly positive whenever the wire does not carry the sender's full st
 
 \textit{Proof sketch.} The single agent's coalgebraic state $S$ is a superset of the information in any result $r_j$ (it computed $r_j$). Thus $K_i(r_j)$ holds trivially with zero communication. For multi-agent handoffs, the receiver's observation function $\mathrm{obs}_{\mathrm{receiver}}$ maps the sender's state $S_{\mathrm{sender}}$ through a wire with finite bandwidth (the message). By the data processing inequality, $I(\mathrm{obs}_{\mathrm{receiver}}; r_j) \le I(S_{\mathrm{sender}}; r_j)$ with equality only if the wire is lossless. The information deficit $\Delta I_j$ must be compensated by additional reasoning tokens in the receiver. \qed
 
-\paragraph{Parametric Corollary.} With $c_{\mathrm{comm}} / c_{\mathrm{step}} \approx 0.3\text{--}0.5$ (handoff messages must summarize reasoning) and $h \approx k/n$ handoffs, the overhead reaches 30--50\%. Context reconstruction failures compound across handoffs, producing total degradation of 39--70\%---matching Google Research's observed range on the PlanCraft sequential planning benchmark \cite{google2026scaling}. The penalty is a direct consequence of \textbf{manufacturing knowledge} that a single agent obtains for free.
+\paragraph{Parametric Corollary.} With $c_{\mathrm{comm}} / c_{\mathrm{step}} \approx 0.3\text{--}0.5$ (handoff messages must summarize reasoning) and $h \approx k/n$ handoffs, the overhead reaches 30--50\%. Context reconstruction failures compound across handoffs, producing total degradation of 39--70\%---matching Kim et al.'s observed range on the PlanCraft sequential planning benchmark \cite{kim2025scaling}. The penalty is a direct consequence of \textbf{manufacturing knowledge} that a single agent obtains for free.
 
 \begin{theorem}[Parallel Acceleration under Epistemic Independence]
 \label{thm:parallel-acceleration}
@@ -313,7 +313,7 @@ where $c_{\mathrm{assign}}$ is the coordinator's distribution cost and $c_{\math
 
 \textit{Proof sketch.} Epistemic independence means each agent's observation partition is sufficient for its subtask: $K_i(\varphi_i)$ can be achieved from $\mathrm{obs}_i$ alone, without needing $K_i(K_j(\varphi_j))$. The coordinator's aggregation naturally achieves distributed knowledge $D_G$ because $\sim_{\mathrm{hub}} \subseteq \bigcap_{i} \sim_i$ (the hub observes all outputs). For part (c), when $I(\varphi_i; \varphi_j) > 0$, the optimal solution of subtask $i$ depends on information in agent $j$'s partition---information that is absent from $\mathrm{obs}_i$ under independent execution. \qed
 
-\paragraph{Parametric Corollary.} For Google Research's Finance-Agent benchmark \cite{google2026scaling}, the task decomposes into $m = 3\text{--}4$ epistemically independent subtasks (revenue, costs, market comparison). With small coordinator overhead, $S \approx 2\text{--}3\times$. Combined with the hub's error-detection benefit (Theorem~\ref{thm:error-amplification}), the net improvement reaches $\sim$80\%. Google observed 80.9\%.
+\paragraph{Parametric Corollary.} For Kim et al.'s Finance-Agent benchmark \cite{kim2025scaling}, the task decomposes into $m = 3\text{--}4$ epistemically independent subtasks (revenue, costs, market comparison). With small coordinator overhead, $S \approx 2\text{--}3\times$. Combined with the hub's error-detection benefit (Theorem~\ref{thm:error-amplification}), the net improvement reaches $\sim$80\%. Kim et al.\ observed $+80.8\%$.
 
 \begin{theorem}[Tool Density Scaling]
 \label{thm:tool-density}
@@ -337,10 +337,10 @@ yielding disproportionate overhead as tool density increases.
 
 \textit{Proof sketch.} The root cause is \textbf{knowledge fragmentation}. Each agent added to the system partitions the tool-knowledge space: agent $i$'s observation function covers only $T_i$'s outputs. The system's distributed knowledge $D_G$ grows (more tools covered), but \textit{accessing} $D_G$ requires communication proportional to the fragmentation. The second-order epistemic cost arises because planning requires modeling other agents' capabilities, not just their outputs. This is strictly harder: $K_i(K_j(\varphi))$ requires $i$ to reason about $j$'s observation partition, adding a multiplicative factor of $n$. \qed
 
-\paragraph{Parametric Corollary.} At $t = 16$ tools and $n = 3\text{--}4$ agents: the remote tool fraction approaches 0.7, and second-order planning cost reaches $\sim$64 reasoning units per step vs.\ 16 for a single agent. This $4\times$ overhead negates parallelism benefits. Below $t \approx 8$, most needed tools are local and the overhead is manageable. This matches Google Research's observed inflection point beyond 16 tools \cite{google2026scaling}.
+\paragraph{Parametric Corollary.} At $t = 16$ tools and $n = 3\text{--}4$ agents: the remote tool fraction approaches 0.7, and second-order planning cost reaches $\sim$64 reasoning units per step vs.\ 16 for a single agent. This $4\times$ overhead negates parallelism benefits. Below $t \approx 8$, most needed tools are local and the overhead is manageable. Kim et al.~\cite{kim2025scaling} observe a strong negative efficiency--tool interaction ($\hat{\beta} = -0.267$, $p < 0.001$) that is most pronounced at $T = 16$ tools, where coordination overhead negates parallelism benefits.
 
 \paragraph{Summary: Empirical Validation.}
-Table~\ref{tab:epistemic-predictions} summarizes the correspondence between the theoretical predictions and Google Research's empirical findings across 180 agent configurations \cite{google2026scaling}.
+Table~\ref{tab:epistemic-predictions} summarizes the correspondence between the theoretical predictions and Kim et al.'s empirical findings across 180 agent configurations \cite{kim2025scaling}.
 
 \begin{table}[h]
 \centering
@@ -352,11 +352,11 @@ Table~\ref{tab:epistemic-predictions} summarizes the correspondence between the 
 Independent ($\otimes$) & No inter-agent $K_i$ & Amplification $\le n$ & $17.2\times$ \\
 Centralized ($\circ$+hub) & Hub achieves $D_G$ & Amplification $\le n(1{-}d)$ & $4.4\times$ \\
 Multi-agent + sequential & Requires manufactured $E_G$ & 30--70\% overhead & 39--70\% \\
-Multi-agent + parallel & Epistemic independence & $\sim m\times$ speedup & 80.9\% \\
-Multi-agent + high $|T|$ & Knowledge fragmentation & Superlinear past threshold & Inflection at 16 \\
+Multi-agent + parallel & Epistemic independence & $\sim m\times$ speedup & $+80.8\%$ \\
+Multi-agent + high $|T|$ & Knowledge fragmentation & Superlinear past threshold & $\hat{\beta}_{E_c \times T} = -0.267$ at $T{=}16$ \\
 \bottomrule
 \end{tabular}
-\caption{Epistemic predictions vs.\ empirical observations from Google Research \cite{google2026scaling}. Qualitative orderings hold universally; parametric bounds match the observed regime under reasonable assumptions ($n \approx 3\text{--}5$, $d \approx 0.75$, $c_{\mathrm{comm}}/c_{\mathrm{step}} \approx 0.3\text{--}0.5$).}
+\caption{Epistemic predictions vs.\ empirical observations from Kim et al.~\cite{kim2025scaling}. Qualitative orderings hold universally; parametric bounds match the observed regime under reasonable assumptions ($n \approx 3\text{--}5$, $d \approx 0.75$, $c_{\mathrm{comm}}/c_{\mathrm{step}} \approx 0.3\text{--}0.5$).}
 \label{tab:epistemic-predictions}
 \end{table}
 
@@ -371,7 +371,7 @@ K_i\bigl(\neg K_i(\varphi) \wedge \Box \neg \Diamond K_i(\varphi)\bigr)
 \end{equation}
 ---the agent \textit{knows} that it does not know $\varphi$ and that no future observation will change this. This is precisely the condition under which topology switching is warranted: the current wiring diagram's epistemic capacity is insufficient for the task.
 
-Morphogen-driven adaptation then becomes \textbf{epistemic optimization}: the system senses when its topology's knowledge properties are mismatched to the task and restructures accordingly. An independent topology ($\otimes$) failing on a sequential task triggers convergence to centralized coordination ($\circ$); a centralized topology bottlenecking on a parallelizable task triggers distribution to independent execution. This is the adaptive capability that purely empirical approaches \cite{google2026scaling} identify as necessary but cannot yet provide---biological systems have evolved it as homeostatic regulation; the Operon framework operationalizes it through the morphogen-epiplexity coupling.
+Morphogen-driven adaptation then becomes \textbf{epistemic optimization}: the system senses when its topology's knowledge properties are mismatched to the task and restructures accordingly. An independent topology ($\otimes$) failing on a sequential task triggers convergence to centralized coordination ($\circ$); a centralized topology bottlenecking on a parallelizable task triggers distribution to independent execution. This is the adaptive capability that purely empirical approaches \cite{kim2025scaling} identify as necessary but cannot yet provide---biological systems have evolved it as homeostatic regulation; the Operon framework operationalizes it through the morphogen-epiplexity coupling.
 
 Recent work on unifying epistemic and temporal logic for distributed system verification \cite{davis2026reasoning} suggests that these dynamic epistemic properties may be mechanically verifiable, opening a path toward formally certified adaptive agent topologies.
 
