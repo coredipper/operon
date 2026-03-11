@@ -10,7 +10,7 @@ In Applied Category Theory, a Polynomial Functor $P$ represents a typed interfac
 defined as a sum of representable functors:
 \begin{equation}
 P(y) = \sum_{o\in O} y^{I_o}.
-\tag{2}
+\label{eq:poly-functor}
 \end{equation}
 Here, $O$ is the set of possible Positions (or Outputs) the system can expose. For each position $o\in O$, there
 is a set $I_o$ of Directions (or Inputs) required to transition the system to a new state.
@@ -47,7 +47,7 @@ $I_G=(I_{\text{prot}})_{\text{prot}\in O_G}$ is the \textbf{family} of regulator
 available at each expressed protein:
 \begin{equation}
 P_{\text{Gene}}(y) = \sum_{\text{prot}\in \text{Proteins}} y^{I_{\text{prot}}}.
-\tag{3}
+\label{eq:poly-gene}
 \end{equation}
 
 \paragraph{Definition 2 (The Agent Object).}
@@ -55,7 +55,7 @@ An autonomous agent $A$ is a polynomial functor where $O_A$ is the set of genera
 $I_A=(I_{\text{action}})_{\text{action}\in O_A}$ is the \textbf{family} of observation sets available at each action:
 \begin{equation}
 P_{\text{Agent}}(y) = \sum_{\text{action}\in \text{Actions}} y^{I_{\text{action}}}.
-\tag{4}
+\label{eq:poly-agent}
 \end{equation}
 
 \subsection{The Interface: Promoters as Lenses}
@@ -96,7 +96,7 @@ A membrane receptor does not merely pass or block signals; it selects signals by
 v & \text{if } \tau \in A \\
 \bot & \text{if } \tau \notin A
 \end{cases}
-\tag{21}
+\label{eq:prism-optic}
 \end{equation}
 where $A \subseteq T$ is the set of accepted types. This enables fan-out routing: a single output port connects to multiple wires, each guarded by a different prism, directing JSON to one handler and errors to another---analogous to how different receptor types on a cell surface route different ligands to different intracellular pathways.
 
@@ -104,7 +104,7 @@ where $A \subseteq T$ is the set of accepted types. This enables fan-out routing
 A ribosome does not translate an entire mRNA at once; it processes codons sequentially, applying the same read-translate operation to each element. A Traversal maps a transform $f$ over collection elements on a wire:
 \begin{equation}
 \mathrm{traversal}_f(\mathbf{x}) = [f(x_i) \mid x_i \in \mathbf{x}]
-\tag{22}
+\label{eq:traversal-optic}
 \end{equation}
 This models batch processing at the wire level: a list of candidate outputs is transformed element-wise before reaching the downstream agent.
 
@@ -125,7 +125,7 @@ We model this as a Coalgebra for the polynomial functor $P$. A dynamical system 
 where $S$ is the state space and $\phi$ is the structure map:
 \begin{equation}
 \phi: S \to P(S).
-\tag{5}
+\label{eq:coalgebra-structure}
 \end{equation}
 
 By expanding $P(S)$, we derive the two fundamental operations of the state machine:
@@ -149,7 +149,7 @@ The coalgebra formalism becomes most useful when made composable. We define two 
 Two state machines $(S_1, \alpha_1)$ and $(S_2, \alpha_2)$ are \textbf{bisimilar} if, for every input sequence, they produce identical output sequences. We write $M_1 \sim M_2$ when
 \begin{equation}
 \forall \, \mathbf{i} \in I^*: \quad \mathrm{readout}_1^*(\mathbf{i}) = \mathrm{readout}_2^*(\mathbf{i})
-\tag{23}
+\label{eq:bisimulation}
 \end{equation}
 where $\mathrm{readout}^*$ denotes the lifted readout over the input sequence. A diverging input (witness) constitutes a proof of non-equivalence. This enables formal verification: two agent implementations are interchangeable if they are bisimilar, regardless of their internal state representations.
 
@@ -261,11 +261,11 @@ Finally, we address the physical constraints of computation. Just as biological 
 
 We align this definition with the theory of \textbf{Quantitative Polynomial Functors} \cite{nakov2021quantitative}, treating the system as a state machine enriched over a resource monoid.
 
-\begin{definition}[The Resource Monoid]
+\begin{definition}[The Resource Monoid]\label{def:resource-monoid}
 Let $(\mathcal{R}, +, 0, \ge)$ be an ordered commutative monoid representing computational resources (e.g., token counts), where $\mathcal{R} \cong \mathbb{N}$.
 \end{definition}
 
-\begin{definition}[Metabolic Coalgebra]
+\begin{definition}[Metabolic Coalgebra]\label{def:metabolic-coalgebra}
 A resource-constrained agent is a coalgebra $(S, \alpha)$ over a polynomial functor $P$, where the state space is the product of the logical state $L$ and the resource state $\mathcal{R}$:
 \begin{equation*}
     S \cong L \times \mathcal{R}
@@ -285,7 +285,7 @@ This structure maps to the energetics of transcriptional elongation. A gene (Age
 This formalism establishes that ``Ischemia'' (Token Starvation) is not merely a runtime error, but a reachable terminal state $\bot$ in the system's dynamics. This mirrors the biological mechanism where failure to meet metabolic costs triggers p53-mediated apoptosis \cite{aubrey2018p53}.
 
 
-\begin{theorem}[The Metabolic Bound (Qualified)]
+\begin{theorem}[The Metabolic Bound (Qualified)]\label{thm:metabolic-bound}
 Assume a resource-cost function assigns each non-identity transition a cost $c \ge c_{\min} > 0$, the resource
 state is monotone nonincreasing (no regeneration), and identity morphisms are the only zero-cost transitions.
 Then for any agentic topology with total budget $R_{total}$, every execution has length at most
