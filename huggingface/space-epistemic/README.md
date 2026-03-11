@@ -8,7 +8,7 @@ sdk_version: "6.5.1"
 app_file: app.py
 pinned: false
 license: mit
-short_description: Topology classification, error bounds, and parallelism predictions
+short_description: Topology classification and theorem predictions
 ---
 
 # Epistemic Topology Explorer

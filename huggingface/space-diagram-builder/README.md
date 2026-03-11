@@ -2,7 +2,7 @@
 title: Operon Diagram Builder
 emoji: "\U0001F3D7"
 colorFrom: blue
-colorTo: cyan
+colorTo: indigo
 sdk: gradio
 sdk_version: "6.5.1"
 app_file: app.py
