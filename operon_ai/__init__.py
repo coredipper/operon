@@ -84,6 +84,17 @@ from .core.optics import (
     TraversalOptic,
     ComposedOptic,
 )
+from .core.epistemic import (
+    TopologyClass,
+    EpistemicAnalysis,
+    ObservationProfile,
+    EpistemicPartition,
+    TopologyClassification,
+    TopologyRecommendation,
+    analyze as epistemic_analyze,
+    classify_topology,
+    recommend_topology,
+)
 from .core.wiring_runtime import (
     TypedValue,
     ModuleExecution,
@@ -363,6 +374,16 @@ __all__ = [
     "PrismOptic",
     "TraversalOptic",
     "ComposedOptic",
+    # Epistemic Topology (Paper §6.2)
+    "TopologyClass",
+    "EpistemicAnalysis",
+    "ObservationProfile",
+    "EpistemicPartition",
+    "TopologyClassification",
+    "TopologyRecommendation",
+    "epistemic_analyze",
+    "classify_topology",
+    "recommend_topology",
     "TypedValue",
     "ModuleExecution",
     "ExecutionReport",
