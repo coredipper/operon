@@ -71,6 +71,9 @@ We now combine the wiring syntax with a simple stochastic failure model to analy
 Feed-Forward Loop (CFFL) suppresses errors more effectively than a direct serial connection on
 high-stakes tasks.
 
+\paragraph{Reading convention.}
+For readers coming from AI agent systems rather than category theory, each result in this section should be read in three layers: the wiring diagram tells us which signals or approvals can reach an action sink; the stochastic or trust model assigns probabilities or integrity levels to those signals; the proof then converts that structural constraint into a failure or authorization bound.
+
 \paragraph{Network Motif 1 (Coherent Feed-Forward Loop).}
 A topological structure where Signal $X$ activates $Z$ directly, but also activates $Y$ which gates $Z$. The node
 $Z$ functions as an AND gate: it fires if and only if $X \wedge Y$.
@@ -102,6 +105,9 @@ equivalently
 \]
 \end{itemize}
 
+\paragraph{Assumptions.}
+The theorem uses the minimal failure model appropriate for a two-stage execution gate: in the direct serial case, an erroneous action is emitted exactly when the generator emits an erroneous candidate; in the CFFL case, an erroneous action is emitted exactly when the generator emits an error \emph{and} the verifier still approves it.
+
 \paragraph{Corollary (Correlation Degradation).}
 Let $p = P(E_{\mathrm{gen}}) = P(M_{\mathrm{ver}})$ for simplicity. The failure probability becomes:
 \[
@@ -123,12 +129,32 @@ These are architectural heuristics rather than fitted universal ranges for $\rho
 (conjunctive gating) is necessary but not sufficient; diversity in the components populating that topology
 determines the actual error suppression achieved.
 
-\paragraph{Proof.}
-In WAgent, the CFFL is defined as a morphism involving a ``Copy'' operation $\Delta_X:X\to X\otimes X$ and an
-``AND-Merge'' operation $\mu: Z\otimes Y \to \mathrm{Out}$. The existence of the $\mu$ box in the wiring diagram
-structurally enforces \textbf{conjunctive gating}. The correlation structure is an additional property of the
-\textit{implementations} filling the boxes; the topology provides the multiplicative structure, while component
-diversity determines the correlation coefficient.
+\paragraph{Operational takeaway.}
+For agent designers, the result is simple: adding a reviewer buys multiplicative safety only when the reviewer is not making the same mistakes as the generator. The AND gate gives the multiplicative structure; correlation gives that improvement back.
+
+\paragraph{Proof sketch.}
+In the direct serial topology there is only one path from the generator to the action sink, so an erroneous final action occurs iff the generator emits an erroneous candidate. Thus
+\[
+\mathrm{Fail}_{\mathrm{direct}} = E_{\mathrm{gen}},
+\qquad
+P(\mathrm{Fail}_{\mathrm{direct}})=P(E_{\mathrm{gen}}).
+\]
+
+In the CFFL topology, the action sink is downstream of an AND gate. An erroneous final action can occur only if the generator emits an erroneous candidate \emph{and} the verifier misses that error while still approving it. Therefore
+\[
+\mathrm{Fail}_{\mathrm{CFFL}} = E_{\mathrm{gen}} \wedge M_{\mathrm{ver}}.
+\]
+Under independence this gives
+\[
+P(\mathrm{Fail}_{\mathrm{CFFL}})=P(E_{\mathrm{gen}})P(M_{\mathrm{ver}})=pq.
+\]
+For the correlated case, let $X=\mathbf{1}_{E_{\mathrm{gen}}}$ and $Y=\mathbf{1}_{M_{\mathrm{ver}}}$. Since $X,Y$ are Bernoulli,
+\[
+P(E_{\mathrm{gen}} \wedge M_{\mathrm{ver}})=\mathbb{E}[XY]
+=\mathbb{E}[X]\mathbb{E}[Y]+\mathrm{Cov}(X,Y)
+=pq+\rho\sqrt{p(1-p)q(1-q)}.
+\]
+The Fr\'echet--Hoeffding bounds then give the admissible range of $\rho$. The topology contributes the conjunction; implementation diversity determines the covariance term.
 
 \begin{figure}[h]
 \centering
@@ -273,8 +299,22 @@ Let $\mathcal{I}$ be an injection attack that attempts to insert a message $m_{\
 \]
 where $\chi(m_{\text{mal}}) \in \{U, R, S, T\}$ is fixed by the wire through which the message enters. Therefore any Trust-Gated action whose threshold satisfies $\chi(m_{\text{mal}}) \nsucceq \tau_{\text{action}}$ will reject $m_{\text{mal}}$ regardless of its content.
 
-\paragraph{Proof.}
-The injection can only enter through an input channel (user input, tool output, retrieval, or internal state). Each channel has a fixed provenance assignment in the wiring diagram. Content-based attacks cannot elevate provenance because $\mathcal{P}$ is a functor on the \textit{structure} of the message flow, not its content. The only way to obtain a higher-trust label is to compromise the trusted channel itself (e.g., a malicious tool), which is outside the agent topology.
+\paragraph{Assumptions.}
+The theorem assumes that provenance is assigned by the runtime or wiring layer from ingress-channel metadata, that the trust gate decides solely from that assigned provenance and the action threshold, and that the attacker can modify message \emph{content} but not the channel through which the message enters.
+
+\paragraph{Operational takeaway.}
+For an AI agent system, this means a user string can \emph{look} like a system message or tool result, but if the runtime tags it as user-originated before the model sees it, wording alone cannot authorize a privileged action.
+
+\paragraph{Proof sketch.}
+Let $c=\chi(m)$ denote the ingress channel of message $m$. By assumption, provenance is computed from channel metadata rather than payload, so the provenance map factors through the channel:
+\[
+\mathcal{P}(m) = \widetilde{\mathcal{P}}(c)
+\]
+for some policy map $\widetilde{\mathcal{P}}$. Hence any two messages entering on the same channel receive the same provenance label regardless of content. In particular, replacing a benign user message with a maliciously worded user message does not change its label. The trust gate accepts iff
+\[
+\widetilde{\mathcal{P}}(c) \succeq \tau_{\text{action}}.
+\]
+Since payload edits do not change $c$, content alone cannot change the acceptance decision. The only way to obtain a higher-trust label is to compromise or impersonate a genuinely higher-trust ingress channel, which lies outside the theorem's model.
 
 \paragraph{Scope.}
 The theorem is intentionally narrow. It shows that content alone cannot promote a message into a

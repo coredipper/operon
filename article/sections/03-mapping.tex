@@ -313,6 +313,21 @@ This formalism establishes that ``Ischemia'' (Token Starvation) is not merely a 
 Assume either a single scalar resource budget $\mathcal{R} \cong \mathbb{N}$ or, more generally, a well-founded scalar potential $\mu: \mathcal{R} \to \mathbb{R}_{\ge 0}$ such that every non-identity transition of cost $c$ satisfies $\mu(r \ominus c) \le \mu(r) - c_{\min}$ for some $c_{\min} > 0$. Assume also that the resource state is monotone nonincreasing (no regeneration), and that infinite executions may not consist solely of stutter / identity steps. Then any execution contains at most $\lfloor \mu(R_{\mathrm{total}}) / c_{\min} \rfloor$ non-identity transitions; in the scalar-budget case this is $\lfloor R_{\mathrm{total}} / c_{\min} \rfloor$. Hence termination is decidable up to stuttering. If regeneration, zero-cost cycles, or unrestricted stutter loops are permitted, termination requires an additional well-founded potential or an explicit budget/termination certificate \cite{boreale2023weighted}.
 \end{theorem}
 
+\paragraph{Operational takeaway.}
+For an agent-systems reader, the theorem says: if every non-trivial step burns at least a fixed minimum amount of budget and budget never regenerates, then execution length is bounded by initial budget divided by that minimum burn rate. Infinite behavior becomes possible only through free stutter, zero-cost cycles, or regeneration.
+
+\begin{proof}[Proof sketch]
+Let the initial resource state be $R_{\mathrm{total}}$. By assumption, every non-identity transition decreases the scalar potential $\mu$ by at least $c_{\min} > 0$. After $N$ non-identity transitions we therefore have
+\[
+\mu(r_N) \le \mu(R_{\mathrm{total}}) - N c_{\min}.
+\]
+Because $\mu$ is nonnegative, the right-hand side must remain nonnegative, which implies
+\[
+N \le \left\lfloor \frac{\mu(R_{\mathrm{total}})}{c_{\min}} \right\rfloor.
+\]
+In the scalar-budget case this is exactly $\lfloor R_{\mathrm{total}} / c_{\min} \rfloor$. Hence only finitely many non-identity transitions are possible. Under the stated no-regeneration / no-infinite-stutter assumptions, this yields decidability of termination up to stuttering. If those assumptions are removed, the argument no longer forces progress, so an additional well-founded ranking or explicit budget certificate is required.
+\end{proof}
+
 \subsection{Additional Organelles: Completing the Cellular Architecture}
 
 Beyond the core interface mapping, biological cells contain specialized organelles that handle distinct aspects of cellular function. We extend the correspondence to four additional structures that map directly to agentic software components.

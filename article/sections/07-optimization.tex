@@ -54,6 +54,22 @@ the same topological layer \emph{and those modules are pairwise observationally 
 behaviorally equivalent to $D$ for all diagrams $D$.
 \end{theorem}
 
+\paragraph{Assumptions.}
+Execution is deterministic under the fixed input schedule, dead wires are semantically impossible because their type/optic constraints can never accept runtime values, and reordered modules neither share writable state nor perform order-sensitive side effects.
+
+\begin{proof}[Proof sketch]
+The theorem follows by checking the two rewrite primitives.
+
+For dead-wire elimination, a removed wire can never transmit any value by hypothesis. Therefore no execution trace ever uses that wire, so removing it leaves all downstream observations unchanged.
+
+For within-layer reordering, observational independence means the reordered modules do not read or write shared mutable state and do not produce side effects whose meaning depends on order. Hence swapping their execution order preserves each module's local output as well as every downstream module's observed inputs. Since the graph is otherwise unchanged, the overall observable output is unchanged.
+
+Any implemented optimization pass is a composition of these local rewrites. Because each local rewrite preserves observable behavior, the composite pass preserves observable behavior as well.
+\end{proof}
+
+\paragraph{Operational takeaway.}
+For agent-systems readers, this is the compiler-style rule: remove edges that can never fire, and only reorder steps that are truly independent. Once modules share mutable memory or side effects, optimization becomes a semantic change rather than a free speedup.
+
 \noindent Three concrete passes are implemented:
 
 \begin{enumerate}[leftmargin=*]
