@@ -10,13 +10,14 @@ coherence in distributed, stochastic systems.
 We argue that these challenges are not novel engineering problems, but fundamental constraints of
 distributed information processing systems. The closest existing analogue to a multi-agent software
 architecture is not a traditional computer program, but a Gene Regulatory Network (GRN). In a biological
-cell, thousands of genes act as autonomous agents, reading local chemical signals (context) and expressing
-proteins (actions/tools) that, in turn, regulate other genes.
+cell, thousands of genes operate as autonomous functional units, each reading local chemical signals (context)
+and expressing proteins (actions/tools) that regulate other genes. The cell itself---the composite of these
+genes plus shared infrastructure (organelles, membrane)---is the autonomous agent.
 
 \subsection{The Biological Heuristic}
 
 Biology has evolved specific topological structures, known as Network Motifs, to handle noise, security,
-and state~\cite{milo2002network}. We identify four critical biological heuristics that map directly to agentic engineering:
+and state~\cite{milo2002network}. We identify five critical biological heuristics that map directly to agentic engineering:
 \begin{itemize}[leftmargin=*]
 \item The Coherent Feed-Forward Loop (CFFL): Acts as a persistence detector to filter out transient noise,
 analogous to ``Human-in-the-Loop'' guardrails.
@@ -67,6 +68,13 @@ and Traversal (batch element-wise processing) optics, enabling richer signal pro
 dynamical system on the agent graph, producing position-dependent behavior without central control.
 \item \textbf{Composable Coalgebras:} We make the coalgebraic state machine framework explicit and
 composable, with parallel/sequential composition and bisimulation-based equivalence checking.
+\item \textbf{Epistemic Topology:} We derive Kripke-style knowledge operators from wiring diagram
+structure and prove four predictive theorems for multi-agent scaling (error amplification, sequential
+penalty, parallel acceleration, tool density), validated against empirical results.
+\item \textbf{Capability-Gated Tool Acquisition:} The Plasmid Registry implements Horizontal Gene
+Transfer with capability gating, preventing privilege escalation when agents dynamically acquire tools.
+\item \textbf{Diagram Optimization:} Cost-annotated wiring diagrams admit categorical rewriting
+rules that preserve observational equivalence while improving resource utilization.
 \end{enumerate}
 
 By viewing agentic engineering through the lens of theoretical biology and category theory, we aim to provide a

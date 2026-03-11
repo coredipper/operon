@@ -280,7 +280,7 @@ Finally, we address the physical constraints of computation. Just as biological 
 We align this definition with the theory of \textbf{Quantitative Polynomial Functors} \cite{nakov2021quantitative}, treating the system as a state machine enriched over a resource monoid.
 
 \begin{definition}[The Resource Monoid]\label{def:resource-monoid}
-Let $(\mathcal{R}, +, 0, \ge)$ be an ordered commutative monoid representing computational resources (e.g., token counts), where $\mathcal{R} \cong \mathbb{N}$.
+Let $(\mathcal{R}, +, 0, \ge)$ be an ordered commutative monoid representing computational resources. For a single resource dimension (e.g., token counts), $\mathcal{R} \cong \mathbb{N}$; for multi-dimensional accounting (latency, memory), $\mathcal{R} \cong \mathbb{R}_{\ge 0}^k$.
 \end{definition}
 
 \begin{definition}[Metabolic Coalgebra]\label{def:metabolic-coalgebra}
@@ -314,7 +314,7 @@ certificate \cite{boreale2023weighted}.
 
 \subsection{Additional Organelles: Completing the Cellular Architecture}
 
-Beyond the core gene-agent mapping, biological cells contain specialized organelles that handle distinct aspects of cellular function. We extend our isomorphism to four additional structures that map directly to agentic software components.
+Beyond the core interface mapping, biological cells contain specialized organelles that handle distinct aspects of cellular function. We extend our isomorphism to four additional structures that map directly to agentic software components.
 
 \paragraph{Ribosome: Template-to-Output Synthesis.}
 In biology, the ribosome reads messenger RNA (mRNA) sequences and synthesizes proteins by assembling amino acids according to the genetic code. Transfer RNA (tRNA) molecules carry amino acids to the ribosome, where codons (three-nucleotide sequences) specify which amino acid to add.
