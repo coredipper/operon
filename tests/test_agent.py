@@ -4,6 +4,8 @@ import pytest
 
 from operon_ai.core.agent import BioAgent
 from operon_ai.core.types import Signal
+from operon_ai.organelles.nucleus import Nucleus
+from operon_ai.providers import MockProvider
 from operon_ai.state.metabolism import ATP_Store
 
 
@@ -159,3 +161,65 @@ class TestBioAgent:
         result = agent.express(signal)
 
         assert result.action_type == "UNKNOWN"
+
+    def test_provider_bound_agent_uses_nucleus(self):
+        """BioAgent can use a bound nucleus instead of the mock path."""
+        budget = ATP_Store(budget=100, silent=True)
+        nucleus = Nucleus(provider=MockProvider(responses={
+            "return a concise summary": "EXECUTE: summarized outcome",
+        }))
+        agent = BioAgent(
+            name="Summarizer",
+            role="Executor",
+            atp_store=budget,
+            nucleus=nucleus,
+            instructions="Return a concise summary",
+            silent=True,
+        )
+
+        result = agent.express(Signal(content="Summarize the ticket"))
+
+        assert result.action_type == "EXECUTE"
+        assert result.payload == "summarized outcome"
+        assert result.metadata["provider"] == "mock"
+        assert result.metadata["model"] == "mock-v1"
+
+    def test_provider_bound_risk_assessor_maps_blocking_response(self):
+        """Risk assessors keep explicit blocking decisions from provider output."""
+        budget = ATP_Store(budget=100, silent=True)
+        nucleus = Nucleus(provider=MockProvider(responses={
+            "review for safety": "BLOCK: unsafe to proceed",
+        }))
+        agent = BioAgent(
+            name="Reviewer",
+            role="RiskAssessor",
+            atp_store=budget,
+            nucleus=nucleus,
+            instructions="Review for safety",
+            silent=True,
+        )
+
+        result = agent.express(Signal(content="Delete production data"))
+
+        assert result.action_type == "BLOCK"
+        assert "unsafe" in str(result.payload).lower()
+
+    def test_provider_bound_risk_assessor_blocks_ambiguous_response(self):
+        """Provider-backed reviewers fail closed when they do not emit PERMIT/BLOCK."""
+        budget = ATP_Store(budget=100, silent=True)
+        nucleus = Nucleus(provider=MockProvider(responses={
+            "review for safety": "Looks reasonable overall.",
+        }))
+        agent = BioAgent(
+            name="Reviewer",
+            role="RiskAssessor",
+            atp_store=budget,
+            nucleus=nucleus,
+            instructions="Review for safety",
+            silent=True,
+        )
+
+        result = agent.express(Signal(content="Apply the migration"))
+
+        assert result.action_type == "BLOCK"
+        assert "ambiguous reviewer output" in str(result.payload).lower()

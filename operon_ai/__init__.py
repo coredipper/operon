@@ -12,6 +12,7 @@ Core Components:
     - ApprovalToken: Proof-carrying approval for two-key execution
     - IntegrityLabel/Capability: Minimal IFC + effect tags
     - WiringDiagram: Typed wiring diagram checker (WAgent)
+    - reviewer_gate / specialist_swarm / advise_topology / skill_organism: pattern-first API
 
 State Management:
     - ATP_Store: Multi-currency metabolic budget (ATP, GTP, NADH)
@@ -331,6 +332,30 @@ from .multicell import (
 from .state.metabolism import MetabolicAccessPolicy
 
 # =============================================================================
+# Pattern-First API
+# =============================================================================
+from .patterns import (
+    ReviewerGate,
+    ReviewerGateConfig,
+    ReviewerGateResult,
+    reviewer_gate,
+    SkillOrganism,
+    SkillRunResult,
+    SkillRuntimeComponent,
+    SkillStage,
+    SkillStageResult,
+    SpecialistSwarm,
+    SpecialistSwarmConfig,
+    SpecialistSwarmResult,
+    specialist_swarm,
+    TelemetryEvent,
+    TelemetryProbe,
+    TopologyAdvice,
+    advise_topology,
+    skill_organism,
+)
+
+# =============================================================================
 # Public API
 # =============================================================================
 __all__ = [
@@ -388,6 +413,25 @@ __all__ = [
     "ModuleExecution",
     "ExecutionReport",
     "DiagramExecutor",
+    # Pattern-First API
+    "ReviewerGate",
+    "ReviewerGateConfig",
+    "ReviewerGateResult",
+    "reviewer_gate",
+    "SkillOrganism",
+    "SkillRunResult",
+    "SkillRuntimeComponent",
+    "SkillStage",
+    "SkillStageResult",
+    "SpecialistSwarm",
+    "SpecialistSwarmConfig",
+    "SpecialistSwarmResult",
+    "specialist_swarm",
+    "TelemetryEvent",
+    "TelemetryProbe",
+    "TopologyAdvice",
+    "advise_topology",
+    "skill_organism",
 
     # State - Metabolism
     "ATP_Store",

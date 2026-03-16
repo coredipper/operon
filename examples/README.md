@@ -1,7 +1,27 @@
 # Operon Examples
 
-This directory contains 65 examples demonstrating the operon_ai library,
-progressing from basic concepts to complete LLM-powered cell simulations.
+This directory contains 69 runnable numbered examples demonstrating the
+`operon_ai` library, progressing from basic concepts to complete
+LLM-powered cell simulations.
+
+## Recommended Starting Points
+
+If you are evaluating Operon for practical value rather than formal structure,
+start here:
+
+- [`69_skill_organism_runtime.py`](69_skill_organism_runtime.py) if you want
+  the clearest answer to “can this improve a real workflow?” It binds stages to
+  fast vs deep models, preserves structure, and lets you add telemetry without
+  rewriting the skill.
+- [`68_pattern_first_api.py`](68_pattern_first_api.py) if you want the shortest
+  path to topology advice, reviewer gates, and specialist swarms without
+  touching the substrate directly.
+- [`67_epistemic_topology.py`](67_epistemic_topology.py) if you want to inspect
+  the structural analysis underneath those recommendations.
+
+The older examples still matter, but these two are the fastest way to answer
+the question most engineers actually care about: does this help me build a
+better agent system?
 
 ## Import Style Guide
 
@@ -48,12 +68,20 @@ from operon_ai.providers import MockProvider, ProviderConfig
 | 56-63 | Advanced Biology | Epigenetic coupling, Cell types, Tissue, Plasmids, Morphogens |
 | 65-66 | Optimization & Providers | Diagram optimization, OpenAI-compatible servers |
 | 67 | Epistemic Topology | Classification, error bounds, parallelism, recommendations |
+| 68 | Pattern-First API | Reviewer gates, specialist swarms, topology advice |
+| 69 | Skill Organisms | Provider-bound stages, fast/deep routing, attachable telemetry |
 
 ## Running Examples
 
 ```bash
 # Basic examples (no LLM required)
 python examples/01_code_review_bot.py
+
+# Practical entry point (no LLM required)
+python examples/68_pattern_first_api.py --test
+
+# Provider-bound skill organism (mock providers by default)
+python examples/69_skill_organism_runtime.py --test
 
 # LLM examples (requires API key)
 ANTHROPIC_API_KEY=sk-... python examples/19_llm_code_assistant.py --demo
