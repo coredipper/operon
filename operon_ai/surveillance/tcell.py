@@ -1,7 +1,7 @@
 """T-Cell - two-signal surveillance responder."""
 from __future__ import annotations
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Optional
 
 from .types import (
@@ -9,6 +9,11 @@ from .types import (
     MHCPeptide, ActivationState,
 )
 from .thymus import BaselineProfile
+
+
+def utc_now() -> datetime:
+    """Return a timezone-aware UTC timestamp."""
+    return datetime.now(UTC)
 
 
 @dataclass
@@ -21,7 +26,7 @@ class ImmuneResponse:
     signal1: Signal1
     signal2: Signal2
     violations: list[str]
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
     is_anergic: bool = False
 
 

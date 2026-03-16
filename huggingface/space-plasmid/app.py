@@ -364,9 +364,9 @@ def build_app() -> gr.Blocks:
     with gr.Blocks(title="Operon Plasmid Registry") as app:
         gr.Markdown(
             "# Operon Plasmid Registry -- Horizontal Gene Transfer\n"
-            "Dynamic tool acquisition with capability gating (Paper §6.2, Eq. 12). "
-            "Agents discover and absorb tools from a registry, subject to capability "
-            "restrictions that prevent privilege escalation.\n\n"
+            "Dynamic tool acquisition with optional capability gating (Paper §6.2). "
+            "Agents discover and absorb tools from a registry. When a capability "
+            "envelope is configured, acquisition checks reject tools that exceed it.\n\n"
             "[GitHub](https://github.com/coredipper/operon) | "
             "[Paper](https://github.com/coredipper/operon/tree/main/article)"
         )

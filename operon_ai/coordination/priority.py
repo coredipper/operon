@@ -1,11 +1,16 @@
 """Priority Inheritance to prevent priority inversion."""
 from __future__ import annotations
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Optional
 
 from .types import ResourceLock, DependencyGraph
 from .controller import CellCycleController, OperationContext
+
+
+def utc_now() -> datetime:
+    """Return a timezone-aware UTC timestamp."""
+    return datetime.now(UTC)
 
 
 @dataclass
@@ -16,7 +21,7 @@ class PriorityBoost:
     original_priority: int
     boosted_priority: int
     reason: str
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
 
 @dataclass

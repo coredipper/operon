@@ -1,0 +1,32 @@
+\section{A Minimal Typed Model of Agent Coordination}
+
+We model an executable capability as a typed interface consuming observations and producing downstream
+effects. At the level of notation, one convenient interface language is a polynomial-style interface:
+\begin{equation}
+P_A(y) = \sum_{o \in O} y^{I_o},
+\end{equation}
+where $O$ indexes output positions and each $I_o$ is the set of input directions relevant to that
+output. In this paper the notation is used modestly: it supplies a compact typed vocabulary for
+composition and visibility, not a full account of agent internals.
+
+Each module $m_i$ has local state $S_i$, a readout map $r_i : S_i \to O_i$, and an update map
+$u_i : S_i \times I_i \to S_i$. An agent architecture is then a typed wiring diagram
+$D = (M, W)$ whose nodes are modules and whose edges connect named ports. Each port carries a data type
+and, when relevant, an integrity level; a wire is valid only if the source can legally flow to the
+destination or if an attached optic mediates the transfer. This gives a lightweight notion of
+well-typed composition at the architecture level.
+
+We use three coarse composition patterns:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Parallel composition} $(\otimes)$: modules receive independent or shared task inputs and run
+without direct inter-agent wires.
+\item \textbf{Serial / hub composition} $(\circ)$: one module consumes another module's output, including
+the common case of a central coordinator or reviewer.
+\item \textbf{Feedback / trace} $(\mathrm{Tr})$: outputs are fed back into later rounds of execution.
+\end{itemize}
+
+Explicit feedback edges are modeled in the wiring itself, while hidden chain-of-thought or internal
+reasoning remains part of local state rather than a visible wire. This separation matters because the
+theorems in Sections~4 and~5 concern what the topology exposes to other modules, not what stays hidden
+inside a single model invocation. A planner that silently reasons longer is not yet a multi-agent
+coordination pattern; a planner that emits an intermediate artifact for another module to consume is.

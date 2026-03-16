@@ -1,13 +1,18 @@
 """Cell Cycle Controller for operation coordination."""
 from __future__ import annotations
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any, Callable, Optional
 
 from .types import (
     Phase, CheckpointResult, LockResult,
     ResourceLock, DependencyGraph, DeadlockInfo,
 )
+
+
+def utc_now() -> datetime:
+    """Return a timezone-aware UTC timestamp."""
+    return datetime.now(UTC)
 
 
 @dataclass
@@ -46,7 +51,7 @@ class OperationContext:
 
     # Phase tracking
     phase: Phase = Phase.G0
-    phase_entered_at: datetime = field(default_factory=datetime.utcnow)
+    phase_entered_at: datetime = field(default_factory=utc_now)
 
     # Resource tracking
     acquired_resources: dict[str, ResourceLock] = field(default_factory=dict)
@@ -60,7 +65,7 @@ class OperationContext:
     validation_passed: bool = False
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
     metadata: dict = field(default_factory=dict)
 
     def add_acquired_resource(self, lock: ResourceLock) -> None:
@@ -74,7 +79,7 @@ class OperationContext:
     def enter_phase(self, phase: Phase) -> None:
         """Enter a new phase."""
         self.phase = phase
-        self.phase_entered_at = datetime.utcnow()
+        self.phase_entered_at = utc_now()
 
 
 @dataclass
@@ -249,7 +254,7 @@ class CellCycleController:
         if ctx.operation_id in self.active_operations:
             del self.active_operations[ctx.operation_id]
 
-        duration = datetime.utcnow() - ctx.created_at
+        duration = utc_now() - ctx.created_at
 
         return OperationResult(
             operation_id=ctx.operation_id,
@@ -275,7 +280,7 @@ class CellCycleController:
         if ctx.operation_id in self.active_operations:
             del self.active_operations[ctx.operation_id]
 
-        duration = datetime.utcnow() - ctx.created_at
+        duration = utc_now() - ctx.created_at
 
         return OperationResult(
             operation_id=ctx.operation_id,

@@ -1,9 +1,14 @@
 """Core types for the coordination system."""
 from __future__ import annotations
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Optional
+
+
+def utc_now() -> datetime:
+    """Return a timezone-aware UTC timestamp."""
+    return datetime.now(UTC)
 
 
 class Phase(Enum):
@@ -67,7 +72,7 @@ class ResourceLock:
         """Get how long lock has been held."""
         if self.acquired_at is None:
             return None
-        return datetime.utcnow() - self.acquired_at
+        return utc_now() - self.acquired_at
 
     def try_acquire(self, owner: str, priority: int = 0) -> LockResult:
         """
@@ -89,7 +94,7 @@ class ResourceLock:
             self.owner = owner
             self.owner_priority = priority
             self.hold_count = 1
-            self.acquired_at = datetime.utcnow()
+            self.acquired_at = utc_now()
             return LockResult.ACQUIRED
 
         # Preemption case
@@ -105,7 +110,7 @@ class ResourceLock:
             self.owner = owner
             self.owner_priority = priority
             self.hold_count = 1
-            self.acquired_at = datetime.utcnow()
+            self.acquired_at = utc_now()
             return LockResult.PREEMPTED
 
         # Blocked - add to waiting list

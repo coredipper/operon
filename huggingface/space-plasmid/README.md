@@ -8,12 +8,12 @@ sdk_version: "6.5.1"
 app_file: app.py
 pinned: false
 license: mit
-short_description: Dynamic tool acquisition with capability gating (HGT)
+short_description: Dynamic tool acquisition with optional capability gating
 ---
 
 # 🧬 Operon Plasmid Registry
 
-Dynamic tool acquisition with capability gating -- like bacteria exchanging plasmids via horizontal gene transfer, where capability restrictions prevent privilege escalation.
+Dynamic tool acquisition with optional capability gating -- like bacteria exchanging plasmids via horizontal gene transfer. When a capability envelope is configured, acquisition checks prevent privilege escalation.
 
 ## What to Try
 
@@ -24,7 +24,7 @@ Dynamic tool acquisition with capability gating -- like bacteria exchanging plas
 
 ## How It Works
 
-Agents discover tools in a PlasmidRegistry and absorb them into their Mitochondria runtime, but only if they hold the required capabilities. This prevents privilege escalation -- an agent with only READ_FS cannot acquire a tool that requires NET access, just as bacteria can only incorporate plasmids compatible with their cellular machinery.
+Agents discover tools in a PlasmidRegistry and absorb them into their Mitochondria runtime. If an agent is configured with an allowed capability envelope, acquisition checks reject tools that exceed it. That blocks privilege escalation in the configured case -- an agent with only READ_FS cannot acquire a tool that requires NET access, just as bacteria can only incorporate plasmids compatible with their cellular machinery.
 
 ## Learn More
 

@@ -1,11 +1,16 @@
 """Core types for the quality control system."""
 from __future__ import annotations
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Callable, Generic, TypeVar, Optional
 
 from operon_ai.core.types import IntegrityLabel
+
+def utc_now() -> datetime:
+    """Return a timezone-aware UTC timestamp."""
+    return datetime.now(UTC)
+
 
 T = TypeVar("T")
 
@@ -46,7 +51,7 @@ class UbiquitinTag:
     chain_type: ChainType = ChainType.K48
     degron: DegronType = DegronType.NORMAL
     chain_length: int = 1
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
     integrity: IntegrityLabel = IntegrityLabel.UNTRUSTED
 
     def with_confidence(self, new_confidence: float) -> UbiquitinTag:
@@ -190,7 +195,7 @@ class UbiquitinPool:
         self.available -= 1
         self.allocated_total += 1
         tag = self._create_tag(origin, confidence, degron, integrity)
-        self.active_tags.append((datetime.utcnow(), tag))
+        self.active_tags.append((utc_now(), tag))
         return tag
 
     def _create_tag(

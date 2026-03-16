@@ -8,12 +8,12 @@ sdk_version: "6.5.1"
 app_file: app.py
 pinned: false
 license: mit
-short_description: Wire-level anti-injection filters (anti-prion defense)
+short_description: Wire-level denaturation filters for defense in depth
 ---
 
 # 🧪 Operon Denaturation Layers
 
-Wire-level anti-injection filters that strip syntactic structure from data flowing between agents -- like protein denaturation destroying the tertiary structure that pathogens exploit.
+Wire-level denaturation filters that strip syntactic structure from data flowing between agents -- like protein denaturation disrupting the tertiary structure that pathogens exploit.
 
 ## What to Try
 
@@ -23,7 +23,7 @@ Wire-level anti-injection filters that strip syntactic structure from data flowi
 
 ## How It Works
 
-Denaturation filters transform data on the wire between agents, stripping markup tokens, normalizing Unicode, and truncating content. This destroys the syntactic structure that injection payloads rely on while preserving semantic meaning -- preventing prompt injection from cascading through multi-agent systems.
+Denaturation filters transform data on the wire between agents, stripping markup tokens, normalizing Unicode, and truncating content. This targets known syntactic patterns that many injection payloads rely on while preserving semantic meaning. It is a defense-in-depth layer that reduces the chance of injection cascading through multi-agent systems, not a complete security guarantee.
 
 ## Learn More
 

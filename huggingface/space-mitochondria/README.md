@@ -8,12 +8,12 @@ sdk_version: "6.5.1"
 app_file: app.py
 pinned: false
 license: mit
-short_description: Safe calculator with AST-based parsing -- no injection risk
+short_description: Safe calculator with whitelisted AST evaluation
 ---
 
 # ⚡ Operon Mitochondria -- Safe Calculator
 
-AST-based expression evaluation with zero code injection risk -- like mitochondria converting substrates into energy through controlled metabolic pathways.
+AST-based expression evaluation with whitelisted operations and no `eval()` -- like mitochondria converting substrates into energy through controlled metabolic pathways.
 
 ## What to Try
 

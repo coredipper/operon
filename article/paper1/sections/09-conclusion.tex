@@ -1,0 +1,18 @@
+\section{Conclusion}
+
+The narrow claim of this paper is that agent coordination topology constrains what workers and
+coordinators can observe, and that those visibility constraints are strong enough to predict several
+practically relevant tradeoffs: when review helps, when decomposition hurts, when parallelism pays off,
+and when tool fragmentation becomes a tax. The formal apparatus is useful to the extent that it sharpens
+those architecture choices.
+
+The practical implication is that topology should be treated as a first-class design variable in agent
+engineering. Single agents remain strong on strictly sequential tasks. Reviewer or hub structures help
+when multiple workers can independently introduce costly errors. Specialist swarms pay off when subtasks
+are close to epistemically independent and coordinator overhead is small. Tool-heavy workloads punish
+gratuitous fragmentation unless routing is itself part of the design.
+
+This paper is therefore not a claim that one topology dominates all others, nor a claim that the current
+theory replaces benchmark evaluation. It is a step toward a more explicit architecture calculus for AI
+agent systems: one in which coordination choices are justified by visibility, decomposition structure, and
+cost rather than by orchestration folklore alone.

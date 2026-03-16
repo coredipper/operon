@@ -87,8 +87,8 @@ class Wire:
     """A connection between two module ports.
 
     The optional ``denature`` field accepts a DenatureFilter that
-    transforms data in transit, disrupting prompt-injection cascades
-    (Paper §5.3 — anti-prion defense).
+    transforms data in transit, reducing prompt-injection cascades as
+    a defense-in-depth measure (Paper §5.3).
     """
 
     src_module: str

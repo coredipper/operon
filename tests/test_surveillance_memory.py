@@ -1,6 +1,6 @@
 """Tests for Immune Memory."""
 import pytest
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from operon_ai.surveillance.types import ThreatLevel, ResponseAction
 from operon_ai.surveillance.memory import (
     ImmuneMemory, ThreatSignature,
@@ -115,7 +115,7 @@ class TestImmuneMemory:
         memory.store(sig)
 
         # Manually age the signature
-        memory.signatures[0].created_at = datetime.utcnow() - timedelta(days=100)
+        memory.signatures[0].created_at = datetime.now(UTC) - timedelta(days=100)
 
         memory.prune_old(max_age=timedelta(days=30))
         assert len(memory.signatures) == 0

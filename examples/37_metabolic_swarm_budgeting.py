@@ -10,7 +10,7 @@ Key concepts:
 - Metabolic Coalgebra: State S = L x R (Logical State x Resource State)
 - Ischemia Detection: Apoptosis when r < c (budget insufficient)
 - Shared Mitochondria: Global ATP pool for multi-agent coordination
-- Halting Guarantee: Strictly decreasing resource state ensures termination
+- Budget-Bounded Halting: Strictly decreasing resource state and a bounded retry budget force termination
 
 Prerequisites:
 - Example 04 for basic ATP budgeting concepts
@@ -245,9 +245,9 @@ def main():
 
     print()
     print("=" * 60)
-    print("Key Insight: The Metabolic Coalgebra guarantees halting.")
-    print("Every transition consumes resources, so the system cannot")
-    print("run forever - it either succeeds or undergoes apoptosis.")
+    print("Key Insight: The Metabolic Coalgebra halts under the demo's budget assumptions.")
+    print("Every transition consumes resources and the cycle budget is finite,")
+    print("so the system cannot run forever - it either succeeds or undergoes apoptosis.")
     print("=" * 60)
 
 

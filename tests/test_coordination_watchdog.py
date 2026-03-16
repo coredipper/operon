@@ -1,6 +1,6 @@
 """Tests for Watchdog (apoptosis)."""
 import pytest
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from operon_ai.coordination.types import Phase, ResourceLock
 from operon_ai.coordination.controller import (
     CellCycleController, OperationContext,
@@ -56,7 +56,7 @@ class TestWatchdog:
 
         ctx = controller.start_operation("op1", "agent1")
         # Simulate old operation
-        ctx.created_at = datetime.utcnow() - timedelta(seconds=5)
+        ctx.created_at = datetime.now(UTC) - timedelta(seconds=5)
 
         events = watchdog.check(controller)
         assert len(events) == 1
@@ -81,7 +81,7 @@ class TestWatchdog:
         controller.acquire_resource(ctx2, "file_a")  # Blocked
 
         # Simulate waiting a long time
-        ctx2.phase_entered_at = datetime.utcnow() - timedelta(seconds=5)
+        ctx2.phase_entered_at = datetime.now(UTC) - timedelta(seconds=5)
 
         events = watchdog.check(controller)
         assert any(e.reason == ApoptosisReason.STARVATION for e in events)
@@ -96,7 +96,7 @@ class TestWatchdog:
         controller.advance(ctx)  # S - executing
 
         # Simulate stuck in S phase
-        ctx.phase_entered_at = datetime.utcnow() - timedelta(seconds=5)
+        ctx.phase_entered_at = datetime.now(UTC) - timedelta(seconds=5)
 
         events = watchdog.check(controller)
         assert len(events) == 1
@@ -164,10 +164,10 @@ class TestWatchdog:
         watchdog = Watchdog(deadlock_strategy="oldest")
 
         ctx1 = controller.start_operation("op1", "agent1")
-        ctx1.created_at = datetime.utcnow() - timedelta(hours=1)  # Older
+        ctx1.created_at = datetime.now(UTC) - timedelta(hours=1)  # Older
 
         ctx2 = controller.start_operation("op2", "agent2")
-        ctx2.created_at = datetime.utcnow()  # Newer
+        ctx2.created_at = datetime.now(UTC)  # Newer
 
         controller.advance(ctx1)
         controller.advance(ctx2)
@@ -187,7 +187,7 @@ class TestWatchdog:
         watchdog = Watchdog(max_operation_time=timedelta(seconds=1))
 
         ctx = controller.start_operation("op1", "agent1")
-        ctx.created_at = datetime.utcnow() - timedelta(seconds=5)
+        ctx.created_at = datetime.now(UTC) - timedelta(seconds=5)
 
         events = watchdog.execute(controller)
 
@@ -199,7 +199,7 @@ class TestWatchdog:
         watchdog = Watchdog(max_operation_time=timedelta(seconds=1))
 
         ctx = controller.start_operation("op1", "agent1")
-        ctx.created_at = datetime.utcnow() - timedelta(seconds=5)
+        ctx.created_at = datetime.now(UTC) - timedelta(seconds=5)
         ctx.metadata["watchdog_exempt"] = True
 
         events = watchdog.check(controller)

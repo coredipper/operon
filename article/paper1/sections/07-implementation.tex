@@ -1,0 +1,59 @@
+\section{Executable Coordination Substrate}
+
+The submission version only needs enough implementation detail to show that the coordination model is
+executable. The core pieces retained from the full implementation are the typed wiring substrate, the
+runtime executor, the wire-level optics relevant to routing, and the finite-trace comparison machinery
+used to compare diagram behaviors.
+
+\paragraph{Typed wiring.}
+The file \texttt{operon\_ai/core/wagent.py} provides the static coordination substrate. Its core data
+structures are:
+\begin{itemize}[leftmargin=*]
+\item \texttt{PortType}, a decorated port type carrying a \texttt{DataType} and an
+\texttt{IntegrityLabel};
+\item \texttt{ModuleSpec}, a module declaration with named input and output ports, capability
+annotations, and optional cost metadata;
+\item \texttt{Wire}, a directed connection between ports, optionally carrying an optic or a denaturation
+filter;
+\item \texttt{WiringDiagram}, a collection of modules and well-typed wires.
+\end{itemize}
+Static connection checks enforce type compatibility and integrity monotonicity unless a wire explicitly
+attaches an optic that takes responsibility for runtime mediation. For the current paper, the important
+point is that coordination structure is represented directly and checked before execution.
+
+\paragraph{Runtime execution.}
+A lightweight runtime executor evaluates each module once its required inputs are available. Runtime
+values retain the type and integrity information used by the static model, and execution records capture
+module inputs, outputs, and execution order. This makes the wiring semantics inspectable rather than
+purely schematic.
+
+This execution model is intentionally lightweight. It is sufficient to instantiate the topologies studied
+in this paper, but it is not presented as a full planner, scheduler, or benchmark harness for production
+LLM agents.
+
+\paragraph{Wire-level routing.}
+The file \texttt{operon\_ai/core/optics.py} implements the optics relevant to Paper~1:
+\begin{itemize}[leftmargin=*]
+\item \texttt{PrismOptic}, which conditionally routes values by type;
+\item \texttt{TraversalOptic}, which maps a transform over collections;
+\item \texttt{ComposedOptic}, which chains wire-level routing and transformation.
+\end{itemize}
+These optics matter for the topology story because they make nontrivial wiring patterns executable: a
+hub can route different output kinds to different reviewers, and a tool-routing architecture can fan out
+or transform returned values before aggregation.
+
+\paragraph{Finite-trace comparison.}
+The coalgebraic state-machine layer makes the model executable through \texttt{StateMachine} together
+with parallel and sequential composition operators. A bounded comparison helper checks two machines on a
+supplied finite input sequence and returns a witness if they diverge.
+
+For Paper~1 this plays a modest role. It does not provide general semantic verification for arbitrary
+agent systems, but it does support deterministic finite-trace comparisons between alternative
+coordination layouts under a fixed input script. That is enough to justify the claim that the topology
+model is implemented rather than only described.
+
+\paragraph{Scope boundary.}
+The larger Operon repository also contains surveillance, healing, multicellular, and other biologically
+inspired subsystems. Those components are intentionally excluded from this paper unless they are directly
+needed by a topology experiment, because the contribution here is architecture choice in agent systems,
+not the full framework inventory.

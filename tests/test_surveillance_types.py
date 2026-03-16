@@ -1,7 +1,7 @@
 # tests/test_surveillance_types.py
 """Tests for surveillance system types."""
 import pytest
-from datetime import datetime
+from datetime import UTC, datetime
 from operon_ai.surveillance.types import (
     Signal1, Signal2, ThreatLevel, ResponseAction,
     MHCPeptide, ActivationState,
@@ -37,7 +37,7 @@ class TestMHCPeptide:
     def test_create_peptide(self):
         peptide = MHCPeptide(
             agent_id="test_agent",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             output_length_mean=100.0,
             output_length_std=10.0,
             response_time_mean=0.5,
@@ -55,7 +55,7 @@ class TestMHCPeptide:
     def test_peptide_similarity_same_agent(self):
         peptide1 = MHCPeptide(
             agent_id="test",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             output_length_mean=100.0,
             output_length_std=10.0,
             response_time_mean=0.5,
@@ -69,7 +69,7 @@ class TestMHCPeptide:
         )
         peptide2 = MHCPeptide(
             agent_id="test",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             output_length_mean=105.0,  # Similar
             output_length_std=10.0,
             response_time_mean=0.52,   # Similar
@@ -87,7 +87,7 @@ class TestMHCPeptide:
     def test_peptide_similarity_different_agent(self):
         peptide1 = MHCPeptide(
             agent_id="agent_a",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             output_length_mean=100.0,
             output_length_std=10.0,
             response_time_mean=0.5,
@@ -101,7 +101,7 @@ class TestMHCPeptide:
         )
         peptide2 = MHCPeptide(
             agent_id="agent_b",  # Different agent
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             output_length_mean=100.0,
             output_length_std=10.0,
             response_time_mean=0.5,

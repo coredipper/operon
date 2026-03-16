@@ -1,0 +1,47 @@
+\section{Comparison to Large-Scale Agent Evaluations}
+
+The empirical role of this section is deliberately narrow. We compare the qualitative predictions of the
+preceding topology results to architecture-level trends reported in large-scale external evaluations of
+agent systems \cite{kim2025scaling}. These reported metrics are not literal plug-in values of the
+simplified theorem parameters. They are used here only as external consistency checks.
+
+Kim et al.~\cite{kim2025scaling} report several architecture-level patterns that align with the topology
+results in Section~5. Independent coordination exhibits much higher error amplification than centralized
+coordination ($A_e = 17.2$ versus $4.4$), consistent with the claim that a validation bottleneck can
+suppress unchecked worker errors, though these aggregates should not be read as literal estimates of the
+theorem parameters. PlanCraft degrades under every multi-agent topology, from $-39.1\%$ to $-70.1\%$
+relative to SAS, consistent with the sequential-penalty result that manufactured handoffs are pure
+overhead when they add no new observations. Finance-Agent shows the opposite regime: centralized MAS
+improves success from $0.349$ to $0.631$ ($+80.8\%$), which is consistent with the positive case for
+decomposable tasks, but still does not directly estimate the speedup variable $S$. In the tool-heavy
+Workbench domain, $T=16$ tools with typical $n=3$ agent configurations implies substantial remote-tool
+use, and the reported negative efficiency--tool interaction
+($\hat{\beta}_{E_c \times T} = -0.267$, $p < 0.001$) is consistent with the coordination tax from
+Theorem~\ref{thm:tool-density}.
+
+Taken together, these results support the topology-level ordering rather than a numerical fit: reviewer
+or hub structures help when multiple workers can independently introduce costly errors, strictly
+sequential tasks should remain consolidated unless a handoff introduces a real new capability, parallel
+specialist swarms help when subtasks are close to conditionally independent, and tool fragmentation must
+be treated as an explicit routing problem rather than a free decomposition.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.18\textwidth}>{\raggedright\arraybackslash}p{0.20\textwidth}>{\raggedright\arraybackslash}p{0.25\textwidth}>{\raggedright\arraybackslash}p{0.25\textwidth}@{}}
+\toprule
+\textbf{Topology} & \textbf{Epistemic Property} & \textbf{Prediction} & \textbf{Observed} \\
+\midrule
+Independent ($\otimes$) & No inter-agent $K_i$ & Highest error amplification & Architecture-level $A_e = 17.2$ \\
+Centralized ($\circ$+hub) & Hub pools worker outputs & Validation bottleneck lowers amplification & Architecture-level $A_e = 4.4$ \\
+Multi-agent + sequential & Requires manufactured $K_{\mathrm{receiver}}$ & Strictly sequential tasks degrade under handoffs & PlanCraft: $-39.1\%$ to $-70.1\%$ vs.\ SAS \\
+Multi-agent + parallel & Approximate epistemic independence & Large gains on decomposable tasks & Finance-Agent Centralized: $+80.8\%$ vs.\ SAS \\
+Multi-agent + high $|T|$ & Knowledge fragmentation & Coordination tax grows with $t$ and $n$ & Workbench $T=16$; $\hat{\beta}_{E_c \times T} = -0.267$ \\
+\bottomrule
+\end{tabular}
+\caption{Epistemic predictions versus empirical observations from Kim et al.~\cite{kim2025scaling}. The
+table compares topology-level qualitative predictions to architecture-level metrics. Reported
+percentages and error-amplification factors are empirical aggregates, not literal plug-in values of the
+simplified theorem parameters.}
+\label{tab:epistemic-predictions}
+\end{table}

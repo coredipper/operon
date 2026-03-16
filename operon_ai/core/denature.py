@@ -3,12 +3,15 @@ Denaturation Layers: Wire-Level Anti-Prion Defense
 ===================================================
 
 Paper §5.3: Intermediate paraphrasing/sanitization between agents to
-disrupt prompt injection cascading ("prion disease").
+reduce prompt injection cascading ("prion disease").
 
 In biology, denaturation unfolds a protein's tertiary structure,
-destroying its functional conformation.  Applied to data flowing
+destroying its functional conformation. Applied to data flowing
 between agents, denaturation strips the *syntactic* structure that
-injection payloads rely on while preserving semantic content.
+many injection payloads rely on while preserving semantic content.
+
+This is a defense-in-depth layer aimed at known syntactic patterns,
+not a complete prompt-injection guarantee.
 
 Each filter implements the DenatureFilter protocol and can be
 attached to a Wire to transform data in transit.
@@ -36,7 +39,7 @@ class DenatureFilter(Protocol):
 class SummarizeFilter:
     """Truncation + prefix.
 
-    Strips injection by compressing to a bounded summary.
+    Reduces injection surface by compressing to a bounded summary.
     The prefix makes it clear the content has been processed,
     preventing the downstream agent from treating it as raw input.
     """
@@ -57,7 +60,7 @@ class StripMarkupFilter:
     """Removes code blocks, ChatML tokens, [INST] tags, XML role tags,
     role delimiters, and <|...|> patterns.
 
-    These syntactic structures are the vectors prompt injections use
+    These syntactic structures are common vectors prompt injections use
     to impersonate system/user roles or inject executable blocks.
     """
 

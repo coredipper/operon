@@ -12,7 +12,8 @@ This module implements the innate immunity layer:
 
 1. Toll-Like Receptors (TLR) → Regex Filters
    Pattern matchers for known injection signatures like "IGNORE PREVIOUS",
-   "You are now", "<system>" tags. These are the PAMPs of prompt injection.
+   "You are now", "<system>" tags. These are PAMP-like patterns for
+   common prompt-injection attempts.
 
 2. Complement System → Structural Validators
    Schema validation that rejects malformed inputs before they reach the LLM.
@@ -27,6 +28,9 @@ This module implements the innate immunity layer:
 
 References:
 - Article Section 4.6: Innate Immunity - Fast Pattern-Based Defense
+
+This layer is intentionally heuristic and pattern-based. It is useful as a
+cheap front-line screen, not as a complete adversarial robustness claim.
 """
 from dataclasses import dataclass, field
 from typing import Callable, Protocol
@@ -227,7 +231,7 @@ class InnateImmunity:
         InflammationLevel.HIGH
     """
 
-    # Default TLR patterns (PAMPs of prompt injection)
+    # Default TLR patterns (PAMP-like prompt-injection signatures)
     DEFAULT_PATTERNS = [
         # Instruction Override (Critical)
         TLRPattern(

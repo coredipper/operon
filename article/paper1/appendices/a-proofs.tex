@@ -1,0 +1,149 @@
+\section{Detailed Proof Sketches}
+
+This appendix collects the longer derivation steps omitted from the main text. The goal is not to expand
+the model beyond the submission claim, but to show how the topology-level formulas in Section~5 follow
+from the visibility assumptions.
+
+\subsection{Reviewer Gates and Correlated Failure}
+
+Let $X = \mathbf{1}_{E_{\mathrm{gen}}}$ and $Y = \mathbf{1}_{M_{\mathrm{ver}}}$. In the direct topology,
+failure is exactly $E_{\mathrm{gen}}$, so
+\[
+P(\mathrm{Fail}_{\mathrm{direct}})=P(E_{\mathrm{gen}})=p.
+\]
+In the reviewer-gated topology, failure is the conjunction
+$E_{\mathrm{gen}} \wedge M_{\mathrm{ver}}$. Under independence this gives
+\[
+P(\mathrm{Fail}_{\mathrm{gate}})=pq.
+\]
+For the correlated case,
+\[
+P(E_{\mathrm{gen}} \wedge M_{\mathrm{ver}})
+= \mathbb{E}[XY]
+= \mathbb{E}[X]\mathbb{E}[Y] + \mathrm{Cov}(X,Y)
+= pq + \rho\sqrt{p(1-p)q(1-q)}.
+\]
+The topology contributes the conjunction; implementation choices determine the covariance term.
+
+\subsection{Error Amplification}
+
+Let $E_j$ denote the event that worker $j$ emits an erroneous output, with $P(E_j)=p$ independently
+across workers.
+
+\paragraph{Independent aggregation.}
+The aggregate fails when at least one worker error survives to the combined output. The exact failure
+probability is
+\[
+P(\mathrm{failure}_{\otimes}) = 1 - (1-p)^n.
+\]
+Applying the union bound gives
+\[
+P(\mathrm{failure}_{\otimes}) \le \sum_{j=1}^{n} P(E_j) = np,
+\]
+so the amplification factor satisfies $A_{\otimes} \le n$.
+
+\paragraph{Centralized aggregation.}
+Suppose a hub observes all worker outputs before release and detects a worker error with rate
+$d = P(\text{hub detects error}\mid \text{error occurred})$. A worker error reaches the final output only
+if it occurs and escapes detection, so the exact centralized failure probability is
+\[
+P(\mathrm{failure}_{\circ}) = 1 - (1-p(1-d))^n.
+\]
+Again applying the union bound yields
+\[
+P(\mathrm{failure}_{\circ}) \le np(1-d),
+\]
+hence $A_{\circ} \le n(1-d)$.
+
+\paragraph{Exact comparison.}
+The ratio
+\[
+\frac{A_{\otimes}}{A_{\circ}}
+=
+\frac{1-(1-p)^n}{1-(1-p(1-d))^n}
+\xrightarrow[p \to 0]{} \frac{1}{1-d}.
+\]
+shows that the small-$p$ regime recovers the intuitive $1/(1-d)$ gain.
+
+\subsection{Sequential Handoff Overhead}
+
+Let step $j$ be executed by agent $a$ and step $j+1$ by agent $b$. The sender's full task-relevant state
+is $S_a$, while the receiver sees only a transmitted summary $\mathrm{obs}_b(S_a)$.
+
+Applying the data processing inequality to the Markov chain
+$S_a \to \mathrm{obs}_b(S_a) \to \hat r_j$ gives
+\[
+I(\mathrm{obs}_b(S_a); r_j) \le I(S_a; r_j).
+\]
+Define the lost task-relevant information as
+\[
+\Delta I_j = I(S_a; r_j) - I(\mathrm{obs}_b(S_a); r_j) \ge 0.
+\]
+Equality holds only if the handoff is lossless for the task-relevant signal. In practical agent systems,
+finite context windows, summarization, and schema compression make strict equality atypical.
+
+If $h$ handoffs occur in a $k$-step task, the total multi-agent cost can be written as
+\[
+C_{\mathrm{multi}}
+=
+k \cdot c_{\mathrm{step}} + \sum_{j=1}^{h} \bigl(c_{\mathrm{comm}} + c_{\mathrm{recon},j}\bigr),
+\]
+where $c_{\mathrm{recon},j}$ is the receiver's effort to compensate for the missing context. This yields
+the overhead ratio used in the main text and explains why repeated handoffs on strictly sequential tasks
+can accumulate superlinearly in practice.
+
+\subsection{Parallel Acceleration}
+
+Suppose a task decomposes into subtasks $\varphi_1,\dots,\varphi_m$ and that each worker can solve its
+assigned subtask from local observations alone. Let $c_{\mathrm{sub}_i}$ be the wall-clock cost of
+subtask $i$.
+
+\paragraph{Parallel cost.}
+When all subtasks run concurrently, total wall-clock time is the slowest subtask plus coordinator
+assignment and aggregation overhead:
+\[
+C_{\mathrm{parallel}} = \max_i(c_{\mathrm{sub}_i}) + c_{\mathrm{assign}} + c_{\mathrm{agg}}.
+\]
+The single-agent sequential baseline is
+\[
+C_{\mathrm{sequential}} = \sum_{i=1}^{m} c_{\mathrm{sub}_i},
+\]
+which yields the speedup formula used in the main text.
+
+\paragraph{Coordinator visibility.}
+If the coordinator must receive the tuple of worker outputs $(o_1,\dots,o_m)$ to aggregate them, then
+for any proposition $\varphi$ measurable with respect to that tuple, pooled worker-output knowledge
+implies coordinator knowledge:
+\[
+D_G(\varphi) \Rightarrow K_{\mathrm{hub}}(\varphi).
+\]
+This is why cross-checking comes ``for free'' in centralized decompositions: the aggregation step already
+creates pooled visibility.
+
+\paragraph{Epistemic ceiling.}
+If some worker's optimal action depends on another worker's hidden local result, then the subtasks are not
+epistemically independent. Running them in parallel forces a worker to act without a needed fact, which
+appears in the main text as quality loss proportional to the unresolved mutual information.
+
+\subsection{Tool Density}
+
+Let $T_1,\dots,T_n$ be an approximately balanced partition of $t$ tools across $n$ agents, so
+$|T_i| \approx t/n$.
+
+\paragraph{Remote-tool coordination.}
+If agent $i$ needs tool $k \in T_j$ with $j \ne i$, three steps are required:
+\begin{enumerate}[leftmargin=*]
+\item establish that some remote tool can solve the current subproblem;
+\item delegate execution to the remote owner;
+\item reconstruct and interpret the returned result without the owner's full local context.
+\end{enumerate}
+This is the operational content of the coordination term in
+the main text.
+
+\paragraph{Second-order planning.}
+Planning is no longer just ``which tool should I call?'' but
+``which agent knows how to apply which tool to the current subproblem?'' In epistemic terms, the planner
+must reason about propositions of the form
+$K_i(K_j(\mathrm{tool}_k \text{ can solve } \varphi))$.
+In the worst case this introduces $O(tn)$ comparisons across tool-agent pairs, versus $O(t)$ for the
+single-agent baseline.

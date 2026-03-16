@@ -8,12 +8,12 @@ sdk_version: "6.5.1"
 app_file: app.py
 pinned: false
 license: mit
-short_description: Two-layer defense against prompt injection attacks
+short_description: Two-layer screening for prompt-injection patterns
 ---
 
 # 🛡️ Operon Prompt Injection Detector
 
-Two-layer defense that analyzes prompts for injection attacks -- like a cell membrane and innate immune system working together to block pathogens.
+Two-layer screening that analyzes prompts for injection patterns -- like a cell membrane and innate immune system working together to screen pathogens.
 
 ## What to Try
 
@@ -23,7 +23,7 @@ Two-layer defense that analyzes prompts for injection attacks -- like a cell mem
 
 ## How It Works
 
-The Membrane uses adaptive pattern matching to classify threats and maintain an audit trail, while InnateImmunity applies TLR-style pattern recognition with inflammation escalation. Both layers analyze independently, and the combined verdict provides defense in depth against prompt injection, jailbreaks, and data exfiltration.
+The Membrane uses adaptive pattern matching to classify threats and maintain an audit trail, while InnateImmunity applies TLR-style pattern recognition with inflammation escalation. Both layers analyze independently, and the combined verdict provides a defense-in-depth screening signal for prompt injection, jailbreaks, and data exfiltration patterns.
 
 ## Learn More
 

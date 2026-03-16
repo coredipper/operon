@@ -205,9 +205,9 @@ def build_app() -> gr.Blocks:
     with gr.Blocks(title="Operon Mitochondria") as app:
         gr.Markdown(
             "# Operon Mitochondria -- Safe Calculator\n"
-            "AST-based expression parsing with **zero code injection risk**. "
+            "AST-based expression parsing with **whitelisted evaluation only**. "
             "Expressions are parsed into an abstract syntax tree and only whitelisted "
-            "operations execute.\n\n"
+            "operations execute; the demo avoids `eval()` and arbitrary code execution.\n\n"
             "[GitHub](https://github.com/coredipper/operon) | "
             "[Paper](https://github.com/coredipper/operon/tree/main/article)"
         )

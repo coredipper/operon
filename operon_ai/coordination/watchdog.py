@@ -1,12 +1,17 @@
 """Watchdog for operation termination (apoptosis)."""
 from __future__ import annotations
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Optional
 
 from .types import Phase, DeadlockInfo
 from .controller import CellCycleController, OperationContext
+
+
+def utc_now() -> datetime:
+    """Return a timezone-aware UTC timestamp."""
+    return datetime.now(UTC)
 
 
 class ApoptosisReason(Enum):
@@ -26,7 +31,7 @@ class ApoptosisEvent:
     agent_id: str
     reason: ApoptosisReason
     details: str
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
 
 @dataclass
@@ -56,7 +61,7 @@ class Watchdog:
         Returns list of termination events (does not execute).
         """
         events = []
-        now = datetime.utcnow()
+        now = utc_now()
 
         for op_id, ctx in list(controller.active_operations.items()):
             # Check exempt status

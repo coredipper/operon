@@ -9,8 +9,12 @@ Biological Analogy:
 - Cytokine signaling: Can trigger system-wide alerts
 - Rate limiting: Prevents denial-of-service attacks
 
-The membrane is the first line of defense against prompt injection,
+The membrane acts as a first-pass screening layer for prompt injection,
 jailbreaks, and other adversarial inputs.
+
+In practice this is a pattern-based screening layer. It improves
+robustness against known attack styles but does not provide a complete
+security guarantee by itself.
 """
 
 from dataclasses import dataclass, field
@@ -76,7 +80,7 @@ class Membrane:
     """
     Adaptive Immune System for AI agents.
 
-    Provides multi-layered defense against adversarial inputs:
+    Provides multi-layered screening against adversarial inputs:
 
     1. Innate Immunity (Fast)
        - Static pattern matching against known attack signatures

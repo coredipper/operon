@@ -1,0 +1,19 @@
+\section{Scope and Limitations}
+
+The results in this paper are architecture-level claims, not a substitute for a full benchmark campaign
+on a production agent stack. Section~6 compares the topology results to external architecture-level
+aggregates from Kim et al.~\cite{kim2025scaling}, but that comparison is qualitative. It does not fit the
+theorem parameters directly, and it is not an end-to-end evaluation of the Operon runtime on the same
+benchmark suite.
+
+The executable substrate described in Section~7 is likewise narrower than a full semantic verification
+framework. The finite-trace comparison machinery operates on supplied deterministic input scripts, so it
+does not establish general behavioral equivalence for nondeterministic, tool-rich, or continuously
+interactive agent systems. The implementation shows that the topology model can be instantiated and
+inspected, not that all possible rewritings or coordination patterns are formally certified.
+
+Finally, the topology classes studied here are intentionally coarse. Real deployments often mix reviewer
+gates, hub coordination, local feedback, and dynamic tool routing inside the same workflow. Model quality,
+prompt design, and tool reliability can also dominate topology effects in specific domains. The present
+paper should therefore be read as a compact architectural calculus for agent coordination, with direct
+benchmarking and adaptive topology selection left to future work.

@@ -13,6 +13,9 @@ References:
 - Article Section 6.5.4: Epistemic Topology of Wiring Diagrams
 - Theorems 1-4: Error amplification, sequential penalty, parallel
   speedup, tool density scaling
+
+These outputs are simplified architecture-level predictions derived
+from diagram structure. They are not benchmark-fitted estimates.
 """
 
 from __future__ import annotations

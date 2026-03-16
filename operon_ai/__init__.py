@@ -6,7 +6,7 @@ Operon brings biological control structures to AI agents using
 Applied Category Theory to define rigorous "wiring diagrams".
 
 Core Components:
-    - BioAgent: The fundamental agent unit (polynomial functor)
+    - BioAgent: The basic signal-processing agent abstraction
     - Signal: Input messages to agents
     - ActionProtein: Output actions from agents
     - ApprovalToken: Proof-carrying approval for two-key execution

@@ -2,7 +2,7 @@
 Multi-cellular Organization
 ============================
 
-Higher-order biological abstractions for multi-agent systems:
+Higher-order biological abstractions for agent runtimes and multi-agent subsystems:
 
 - **CellType**: Agent role template with differential gene expression
 - **ExpressionProfile**: Which genes are active/silenced per role

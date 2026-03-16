@@ -9,14 +9,14 @@ Biological Analogy:
 - Cell state = internal biochemistry (never directly accessible)
 - Readout = surface markers / secreted proteins (observable output)
 - Update = signal transduction (state evolution on stimulus)
-- Bisimulation = two cells that respond identically to all stimuli
+- Finite-trace equivalence = two cells that respond identically on the tested stimuli
 
 Key points:
 1. FunctionalCoalgebra wraps two plain functions into a coalgebra
 2. StateMachine tracks current state and records transitions
 3. ParallelCoalgebra composes two machines running on the same input
 4. SequentialCoalgebra pipes one machine's output into another's input
-5. check_bisimulation tests observational equivalence
+5. check_bisimulation tests bounded observational equivalence on a supplied input trace
 
 References:
 - Article Section 3.5: Epigenetics and State - The Coalgebra
@@ -77,8 +77,8 @@ def main():
             out = ssm.step(inp)
             print(f"  input={inp}  output={out}  state={ssm.state}")
 
-        # ── 5. Bisimulation check ───────────────────────────────────
-        print("\n--- 5. Bisimulation Check ---")
+        # ── 5. Finite-trace equivalence check ──────────────────────
+        print("\n--- 5. Finite-Trace Equivalence Check ---")
         a = StateMachine(state=0, coalgebra=counter_coalgebra())
         b = StateMachine(state=0, coalgebra=counter_coalgebra())
         result = check_bisimulation(a, b, [1, 2, 3, 4, 5])

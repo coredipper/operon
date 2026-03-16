@@ -297,7 +297,8 @@ def build_app() -> gr.Blocks:
             "# Operon Denaturation Layers -- Anti-Prion Defense\n"
             "Wire-level filters that strip injection syntax from data flowing between "
             "agents (Paper §5.3). Like protein denaturation unfolds tertiary structure, "
-            "these filters destroy the syntactic patterns that injections rely on.\n\n"
+            "these filters target syntactic patterns that many injections rely on. "
+            "This is a defense-in-depth layer, not a complete security guarantee.\n\n"
             "[GitHub](https://github.com/coredipper/operon) | "
             "[Paper](https://github.com/coredipper/operon/tree/main/article)"
         )

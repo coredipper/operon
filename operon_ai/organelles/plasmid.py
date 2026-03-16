@@ -10,8 +10,9 @@ capabilities (e.g. antibiotic resistance) without vertical
 inheritance.
 
 This module provides a PlasmidRegistry from which a Mitochondria
-can dynamically acquire (engulf) or release tools at runtime,
-subject to capability gating.
+can dynamically acquire (engulf) or release tools at runtime.
+If a Mitochondria instance is configured with an ``allowed_capabilities``
+envelope, acquisition is capability-gated.
 """
 
 from __future__ import annotations

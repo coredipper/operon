@@ -3,7 +3,7 @@ Operon Core: Fundamental Types and Agents
 =========================================
 
 The core module provides the fundamental building blocks:
-- BioAgent: The polynomial functor that processes signals
+- BioAgent: The basic signal-processing agent abstraction
 - Signal: Input messages (transcription factors)
 - ActionProtein: Output actions (expressed proteins)
 - FoldedProtein: Validated output structures

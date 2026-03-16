@@ -1,6 +1,6 @@
 """Tests for T-Cell two-signal response."""
 import pytest
-from datetime import datetime
+from datetime import UTC, datetime
 from operon_ai.surveillance.types import (
     Signal1, Signal2, ThreatLevel, ResponseAction, MHCPeptide, ActivationState,
 )
@@ -32,7 +32,7 @@ def make_peptide(
     """Helper to create test peptides."""
     return MHCPeptide(
         agent_id=agent_id,
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(UTC),
         output_length_mean=output_length_mean,
         output_length_std=10.0,
         response_time_mean=0.5,

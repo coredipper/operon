@@ -1,0 +1,270 @@
+\section{Predictive Results for Architecture Choice}
+
+\paragraph{Reading guide.}
+Each result below has the same structure. First, the topology fixes what each worker or coordinator can
+observe. Second, that visibility pattern induces a cost, error, or planning bound through a simple
+inequality such as a union bound, the data processing inequality, or a critical-path argument. The
+epistemic notation is bookkeeping for visibility: if an agent cannot observe a fact directly, recovering
+that fact later requires communication, compression, or review.
+
+\paragraph{Worked examples.}
+Each theorem is paired with a small illustrative agent-architecture example. These examples are design
+calculations, not benchmark measurements.
+
+\subsection{Reviewer Gates and Correlated Failure}
+
+A minimal reviewer gate can be modeled as a coherent feed-forward loop: a generator proposes an action,
+but the action is released only if a reviewer also emits approval.
+
+\begin{theorem}[Reviewer-Gated Error Suppression]
+\label{thm:reviewer-gate}
+Let $A_{\mathrm{gen}}$ be a generator agent and $A_{\mathrm{ver}}$ be a reviewer. Let
+$E_{\mathrm{gen}}$ denote the event that the generator emits an erroneous candidate, and let
+$M_{\mathrm{ver}}$ denote the event that the reviewer misses that error and still emits approval.
+\begin{enumerate}[leftmargin=*]
+\item[(a)] \textbf{Direct link.} Without a reviewer gate,
+\[
+P(\mathrm{Fail}_{\mathrm{direct}}) = P(E_{\mathrm{gen}}).
+\]
+\item[(b)] \textbf{Reviewer gate under independence.} If $E_{\mathrm{gen}}$ and $M_{\mathrm{ver}}$ are independent,
+\[
+P(\mathrm{Fail}_{\mathrm{gate}}) = P(E_{\mathrm{gen}})\,P(M_{\mathrm{ver}}).
+\]
+\item[(c)] \textbf{Reviewer gate under correlation.} Let $p = P(E_{\mathrm{gen}})$, $q = P(M_{\mathrm{ver}})$,
+and let $\rho$ be the Bernoulli correlation between the two events. Then
+\[
+P(\mathrm{Fail}_{\mathrm{gate}})
+= pq + \rho\sqrt{p(1-p)q(1-q)}.
+\]
+\end{enumerate}
+\end{theorem}
+
+\paragraph{Assumptions.}
+The theorem uses the minimal failure model for a two-stage execution gate: in the direct case an
+erroneous action is emitted exactly when the generator emits an erroneous candidate; in the gated case an
+erroneous action is emitted exactly when the generator emits an error and the reviewer still approves it.
+
+\paragraph{Operational takeaway.}
+Adding a reviewer buys multiplicative safety only when the reviewer is not making the same mistakes as
+the generator. The gate provides the conjunction; diversity in model family, evidence source, or checking
+mechanism determines how much of that multiplicative gain survives in practice.
+
+\begin{proof}[Proof sketch]
+In the direct topology there is only one path from the generator to the action sink, so
+$\mathrm{Fail}_{\mathrm{direct}} = E_{\mathrm{gen}}$. In the gated topology an erroneous final action can
+occur only if the generator emits an error and the reviewer misses it while still approving, so
+$\mathrm{Fail}_{\mathrm{gate}} = E_{\mathrm{gen}} \wedge M_{\mathrm{ver}}$. Independence gives the product
+$pq$. For the correlated case, writing $X = \mathbf{1}_{E_{\mathrm{gen}}}$ and
+$Y = \mathbf{1}_{M_{\mathrm{ver}}}$ yields
+\[
+\mathbb{E}[XY] = \mathbb{E}[X]\mathbb{E}[Y] + \mathrm{Cov}(X,Y)
+= pq + \rho\sqrt{p(1-p)q(1-q)}.
+\]
+\end{proof}
+
+\paragraph{Worked Agent Example (Execution Gate).}
+Suppose a code-writing agent proposes a migration and a reviewer checks it before execution. If the
+generator error rate is $p=0.1$ and the reviewer miss rate is $q=0.1$, independence gives
+$P(\mathrm{Fail}_{\mathrm{gate}})=0.01$ instead of $0.1$. But if reviewer misses are positively correlated
+with generator errors, say $\rho=0.5$, the failure rate rises to $0.055$. The gate still helps, but much
+less than the independent ideal.
+
+\subsection{Error Amplification in Independent and Centralized Aggregation}
+
+\begin{theorem}[Error Amplification Bound]
+\label{thm:error-amplification}
+Consider $n$ agents processing independent subtasks with error probability $p$, aggregated by a final
+combiner. The error amplification factor $A$ (aggregate failure probability divided by single-agent
+failure probability) depends on the coordination topology:
+\begin{enumerate}[leftmargin=*]
+\item[(a)] \textbf{Independent workers.} If the aggregator observes only final worker outputs,
+\begin{equation}
+A_{\otimes} \le n.
+\label{eq:error-amp-independent}
+\end{equation}
+\item[(b)] \textbf{Centralized coordination.} If a hub sees all worker outputs before aggregation and detects
+an error with rate $d = P(\text{hub detects error} \mid \text{error occurred})$, then
+\begin{equation}
+A_{\circ} \le n(1-d).
+\label{eq:error-amp-centralized}
+\end{equation}
+\end{enumerate}
+\end{theorem}
+
+\paragraph{Assumptions.}
+Worker errors are independent across subtasks, the aggregate fails when at least one erroneous subtask
+survives to the final output, and in the centralized case the hub has an approximately stationary
+per-error detection rate $d$ across subtasks.
+
+\paragraph{Operational takeaway.}
+Adding workers without an effective review bottleneck scales failure opportunities roughly with the number
+of workers. A hub helps exactly to the extent that it can see and suppress cross-worker inconsistencies.
+
+\begin{proof}[Proof sketch]
+For independent workers, the aggregate fails with probability
+$P(\mathrm{failure}_{\otimes}) = 1 - (1-p)^n \le np$ by the union bound, so
+$A_{\otimes} = P(\mathrm{failure}_{\otimes})/p \le n$. With a centralized hub, each subtask error reaches
+the final output only if it occurs and escapes detection, so
+$P(\mathrm{failure}_{\circ}) = 1 - (1-p(1-d))^n \le np(1-d)$, giving
+$A_{\circ} \le n(1-d)$. In the small-$p$ regime the exact ratio approaches $1/(1-d)$, recovering the
+intuition that review quality directly controls the gain from centralization.
+\end{proof}
+
+\paragraph{Worked Agent Example (Code Review Gate).}
+Suppose three code-generation workers each draft part of a deployment change, and a release gate accepts
+the merged result. If each worker has error rate $p=0.1$, an ungated independent aggregate fails with
+probability $1-(1-0.1)^3 = 0.271$, so $A_{\otimes}=2.71$. If a central reviewer catches half of all
+worker errors ($d=0.5$), then the centralized failure rate becomes
+$1-(1-0.1(1-0.5))^3 \approx 0.143$, so $A_{\circ}\approx 1.43$.
+
+\subsection{Sequential Coordination Penalty}
+
+\begin{theorem}[Sequential Coordination Penalty]
+\label{thm:sequential-penalty}
+For a task with $k$ strictly ordered steps decomposed across agents, each inter-agent handoff must at
+minimum establish $K_{\mathrm{receiver}}(\mathrm{result}_j)$. The overhead is:
+\begin{enumerate}[leftmargin=*]
+\item[(a)] \textbf{Single agent.} $K_i(\mathrm{result}_j)$ is trivial because the agent computed the result.
+Total cost is $k \cdot c_{\mathrm{step}}$.
+\item[(b)] \textbf{Multi-agent pipeline.} Each of $h \le k-1$ handoffs incurs communication cost
+$c_{\mathrm{comm}}$ and epistemic reconstruction loss
+\begin{equation}
+\Delta I_j = I(S_{\mathrm{sender}}; r_j) - I(\mathrm{obs}_{\mathrm{receiver}}(S_{\mathrm{sender}}); r_j),
+\label{eq:epistemic-reconstruction-loss}
+\end{equation}
+which is nonnegative by data processing and strictly positive whenever the handoff is lossy on the
+task-relevant support.
+\end{enumerate}
+\end{theorem}
+
+\paragraph{Assumptions.}
+The task is strictly sequential, later steps depend on earlier results, each handoff transmits only a
+summary of the sender's relevant state, and the receiver must reconstruct enough of that state to
+continue execution.
+
+\paragraph{Operational takeaway.}
+This is the warning against gratuitous decomposition: a sequential pipeline benefits from multiple agents
+only if a handoff creates new observations or new capabilities. Otherwise the system pays communication
+cost plus lossy-summary cost.
+
+\begin{proof}[Proof sketch]
+A single agent keeps prior results in its own local state, so no handoff is required and total cost is
+$k \cdot c_{\mathrm{step}}$. When step $j$ is handed from agent $a$ to agent $b$, the receiver observes
+only a transformed summary of the sender's state. By the data processing inequality,
+$I(\mathrm{obs}_b(S_a); r_j) \le I(S_a; r_j)$, so the receiver cannot gain information at handoff and
+typically loses some. Each handoff therefore adds message-construction cost, parsing cost, and
+reconstruction effort proportional to the lost task-relevant information.
+\end{proof}
+
+\paragraph{Worked Agent Example (Bug-Fix Relay).}
+Consider a three-step bug-fix task: interpret the failing test, locate the root cause, and write the
+patch. A single coding agent pays $3c_{\mathrm{step}}$. If the task is split across planner, debugger,
+and patcher with $h=2$ handoffs, $c_{\mathrm{step}}=100$ tokens, $c_{\mathrm{comm}}=25$, and
+$c_{\mathrm{recon}}=20$ per handoff, then $C_{\mathrm{single}}=300$ while
+$C_{\mathrm{multi}}=3\cdot100+2\cdot(25+20)=390$.
+
+\subsection{Parallel Acceleration Under Task Decomposability}
+
+\begin{theorem}[Parallel Acceleration under Epistemic Independence]
+\label{thm:parallel-acceleration}
+A task decomposes into $m$ subtasks. Define two subtasks as \emph{epistemically independent} iff
+neither solution requires knowledge of the other's result.
+\begin{enumerate}[leftmargin=*]
+\item[(a)] Under full epistemic independence with centralized coordination, the speedup is
+\begin{equation}
+S = \frac{\sum_{i=1}^{m} c_{\mathrm{sub}_i}}{\max_i(c_{\mathrm{sub}_i}) + c_{\mathrm{assign}} + c_{\mathrm{agg}}}.
+\label{eq:parallel-speedup}
+\end{equation}
+\item[(b)] For propositions determined solely by the tuple of worker outputs, the coordinator attains the
+corresponding pooled-output knowledge at aggregation as an architectural byproduct. Error detection from
+Theorem~\ref{thm:error-amplification} therefore comes with little extra communication cost.
+\item[(c)] If subtasks are only partially independent, parallel execution sacrifices quality in proportion
+to the unresolved mutual information between subtask solutions.
+\end{enumerate}
+\end{theorem}
+
+\paragraph{Assumptions.}
+Subtasks can be assigned independently, coordinator assignment and aggregation are additive overhead
+terms, and no hidden blocking dependency forces a worker to wait for another worker's intermediate
+result.
+
+\paragraph{Operational takeaway.}
+This is the positive case for multi-agent systems: if subtasks can be solved from local observations
+alone, specialization plus a coordinator can reduce wall-clock cost and often improve quality. If
+subtasks share unresolved dependencies, parallelism turns into premature decomposition.
+
+\begin{proof}[Proof sketch]
+Under epistemic independence, all $m$ subtasks can run concurrently and wall-clock cost is determined by
+the slowest subtask plus coordinator overhead, giving Eq.~\eqref{eq:parallel-speedup}. Because the
+coordinator must receive all worker outputs to aggregate them, it also obtains pooled-output visibility as
+part of normal execution. When subtasks are not independent, some worker decisions depend on facts hidden
+in another worker's local state; running them in parallel then replaces needed information sharing with
+guesswork, reducing solution quality.
+\end{proof}
+
+\paragraph{Worked Agent Example (Due-Diligence Swarm).}
+Suppose an orchestrator assigns three largely independent subtasks for a vendor assessment: legal review,
+security posture, and cost modeling. If each subtask costs about $8$ minutes of agent time and
+assignment plus aggregation costs $2$ minutes total, then
+\[
+S = \frac{8+8+8}{8+2} = 2.4.
+\]
+The coordinator also receives all three outputs at aggregation, so cross-checking across workstreams
+comes with little extra communication cost.
+
+\subsection{Tool Density and the Coordination Tax}
+
+\begin{theorem}[Tool Density Scaling]
+\label{thm:tool-density}
+Consider $t$ tools distributed across $n$ agents, with $|T_i| = t/n$ tools per agent under an
+approximately balanced partition.
+\begin{enumerate}[leftmargin=*]
+\item[(a)] \textbf{Single agent.} Planning cost is $O(t)$ per step because the agent scans one unified tool
+inventory in context.
+\item[(b)] \textbf{Multi-agent.} If agent $i$ needs a tool in $T_j$ for $j \ne i$, it must discover the
+tool, request remote execution, and interpret the result with information loss $\Delta I$ from
+Eq.~\eqref{eq:epistemic-reconstruction-loss}. The coordination overhead per step scales as
+\begin{equation}
+C_{\mathrm{coord}} =
+O\!\left(t \cdot \left(1 - \frac{|T_i \cap T_{\mathrm{needed}}|}{|T_{\mathrm{needed}}|}\right) \cdot c_{\mathrm{comm}}\right).
+\label{eq:tool-coord-overhead}
+\end{equation}
+\item[(c)] \textbf{Cross-agent planning overhead.} The planner must also reason about remote tool
+capabilities, yielding worst-case planning cost
+\begin{equation}
+C_{\mathrm{plan}} = O(tn),
+\label{eq:tool-planning-cost}
+\end{equation}
+which is a multiplicative $n$-factor over the single-agent baseline and becomes bilinear when both $t$
+and $n$ grow.
+\end{enumerate}
+\end{theorem}
+
+\paragraph{Assumptions.}
+Tools are partitioned approximately evenly across agents, remote tool use requires explicit discovery and
+delegation, and the planner may in the worst case need to reason over every tool-agent pairing relevant
+to the current subgoal.
+
+\paragraph{Operational takeaway.}
+Splitting a toolset across agents changes one local decision into three coordination steps: discover who
+has the tool, delegate execution, then interpret the returned result without the executor's full context.
+That is why tool-heavy tasks often punish over-distribution.
+
+\begin{proof}[Proof sketch]
+A single agent scans one tool inventory, so planning cost is linear in $t$. Under partition, a worker
+sees only its local tool subset. Remote-tool use therefore introduces discovery, delegation, and result
+reconstruction costs, producing the coordination term in Eq.~\eqref{eq:tool-coord-overhead}. Planning
+also becomes second-order: the agent must reason not just about tool applicability but about which other
+agent knows how to apply which tool. In the worst case that produces $O(tn)$ candidate comparisons.
+\end{proof}
+
+\paragraph{Worked Agent Example (Tool-Split SWE Agent).}
+Imagine a software-engineering assistant with $18$ tools split across $3$ agents: one owns search tools,
+one owns git and test tools, and one owns deployment tools. A planner diagnosing a failing CI job
+directly holds only $6$ tools and must treat the remaining $12$ as remote. The planning problem expands
+from ``which of 18 tools should I call next?'' to ``which agent owns the relevant tool, how do I route
+the subproblem, and how do I interpret the result without that agent's full execution context?''
+
+% Source map:
+% - 5.1 adapted from article/sections/04-operad.tex theorem on CFFL.
+% - 5.2--5.5 adapted from article/sections/06-discussion.tex predictive theorems.

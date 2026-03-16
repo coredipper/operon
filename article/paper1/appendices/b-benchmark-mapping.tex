@@ -1,0 +1,13 @@
+\section{Additional Notes on Benchmark Mapping}
+
+The benchmark comparison in the main paper is intentionally qualitative. Kim et al.~\cite{kim2025scaling}
+report architecture-level aggregates across heterogeneous tasks, models, and coordination regimes. Those
+metrics are useful for checking whether the theory predicts the right ordering across topology classes,
+but they should not be interpreted as direct fitted values of variables such as $d$, $\Delta I_j$, or
+$S$ in the simplified formulas of Section~5.
+
+This distinction matters especially for rebuttal. The paper does not claim that the theory numerically
+reconstructs the benchmark tables. It claims that the benchmark outcomes are directionally consistent with
+the visibility-based predictions: review bottlenecks reduce error amplification, artificial handoffs hurt
+strictly sequential tasks, decomposition helps on approximately independent tasks, and large toolsets
+increase coordination tax in distributed regimes.

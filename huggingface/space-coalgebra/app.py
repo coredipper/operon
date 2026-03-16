@@ -5,7 +5,7 @@ Operon Coalgebra — State Machine Explorer (Gradio Demo)
 Three-tab demo:
   1. Step-by-Step   — drive a counter coalgebra, inspect trace
   2. Composition    — parallel & sequential machines
-  3. Bisimulation   — compare two machines for observational equivalence
+  3. Finite-Trace Equivalence — compare two machines over a supplied input trace
 
 Run locally:
     pip install gradio
@@ -332,7 +332,7 @@ def _run_bisimulation(
     init_b: int,
     seq_text: str,
 ) -> str:
-    """Check bisimulation and return result HTML."""
+    """Check bounded observational equivalence and return result HTML."""
     coal_a = COALGEBRA_TYPES.get(type_a, list(COALGEBRA_TYPES.values())[0])()
     coal_b = COALGEBRA_TYPES.get(type_b, list(COALGEBRA_TYPES.values())[0])()
 
@@ -455,11 +455,12 @@ def build_app() -> gr.Blocks:
                     outputs=[comp_state_html, comp_trace_html],
                 )
 
-            # ── Tab 3: Bisimulation ──────────────────────────────────
-            with gr.TabItem("Bisimulation"):
+            # ── Tab 3: Finite-Trace Equivalence ─────────────────────
+            with gr.TabItem("Finite-Trace Equivalence"):
                 gr.Markdown(
                     "Check whether two machines produce **identical outputs** "
-                    "over a given input sequence. If they diverge, the first "
+                    "over a given input sequence. This is a **bounded** check, "
+                    "not an all-input proof. If they diverge, the first "
                     "diverging input is shown as a *witness*."
                 )
 
@@ -502,7 +503,7 @@ def build_app() -> gr.Blocks:
                         value="1,2,3,4,5",
                         scale=3,
                     )
-                    bisim_btn = gr.Button("Check Bisimulation", variant="primary", scale=1)
+                    bisim_btn = gr.Button("Check Equivalence", variant="primary", scale=1)
 
                 bisim_result_html = gr.HTML(label="Result")
 

@@ -1,0 +1,31 @@
+\section{Introduction}
+
+AI agent systems increasingly rely on coordination patterns such as planner-worker splits, reviewer
+gates, specialist swarms, and distributed tool ownership. In practice, these topologies are still
+chosen mostly heuristically. The central question of this paper is simple:
+\emph{how should an agent architect choose among common coordination topologies when trading off
+reliability, communication cost, and decomposition benefit?}
+
+Our starting point is that many familiar coordination pathologies are architectural rather than purely
+prompt-level failures. A reviewer can suppress some classes of error that a flat worker ensemble cannot.
+A sequential task can become slower and less reliable when decomposed across multiple agents. A large
+toolset can become harder to use when split across multiple specialists. These claims are familiar in
+practice, but they are usually discussed informally and only after systems have already been built.
+
+We use a minimal typed interface model inspired by wiring diagrams and interpret it epistemically:
+topology determines what each worker or coordinator can observe, and those observation constraints induce
+predictable costs and failure modes. Biology remains a motivating heuristic in the background, but it is
+not the main claim of this paper. The motivating intuition is simply that local wiring patterns can
+stabilize or destabilize distributed information-processing systems, a perspective that has proved useful
+in the study of biological network motifs \cite{milo2002network,alon2007network}.
+
+\paragraph{Contributions.}
+This paper makes three contributions:
+\begin{enumerate}[leftmargin=*]
+\item It introduces a minimal typed and epistemic model for agent coordination, with enough structure to
+reason about what different topologies make visible to workers and coordinators.
+\item It derives predictive results for reviewer-gated execution, error amplification, sequential
+handoffs, parallel decomposition, and tool-density scaling.
+\item It compares those qualitative predictions to large-scale external evaluations of multi-agent
+systems and maps them to an executable coordination substrate in the Operon implementation.
+\end{enumerate}

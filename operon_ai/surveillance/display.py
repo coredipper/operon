@@ -1,7 +1,7 @@
 """MHC Display - behavioral fingerprint collector."""
 from __future__ import annotations
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Optional
 import hashlib
 import json
@@ -11,6 +11,11 @@ import statistics
 from .types import MHCPeptide
 
 
+def utc_now() -> datetime:
+    """Return a timezone-aware UTC timestamp."""
+    return datetime.now(UTC)
+
+
 @dataclass
 class Observation:
     """Single observation of agent output."""
@@ -18,7 +23,7 @@ class Observation:
     response_time: float
     confidence: float
     error: Optional[str] = None
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
 
 @dataclass
@@ -100,7 +105,7 @@ class MHCDisplay:
 
         return MHCPeptide(
             agent_id=self.agent_id,
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             output_length_mean=statistics.mean(lengths),
             output_length_std=statistics.stdev(lengths) if len(lengths) > 1 else 0.0,
             response_time_mean=statistics.mean(times),

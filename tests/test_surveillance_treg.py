@@ -1,6 +1,6 @@
 """Tests for Regulatory T-Cell tolerance."""
 import pytest
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from operon_ai.surveillance.types import Signal1, Signal2, ThreatLevel, ResponseAction
 from operon_ai.surveillance.tcell import ImmuneResponse
 from operon_ai.surveillance.treg import (
@@ -86,7 +86,7 @@ class TestToleranceRecord:
         assert record.recent_update is True
 
         # Manually set update time to past
-        record.last_update = datetime.utcnow() - timedelta(seconds=2)
+        record.last_update = datetime.now(UTC) - timedelta(seconds=2)
         assert record.recent_update is False  # Expired
 
 

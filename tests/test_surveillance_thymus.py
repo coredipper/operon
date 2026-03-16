@@ -1,6 +1,6 @@
 """Tests for Thymus baseline training."""
 import pytest
-from datetime import datetime
+from datetime import UTC, datetime
 from operon_ai.surveillance.types import MHCPeptide
 from operon_ai.surveillance.thymus import (
     Thymus, BaselineProfile, SelectionResult,
@@ -22,7 +22,7 @@ def make_peptide(
     """Helper to create test peptides."""
     return MHCPeptide(
         agent_id=agent_id,
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(UTC),
         output_length_mean=output_length_mean,
         output_length_std=output_length_std,
         response_time_mean=response_time_mean,

@@ -6,7 +6,8 @@ Biological Analogy:
 Metabolic pathway rewiring — cells optimize flux through enzyme
 regulation, allosteric control, and pathway shortcuts. Each
 optimization pass is an endofunctor on the category of wiring
-diagrams that preserves input-output behavior (bisimulation).
+diagrams that is intended to preserve observable input-output behavior
+under the optimizer's modeling assumptions.
 
 This module transforms a WiringDiagram into an equivalent but
 more efficient OptimizedDiagram via composable rewriting passes.
@@ -44,8 +45,9 @@ class OptimizedDiagram:
 class OptimizationPass(Protocol):
     """Protocol for diagram rewriting passes.
 
-    Each pass is an endofunctor on WiringDiagram that preserves
-    input-output behavior while improving resource utilization.
+    Each pass is an endofunctor on WiringDiagram that is intended to
+    preserve observable input-output behavior while improving resource
+    utilization.
     """
 
     @property

@@ -1,0 +1,49 @@
+\section{What Different Topologies Let Agents Observe}
+
+To reason about coordination, we interpret a wiring diagram as constraining who can observe which facts.
+Let $S$ denote the global execution state of a diagram and let $\mathrm{obs}_i : S \to \Omega_i$ be the
+observation function induced by the inputs, outputs, and local readout visible to agent $i$. This
+observation map induces an indistinguishability relation:
+\[
+s \sim_i s' \quad \Longleftrightarrow \quad \mathrm{obs}_i(s) = \mathrm{obs}_i(s').
+\]
+Agent $i$ knows a proposition $\varphi$ exactly when $\varphi$ holds in every global state compatible with
+its observation.
+
+We use the standard operators:
+\[
+K_i(\varphi), \qquad
+E_G(\varphi) = \bigwedge_{i \in G} K_i(\varphi), \qquad
+C_G(\varphi), \qquad
+D_G(\varphi).
+\]
+Here $K_i(\varphi)$ means agent $i$ knows $\varphi$, $E_G(\varphi)$ means every agent in group $G$
+individually knows $\varphi$, $C_G(\varphi)$ denotes common knowledge, and $D_G(\varphi)$ captures what
+would be knowable if the group's observations were pooled.
+
+\paragraph{Why pooled knowledge matters.}
+Many agent architectures fail not because no worker ever observes the right fact, but because the right
+fact is observed only locally and never made available where a decision is taken. The distinction between
+local knowledge, mutual knowledge, and pooled knowledge therefore becomes architectural rather than purely
+logical.
+
+\paragraph{Topology-level intuition.}
+The wiring diagram's topology directly determines which epistemic operators are easy or expensive to
+realize:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Independent ($\otimes$).} Each worker observes only its local task state. Distributed
+knowledge can be rich because workers see different parts of the task, but mutual knowledge is limited to
+the shared initial input unless extra communication is added.
+\item \textbf{Centralized ($\circ$ with hub).} The hub receives all worker outputs, so for propositions
+expressible in that pooled output tuple, the hub's partition refines the pooled worker-output partition.
+Workers, by contrast, typically do not see one another's outputs unless the hub broadcasts them back.
+\item \textbf{Feedback-rich decentralized coordination} $(\otimes$ with $\mathrm{Tr})$. Peer-to-peer wires
+create overlapping observation sets. Repeated rounds can refine mutual knowledge toward common knowledge,
+but each round incurs communication and synchronization cost.
+\end{itemize}
+The predictive results in the next section treat these visibility patterns as the main explanatory
+variable for coordination cost and reliability.
+
+% Source map:
+% - Lift the epistemic operators and topology-capacity paragraph from article/sections/06-discussion.tex.
+% - Keep K_i, E_G, and D_G central; mention common knowledge only if needed.

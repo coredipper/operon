@@ -1,0 +1,38 @@
+\section{Related Work}
+
+This paper sits at the intersection of AI agent systems, epistemic reasoning for distributed systems,
+and lightweight categorical models of typed composition.
+
+\subsection{Network Motifs and Coordination Heuristics}
+
+Systems biology motivates the idea that local wiring patterns can induce stable system-level behavior.
+The network-motif literature identifies recurrent subgraphs such as feed-forward loops and signaling
+bottlenecks as functional building blocks rather than accidental graph fragments
+\cite{milo2002network,alon2007network}. We borrow that design perspective, but not its biochemical
+mechanistic claims. In this paper, biology serves only as motivation for taking coordination topology
+seriously in agent systems.
+
+\subsection{Applied Category Theory as Interface Language}
+
+We use polynomial-style interfaces and wiring diagrams as a compact language for typed composition rather
+than as the paper's main novelty. Prior work in applied category theory has shown that polynomial
+functors and wiring diagrams provide a disciplined language for open, compositional systems
+\cite{fong2019seven,spivak2021learners}. Our use of that machinery is deliberately lightweight: it gives
+the topology discussion enough precision to support theorem statements and implementation mapping without
+requiring the paper to be read primarily as a category-theory contribution.
+
+\subsection{Epistemic Logic and Multi-Agent Coordination}
+
+The epistemic layer draws on standard multi-agent notions of individual, mutual, and distributed
+knowledge \cite{fagin1995reasoning,halpern1990knowledge}. Our use of epistemic logic is operational
+rather than foundational: the goal is to connect visibility constraints induced by common AI-agent
+topologies to concrete tradeoffs in review, handoff, parallelism, and tool use.
+
+\subsection{Agent Architecture Evaluation}
+
+Much recent work on LLM systems has improved reasoning quality through prompt and inference strategies
+rather than through explicit architectural analysis \cite{wei2022chain}. More recent large-scale
+evaluations of multi-agent LLM systems make clear that coordination topology itself can dominate outcomes
+on some workloads \cite{kim2025scaling}. This paper is best read as a response to that gap: it proposes a
+small formal language for topology choice and uses external benchmark results as qualitative consistency
+checks rather than as direct fit targets.

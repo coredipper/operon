@@ -30,9 +30,9 @@ Agentic systems exhibit recurring failure modes: runaway recursion, prompt injec
 
 This parallels a finding in complex systems research: **topology determines behavior more than individual components**. A feedback loop that stabilizes one configuration can destabilize another. The wiring matters.
 
-Cell biology encountered analogous problems. Unchecked proliferation, foreign signal hijacking, resource exhaustion—these are pathologies that cells evolved mechanisms to prevent. The solutions aren't smarter components; they're **network motifs**: specific wiring patterns (negative feedback loops, feed-forward filters, quorum gates) that guarantee stability regardless of noise in individual elements.
+Cell biology encountered analogous problems. Unchecked proliferation, foreign signal hijacking, resource exhaustion-these are pathologies that cells evolved mechanisms to manage. The solutions aren't smarter components; they're **network motifs**: specific wiring patterns (negative feedback loops, feed-forward filters, quorum gates) that can stabilize behavior under explicit wiring and resource assumptions.
 
-**Operon** applies these biological control structures to software. Using applied category theory, it defines composable wiring diagrams for agents—the same mathematical framework used to model gene regulatory networks. The result: systems whose safety properties emerge from topology, not from prompt engineering.
+**Operon** applies these biological control structures to software. Using applied category theory, it defines composable wiring diagrams for agents-the same mathematical framework used to model gene regulatory networks. The whitepaper frames this as a **typed interface correspondence** between biological and software architectures, not as a claim that the two domains are identical in mechanism. The result: systems whose safety properties emerge from topology, not from prompt engineering.
 
 ---
 
@@ -905,12 +905,14 @@ outputs = sm.run([1, 2, 3, 4, 5])
 print(sm.state)  # 15
 print(len(sm.trace))  # 5 transition records
 
-# Bisimulation: check if two machines are observationally equivalent
+# Bounded finite-trace check of observational equivalence
 a = StateMachine(state=0, coalgebra=counter)
 b = StateMachine(state=0, coalgebra=counter)
 result = check_bisimulation(a, b, [1, 2, 3])
 print(result.equivalent)  # True
 ```
+
+> **Note:** `check_bisimulation()` compares two machines over a supplied input sequence. It is a bounded finite-trace equivalence check, not a coinductive proof over all possible interactions.
 
 ### Morphogen Diffusion (Paper §6.5.2 / §6.5.3)
 
@@ -986,7 +988,7 @@ Cost-annotated wiring diagrams with static analysis, rewriting passes, and resou
 **Features:**
 - **ResourceCost** annotations (ATP, latency, memory) on modules and wires
 - **Static analysis**: dependency graphs, parallel group detection, dead wire identification, critical path, cost hotspots
-- **Rewriting passes**: dead wire elimination, parallel grouping, cost-order scheduling — each an endofunctor preserving input-output bisimulation
+- **Rewriting passes**: dead wire elimination, parallel grouping, cost-order scheduling - each intended to preserve observable input-output behavior under the optimizer's model assumptions
 - **ResourceAwareExecutor**: ATP-gated scheduling that adapts to MetabolicState (skip non-essential modules when STARVING, defer expensive ones when CONSERVING, parallelize when NORMAL/FEASTING)
 - **BudgetOptic**: wire-level cumulative cost cap (allosteric feedback inhibition)
 
@@ -1096,7 +1098,7 @@ Explore the `examples/` directory for runnable demonstrations:
 | [`23_resilient_incident_response.py`](examples/23_resilient_incident_response.py) | Multi-organelle | Incident triage, planning, coordinated execution, and quality gating |
 | [`24_governed_release_train.py`](examples/24_governed_release_train.py) | Governance | Quorum + CFFL + feedback control with coordinated rollout |
 | [`25_resource_allocation_tradeoffs.py`](examples/25_resource_allocation_tradeoffs.py) | Resource Allocation | Nutrient, machinery, and energy budgeting with trade-offs |
-| [`37_metabolic_swarm_budgeting.py`](examples/37_metabolic_swarm_budgeting.py) | Coalgebra | Metabolic swarm with shared budget and halting guarantee |
+| [`37_metabolic_swarm_budgeting.py`](examples/37_metabolic_swarm_budgeting.py) | Coalgebra | Metabolic swarm with shared budget and budget-bounded halting conditions |
 | [`38_linear_budget_tracking.py`](examples/38_linear_budget_tracking.py) | Metabolism | Token cost tracking via git commits and Linear tickets |
 | [`39_chaperone_healing_loop.py`](examples/39_chaperone_healing_loop.py) | Healing | Chaperone Loop with feedback-driven structural repair |
 | [`40_regenerative_swarm.py`](examples/40_regenerative_swarm.py) | Healing | Apoptosis + regeneration with memory inheritance |
@@ -1138,14 +1140,14 @@ Explore the `examples/` directory for runnable demonstrations:
 | [`56_metabolic_epigenetic_coupling.py`](examples/56_metabolic_epigenetic_coupling.py) | ATP+Histone | Cost-gated memory retrieval under metabolic pressure |
 | [`57_cell_type_specialization.py`](examples/57_cell_type_specialization.py) | Genome+CellType | Differential gene expression produces agent phenotypes |
 | [`58_tissue_architecture.py`](examples/58_tissue_architecture.py) | Tissue+WiringDiagram | Hierarchical multi-agent organization with capability isolation |
-| [`59_plasmid_registry.py`](examples/59_plasmid_registry.py) | Plasmid+Mitochondria | Dynamic tool acquisition with capability gating (HGT) |
+| [`59_plasmid_registry.py`](examples/59_plasmid_registry.py) | Plasmid+Mitochondria | Dynamic tool acquisition with optional capability gating |
 | [`60_denaturation_layers.py`](examples/60_denaturation_layers.py) | Denature+Wire | Wire-level anti-injection filters (anti-prion defense) |
 
 **Coalgebra, Diffusion & Optics (v0.14.0)**
 
 | Example | System | Description |
 |---------|--------|-------------|
-| [`61_coalgebraic_state_machines.py`](examples/61_coalgebraic_state_machines.py) | Coalgebra | Composable observation & evolution with bisimulation |
+| [`61_coalgebraic_state_machines.py`](examples/61_coalgebraic_state_machines.py) | Coalgebra | Composable observation & evolution with bounded finite-trace equivalence |
 | [`62_morphogen_diffusion.py`](examples/62_morphogen_diffusion.py) | Diffusion | Graph-based spatially varying morphogen gradients |
 | [`63_optic_based_wiring.py`](examples/63_optic_based_wiring.py) | Optics+Wire | Prism routing, traversal transforms, composed optics |
 
@@ -1183,7 +1185,7 @@ All Spaces live under the [`huggingface/`](huggingface/) directory. Each contain
 |-------|------|-------------|
 | [`space`](huggingface/space) | Chaperone | Recover structured data from malformed LLM output |
 | [`space-membrane`](huggingface/space-membrane) | Prompt Injection Detector | Two-layer defense (Membrane + InnateImmunity) |
-| [`space-mitochondria`](huggingface/space-mitochondria) | Safe Calculator | AST-based math parsing — no injection risk |
+| [`space-mitochondria`](huggingface/space-mitochondria) | Safe Calculator | AST-based math parsing with whitelisted evaluation |
 | [`space-quorum`](huggingface/space-quorum) | Quorum Sensing | Multi-agent voting with 7 consensus strategies |
 | [`space-morphogen`](huggingface/space-morphogen) | Morphogen Gradients | Gradient-based agent coordination |
 | [`space-oscillator`](huggingface/space-oscillator) | Biological Oscillators | Waveform visualization of periodic task patterns |
@@ -1192,9 +1194,9 @@ All Spaces live under the [`huggingface/`](huggingface/) directory. Each contain
 | [`space-epiplexity`](huggingface/space-epiplexity) | Epistemic Stagnation Monitor | Detect pathological loops via Bayesian surprise |
 | [`space-feedback`](huggingface/space-feedback) | Feedback Loop Homeostasis | Negative feedback loop simulation |
 | [`space-cascade`](huggingface/space-cascade) | Signal Cascade | Multi-stage amplification with checkpoints |
-| [`space-plasmid`](huggingface/space-plasmid) | Plasmid Registry | Dynamic tool acquisition with capability gating (HGT) |
-| [`space-denature`](huggingface/space-denature) | Denaturation Layers | Wire-level anti-injection filters |
-| [`space-coalgebra`](huggingface/space-coalgebra) | Coalgebra | Composable state machines with bisimulation checking |
+| [`space-plasmid`](huggingface/space-plasmid) | Plasmid Registry | Dynamic tool acquisition with optional capability gating |
+| [`space-denature`](huggingface/space-denature) | Denaturation Layers | Wire-level denaturation filters for defense in depth |
+| [`space-coalgebra`](huggingface/space-coalgebra) | Coalgebra | Composable state machines with bounded equivalence checks |
 | [`space-diffusion`](huggingface/space-diffusion) | Morphogen Diffusion | Gradient formation on graph topologies |
 | [`space-optics`](huggingface/space-optics) | Wire Optics | Prism routing and traversal transforms |
 | [`space-epistemic`](huggingface/space-epistemic) | Epistemic Topology | Topology classification, error bounds, parallelism predictions |

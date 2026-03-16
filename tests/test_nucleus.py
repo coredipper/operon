@@ -27,7 +27,11 @@ class TestNucleus:
         with patch.dict(os.environ, {}, clear=True):
             os.environ.pop("ANTHROPIC_API_KEY", None)
             os.environ.pop("OPENAI_API_KEY", None)
-            nucleus = Nucleus()
+            with pytest.warns(
+                UserWarning,
+                match="No LLM API keys found. Using MockProvider.",
+            ):
+                nucleus = Nucleus()
             assert nucleus.provider.name == "mock"
 
     def test_nucleus_transcribe(self):

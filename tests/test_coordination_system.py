@@ -1,6 +1,6 @@
 """Tests for integrated Coordination System organelle."""
 import pytest
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from operon_ai.coordination.types import (
     Phase, CheckpointResult, ResourceLock, LockResult,
 )
@@ -164,9 +164,8 @@ class TestCoordinationSystem:
             max_operation_time=timedelta(seconds=1),
         )
 
-        from datetime import datetime
         ctx = system.start_operation("op1", "agent1")
-        ctx.created_at = datetime.utcnow() - timedelta(seconds=5)
+        ctx.created_at = datetime.now(UTC) - timedelta(seconds=5)
 
         events = system.run_maintenance()
 

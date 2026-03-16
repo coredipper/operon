@@ -6,7 +6,7 @@ A comprehensive guide to building, understanding, and integrating agents using t
 
 ## Table of Contents
 
-- [Theory: The Gene-Agent Isomorphism](#theory-the-gene-agent-isomorphism)
+- [Theory: Typed Interface Correspondence](#theory-typed-interface-correspondence)
 - [Core Concepts](#core-concepts)
 - [Multi-cellular Organization (v0.13+)](#multi-cellular-organization-v013)
 - [Agent Patterns](#agent-patterns)
@@ -16,32 +16,33 @@ A comprehensive guide to building, understanding, and integrating agents using t
 
 ---
 
-## Theory: The Gene-Agent Isomorphism
+## Theory: Typed Interface Correspondence
 
-Operon is grounded in a formal isomorphism between **genes** and **agents**. Both are polynomial functors: systems that consume typed inputs and produce typed outputs, constrained by internal state and energy budgets.
+Operon is grounded in a typed interface correspondence between **genes** and **agent capabilities**. Both can be modeled as polynomial functors: systems that consume typed inputs and produce typed outputs, constrained by internal state and energy budgets. This is a shared interface formalism, not a claim that biological and software systems are identical in mechanism or dynamics.
 
 The key insight: a **cell** contains thousands of genes working together. Therefore:
-- **Gene** ↔ **Agent** (individual processing unit)
-- **Cell** ↔ **Multi-agent system** (orchestrated collection)
+- **Gene** ↔ **Agent capability** (atomic processing unit)
+- **Cell** ↔ **Agent runtime** (structured composition of capabilities and shared organelles)
+- **Tissue** ↔ **Multi-agent subsystem** (orchestrated collection of runtimes)
 
 ### The Fundamental Mapping
 
 | Biological Concept | Software Equivalent | Mathematical Object |
 |-------------------|---------------------|---------------------|
-| **Gene** | **Agent** | Polynomial Functor |
+| **Gene** | **Agent capability** | Polynomial Functor |
 | Protein (output) | Action/Message | Output position |
 | Transcription Factor (input) | Observation/Prompt | Input direction |
 | Promoter Region | API Schema/Context Window | Lens (optic) |
 | Epigenetic Markers | RAG/Memory | State coalgebra |
 | Gene Expression | Inference/Generation | Morphism |
-| **Cell** | **Multi-agent system** | Composite functor |
+| **Cell** | **Agent runtime** | Composite functor |
 | Organelles | Shared infrastructure | Sub-functors |
 | ATP | Token budget | Resource monoid |
 | Signal Transduction | Data pipeline | Composition (∘) |
 | Plasmid / HGT | Dynamic tool acquisition | Tensor product (⊗) |
 | Denaturation | Wire-level sanitization | Natural transformation |
 | Cell Type | Agent phenotype | Expression profile |
-| Tissue | Agent group with boundary | Sub-diagram |
+| Tissue | Multi-agent subsystem with boundary | Sub-diagram |
 | Surface Markers (readout) | Observable output | Coalgebra (readout) |
 | Signal Transduction (update) | State evolution | Coalgebra (update) |
 | Morphogen Diffusion | Spatially varying coordination | Graph Laplacian |
@@ -50,13 +51,13 @@ The key insight: a **cell** contains thousands of genes working together. Theref
 
 ### The Cell as Orchestrator
 
-A biological cell is not a single processing unit—it's a factory containing:
-- ~20,000 protein-coding genes (agents)
+A biological cell is not a single processing unit-it's a factory containing:
+- ~20,000 protein-coding genes (capabilities)
 - Organelles that provide shared services (Nucleus for transcription, Ribosome for synthesis)
 - Signaling pathways that wire genes together (topologies)
 - Metabolic constraints that limit total activity (ATP budget)
 
-Similarly, an Operon "Cell" (`IntegratedCell`) orchestrates multiple agents with:
+Similarly, an Operon cell-like runtime (`IntegratedCell`) composes multiple capabilities with:
 - Shared organelles (Nucleus, Membrane, Lysosome)
 - Coordination systems (resource locking, deadlock prevention)
 - Surveillance systems (Byzantine agent detection)
@@ -66,12 +67,12 @@ Similarly, an Operon "Cell" (`IntegratedCell`) orchestrates multiple agents with
 
 Traditional agent frameworks optimize components—better prompts, larger models, more guardrails. Yet systems remain fragile because **topology determines behavior more than individual components**.
 
-Cells evolved network motifs—specific wiring patterns—that guarantee stability regardless of noise in individual elements:
+Cells evolved network motifs-specific wiring patterns-that can stabilize behavior when their wiring assumptions hold:
 
 - **Negative feedback loops** prevent runaway behavior
 - **Feed-forward filters** suppress transient errors
 - **Quorum gates** require consensus before action
-- **Metabolic constraints** guarantee termination
+- **Metabolic constraints** bound execution by coupling steps to a finite resource budget
 
 Operon provides these same patterns as composable building blocks.
 
@@ -97,7 +98,7 @@ This lifecycle is managed through:
 
 ### Failure Modes: Agentic Pathology
 
-Just as cells can develop diseases, agentic systems exhibit pathological failure modes. Operon classifies four primary pathologies based on their biological isomorphisms:
+Just as cells can develop diseases, agentic systems exhibit pathological failure modes. Operon classifies four primary pathologies using biologically inspired correspondences:
 
 | Pathology | Biological Disease | Agentic Failure | Treatment |
 |-----------|-------------------|-----------------|-----------|
@@ -338,7 +339,7 @@ Beyond single-cell agents, Operon supports higher-order composition:
 | **Metabolic-Epigenetic Coupling** | Starvation silences gene expression | Cost-gated memory retrieval | `state.metabolism.MetabolicAccessPolicy` |
 | **Cell Type Specialization** | Differential gene expression | Same Genome → different agent phenotypes | `multicell.CellType` |
 | **Tissue Architecture** | Cells form tissues with boundaries | Agent groups with capability isolation | `multicell.Tissue` |
-| **Plasmid Registry (HGT)** | Bacteria exchange plasmids | Dynamic tool acquisition with capability gating | `organelles.plasmid.PlasmidRegistry` |
+| **Plasmid Registry (HGT)** | Bacteria exchange plasmids | Dynamic tool acquisition with optional capability gating | `organelles.plasmid.PlasmidRegistry` |
 | **Denaturation Layers** | Protein denaturation disrupts structure | Wire-level sanitization against injection cascades | `core.denature.DenatureFilter` |
 
 #### Metabolic-Epigenetic Coupling
@@ -416,7 +417,7 @@ organism.add_module(tissue.as_module())
 
 #### Plasmid Registry (Horizontal Gene Transfer)
 
-Dynamic tool acquisition from a searchable registry (Paper §6.2, Eq. 12):
+Dynamic tool acquisition from a searchable registry (Paper §6.2). Capability gating is optional and applies when `allowed_capabilities` is configured:
 
 ```python
 from operon_ai import Mitochondria, Capability, Plasmid, PlasmidRegistry
@@ -474,7 +475,7 @@ diagram.connect(
         NormalizeFilter(),     # Lowercase, strip control chars, NFKC
     )),
 )
-# Agent B receives sanitized data — injection syntax is stripped
+# Agent B receives sanitized data — a defense-in-depth step, not a complete injection guarantee
 ```
 
 Available filters:
@@ -487,7 +488,7 @@ See `examples/56_*` through `examples/60_*` for runnable implementations.
 
 ### Coalgebraic State Machines (v0.14+)
 
-Agents as formal state machines with composable observation (readout) and evolution (update). Paper §4.2.
+Agents as formal state machines with composable observation (readout) and evolution (update). Paper §3.5.
 
 ```python
 from operon_ai.core.coalgebra import (
@@ -500,7 +501,7 @@ sm = StateMachine(state=0, coalgebra=counter)
 outputs = sm.run([1, 2, 3])  # outputs=[0, 1, 3], state=6
 print(sm.trace)  # Full transition history
 
-# Bisimulation: check observational equivalence
+# Bounded finite-trace equivalence check
 a = StateMachine(state=0, coalgebra=counter)
 b = StateMachine(state=0, coalgebra=counter)
 result = check_bisimulation(a, b, [1, 2, 3])
@@ -509,7 +510,7 @@ print(result.equivalent)  # True
 
 ### Morphogen Diffusion (v0.14+)
 
-Graph-based spatial model for morphogen concentrations. Agents at different positions experience different concentrations. Paper §6.4.
+Graph-based spatial model for morphogen concentrations. Agents at different positions experience different concentrations. Paper §6.5.2 / §6.5.3.
 
 ```python
 from operon_ai.coordination.diffusion import DiffusionField, MorphogenSource
@@ -533,7 +534,7 @@ gradient = field.get_local_gradient("B")
 
 ### Optic-Based Wiring (v0.14+)
 
-Wire-level optics for conditional routing and collection processing. Paper §3.3.
+Wire-level optics for conditional routing and collection processing. Paper §3.4.
 
 ```python
 from operon_ai.core.optics import PrismOptic, TraversalOptic, ComposedOptic

@@ -15,7 +15,7 @@ already follow this pattern implicitly.  This module makes it explicit,
 enabling:
 
 1. Composition  — parallel and sequential state machines
-2. Bisimulation — formal equivalence checking between machines
+2. Bounded equivalence — finite-trace observational checking between machines
 3. Tracing      — full transition history for debugging & audit
 
 Key types:
@@ -25,7 +25,7 @@ Key types:
 - SequentialCoalgebra — Pipeline: output of first feeds input of second
 - StateMachine    — Wrapper that manages current state and trace
 - TransitionRecord — Single step in a trace
-- BisimulationResult — Outcome of a bisimulation check
+- BisimulationResult — Outcome of a bounded equivalence check
 
 References:
 - Article Section 3.5: Epigenetics and State - The Coalgebra
@@ -88,7 +88,7 @@ class TransitionRecord(Generic[S, I, O]):
 
 @dataclass
 class BisimulationResult:
-    """Outcome of a bisimulation equivalence check."""
+    """Outcome of a bounded finite-trace equivalence check."""
 
     equivalent: bool
     witness: tuple[Any, ...] | None  # (input, output_a, output_b) on mismatch
@@ -263,11 +263,11 @@ def check_bisimulation(
     """
     Check observational equivalence of two machines over a sequence of inputs.
 
-    Two machines are bisimilar if, for every input in the sequence,
-    they produce the same output.  If they diverge, the first
-    diverging input is returned as a *witness*.
+    For this helper, two machines are treated as equivalent if, for every
+    input in the supplied sequence, they produce the same output. If they
+    diverge, the first diverging input is returned as a *witness*.
 
-    This is a *bounded* bisimulation check — it only tests the
+    This is a *bounded* equivalence check - it only tests the
     supplied input sequence, not all possible inputs.
 
     Args:

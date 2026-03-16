@@ -1,11 +1,16 @@
 """Immune Memory - threat pattern storage."""
 from __future__ import annotations
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Optional
 import json
 
 from .types import ThreatLevel, ResponseAction
+
+
+def utc_now() -> datetime:
+    """Return a timezone-aware UTC timestamp."""
+    return datetime.now(UTC)
 
 
 @dataclass
@@ -24,8 +29,8 @@ class ThreatSignature:
     threat_level: ThreatLevel
     effective_response: ResponseAction
 
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    last_accessed: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
+    last_accessed: datetime = field(default_factory=utc_now)
     recall_count: int = 0
 
     def matches(self, other: "ThreatSignature", partial: bool = False) -> bool:
@@ -44,7 +49,7 @@ class ThreatSignature:
 
     def touch(self) -> None:
         """Update access time and count."""
-        self.last_accessed = datetime.utcnow()
+        self.last_accessed = utc_now()
         self.recall_count += 1
 
     def to_dict(self) -> dict:
@@ -133,7 +138,7 @@ class ImmuneMemory:
 
     def prune_old(self, max_age: timedelta) -> int:
         """Remove signatures older than max_age. Returns count removed."""
-        cutoff = datetime.utcnow() - max_age
+        cutoff = utc_now() - max_age
         before = len(self.signatures)
         self.signatures = [s for s in self.signatures if s.created_at > cutoff]
         return before - len(self.signatures)

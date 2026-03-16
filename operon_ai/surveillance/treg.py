@@ -1,11 +1,16 @@
 """Regulatory T-Cell - tolerance and suppression."""
 from __future__ import annotations
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Callable, Optional
 
 from .types import ThreatLevel, ResponseAction
 from .tcell import ImmuneResponse
+
+
+def utc_now() -> datetime:
+    """Return a timezone-aware UTC timestamp."""
+    return datetime.now(UTC)
 
 
 @dataclass
@@ -63,7 +68,7 @@ class ToleranceRecord:
         """Check if agent was recently updated."""
         if self.last_update is None:
             return False
-        elapsed = datetime.utcnow() - self.last_update
+        elapsed = utc_now() - self.last_update
         return elapsed < self.update_tolerance_duration
 
     def record_inspection(self, clean: bool) -> None:
@@ -76,7 +81,7 @@ class ToleranceRecord:
 
     def mark_updated(self) -> None:
         """Mark agent as recently updated."""
-        self.last_update = datetime.utcnow()
+        self.last_update = utc_now()
 
     def is_stable(self, threshold: int) -> bool:
         """Check if agent has stable history."""
