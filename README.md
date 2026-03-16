@@ -5,16 +5,19 @@
 > *"Safety from structure, not just strings."*
 
 ![Status](https://img.shields.io/badge/status-experimental-orange)
-![Version](https://img.shields.io/badge/pypi-v0.17.1-blue)
+![Version](https://img.shields.io/badge/pypi-v0.18.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![Publish to PyPI](https://github.com/coredipper/operon/actions/workflows/publish.yml/badge.svg)](https://github.com/coredipper/operon/actions/workflows/publish.yml)
 
 > ⚠️ **Note:** Operon is a research-grade library serving as the reference implementation for the paper [*"Biological Motifs for Agentic Control."*](article/main.pdf) APIs are subject to change as the theoretical framework evolves.
 
+> If you're new to Operon, start with the pattern-first API: `reviewer_gate(...)`, `specialist_swarm(...)`, `advise_topology(...)`, and `skill_organism(...)`. The formal wiring and epistemic layers are still there when you need them.
+
 ---
 
 ## Contents
 
+- [Start Here: Pattern-First API](#-start-here-pattern-first-api)
 - [The Problem: Fragile Agents](#-the-problem-fragile-agents)
 - [Core Organelles](#-core-organelles)
 - [Multi-cellular Organization](#-multi-cellular-organization)
@@ -23,6 +26,118 @@
 - [Examples](#-examples)
 - [Hugging Face Spaces](#-hugging-face-spaces)
 - [Architecture](#-architecture)
+
+## 🚀 Start Here: Pattern-First API
+
+The fastest way to use Operon is no longer to start with wiring diagrams or the full biological vocabulary.
+
+Start with patterns:
+
+- `advise_topology(...)` when you want architecture guidance
+- `reviewer_gate(...)` when you want one worker plus a review bottleneck
+- `specialist_swarm(...)` when you want a centralized specialist decomposition
+- `skill_organism(...)` when you want a provider-bound workflow with cheap vs expensive stages and attachable telemetry
+
+### Get topology advice
+
+```python
+from operon_ai import advise_topology
+
+advice = advise_topology(
+    task_shape="sequential",
+    tool_count=2,
+    subtask_count=3,
+    error_tolerance=0.02,
+)
+
+print(advice.recommended_pattern)  # single_worker_with_reviewer
+print(advice.suggested_api)        # reviewer_gate(...)
+print(advice.rationale)
+```
+
+### Add a reviewer gate
+
+```python
+from operon_ai import reviewer_gate
+
+gate = reviewer_gate(
+    executor=lambda prompt: f"EXECUTE: {prompt}",
+    reviewer=lambda prompt, candidate: "safe" in prompt.lower(),
+)
+
+result = gate.run("Deploy safe schema migration")
+print(result.allowed)  # True
+print(result.output)   # EXECUTE: Deploy safe schema migration
+```
+
+### Run a specialist swarm
+
+```python
+from operon_ai import specialist_swarm
+
+swarm = specialist_swarm(
+    roles=["legal", "security", "finance"],
+    workers={
+        "legal": lambda task, role: f"{role}: contract risk is low",
+        "security": lambda task, role: f"{role}: controls look adequate",
+        "finance": lambda task, role: f"{role}: annual cost is acceptable",
+    },
+    aggregator=lambda outputs: " | ".join(outputs.values()),
+)
+
+result = swarm.run("Assess this vendor")
+print(result.aggregate)
+```
+
+### Build a multi-model skill organism
+
+```python
+from operon_ai import MockProvider, Nucleus, SkillStage, TelemetryProbe, skill_organism
+
+fast = Nucleus(provider=MockProvider(responses={
+    "return a deterministic routing label": "EXECUTE: billing",
+}))
+deep = Nucleus(provider=MockProvider(responses={
+    "billing": "EXECUTE: escalate to the billing review workflow",
+}))
+telemetry = TelemetryProbe()
+
+organism = skill_organism(
+    stages=[
+        SkillStage(name="intake", role="Normalizer", handler=lambda task: {"request": task}),
+        SkillStage(
+            name="router",
+            role="Classifier",
+            instructions="Return a deterministic routing label.",
+            mode="fixed",
+        ),
+        SkillStage(
+            name="planner",
+            role="Planner",
+            instructions="Use the routing result to propose the next action.",
+            mode="fuzzy",
+        ),
+    ],
+    fast_nucleus=fast,
+    deep_nucleus=deep,
+    components=[telemetry],
+)
+
+result = organism.run("Customer says the refund never posted.")
+print(result.final_output)
+print(result.shared_state["_operon_telemetry"])
+```
+
+### Drop down a layer when you need to
+
+The wrapper layer is additive. Every high-level pattern still exposes the structure underneath:
+
+- `gate.diagram`
+- `gate.analysis`
+- `swarm.diagram`
+- `swarm.analysis`
+
+So you can start with patterns, and only reach for `WiringDiagram`, `epistemic_analyze(...)`, optics, or the lower-level topology classes when the problem actually requires them.
 
 ## 🦠 The Problem: Fragile Agents
 
@@ -1037,6 +1152,13 @@ pip install operon-ai
 
 Explore the `examples/` directory for runnable demonstrations:
 
+### Pattern-First API
+
+| Example | System | Description |
+|---------|--------|-------------|
+| [`68_pattern_first_api.py`](examples/68_pattern_first_api.py) | Patterns | `advise_topology(...)`, `reviewer_gate(...)`, and `specialist_swarm(...)` |
+| [`69_skill_organism_runtime.py`](examples/69_skill_organism_runtime.py) | Skill Organism | Provider-bound stages, fast/deep routing, attachable telemetry |
+
 ### Basic Topologies
 
 | Example | Pattern | Description |
@@ -1157,6 +1279,8 @@ Explore the `examples/` directory for runnable demonstrations:
 |---------|--------|-------------|
 | [`65_diagram_optimization.py`](examples/65_diagram_optimization.py) | Analyzer+Optimizer | Cost analysis, rewriting passes, resource-aware execution |
 | [`67_epistemic_topology.py`](examples/67_epistemic_topology.py) | Epistemic Analyzer | Topology classification, error bounds, parallelism, recommendations |
+| [`68_pattern_first_api.py`](examples/68_pattern_first_api.py) | Patterns | Practical entry point: topology advice, reviewer gates, specialist swarms |
+| [`69_skill_organism_runtime.py`](examples/69_skill_organism_runtime.py) | Skill Organism | Multi-model skills with provider-bound stages and drop-in telemetry |
 
 Run any example:
 
@@ -1199,8 +1323,8 @@ All Spaces live under the [`huggingface/`](huggingface/) directory. Each contain
 | [`space-coalgebra`](huggingface/space-coalgebra) | Coalgebra | Composable state machines with bounded equivalence checks |
 | [`space-diffusion`](huggingface/space-diffusion) | Morphogen Diffusion | Gradient formation on graph topologies |
 | [`space-optics`](huggingface/space-optics) | Wire Optics | Prism routing and traversal transforms |
-| [`space-epistemic`](huggingface/space-epistemic) | Epistemic Topology | Topology classification, error bounds, parallelism predictions |
-| [`space-diagram-builder`](huggingface/space-diagram-builder) | Diagram Builder | Build custom diagrams via text with full epistemic analysis |
+| [`space-epistemic`](huggingface/space-epistemic) | Epistemic Topology | Practical pattern advice plus topology classification and theorem predictions |
+| [`space-diagram-builder`](huggingface/space-diagram-builder) | Diagram Builder | Start from reviewer-gate or specialist-swarm presets, then inspect/edit the diagram |
 
 ### Healing & Repair
 

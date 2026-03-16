@@ -5,7 +5,7 @@ Operon Epistemic Topology — Explorer (Gradio Demo)
 Three-tab demo:
   1. Topology Explorer — preset diagrams, classification, observation profiles
   2. Theorem Dashboard — error amplification, sequential penalty, speedup, density
-  3. Topology Advisor  — recommend topology from task constraints
+  3. Pattern Advisor   — recommend a practical coordination pattern from task constraints
 
 Run locally:
     pip install gradio operon-ai
@@ -22,6 +22,7 @@ _repo_root = Path(__file__).resolve().parent.parent
 if str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
+from operon_ai import advise_topology
 from operon_ai.core.denature import SummarizeFilter
 from operon_ai.core.epistemic import (
     TopologyClass,
@@ -30,7 +31,6 @@ from operon_ai.core.epistemic import (
     error_amplification_bound,
     observation_profiles,
     parallel_speedup,
-    recommend_topology,
     sequential_penalty,
     tool_density,
 )
@@ -244,6 +244,19 @@ def _topology_badge(tc):
     return _badge(tc.value.upper(), color)
 
 
+_PATTERN_COLORS = {
+    "single_worker": "#64748b",
+    "single_worker_with_reviewer": "#16a34a",
+    "specialist_swarm": "#7c3aed",
+}
+
+
+def _pattern_badge(pattern_name):
+    label = pattern_name.replace("_", " ").upper()
+    color = _PATTERN_COLORS.get(pattern_name, "#6366f1")
+    return _badge(label, color)
+
+
 def _progress_bar(value, max_val, label, color="#6366f1"):
     pct = min(value / max_val * 100, 100) if max_val > 0 else 0
     return (
@@ -440,25 +453,34 @@ def _run_theorems(preset_name, detection_rate, comm_cost_ratio):
     return cards
 
 
-# ── Tab 3: Topology Advisor ─────────────────────────────────────────
+# ── Tab 3: Pattern Advisor ──────────────────────────────────────────
 
 
-def _run_advisor(num_subtasks, subtasks_independent, num_tools, error_tolerance):
-    rec = recommend_topology(
-        num_subtasks=int(num_subtasks),
-        subtasks_independent=bool(subtasks_independent),
-        num_tools=int(num_tools),
+def _run_advisor(task_shape, num_subtasks, num_tools, error_tolerance):
+    task_shape_map = {
+        "Sequential / dependent": "sequential",
+        "Parallel / decomposable": "parallel",
+        "Mixed": "mixed",
+    }
+    advice = advise_topology(
+        task_shape=task_shape_map[task_shape],
+        subtask_count=int(num_subtasks),
+        tool_count=int(num_tools),
         error_tolerance=float(error_tolerance),
     )
-    tb = _topology_badge(rec.recommended)
+    pattern = _pattern_badge(advice.recommended_pattern)
+    tb = _topology_badge(advice.topology)
     return (
         f'<div style="padding:16px;border:2px solid #e5e7eb;border-radius:10px">'
-        f'<div style="font-size:1.3em;margin-bottom:12px">Recommended: {tb}</div>'
-        f'<div style="color:#374151;line-height:1.6">{rec.rationale}</div>'
+        f'<div style="font-size:1.3em;margin-bottom:12px">Recommended Pattern: {pattern}</div>'
+        f'<div style="margin-bottom:8px;color:#374151;font-size:0.95em">'
+        f'Suggested API: <code>{advice.suggested_api}</code></div>'
+        f'<div style="margin-bottom:12px;color:#374151;line-height:1.6">{advice.rationale}</div>'
+        f'<div style="margin-bottom:12px;color:#6b7280;font-size:0.9em">'
+        f'Underlying topology class: {tb}</div>'
         f'<div style="margin-top:12px;padding:10px;background:#f9fafb;border-radius:6px;'
         f'font-size:0.85em;color:#666">'
-        f'Inputs: {int(num_subtasks)} subtasks, '
-        f'{"independent" if subtasks_independent else "dependent"}, '
+        f'Inputs: {task_shape.lower()}, {int(num_subtasks)} subtasks, '
         f'{int(num_tools)} tools, '
         f'error tolerance={error_tolerance:.2f}'
         f'</div></div>'
@@ -473,7 +495,8 @@ def build_app() -> gr.Blocks:
         gr.Markdown(
             "# Epistemic Topology Explorer\n"
             "Analyze **wiring diagram topology** to predict error amplification, "
-            "coordination overhead, and parallelism bounds."
+            "coordination overhead, and parallelism bounds.\n\n"
+            "If you care about a practical answer first, start in **Pattern Advisor**."
         )
 
         with gr.Tabs():
@@ -541,22 +564,29 @@ def build_app() -> gr.Blocks:
                     outputs=[theorem_output],
                 )
 
-            # ── Tab 3: Topology Advisor ──────────────────────────────
-            with gr.TabItem("Topology Advisor"):
+            # ── Tab 3: Pattern Advisor ───────────────────────────────
+            with gr.TabItem("Pattern Advisor"):
                 gr.Markdown(
                     "Describe your task constraints and get a **recommended "
-                    "topology class** with rationale. No diagram needed — "
-                    "just task properties."
+                    "coordination pattern** with rationale. No diagram needed — "
+                    "just task properties.\n\n"
+                    "This is the shortest path if you want a practical answer "
+                    "before digging into observation profiles or theorem cards."
                 )
 
                 with gr.Row():
+                    adv_shape = gr.Dropdown(
+                        choices=[
+                            "Sequential / dependent",
+                            "Parallel / decomposable",
+                            "Mixed",
+                        ],
+                        value="Sequential / dependent",
+                        label="Task Shape",
+                    )
                     adv_subtasks = gr.Slider(
                         1, 20, value=5, step=1,
                         label="Number of Subtasks",
-                    )
-                    adv_independent = gr.Checkbox(
-                        value=False,
-                        label="Subtasks Independent?",
                     )
                 with gr.Row():
                     adv_tools = gr.Slider(
@@ -573,7 +603,7 @@ def build_app() -> gr.Blocks:
 
                 adv_btn.click(
                     fn=_run_advisor,
-                    inputs=[adv_subtasks, adv_independent, adv_tools, adv_error],
+                    inputs=[adv_shape, adv_subtasks, adv_tools, adv_error],
                     outputs=[adv_output],
                 )
 

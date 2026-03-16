@@ -64,6 +64,30 @@ _TOPOLOGY_COLORS = {
 # ── Presets ──────────────────────────────────────────────────────────
 
 PRESETS = {
+    "Reviewer Gate": {
+        "modules": (
+            "Executor:10:25\n"
+            "Reviewer:8:20\n"
+            "Sink:2:5"
+        ),
+        "wires": (
+            "Executor.out -> Sink.i1\n"
+            "Reviewer.out -> Sink.i2"
+        ),
+    },
+    "Specialist Swarm": {
+        "modules": (
+            "Legal:10:20\n"
+            "Security:10:20\n"
+            "Finance:10:20\n"
+            "Coordinator:6:10"
+        ),
+        "wires": (
+            "Legal.out -> Coordinator.i1\n"
+            "Security.out -> Coordinator.i2\n"
+            "Finance.out -> Coordinator.i3"
+        ),
+    },
     "Diamond Pipeline": {
         "modules": (
             "Dispatcher:5:8\n"
@@ -466,7 +490,10 @@ def build_app() -> gr.Blocks:
         gr.Markdown(
             "# Operon Diagram Builder\n"
             "Build **custom wiring diagrams** via text and get full "
-            "structural + epistemic analysis."
+            "structural + epistemic analysis.\n\n"
+            "If you want to start from something practical, pick a pattern preset "
+            "like **Reviewer Gate** or **Specialist Swarm**, then inspect or edit "
+            "the generated diagram."
         )
 
         with gr.Tabs():
@@ -474,15 +501,16 @@ def build_app() -> gr.Blocks:
             with gr.TabItem("Build & Analyze"):
                 gr.Markdown(
                     "Define modules as `Name:atp:latency[:cap1,cap2]` and "
-                    "wires as `Src.port -> Dst.port[:denature|:optic]`. "
-                    "Select a preset or write your own."
+                    "wires as `Src.port -> Dst.port[:denature|:optic]`.\n\n"
+                    "Practical path: start from a pattern preset, see the result, "
+                    "then edit the text only if you need more control."
                 )
 
                 with gr.Row():
                     build_preset = gr.Dropdown(
                         choices=list(PRESETS.keys()),
-                        value="Diamond Pipeline",
-                        label="Preset",
+                        value="Reviewer Gate",
+                        label="Preset / Starting Pattern",
                         scale=1,
                     )
 
@@ -490,13 +518,13 @@ def build_app() -> gr.Blocks:
                     build_modules = gr.Textbox(
                         label="Module Definitions (one per line)",
                         lines=6,
-                        value=PRESETS["Diamond Pipeline"]["modules"],
+                        value=PRESETS["Reviewer Gate"]["modules"],
                         placeholder="Name:atp:latency[:cap1,cap2]",
                     )
                     build_wires = gr.Textbox(
                         label="Wire Definitions (one per line)",
                         lines=6,
-                        value=PRESETS["Diamond Pipeline"]["wires"],
+                        value=PRESETS["Reviewer Gate"]["wires"],
                         placeholder="Src.port -> Dst.port[:denature|:optic]",
                     )
 
@@ -528,7 +556,9 @@ def build_app() -> gr.Blocks:
             with gr.TabItem("Compare Topologies"):
                 gr.Markdown(
                     "Define two diagrams side by side and compare their "
-                    "classification and theorem values."
+                    "classification and theorem values. A useful starting point "
+                    "is to compare a practical pattern preset against a more "
+                    "naive structure."
                 )
 
                 with gr.Row():
@@ -537,12 +567,12 @@ def build_app() -> gr.Blocks:
                         cmp_modules_a = gr.Textbox(
                             label="Modules",
                             lines=5,
-                            value=PRESETS["Diamond Pipeline"]["modules"],
+                            value=PRESETS["Reviewer Gate"]["modules"],
                         )
                         cmp_wires_a = gr.Textbox(
                             label="Wires",
                             lines=4,
-                            value=PRESETS["Diamond Pipeline"]["wires"],
+                            value=PRESETS["Reviewer Gate"]["wires"],
                         )
                     with gr.Column():
                         gr.Markdown("### Diagram B")
