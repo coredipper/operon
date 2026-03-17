@@ -5,7 +5,7 @@
 > *Safety from structure, not just strings.*
 
 ![Status](https://img.shields.io/badge/status-experimental-orange)
-![Version](https://img.shields.io/badge/pypi-v0.18.1-blue)
+![Version](https://img.shields.io/badge/pypi-v0.18.2-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![Publish to PyPI](https://github.com/coredipper/operon/actions/workflows/publish.yml/badge.svg)](https://github.com/coredipper/operon/actions/workflows/publish.yml)
 
@@ -116,23 +116,23 @@ The pattern layer is additive, not a separate framework. You can still inspect t
 
 ## Learn More
 
-Public docs now live at [banu.be/operon](https://banu.be/operon/). The tracked source for that docs shell lives under [`docs/site/`](docs/site/index.md).
+Public docs now live at [coredipper.github.io/operon](https://coredipper.github.io/operon/). The tracked source for that docs shell lives in the repo under [`docs/site/`](https://github.com/coredipper/operon/tree/main/docs/site).
 
-- [Getting Started](docs/site/getting-started.md)
-- [Pattern-First API](docs/site/pattern-first-api.md)
-- [Skill Organisms](docs/site/skill-organisms.md)
-- [Examples](docs/site/examples.md)
-- [Concepts and Architecture](docs/site/concepts.md)
-- [Theory and Papers](docs/site/theory.md)
-- [API Overview](docs/site/api.md)
-- [Hugging Face Spaces](docs/site/spaces.md)
-- [Release Notes](docs/site/releases.md)
+- [Getting Started](https://coredipper.github.io/operon/getting-started/)
+- [Pattern-First API](https://coredipper.github.io/operon/pattern-first-api/)
+- [Skill Organisms](https://coredipper.github.io/operon/skill-organisms/)
+- [Examples](https://coredipper.github.io/operon/examples/)
+- [Concepts and Architecture](https://coredipper.github.io/operon/concepts/)
+- [Theory and Papers](https://coredipper.github.io/operon/theory/)
+- [API Overview](https://coredipper.github.io/operon/api/)
+- [Hugging Face Spaces](https://coredipper.github.io/operon/spaces/)
+- [Release Notes](https://coredipper.github.io/operon/releases/)
 
 Direct links:
 
-- [Examples index](examples/README.md)
-- [Main whitepaper](article/main.pdf)
-- [Epistemic topology paper](article/paper1/main.pdf)
+- [Examples index](https://github.com/coredipper/operon/blob/main/examples/README.md)
+- [Main whitepaper](https://github.com/coredipper/operon/blob/main/article/main.pdf)
+- [Epistemic topology paper](https://github.com/coredipper/operon/blob/main/article/paper1/main.pdf)
 - [PyPI package](https://pypi.org/project/operon-ai/)
 - [Epistemic Topology Explorer](https://huggingface.co/spaces/coredipper/operon-epistemic)
 - [Diagram Builder](https://huggingface.co/spaces/coredipper/operon-diagram-builder)
