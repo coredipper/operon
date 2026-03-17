@@ -8,7 +8,7 @@ sdk_version: "6.5.1"
 app_file: app.py
 pinned: false
 license: mit
-short_description: Start from practical pattern presets or build diagrams and inspect topology
+short_description: Pattern presets, custom diagrams, topology analysis
 ---
 
 # Operon Diagram Builder

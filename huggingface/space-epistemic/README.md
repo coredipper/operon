@@ -8,7 +8,7 @@ sdk_version: "6.5.1"
 app_file: app.py
 pinned: false
 license: mit
-short_description: Pattern advice, topology classification, and theorem predictions
+short_description: Pattern advice, topology, and theorem predictions
 ---
 
 # Epistemic Topology Explorer
