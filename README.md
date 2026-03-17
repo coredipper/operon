@@ -5,7 +5,7 @@
 > *Safety from structure, not just strings.*
 
 ![Status](https://img.shields.io/badge/status-experimental-orange)
-![Version](https://img.shields.io/badge/pypi-v0.18.2-blue)
+![Version](https://img.shields.io/badge/pypi-v0.18.3-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![Publish to PyPI](https://github.com/coredipper/operon/actions/workflows/publish.yml/badge.svg)](https://github.com/coredipper/operon/actions/workflows/publish.yml)
 
@@ -116,17 +116,17 @@ The pattern layer is additive, not a separate framework. You can still inspect t
 
 ## Learn More
 
-Public docs now live at [coredipper.github.io/operon](https://coredipper.github.io/operon/). The tracked source for that docs shell lives in the repo under [`docs/site/`](https://github.com/coredipper/operon/tree/main/docs/site).
+Public docs now live at [banu.be/operon](https://banu.be/operon/). The tracked source for that docs shell lives in the repo under [`docs/site/`](https://github.com/coredipper/operon/tree/main/docs/site).
 
-- [Getting Started](https://coredipper.github.io/operon/getting-started/)
-- [Pattern-First API](https://coredipper.github.io/operon/pattern-first-api/)
-- [Skill Organisms](https://coredipper.github.io/operon/skill-organisms/)
-- [Examples](https://coredipper.github.io/operon/examples/)
-- [Concepts and Architecture](https://coredipper.github.io/operon/concepts/)
-- [Theory and Papers](https://coredipper.github.io/operon/theory/)
-- [API Overview](https://coredipper.github.io/operon/api/)
-- [Hugging Face Spaces](https://coredipper.github.io/operon/spaces/)
-- [Release Notes](https://coredipper.github.io/operon/releases/)
+- [Getting Started](https://banu.be/operon/getting-started/)
+- [Pattern-First API](https://banu.be/operon/pattern-first-api/)
+- [Skill Organisms](https://banu.be/operon/skill-organisms/)
+- [Examples](https://banu.be/operon/examples/)
+- [Concepts and Architecture](https://banu.be/operon/concepts/)
+- [Theory and Papers](https://banu.be/operon/theory/)
+- [API Overview](https://banu.be/operon/api/)
+- [Hugging Face Spaces](https://banu.be/operon/spaces/)
+- [Release Notes](https://banu.be/operon/releases/)
 
 Direct links:
 

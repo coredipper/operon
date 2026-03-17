@@ -14,7 +14,7 @@ Focus:
 Related writing:
 
 - [Medium: Operon v0.18](https://medium.com/@coredipper/operon-v0-18-the-point-where-it-started-feeling-usable-b284d7b7317f)
-- [Blog: Operon v0.18](https://coredipper.github.io/blog/operon-v018-pattern-first-skills/)
+- [Blog: Operon v0.18](https://banu.be/blog/operon-v018-pattern-first-skills/)
 
 ## v0.17
 
@@ -26,4 +26,4 @@ Focus:
 
 Related writing:
 
-- [Blog: Operon v0.17](https://coredipper.github.io/blog/operon-v017-epistemic-topology/)
+- [Blog: Operon v0.17](https://banu.be/blog/operon-v017-epistemic-topology/)

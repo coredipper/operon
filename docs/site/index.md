@@ -2,7 +2,7 @@
 
 Operon is a research-grade Python library for building biologically inspired AI agent systems with explicit control structure.
 
-This documentation tree is the source for the future `/operon` site on `coredipper.github.io`. The goal is to keep the long-form docs close to the codebase while keeping the repository `README` short and usable.
+This documentation tree is the source for the `/operon` site on `banu.be`. The goal is to keep the long-form docs close to the codebase while keeping the repository `README` short and usable.
 
 ## Start Here
 
