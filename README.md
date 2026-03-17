@@ -2,10 +2,10 @@
 
 **Biologically inspired architectures for more reliable AI agent systems**
 
-> *Safety from structure, not just strings.*
+> *From agent heuristics toward structural guarantees.*
 
 ![Status](https://img.shields.io/badge/status-experimental-orange)
-![Version](https://img.shields.io/badge/pypi-v0.18.4-blue)
+![Version](https://img.shields.io/badge/pypi-v0.18.5-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![Publish to PyPI](https://github.com/coredipper/operon/actions/workflows/publish.yml/badge.svg)](https://github.com/coredipper/operon/actions/workflows/publish.yml)
 
