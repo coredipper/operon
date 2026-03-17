@@ -116,7 +116,7 @@ The pattern layer is additive, not a separate framework. You can still inspect t
 
 ## Learn More
 
-Public docs now live at [coredipper.github.io/operon](https://coredipper.github.io/operon/). The tracked source for that docs shell lives under [`docs/site/`](docs/site/index.md).
+Public docs now live at [banu.be/operon](https://banu.be/operon/). The tracked source for that docs shell lives under [`docs/site/`](docs/site/index.md).
 
 - [Getting Started](docs/site/getting-started.md)
 - [Pattern-First API](docs/site/pattern-first-api.md)
