@@ -39,7 +39,10 @@ htmlcov/
 # Gradio
 .gradio/
 
-# Documentation (generated plans)
-docs/
+# Documentation
+# Keep internal plans/drafts ignored, but allow a tracked docs site source.
+docs/*
+!docs/site/
+!docs/site/**
 .beadhub
 .aw/
