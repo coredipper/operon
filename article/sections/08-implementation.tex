@@ -196,6 +196,25 @@ The \texttt{Tissue} class provides:
 \paragraph{Metabolic-Epigenetic Coupling.}
 The \texttt{HistoneStore} accepts an optional \texttt{energy\_gate} parameter pairing an \texttt{ATP\_Store} with a \texttt{MetabolicAccessPolicy}. When set, each \texttt{retrieve\_context()} call costs ATP. Under metabolic stress, only strongly embedded markers remain accessible; in the current implementation, marker strength serves as the cost proxy used to approximate Eq.~\eqref{eq:cost-gated-retrieval}.
 
+\subsection{Bi-Temporal Memory Implementation}
+\label{sec:bitemporal-impl}
+
+The bi-temporal coalgebra (\S3.5) and temporal epistemic framework (\S6.5) are implemented in \texttt{operon\_ai/memory/bitemporal.py} as a standalone append-only fact store. The design deliberately avoids mutation: facts are frozen dataclasses, corrections close old records and append new ones, and point-in-time queries are pure filters.
+
+\paragraph{Data Model.}
+A \texttt{BiTemporalFact} carries 12 fields: subject/predicate/value triple, valid-time interval (\texttt{valid\_from}, \texttt{valid\_to}), record-time interval (\texttt{recorded\_from}, \texttt{recorded\_to}), source provenance, confidence, tags, and an optional \texttt{supersedes} pointer to the corrected fact. All facts are \texttt{@dataclass(frozen=True)}---a deliberate departure from the mutable \texttt{MemoryEntry} used by \texttt{EpisodicMemory}, justified by the append-only semantics.
+
+\paragraph{Write Semantics.}
+Three operations modify the store: \texttt{record\_fact()} inserts a new active record; \texttt{correct\_fact()} closes the old record's transaction interval via \texttt{dataclasses.replace()} and appends a new record with \texttt{supersedes} set; \texttt{invalidate\_fact()} marks a record as no longer active. The internal \texttt{\_facts} list is append-only except for the in-place close of \texttt{recorded\_to} on corrected records.
+
+\paragraph{Retrieval.}
+Three query methods implement the temporal epistemic operators: \texttt{retrieve\_valid\_at(at)} filters for facts valid at world-time \texttt{at} with active records only; \texttt{retrieve\_known\_at(at)} filters for facts recorded by system-time \texttt{at}; \texttt{retrieve\_belief\_state(at\_valid, at\_record)} intersects both axes, reconstructing the system's belief at any historical coordinate.
+
+\paragraph{History and Audit.}
+\texttt{history(subject)} returns all facts (including closed) sorted by record time; \texttt{diff\_between(t1, t2, axis)} computes set differences on either axis; \texttt{timeline\_for(subject)} returns all facts sorted by valid time. Together, these support the audit question: ``what changed between $t_1$ and $t_2$, and on which axis?''
+
+This subsystem is intentionally decoupled from \texttt{HistoneStore} and \texttt{EpisodicMemory}. Integration bridges---converting histone marks to bi-temporal facts, or promoting episodic memories into the bi-temporal substrate---are planned for future work (\S9).
+
 \subsection{Coalgebraic State Machines Implementation}
 
 The coalgebra formalism (\S3.5) is made explicit and composable:

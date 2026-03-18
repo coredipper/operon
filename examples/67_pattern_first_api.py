@@ -1,5 +1,5 @@
 """
-Example 68: Pattern-First API
+Example 67: Pattern-First API
 =============================
 
 Demonstrates the thin coordination wrappers introduced after the

@@ -55,7 +55,7 @@ This distinction matters because it keeps the workflow logic and the runtime con
 
 Start with:
 
-- [`examples/69_skill_organism_runtime.py`](../../examples/69_skill_organism_runtime.py)
+- [`examples/68_skill_organism_runtime.py`](../../examples/68_skill_organism_runtime.py)
 
 That example shows:
 

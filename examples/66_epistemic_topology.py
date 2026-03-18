@@ -1,5 +1,5 @@
 """
-Example 67: Epistemic Topology of Multi-Cellular Agents
+Example 66: Epistemic Topology of Multi-Cellular Agents
 ========================================================
 
 Derives Kripke-style observation profiles from wiring diagram topology,

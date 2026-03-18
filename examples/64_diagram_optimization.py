@@ -1,5 +1,5 @@
 """
-Example 65: Diagram Optimization via Categorical Rewriting
+Example 64: Diagram Optimization via Categorical Rewriting
 ===========================================================
 
 Demonstrates cost-annotated wiring diagrams, static analysis,
