@@ -1,11 +1,14 @@
 """
-Memory: Epigenetic Memory Hierarchy for AI Agents
-=================================================
+Memory: Epigenetic and Bi-Temporal Memory for AI Agents
+=======================================================
 
 Provides a three-tier memory system inspired by biological memory:
 - Working Memory: Short-term, fast decay
 - Episodic Memory: Medium-term, learns from feedback
 - Long-term Memory: Persistent, no decay
+
+And a bi-temporal factual memory for tracking world-time vs system-time:
+- BiTemporalMemory: Append-only fact store with dual time axes
 """
 
 from .episodic import (
@@ -13,9 +16,21 @@ from .episodic import (
     MemoryEntry,
     EpisodicMemory,
 )
+from .bitemporal import (
+    BiTemporalFact,
+    BiTemporalQuery,
+    BiTemporalMemory,
+    FactSnapshot,
+    CorrectionResult,
+)
 
 __all__ = [
     "MemoryTier",
     "MemoryEntry",
     "EpisodicMemory",
+    "BiTemporalFact",
+    "BiTemporalQuery",
+    "BiTemporalMemory",
+    "FactSnapshot",
+    "CorrectionResult",
 ]

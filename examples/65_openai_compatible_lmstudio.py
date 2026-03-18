@@ -1,5 +1,5 @@
 """
-Example 66: OpenAI-Compatible Provider with LM Studio
+Example 65: OpenAI-Compatible Provider with LM Studio
 ======================================================
 
 Demonstrates using a local LLM (via LM Studio) through the
@@ -11,7 +11,7 @@ Prerequisites:
 - openai package installed: pip install openai
 
 Usage:
-    python examples/66_openai_compatible_lmstudio.py
+    python examples/65_openai_compatible_lmstudio.py
 """
 
 from operon_ai.organelles.nucleus import Nucleus

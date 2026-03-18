@@ -6,15 +6,15 @@ Operon now has many examples. New users should not start from the beginning and 
 
 Start here:
 
-- [`examples/68_pattern_first_api.py`](../../examples/68_pattern_first_api.py)
-- [`examples/69_skill_organism_runtime.py`](../../examples/69_skill_organism_runtime.py)
-- [`examples/67_epistemic_topology.py`](../../examples/67_epistemic_topology.py)
+- [`examples/67_pattern_first_api.py`](../../examples/67_pattern_first_api.py)
+- [`examples/68_skill_organism_runtime.py`](../../examples/68_skill_organism_runtime.py)
+- [`examples/66_epistemic_topology.py`](../../examples/66_epistemic_topology.py)
 
 Why this order:
 
-- `68` gives you the shortest path into the public wrappers
-- `69` shows the practical multi-model runtime
-- `67` shows the epistemic analysis layer underneath
+- `67` gives you the shortest path into the public wrappers
+- `68` shows the practical multi-model runtime
+- `66` shows the epistemic analysis layer underneath
 
 ## Full Example Index
 

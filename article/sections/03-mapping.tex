@@ -177,6 +177,16 @@ they produce identical output sequences. We write $M_1 \sim M_2$ when
 \end{equation}
 where $\mathrm{readout}^*$ denotes the lifted readout over the input sequence. A diverging input (witness) constitutes a proof of non-equivalence. This supports formal comparison of deterministic implementations within the input model considered here; stronger coinductive verification claims are left for future work.
 
+\paragraph{Temporal Coalgebra: Bi-Temporal State.}
+The coalgebra above models state at a single point in time. In practice, agents accumulate beliefs that may be corrected retroactively. We extend the state space to carry two independent time indices. Let $\mathcal{T} = (\mathbb{R}_{\geq 0}, \leq)$ denote a totally ordered time domain. A \emph{bi-temporal state} augments the coalgebra with a pair of interval-valued annotations:
+\begin{equation}
+S_{\mathrm{bt}} \;=\; S \times \underbrace{[\mathcal{T}, \mathcal{T} \cup \{\infty\})}_{\text{valid interval}} \times \underbrace{[\mathcal{T}, \mathcal{T} \cup \{\infty\})}_{\text{record interval}}
+\label{eq:bitemporal-state}
+\end{equation}
+where an open-ended interval $[t, \infty)$ denotes a currently active fact. The key invariant is \emph{append-only correction}: closing a record's transaction interval and appending a new record with a \texttt{supersedes} pointer, rather than mutating the original. This ensures that for any pair $(t_v, t_r)$, the \emph{belief state}---the set of facts valid at $t_v$ and known at $t_r$---is uniquely reconstructible by filtering on both intervals simultaneously.
+
+The readout function becomes time-parameterized: $\mathrm{readout}(s, t_v, t_r)$ returns only those facts whose valid interval contains $t_v$ and whose record interval contains $t_r$. This separates two questions that a single-time coalgebra conflates: ``what is true now?'' (valid-time query) versus ``what did the system believe at decision time?'' (bi-temporal query). The implementation (\S8.4) instantiates this as \texttt{BiTemporalMemory} with explicit \texttt{retrieve\_valid\_at}, \texttt{retrieve\_known\_at}, and \texttt{retrieve\_belief\_state} methods.
+
 \begin{figure}[h]
 \centering
 \begin{tabular}{@{}c@{\qquad}c@{}}

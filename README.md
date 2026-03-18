@@ -114,6 +114,10 @@ The pattern layer is additive, not a separate framework. You can still inspect t
 - `swarm.diagram`
 - `swarm.analysis`
 
+### Bi-Temporal Memory
+
+Append-only factual memory with dual time axes (valid time vs record time) for auditable decision-making. See the [Bi-Temporal Memory docs](https://banu.be/operon/bitemporal-memory/) and [examples 69–70](examples/).
+
 ## Learn More
 
 Public docs now live at [banu.be/operon](https://banu.be/operon/). The tracked source for that docs shell lives in the repo under [`docs/site/`](https://github.com/coredipper/operon/tree/main/docs/site).
@@ -121,6 +125,7 @@ Public docs now live at [banu.be/operon](https://banu.be/operon/). The tracked s
 - [Getting Started](https://banu.be/operon/getting-started/)
 - [Pattern-First API](https://banu.be/operon/pattern-first-api/)
 - [Skill Organisms](https://banu.be/operon/skill-organisms/)
+- [Bi-Temporal Memory](https://banu.be/operon/bitemporal-memory/)
 - [Examples](https://banu.be/operon/examples/)
 - [Concepts and Architecture](https://banu.be/operon/concepts/)
 - [Theory and Papers](https://banu.be/operon/theory/)

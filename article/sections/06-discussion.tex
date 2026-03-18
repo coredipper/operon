@@ -256,6 +256,28 @@ The wiring diagram's topology directly determines which epistemic operators a mu
 \item \textbf{Decentralized ($\otimes$ with $\mathrm{Tr}$ feedback):} Peer-to-peer wires create overlapping observation partitions. Each feedback round refines mutual knowledge toward common knowledge, at communication cost proportional to the number of rounds.
 \end{itemize}
 
+\subsubsection{Temporal Epistemics: What Did the Agent Know?}
+
+The epistemic framework above answers ``what does agent $i$ know \emph{now}?'' In practice, a more pressing question is: ``what did agent $i$ \emph{believe} at the time it made decision $d$?'' This is the domain of \emph{temporal epistemics}---the intersection of epistemic logic with bi-temporal data management~\cite{snodgrass2000temporal}.
+
+Consider a multi-stage workflow where facts are ingested at different times and may be corrected after a decision has already been made. A single-time epistemic model cannot distinguish between two scenarios: (1)~the world changed after the decision, and (2)~the agent's knowledge was corrected retroactively. Both appear as ``the agent knew $\varphi$ and now knows $\neg\varphi$,'' but their implications for audit are radically different.
+
+Bi-temporal memory resolves this by tracking two independent time axes for every fact:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Valid time} ($t_v$): when the fact is true in the world.
+\item \textbf{Record time} ($t_r$): when the system learned the fact.
+\end{itemize}
+The \emph{belief state} at coordinates $(t_v, t_r)$ is the set of facts whose valid interval contains $t_v$ and whose record interval contains $t_r$. Corrections are append-only: closing the old record's transaction interval and inserting a new record with a \texttt{supersedes} pointer preserves the full correction history without mutating prior state.
+
+This has direct implications for the epistemic operators defined above. The knowledge operator $K_i(\varphi)$ becomes time-parameterized: $K_i^{(t_v, t_r)}(\varphi)$ holds iff $\varphi$ is true in all states indistinguishable to agent $i$ \emph{given what was recorded by $t_r$ about validity at $t_v$}. Two key properties follow:
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Axes can disagree:} $K_i^{(t, \cdot)}(\varphi)$ (valid-time query) and $K_i^{(\cdot, t)}(\varphi)$ (record-time query) can produce different results for the same $t$. A fact may be valid in the world but not yet recorded, or recorded but not yet valid.
+\item \textbf{Belief-state reconstruction:} For any past decision at time $t_d$ with record horizon $t_r$, the belief state $K_i^{(t_d, t_r)}$ is exactly reconstructible from the append-only history. This is the foundation for compliance auditing: ``was the decision justified given what was known at the time?''
+\end{enumerate}
+
+The implementation (\S8.4) provides \texttt{retrieve\_belief\_state(at\_valid, at\_record)} as the programmatic interface to this temporal epistemic query. Examples~69--70 demonstrate the divergence between valid-time and record-time queries in compliance and audit scenarios.
+
 \subsubsection{Predictive Theorems for Multi-Agent Coordination}
 
 We now derive four results connecting topology class to coordination performance. Each theorem has a qualitative statement (universally true for the topology class) and an empirical calibration paragraph checking consistency with the architecture-level aggregates reported by Kim et al.~\cite{kim2025scaling}. These reported benchmark metrics are not literal plug-in values of the simplified theorem parameters.

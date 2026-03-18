@@ -1,5 +1,5 @@
 """
-Example 69: Skill Organism Runtime
+Example 68: Skill Organism Runtime
 =================================
 
 Demonstrates a provider-bound organism built from multiple stages:

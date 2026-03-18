@@ -233,6 +233,11 @@ from .memory import (
     MemoryTier,
     MemoryEntry,
     EpisodicMemory,
+    BiTemporalFact,
+    BiTemporalQuery,
+    BiTemporalMemory,
+    FactSnapshot,
+    CorrectionResult,
 )
 
 # =============================================================================
@@ -548,6 +553,11 @@ __all__ = [
     "MemoryTier",
     "MemoryEntry",
     "EpisodicMemory",
+    "BiTemporalFact",
+    "BiTemporalQuery",
+    "BiTemporalMemory",
+    "FactSnapshot",
+    "CorrectionResult",
 
     # Providers
     "LLMProvider",
