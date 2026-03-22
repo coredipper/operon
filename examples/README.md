@@ -31,6 +31,10 @@ reconstructing past belief states:
   multi-fact compliance audit with belief-state reconstruction
 - [`71_bitemporal_skill_organism.py`](71_bitemporal_skill_organism.py) —
   multi-stage organism with bi-temporal substrate for auditable shared facts
+- [`72_pattern_repository.py`](72_pattern_repository.py) —
+  register, retrieve, and score reusable collaboration pattern templates
+- [`73_watcher_component.py`](73_watcher_component.py) —
+  runtime monitoring with signal classification and retry/escalate/halt interventions
 
 ## Import Style Guide
 

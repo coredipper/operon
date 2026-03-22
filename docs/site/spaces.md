@@ -34,6 +34,16 @@ Use this to explore:
 - point-in-time queries that reconstruct belief state at any historical coordinate
 - temporal diffs and audit trails showing how corrections preserve full history
 
+### Watcher Dashboard
+
+- https://huggingface.co/spaces/coredipper/operon-watcher
+
+Use this to explore:
+
+- three-category signal classification (epistemic, somatic, species-specific)
+- intervention timeline showing retry, escalate, and halt decisions
+- configurable thresholds to see how watcher behavior changes
+
 ## How These Fit
 
 The current demos are best understood as interactive front doors into the same structure the library uses locally.

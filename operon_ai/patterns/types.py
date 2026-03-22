@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 from typing import Any, Callable, Protocol
 
 from ..core.epistemic import EpistemicAnalysis, TopologyClass, TopologyRecommendation
@@ -175,3 +176,25 @@ class SkillRuntimeComponent(Protocol):
 
     def on_run_complete(self, result: SkillRunResult, shared_state: dict[str, Any]) -> None:
         """Called once after the full organism run completes."""
+
+
+# --- Watcher intervention types (Phase 3: MASFly integration) ---
+
+WATCHER_STATE_KEY = "_watcher_intervention"
+
+
+class InterventionKind(Enum):
+    """Phase 1 watcher intervention actions."""
+
+    RETRY = "retry"
+    ESCALATE = "escalate"
+    HALT = "halt"
+
+
+@dataclass(frozen=True)
+class WatcherIntervention:
+    """Intervention request produced by the watcher and consumed by the run loop."""
+
+    kind: InterventionKind
+    stage_name: str
+    reason: str

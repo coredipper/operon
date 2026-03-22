@@ -237,6 +237,18 @@ When \texttt{substrate} is \texttt{None} (the default), the run loop is unchange
 
 The integration directly enables the audit question from \S6.5: given a completed run, \texttt{retrieve\_belief\_state(at\_valid=t, at\_record=t\_stage)} reconstructs exactly what the organism believed at the moment stage $X$ executed, even if subsequent stages corrected or invalidated facts. Example~71 demonstrates this with a four-stage enterprise workflow where an adversary stage corrects a research assumption, and the original belief state remains fully reconstructible.
 
+\paragraph{PatternLibrary Implementation.}
+\label{sec:pattern-library-impl}
+The \texttt{PatternLibrary} provides evolutionary memory for collaboration patterns. Templates are stored in an in-memory dictionary keyed by \texttt{template\_id}; run records accumulate in a list. The \texttt{top\_templates\_for(fingerprint)} method scores each template against a query fingerprint using a weighted combination of task-shape match (0.30), tool-count proximity (0.15), subtask-count proximity (0.15), required-role Jaccard overlap (0.20), tag Jaccard overlap (0.10), and historical success rate (0.10). This simple retrieval mechanism is intentionally stateless and deterministic, with richer adaptation (experience-driven scoring, decay) planned for Phase~4.
+
+\paragraph{WatcherComponent Implementation.}
+\label{sec:watcher-impl}
+The \texttt{WatcherComponent} is a \texttt{SkillRuntimeComponent} that classifies stage-level signals into three categories following Dupoux et al.~\cite{dupoux2026learning}: \emph{epistemic} (from \texttt{EpiplexityMonitor}), \emph{somatic} (from \texttt{ATP\_Store}), and \emph{species-specific} (from \texttt{ImmuneSystem}). All signal sources are optional; the watcher is a no-op when none are attached.
+
+After each stage, the watcher evaluates collected signals against configured thresholds and may write a \texttt{WatcherIntervention} to \texttt{shared\_state}. The run loop checks for this key after component hooks complete and before the \texttt{halt\_on\_block} guard. Three intervention kinds are supported: \texttt{RETRY} re-executes the current stage; \texttt{ESCALATE} re-executes with the deep nucleus; \texttt{HALT} breaks the stage loop. Component hooks are not re-invoked after retry or escalation, preventing recursive intervention loops.
+
+The intervention-count convergence signal operationalizes the BIGMAS finding~\cite{hao2026bigmas}: when the ratio of interventions to observed stages exceeds \texttt{max\_intervention\_rate} (default 0.5), the watcher emits a non-convergence HALT. Example~73 demonstrates all three intervention paths.
+
 \subsection{Coalgebraic State Machines Implementation}
 
 The coalgebra formalism (\S3.5) is made explicit and composable:
