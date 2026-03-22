@@ -349,6 +349,7 @@ from .patterns import (
     SkillRuntimeComponent,
     SkillStage,
     SkillStageResult,
+    SubstrateView,
     SpecialistSwarm,
     SpecialistSwarmConfig,
     SpecialistSwarmResult,
@@ -428,6 +429,7 @@ __all__ = [
     "SkillRuntimeComponent",
     "SkillStage",
     "SkillStageResult",
+    "SubstrateView",
     "SpecialistSwarm",
     "SpecialistSwarmConfig",
     "SpecialistSwarmResult",
@@ -633,4 +635,4 @@ __all__ = [
     "MetabolicAccessPolicy",
 ]
 
-__version__ = "0.18.5"
+__version__ = "0.19.1"

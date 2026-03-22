@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, Callable, Protocol
 
 from ..core.epistemic import EpistemicAnalysis, TopologyClass, TopologyRecommendation
+from ..memory.bitemporal import BiTemporalFact, BiTemporalQuery
 from ..core.types import ApprovalToken
 from ..core.wagent import WiringDiagram
 from ..core.wiring_runtime import ExecutionReport
@@ -95,6 +97,22 @@ class SkillStage:
     provider_config: ProviderConfig | None = None
     include_stage_outputs: bool = True
     include_shared_state: bool = True
+    # --- Substrate hooks (Phase 2: bi-temporal integration) ---
+    read_query: str | Callable[..., Any] | None = None
+    fact_extractor: Callable[..., Any] | None = None
+    emit_output_fact: bool = False
+    fact_tags: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class SubstrateView:
+    """Read-only envelope of facts retrieved from the bi-temporal substrate
+    before a stage runs.  Stage handlers receive this instead of the raw
+    BiTemporalMemory instance, keeping them decoupled from memory internals."""
+
+    facts: tuple[BiTemporalFact, ...]
+    query: BiTemporalQuery | str | Callable[..., Any] | None
+    record_time: datetime
 
 
 @dataclass(frozen=True)

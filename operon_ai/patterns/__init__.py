@@ -13,6 +13,7 @@ from .types import (
     SkillStageResult,
     SpecialistSwarmConfig,
     SpecialistSwarmResult,
+    SubstrateView,
     TelemetryEvent,
     TopologyAdvice,
 )
@@ -27,6 +28,7 @@ __all__ = [
     "SkillRuntimeComponent",
     "SkillStage",
     "SkillStageResult",
+    "SubstrateView",
     "TelemetryEvent",
     "TelemetryProbe",
     "skill_organism",

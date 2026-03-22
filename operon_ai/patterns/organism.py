@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime
 from inspect import signature
 from typing import Any
 
 from ..core.agent import BioAgent
 from ..core.types import ActionProtein, Signal
+from ..memory.bitemporal import BiTemporalFact, BiTemporalMemory, BiTemporalQuery
 from ..organelles.nucleus import Nucleus
 from ..state.metabolism import ATP_Store
 from .types import (
@@ -15,6 +17,7 @@ from .types import (
     SkillRuntimeComponent,
     SkillStage,
     SkillStageResult,
+    SubstrateView,
     TelemetryEvent,
 )
 
@@ -48,6 +51,53 @@ def _coerce_handler_output(value: Any, stage_name: str) -> ActionProtein:
 
 def _normalize_mode(mode: str) -> str:
     return mode.strip().lower().replace("-", "_")
+
+
+def _coerce_fact_events(
+    raw: Any,
+    default_source: str,
+    default_tags: tuple[str, ...],
+) -> list[dict[str, Any]]:
+    """Normalize a fact_extractor return value into a list of event dicts."""
+    if raw is None:
+        return []
+    if isinstance(raw, list):
+        out: list[dict[str, Any]] = []
+        for item in raw:
+            out.extend(_coerce_fact_events(item, default_source, default_tags))
+        return out
+    if isinstance(raw, BiTemporalFact):
+        return [{
+            "op": "assert",
+            "subject": raw.subject,
+            "predicate": raw.predicate,
+            "value": raw.value,
+            "valid_from": raw.valid_from,
+            "recorded_from": raw.recorded_from,
+            "source": raw.source or default_source,
+            "confidence": raw.confidence,
+            "tags": raw.tags or default_tags,
+        }]
+    if isinstance(raw, tuple) and len(raw) == 3:
+        subject, predicate, value = raw
+        return [{
+            "op": "assert",
+            "subject": subject,
+            "predicate": predicate,
+            "value": value,
+            "source": default_source,
+            "tags": default_tags,
+        }]
+    if isinstance(raw, dict):
+        event = dict(raw)
+        event.setdefault("op", "assert")
+        event.setdefault("source", default_source)
+        event.setdefault("tags", default_tags)
+        return [event]
+    raise TypeError(
+        f"fact_extractor returned unsupported type {type(raw).__name__}. "
+        "Expected dict, list, BiTemporalFact, tuple(subject, predicate, value), or None."
+    )
 
 
 @dataclass
@@ -159,6 +209,7 @@ class SkillOrganism:
     deep_alias: str = "deep"
     components: tuple[SkillRuntimeComponent, ...] = ()
     halt_on_block: bool = True
+    substrate: BiTemporalMemory | None = None
     _agents: dict[str, BioAgent] = field(default_factory=dict, init=False)
 
     def __post_init__(self) -> None:
@@ -194,11 +245,30 @@ class SkillOrganism:
             for component in self.components:
                 component.on_stage_start(stage, state, stage_outputs)
 
-            result = self._run_stage(stage, task, state, stage_outputs)
+            # --- Substrate read ---
+            substrate_view: SubstrateView | None = None
+            now: datetime | None = None
+            if self.substrate is not None and stage.read_query is not None:
+                now = datetime.now()
+                substrate_view = self._build_substrate_view(
+                    stage, task, state, stage_outputs, now,
+                )
+
+            result = self._run_stage(stage, task, state, stage_outputs, substrate_view)
             stage_results.append(result)
             stage_outputs[stage.name] = result.output
             state[stage.name] = result.output
             state["last_stage"] = stage.name
+
+            # --- Substrate write ---
+            if self.substrate is not None and (
+                stage.emit_output_fact or stage.fact_extractor
+            ):
+                if now is None:
+                    now = datetime.now()
+                self._write_substrate_facts(
+                    stage, task, result, state, stage_outputs, now,
+                )
 
             for component in self.components:
                 component.on_stage_result(stage, result, state, stage_outputs)
@@ -228,10 +298,14 @@ class SkillOrganism:
         task: str,
         shared_state: dict[str, Any],
         stage_outputs: dict[str, Any],
+        substrate_view: SubstrateView | None = None,
     ) -> SkillStageResult:
         if stage.handler is not None:
             protein = _coerce_handler_output(
-                _call_arity(stage.handler, task, dict(shared_state), dict(stage_outputs), stage),
+                _call_arity(
+                    stage.handler, task, dict(shared_state),
+                    dict(stage_outputs), stage, substrate_view,
+                ),
                 stage.name,
             )
             return SkillStageResult(
@@ -254,6 +328,8 @@ class SkillOrganism:
             metadata["shared_state"] = dict(shared_state)
         if stage.include_stage_outputs and stage_outputs:
             metadata["stage_outputs"] = dict(stage_outputs)
+        if substrate_view is not None:
+            metadata["substrate_view"] = substrate_view
 
         protein = agent.express(Signal(content=task, source="SkillOrganism", metadata=metadata))
         return SkillStageResult(
@@ -290,6 +366,118 @@ class SkillOrganism:
             )
         return alias
 
+    # -- Substrate helpers (Phase 2) -----------------------------------------
+
+    def _build_substrate_view(
+        self,
+        stage: SkillStage,
+        task: str,
+        shared_state: dict[str, Any],
+        stage_outputs: dict[str, Any],
+        now: datetime,
+    ) -> SubstrateView:
+        assert self.substrate is not None
+        query = stage.read_query
+
+        if callable(query):
+            resolved = _call_arity(query, task, shared_state, stage_outputs, self.substrate)
+            if isinstance(resolved, BiTemporalQuery):
+                facts = self.substrate.retrieve_known_at(
+                    at=resolved.at_record or now,
+                    subject=resolved.subject,
+                    predicate=resolved.predicate,
+                )
+                return SubstrateView(facts=tuple(facts), query=resolved, record_time=now)
+            if isinstance(resolved, list):
+                return SubstrateView(facts=tuple(resolved), query=None, record_time=now)
+            if isinstance(resolved, dict):
+                facts = self.substrate.retrieve_known_at(
+                    at=resolved.get("at_record", now),
+                    subject=resolved.get("subject"),
+                    predicate=resolved.get("predicate"),
+                )
+                return SubstrateView(facts=tuple(facts), query=query, record_time=now)
+            raise TypeError(
+                f"Stage '{stage.name}' read_query callable returned unsupported type "
+                f"{type(resolved).__name__}."
+            )
+
+        # String → subject filter
+        if isinstance(query, str):
+            facts = self.substrate.retrieve_known_at(at=now, subject=query)
+            return SubstrateView(
+                facts=tuple(facts),
+                query=BiTemporalQuery(subject=query, at_record=now),
+                record_time=now,
+            )
+
+        return SubstrateView(facts=(), query=None, record_time=now)
+
+    def _write_substrate_facts(
+        self,
+        stage: SkillStage,
+        task: str,
+        result: SkillStageResult,
+        shared_state: dict[str, Any],
+        stage_outputs: dict[str, Any],
+        now: datetime,
+    ) -> None:
+        assert self.substrate is not None
+
+        if stage.emit_output_fact:
+            self.substrate.record_fact(
+                subject=task,
+                predicate=stage.name,
+                value=result.output,
+                valid_from=now,
+                recorded_from=now,
+                source=stage.name,
+                tags=stage.fact_tags,
+            )
+
+        if stage.fact_extractor is not None:
+            raw = _call_arity(
+                stage.fact_extractor, task, shared_state, stage_outputs, stage, result,
+            )
+            events = _coerce_fact_events(raw, stage.name, stage.fact_tags)
+            for event in events:
+                self._apply_fact_event(event, now)
+
+    def _apply_fact_event(self, event: dict[str, Any], now: datetime) -> None:
+        assert self.substrate is not None
+        op = event.get("op", "assert")
+        if op == "assert":
+            self.substrate.record_fact(
+                subject=event["subject"],
+                predicate=event["predicate"],
+                value=event["value"],
+                valid_from=event.get("valid_from", now),
+                recorded_from=event.get("recorded_from", now),
+                source=event.get("source", "unknown"),
+                confidence=event.get("confidence", 1.0),
+                tags=event.get("tags", ()),
+            )
+        elif op == "correct":
+            self.substrate.correct_fact(
+                old_fact_id=event["old_fact_id"],
+                value=event["value"],
+                valid_from=event.get("valid_from", now),
+                recorded_from=event.get("recorded_from", now),
+                source=event.get("source", "unknown"),
+                confidence=event.get("confidence", 1.0),
+                tags=event.get("tags", ()),
+            )
+        elif op == "invalidate":
+            self.substrate.invalidate_fact(
+                fact_id=event["fact_id"],
+                recorded_to=event.get("recorded_to", now),
+            )
+        else:
+            raise ValueError(
+                f"Unknown fact event operation '{op}'. "
+                "Expected 'assert', 'correct', or 'invalidate'."
+            )
+
 
 def skill_organism(
     *,
@@ -302,6 +490,7 @@ def skill_organism(
     components: list[SkillRuntimeComponent] | tuple[SkillRuntimeComponent, ...] = (),
     budget: ATP_Store | None = None,
     halt_on_block: bool = True,
+    substrate: BiTemporalMemory | None = None,
 ) -> SkillOrganism:
     """
     Build a multi-stage organism that routes fixed vs fuzzy work by model tier.
@@ -345,4 +534,5 @@ def skill_organism(
         deep_alias=deep_alias,
         components=tuple(components),
         halt_on_block=halt_on_block,
+        substrate=substrate,
     )

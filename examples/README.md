@@ -29,6 +29,8 @@ reconstructing past belief states:
   record-time divergence with corrections
 - [`70_bitemporal_compliance_audit.py`](70_bitemporal_compliance_audit.py) —
   multi-fact compliance audit with belief-state reconstruction
+- [`71_bitemporal_skill_organism.py`](71_bitemporal_skill_organism.py) —
+  multi-stage organism with bi-temporal substrate for auditable shared facts
 
 ## Import Style Guide
 
