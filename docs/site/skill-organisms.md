@@ -38,28 +38,38 @@ Typical workflow:
 
 This lets one workflow behave more like a composed organism than a single prompt or an unstructured chain of scripts.
 
-## Shared State vs Components
+## Three-Layer Context Model
 
-`shared_state` is still useful for lightweight orchestration data.
+Stages within an organism have access to three layers of context, each with different lifetime and mutability:
 
-Attachable components are for concerns you do not want to hardcode into the workflow itself:
+1. **Topology** — the wiring diagram and observation structure. Structural and static within a single run.
+2. **Ephemeral** — the `shared_state` dictionary. Carries routing hints, counters, and stage outputs. Mutable, not historically reconstructible.
+3. **Bi-temporal** — an optional `BiTemporalMemory` substrate. Carries durable factual knowledge with dual time axes. Append-only and fully auditable.
 
-- telemetry
-- later: review
-- later: health or safety policies
-- later: richer memory or substrate layers
+### Ephemeral: shared_state
 
-This distinction matters because it keeps the workflow logic and the runtime concerns separable.
+`shared_state` is still useful for lightweight orchestration data — routing labels, counters, temporary outputs.
 
-## Recommended Example
+### Bi-temporal: substrate
 
-Start with:
+When you pass `substrate=BiTemporalMemory()` to `skill_organism(...)`, stages can:
 
-- [`examples/68_skill_organism_runtime.py`](../../examples/68_skill_organism_runtime.py)
+- **Read** facts via `read_query` — a subject string or callable returning a `BiTemporalQuery`
+- **Write** facts via `emit_output_fact=True` (auto-records output) or `fact_extractor` (custom event logic)
 
-That example shows:
+Stages receive a frozen `SubstrateView(facts, query, record_time)` rather than the raw memory instance, keeping them decoupled from memory internals.
 
-- deterministic intake
-- fast routing
-- deep planning
-- attached telemetry
+This enables the audit question: "what did the organism know when stage X made its decision?" — answered via `retrieve_belief_state()` on the append-only history.
+
+### Attachable components
+
+For cross-cutting concerns you do not want to hardcode:
+
+- telemetry (`TelemetryProbe`)
+- review and safety policies
+- custom lifecycle hooks via `SkillRuntimeComponent`
+
+## Recommended Examples
+
+- [`examples/68_skill_organism_runtime.py`](../../examples/68_skill_organism_runtime.py) — deterministic intake, fast routing, deep planning, attached telemetry
+- [`examples/71_bitemporal_skill_organism.py`](../../examples/71_bitemporal_skill_organism.py) — multi-stage workflow with bi-temporal substrate, belief-state reconstruction, and temporal diffs

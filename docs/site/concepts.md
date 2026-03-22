@@ -50,5 +50,7 @@ The lower-level layer models modules, ports, wires, and topology explicitly so t
 
 - `v0.17` made the epistemic topology story explicit
 - `v0.18` made the practical front door thinner
+- `v0.19` added bi-temporal memory with dual time axes
+- `v0.20` integrated bi-temporal memory into the SkillOrganism runtime as an auditable substrate, formalizing the three-layer context model (topology, ephemeral, bi-temporal)
 
-That is the current center of gravity of the project.
+The current center of gravity is pattern-first workflows with auditable state.

@@ -38,6 +38,7 @@ This is a lightweight map of the current library surface.
 
 - `operon_ai.memory`
   - episodic memory
+  - bi-temporal memory (`BiTemporalMemory`, `BiTemporalFact`, `BiTemporalQuery`, `SubstrateView`)
 
 ## Coordination / Surveillance / Healing
 

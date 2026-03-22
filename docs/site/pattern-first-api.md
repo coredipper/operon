@@ -53,7 +53,7 @@ Use this when you want one coherent workflow made of multiple stages:
 - deeper reasoning stages
 - attachable runtime components like telemetry
 
-This is the most practical new runtime in `v0.18`.
+Since `v0.20`, skill organisms also support an optional `BiTemporalMemory` substrate for auditable shared facts across stages. See [Skill Organisms](skill-organisms.md) for details.
 
 ## Escape Hatch
 

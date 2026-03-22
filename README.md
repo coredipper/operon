@@ -5,7 +5,7 @@
 > *From agent heuristics toward structural guarantees.*
 
 ![Status](https://img.shields.io/badge/status-experimental-orange)
-![Version](https://img.shields.io/badge/pypi-v0.18.5-blue)
+![Version](https://img.shields.io/badge/pypi-v0.20.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![Publish to PyPI](https://github.com/coredipper/operon/actions/workflows/publish.yml/badge.svg)](https://github.com/coredipper/operon/actions/workflows/publish.yml)
 
@@ -116,7 +116,38 @@ The pattern layer is additive, not a separate framework. You can still inspect t
 
 ### Bi-Temporal Memory
 
-Append-only factual memory with dual time axes (valid time vs record time) for auditable decision-making. See the [Bi-Temporal Memory docs](https://banu.be/operon/bitemporal-memory/) and [examples 69–70](examples/).
+Append-only factual memory with dual time axes (valid time vs record time) for auditable decision-making. Stages can read from and write to a shared `BiTemporalMemory` substrate, enabling belief-state reconstruction ("what did the organism know when stage X decided?").
+
+```python
+from operon_ai import BiTemporalMemory, SkillStage, skill_organism
+
+mem = BiTemporalMemory()
+
+organism = skill_organism(
+    stages=[
+        SkillStage(
+            name="research",
+            role="Researcher",
+            handler=lambda task: {"risk": "medium", "sector": "fintech"},
+            emit_output_fact=True,
+        ),
+        SkillStage(
+            name="strategist",
+            role="Strategist",
+            handler=lambda task, state, outputs, stage, view: f"Recommend based on {len(view.facts)} facts",
+            read_query="acct:1",
+        ),
+    ],
+    fast_nucleus=fast,
+    deep_nucleus=deep,
+    substrate=mem,
+)
+
+result = organism.run("Review account acct:1")
+print(mem.history())  # full append-only audit trail
+```
+
+See the [Bi-Temporal Memory docs](https://banu.be/operon/bitemporal-memory/), [examples 69–71](examples/), and the [interactive explorer](https://huggingface.co/spaces/coredipper/operon-bitemporal).
 
 ## Learn More
 
@@ -141,6 +172,7 @@ Direct links:
 - [PyPI package](https://pypi.org/project/operon-ai/)
 - [Epistemic Topology Explorer](https://huggingface.co/spaces/coredipper/operon-epistemic)
 - [Diagram Builder](https://huggingface.co/spaces/coredipper/operon-diagram-builder)
+- [Bi-Temporal Memory Explorer](https://huggingface.co/spaces/coredipper/operon-bitemporal)
 
 ## Contributing
 

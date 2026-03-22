@@ -90,13 +90,29 @@ This means any past belief state is always reconstructible — the foundation fo
 | `BiTemporalMemory` | Mutable store with append-only write semantics |
 | `FactSnapshot` | Query result container |
 | `CorrectionResult` | Result of `correct_fact()` — old fact, new fact, correction time |
+| `SubstrateView` | Frozen read-only envelope of facts for stage handlers (v0.20.0) |
 
-All five are exported from the top level: `from operon_ai import BiTemporalMemory, BiTemporalFact, ...`
+All types are exported from the top level: `from operon_ai import BiTemporalMemory, BiTemporalFact, SubstrateView, ...`
+
+## SkillOrganism Integration
+
+Since v0.20.0, `BiTemporalMemory` can serve as a shared substrate for `SkillOrganism` workflows. Pass `substrate=BiTemporalMemory()` to `skill_organism(...)`, then use per-stage hooks to read and write facts:
+
+| `SkillStage` field | Purpose |
+|---|---|
+| `read_query` | Subject string or callable → `SubstrateView` injected before stage runs |
+| `fact_extractor` | Callable → emits assert/correct/invalidate events after stage runs |
+| `emit_output_fact` | Convenience flag: auto-records `(task, stage.name, output)` |
+| `fact_tags` | Default tags applied to all facts emitted by this stage |
+
+Handlers receive the `SubstrateView` as an additional argument (via arity-aware dispatch — existing handlers are unaffected). See [Skill Organisms](skill-organisms.md) for the full three-layer context model.
 
 ## Examples
 
 - [`examples/69_bitemporal_memory.py`](../../examples/69_bitemporal_memory.py) — core valid-time vs record-time divergence with corrections
 - [`examples/70_bitemporal_compliance_audit.py`](../../examples/70_bitemporal_compliance_audit.py) — multi-fact compliance audit with belief-state reconstruction
+- [`examples/71_bitemporal_skill_organism.py`](../../examples/71_bitemporal_skill_organism.py) — multi-stage organism with substrate, belief-state reconstruction, and temporal diffs
+- [Bi-Temporal Memory Explorer](https://huggingface.co/spaces/coredipper/operon-bitemporal) — interactive HuggingFace Space
 
 ## Relationship to other memory systems
 
