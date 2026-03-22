@@ -2,6 +2,24 @@
 
 This page tracks the recent direction of the project.
 
+## v0.21.0
+
+Focus:
+
+- pattern repository for reusable collaboration templates
+- watcher component with three-category signal taxonomy
+- run-loop intervention mechanism (retry, escalate, halt)
+
+New:
+
+- `PatternLibrary`, `TaskFingerprint`, `PatternTemplate`, `PatternRunRecord`
+- `WatcherComponent`, `WatcherConfig`, `WatcherSignal`, `SignalCategory`
+- `InterventionKind`, `WatcherIntervention` — run-loop intervention types
+- `examples/72_pattern_repository.py` — register, score, and retrieve templates
+- `examples/73_watcher_component.py` — signal classification and interventions
+- [Watcher Dashboard Space](https://huggingface.co/spaces/coredipper/operon-watcher)
+- Article updates: adaptive assembly (§2, §6), watcher + pattern library (§8)
+
 ## v0.20.0
 
 Focus:

@@ -232,6 +232,12 @@ The \texttt{BiTemporalMemory} substrate carries durable factual knowledge with d
 
 The three layers compose cleanly: topology constrains visibility, ephemeral state carries execution context, and bi-temporal memory provides the audit trail. A stage reads its \texttt{SubstrateView}---a frozen envelope of facts known at the current record-time horizon---and writes factual events (assertions, corrections, invalidations) back to the substrate after execution. This separation ensures that the question ``what did the organism know when stage $X$ made its decision?'' is always answerable from the append-only history, independent of subsequent corrections or ephemeral state mutations.
 
+\paragraph{Adaptive Structure Selection.}
+\label{sec:adaptive-structure}
+The \texttt{advise\_topology()} function (\S\ref{sec:multi-cellular}) provides a static prior: given task shape and operating constraints, recommend a topology. The \texttt{PatternLibrary} extends this with experiential refinement. Successful collaboration patterns are stored as \texttt{PatternTemplate} instances, each paired with a \texttt{TaskFingerprint}---a feature vector comprising task shape, tool count, subtask count, required roles, and tags. Template retrieval uses a weighted scoring function (task-shape match, tool/subtask proximity, role Jaccard overlap, historical success rate) to rank candidates. This is the evo-devo outer loop described by Dupoux et al.~\cite{dupoux2026learning}: the genome ($\phi$) is the pattern template; evolutionary selection is the run-record scoring.
+
+The \texttt{WatcherComponent} implements System~M as a \texttt{SkillRuntimeComponent} that observes stage execution and classifies signals into three categories: \emph{epistemic} (epiplexity, prediction error), \emph{somatic} (ATP/metabolic state), and \emph{species-specific} (immune threats). When signals cross configured thresholds, the watcher writes a \texttt{WatcherIntervention} (retry, escalate, or halt) to \texttt{shared\_state}, which the run loop consumes after component hooks complete. Crucially, the watcher monitors its own intervention rate: when the ratio of cumulative interventions to observed stages exceeds a configurable threshold, it emits a non-convergence HALT signal. This operationalizes the finding of Hao et al.~\cite{hao2026bigmas} that failing multi-agent runs systematically require more routing decisions than successful ones.
+
 \subsubsection{Epistemic Topology of Wiring Diagrams}
 \label{sec:epistemic-topology}
 

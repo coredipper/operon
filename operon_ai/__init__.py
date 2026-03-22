@@ -340,10 +340,15 @@ from .state.metabolism import MetabolicAccessPolicy
 # Pattern-First API
 # =============================================================================
 from .patterns import (
+    InterventionKind,
+    PatternLibrary,
+    PatternRunRecord,
+    PatternTemplate,
     ReviewerGate,
     ReviewerGateConfig,
     ReviewerGateResult,
     reviewer_gate,
+    SignalCategory,
     SkillOrganism,
     SkillRunResult,
     SkillRuntimeComponent,
@@ -354,9 +359,14 @@ from .patterns import (
     SpecialistSwarmConfig,
     SpecialistSwarmResult,
     specialist_swarm,
+    TaskFingerprint,
     TelemetryEvent,
     TelemetryProbe,
     TopologyAdvice,
+    WatcherComponent,
+    WatcherConfig,
+    WatcherIntervention,
+    WatcherSignal,
     advise_topology,
     skill_organism,
 )
@@ -420,10 +430,15 @@ __all__ = [
     "ExecutionReport",
     "DiagramExecutor",
     # Pattern-First API
+    "InterventionKind",
+    "PatternLibrary",
+    "PatternRunRecord",
+    "PatternTemplate",
     "ReviewerGate",
     "ReviewerGateConfig",
     "ReviewerGateResult",
     "reviewer_gate",
+    "SignalCategory",
     "SkillOrganism",
     "SkillRunResult",
     "SkillRuntimeComponent",
@@ -434,9 +449,14 @@ __all__ = [
     "SpecialistSwarmConfig",
     "SpecialistSwarmResult",
     "specialist_swarm",
+    "TaskFingerprint",
     "TelemetryEvent",
     "TelemetryProbe",
     "TopologyAdvice",
+    "WatcherComponent",
+    "WatcherConfig",
+    "WatcherIntervention",
+    "WatcherSignal",
     "advise_topology",
     "skill_organism",
 
@@ -635,4 +655,4 @@ __all__ = [
     "MetabolicAccessPolicy",
 ]
 
-__version__ = "0.20.1"
+__version__ = "0.21.0"

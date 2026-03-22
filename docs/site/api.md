@@ -9,6 +9,9 @@ This is a lightweight map of the current library surface.
   - `reviewer_gate(...)`
   - `specialist_swarm(...)`
   - `skill_organism(...)`
+  - `PatternLibrary`, `TaskFingerprint`, `PatternTemplate`, `PatternRunRecord`
+  - `WatcherComponent`, `WatcherConfig`, `WatcherSignal`, `SignalCategory`
+  - `InterventionKind`, `WatcherIntervention`
 
 ## Core Runtime and Analysis
 

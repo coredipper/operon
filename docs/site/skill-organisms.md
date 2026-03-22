@@ -66,6 +66,7 @@ This enables the audit question: "what did the organism know when stage X made i
 For cross-cutting concerns you do not want to hardcode:
 
 - telemetry (`TelemetryProbe`)
+- runtime monitoring (`WatcherComponent`) — classifies signals as epistemic/somatic/species-specific, can retry/escalate/halt
 - review and safety policies
 - custom lifecycle hooks via `SkillRuntimeComponent`
 
@@ -73,3 +74,4 @@ For cross-cutting concerns you do not want to hardcode:
 
 - [`examples/68_skill_organism_runtime.py`](../../examples/68_skill_organism_runtime.py) — deterministic intake, fast routing, deep planning, attached telemetry
 - [`examples/71_bitemporal_skill_organism.py`](../../examples/71_bitemporal_skill_organism.py) — multi-stage workflow with bi-temporal substrate, belief-state reconstruction, and temporal diffs
+- [`examples/73_watcher_component.py`](../../examples/73_watcher_component.py) — runtime monitoring with signal classification and retry/escalate/halt interventions

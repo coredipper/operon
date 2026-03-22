@@ -13,12 +13,15 @@ from ..memory.bitemporal import BiTemporalFact, BiTemporalMemory, BiTemporalQuer
 from ..organelles.nucleus import Nucleus
 from ..state.metabolism import ATP_Store
 from .types import (
+    InterventionKind,
     SkillRunResult,
     SkillRuntimeComponent,
     SkillStage,
     SkillStageResult,
     SubstrateView,
     TelemetryEvent,
+    WATCHER_STATE_KEY,
+    WatcherIntervention,
 )
 
 
@@ -273,6 +276,29 @@ class SkillOrganism:
             for component in self.components:
                 component.on_stage_result(stage, result, state, stage_outputs)
 
+            # --- Watcher intervention check ---
+            _intervention = state.pop(WATCHER_STATE_KEY, None)
+            if isinstance(_intervention, WatcherIntervention):
+                if _intervention.kind == InterventionKind.RETRY:
+                    retry_result = self._run_stage(
+                        stage, task, state, stage_outputs, substrate_view,
+                    )
+                    stage_results[-1] = retry_result
+                    stage_outputs[stage.name] = retry_result.output
+                    state[stage.name] = retry_result.output
+                    result = retry_result
+                elif _intervention.kind == InterventionKind.ESCALATE:
+                    if stage.handler is None and self.deep_alias in self.nuclei:
+                        escalated = self._run_stage_escalated(
+                            stage, task, state, stage_outputs, substrate_view,
+                        )
+                        stage_results[-1] = escalated
+                        stage_outputs[stage.name] = escalated.output
+                        state[stage.name] = escalated.output
+                        result = escalated
+                elif _intervention.kind == InterventionKind.HALT:
+                    break
+
             if self.halt_on_block and result.action_type in {"BLOCK", "FAILURE"}:
                 break
 
@@ -365,6 +391,37 @@ class SkillOrganism:
                 f"Stage '{stage.name}' resolved to unknown nucleus alias '{alias}'"
             )
         return alias
+
+    # -- Watcher helpers (Phase 3) ------------------------------------------
+
+    def _run_stage_escalated(
+        self,
+        stage: SkillStage,
+        task: str,
+        shared_state: dict[str, Any],
+        stage_outputs: dict[str, Any],
+        substrate_view: SubstrateView | None = None,
+    ) -> SkillStageResult:
+        """Re-run an agent-backed stage using the deep nucleus."""
+        deep_nucleus = self.nuclei[self.deep_alias]
+        # Temporarily swap the agent to use the deep nucleus
+        original_agent = self._agents.get(stage.name)
+        self._agents[stage.name] = BioAgent(
+            name=stage.name,
+            role=stage.role,
+            atp_store=self.budget,
+            nucleus=deep_nucleus,
+            instructions=stage.instructions,
+            provider_config=stage.provider_config,
+            tool_mitochondria=stage.tools,
+            silent=True,
+        )
+        try:
+            return self._run_stage(stage, task, shared_state, stage_outputs, substrate_view)
+        finally:
+            # Restore original agent
+            if original_agent is not None:
+                self._agents[stage.name] = original_agent
 
     # -- Substrate helpers (Phase 2) -----------------------------------------
 
