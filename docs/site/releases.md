@@ -2,7 +2,7 @@
 
 This page tracks the recent direction of the project.
 
-## v0.19.1
+## v0.20.0
 
 Focus:
 
