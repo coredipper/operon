@@ -215,7 +215,25 @@ The reference implementation enforces a capability ceiling at the tissue level: 
 \paragraph{Morphogen Diffusion in Tissues.}
 Tissues optionally embed a \texttt{DiffusionField} (Eq.~\eqref{eq:morphogen-diffusion}). When cells are added, they become nodes in the diffusion graph; when cells are connected, edges are added. The tissue's \texttt{diffuse()} method runs the simulation, and each cell reads its local gradient via \texttt{get\_cell\_gradient()}. This couples the organizational structure (wiring topology) to the coordination mechanism (morphogen concentrations), creating a biologically faithful model where position in the tissue influences cell behavior.
 
+\paragraph{Three-Layer Context Model.}
+\label{par:three-layer-context}
+The \texttt{SkillOrganism} runtime (\S\ref{sec:substrate-integration}) surfaces a recurring architectural question: when multiple stages share and revise knowledge during a workflow, which state is ephemeral coordination glue and which is durable auditable knowledge? We distinguish three layers of context, each with different lifetime and mutability semantics:
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Topology layer.}
+The wiring diagram $G = (V, E)$ and its optics determine who can directly observe whom. This layer is structural: it does not change within a single organism run. Epistemic properties ($K_i$, common knowledge) derive from the observation functions $\mathrm{obs}_i$ defined over this graph (\S\ref{sec:epistemic-topology}).
+
+\item \textbf{Ephemeral layer.}
+The \texttt{shared\_state} dictionary carries routing hints, counters, morphogen concentrations $c_v^t(m)$, and temporary stage outputs. Its lifetime is one organism run; it is mutable and not historically reconstructible. This is the coordination scratchpad.
+
+\item \textbf{Bi-temporal layer.}
+The \texttt{BiTemporalMemory} substrate carries durable factual knowledge with dual time axes: valid time $t_v$ (when the fact is true in the world) and record time $t_r$ (when the system learned the fact). Facts are append-only: corrections close old records and insert new ones with \texttt{supersedes} pointers. The belief-state operator $K_i^{(t_v, t_r)}$ is exactly reconstructible at any historical coordinate.
+\end{enumerate}
+
+The three layers compose cleanly: topology constrains visibility, ephemeral state carries execution context, and bi-temporal memory provides the audit trail. A stage reads its \texttt{SubstrateView}---a frozen envelope of facts known at the current record-time horizon---and writes factual events (assertions, corrections, invalidations) back to the substrate after execution. This separation ensures that the question ``what did the organism know when stage $X$ made its decision?'' is always answerable from the append-only history, independent of subsequent corrections or ephemeral state mutations.
+
 \subsubsection{Epistemic Topology of Wiring Diagrams}
+\label{sec:epistemic-topology}
 
 The preceding subsections define \textit{what} agents communicate (morphogens, typed signals) and \textit{how} they are organized (tissues, organs). We now formalize \textit{what agents know}---deriving epistemic properties directly from the wiring diagram's observation structure, without introducing new primitives. This follows the Operon philosophy: safety (and knowledge) from structure, not strings.
 

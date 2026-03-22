@@ -2,7 +2,24 @@
 
 This page tracks the recent direction of the project.
 
-## v0.19
+## v0.20.0
+
+Focus:
+
+- bi-temporal memory integration with SkillOrganism
+- three-layer context model (topology, ephemeral, bi-temporal)
+- HuggingFace Space for bi-temporal memory explorer
+
+New:
+
+- `SubstrateView` — frozen read-only envelope for substrate queries
+- `SkillStage` fields: `read_query`, `fact_extractor`, `emit_output_fact`, `fact_tags`
+- `SkillOrganism.substrate` — optional `BiTemporalMemory` for auditable shared facts
+- `examples/71_bitemporal_skill_organism.py` — enterprise workflow with substrate
+- [Bi-Temporal Memory Space](https://huggingface.co/spaces/coredipper/operon-bitemporal)
+- Article updates: three-layer context model (§6), substrate integration (§8)
+
+## v0.19.0
 
 Focus:
 

@@ -215,6 +215,28 @@ Three query methods implement the temporal epistemic operators: \texttt{retrieve
 
 This subsystem is intentionally decoupled from \texttt{HistoneStore} and \texttt{EpisodicMemory}. Integration bridges---converting histone marks to bi-temporal facts, or promoting episodic memories into the bi-temporal substrate---are planned for future work (\S9).
 
+\paragraph{SkillOrganism Substrate Integration.}
+\label{sec:substrate-integration}
+The \texttt{SkillOrganism} runtime (\S\ref{sec:multi-cellular}) composes the three-layer context model described in \S\ref{par:three-layer-context}. An optional \texttt{substrate: BiTemporalMemory} parameter attaches a bi-temporal fact store to the organism. When present, the run loop is extended with a read path and a write path at each stage boundary:
+
+\begin{verbatim}
+organism = skill_organism(
+    stages=[research, strategist, evaluator, adversary],
+    fast_nucleus=fast, deep_nucleus=deep,
+    substrate=BiTemporalMemory(),
+)
+\end{verbatim}
+
+\noindent\textit{Read path.}
+Before a stage executes, the runtime evaluates its \texttt{read\_query} field---either a subject string or a callable returning a \texttt{BiTemporalQuery}---and packages the result into a frozen \texttt{SubstrateView(facts, query, record\_time)}. This view is injected into the stage's metadata (for agent stages) or passed as an additional argument (for handler stages, via arity-aware dispatch). The \texttt{record\_time} captures the moment of the read, establishing the record-time horizon for this stage's knowledge.
+
+\noindent\textit{Write path.}
+After a stage executes, two mechanisms can emit facts: (1)~the convenience flag \texttt{emit\_output\_fact=True} auto-records the stage output with \texttt{subject=task}, \texttt{predicate=stage.name}; (2)~a \texttt{fact\_extractor} callable converts the stage result into one or more factual events. Each event specifies an operation---assert, correct, or invalidate---and is applied to the substrate via the standard \texttt{BiTemporalMemory} write API. The stage name serves as the default \texttt{source} for provenance.
+
+When \texttt{substrate} is \texttt{None} (the default), the run loop is unchanged: no datetime operations are invoked, no metadata is injected, and all four original lifecycle hooks remain unmodified. Existing tests pass without alteration.
+
+The integration directly enables the audit question from \S6.5: given a completed run, \texttt{retrieve\_belief\_state(at\_valid=t, at\_record=t\_stage)} reconstructs exactly what the organism believed at the moment stage $X$ executed, even if subsequent stages corrected or invalidated facts. Example~71 demonstrates this with a four-stage enterprise workflow where an adversary stage corrects a research assumption, and the original belief state remains fully reconstructible.
+
 \subsection{Coalgebraic State Machines Implementation}
 
 The coalgebra formalism (\S3.5) is made explicit and composable:
