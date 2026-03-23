@@ -44,6 +44,13 @@ from .diffusion import (
     DiffusionParams,
     DiffusionField,
 )
+from .social_learning import (
+    SocialLearning,
+    PeerExchange,
+    TrustRegistry,
+    AdoptionResult,
+    AdoptionOutcome,
+)
 
 __all__ = [
     # Cell Cycle (existing)
@@ -80,4 +87,10 @@ __all__ = [
     "MorphogenSource",
     "DiffusionParams",
     "DiffusionField",
+    # Social Learning (Phase 6)
+    "SocialLearning",
+    "PeerExchange",
+    "TrustRegistry",
+    "AdoptionResult",
+    "AdoptionOutcome",
 ]

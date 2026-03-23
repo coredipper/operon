@@ -43,6 +43,10 @@ reconstructing past belief states:
   System A/B cognitive mode annotations with watcher mode balance reporting
 - [`77_sleep_consolidation.py`](77_sleep_consolidation.py) —
   sleep consolidation cycle: replay, compress, counterfactual, histone promotion
+- [`78_social_learning.py`](78_social_learning.py) —
+  cross-organism template sharing with trust-weighted adoption (epistemic vigilance)
+- [`79_curiosity_driven_exploration.py`](79_curiosity_driven_exploration.py) —
+  curiosity signals triggering escalation on novel inputs
 
 ## Import Style Guide
 

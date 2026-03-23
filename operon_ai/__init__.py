@@ -321,6 +321,11 @@ from .coordination import (
     MorphogenSource,
     DiffusionParams,
     DiffusionField,
+    SocialLearning,
+    PeerExchange,
+    TrustRegistry,
+    AdoptionResult,
+    AdoptionOutcome,
 )
 
 # =============================================================================
@@ -669,6 +674,11 @@ __all__ = [
     "MorphogenSource",
     "DiffusionParams",
     "DiffusionField",
+    "SocialLearning",
+    "PeerExchange",
+    "TrustRegistry",
+    "AdoptionResult",
+    "AdoptionOutcome",
 
     # Multi-cellular Organization
     "ExpressionProfile",
@@ -680,4 +690,4 @@ __all__ = [
     "MetabolicAccessPolicy",
 ]
 
-__version__ = "0.22.0"
+__version__ = "0.22.1"

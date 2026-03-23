@@ -2,6 +2,23 @@
 
 This page tracks the recent direction of the project.
 
+## v0.22.1
+
+Focus:
+
+- social learning with trust-weighted template exchange across organisms
+- epistemic vigilance (TrustRegistry) for peer output trust scoring
+- curiosity signals in WatcherComponent for novelty-seeking escalation
+
+New:
+
+- `SocialLearning`, `PeerExchange`, `TrustRegistry`, `AdoptionResult`, `AdoptionOutcome`
+- Watcher curiosity signals (EPISTEMIC/curiosity) + `curiosity_escalation_threshold`
+- `examples/78_social_learning.py` — template sharing with trust
+- `examples/79_curiosity_driven_exploration.py` — curiosity-driven escalation
+- [Social Learning Space](https://huggingface.co/spaces/coredipper/operon-social)
+- Article updates: social learning + curiosity (§6, §8)
+
 ## v0.22.0
 
 Focus:
