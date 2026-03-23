@@ -158,6 +158,7 @@ class WatcherComponent:
         stage_signals: list[WatcherSignal] = []
         stage_signals.extend(self._collect_epistemic_signals(stage, result))
         stage_signals.extend(self._collect_species_signals(stage, result))
+        stage_signals.extend(self._collect_cognitive_mode_signals(stage, result))
         self.signals.extend(stage_signals)
 
         intervention = self._decide_intervention(stage, result, stage_signals)
@@ -246,6 +247,38 @@ class WatcherComponent:
             )]
         except Exception:
             return []
+
+    def _collect_cognitive_mode_signals(
+        self,
+        stage: Any,
+        result: Any,
+    ) -> list[WatcherSignal]:
+        """Check if stage's cognitive mode aligns with model used."""
+        from .types import CognitiveMode, resolve_cognitive_mode
+
+        cognitive_mode = getattr(stage, "cognitive_mode", None)
+        # Only emit signals for stages that have the cognitive_mode field
+        if not hasattr(stage, "cognitive_mode"):
+            return []
+        resolved = resolve_cognitive_mode(stage)
+        model_alias = getattr(result, "model_alias", "")
+        mismatch = False
+        if resolved == CognitiveMode.OBSERVATIONAL and model_alias == "deep":
+            mismatch = True
+        elif resolved == CognitiveMode.ACTION_ORIENTED and model_alias == "fast":
+            mismatch = True
+
+        return [WatcherSignal(
+            category=SignalCategory.EPISTEMIC,
+            source="cognitive_mode",
+            stage_name=getattr(stage, "name", None),
+            value=0.3 if mismatch else 0.0,
+            detail={
+                "cognitive_mode": resolved.value,
+                "model_alias": model_alias,
+                "mismatch": mismatch,
+            },
+        )]
 
     # -- Decision logic --------------------------------------------------
 
@@ -440,6 +473,28 @@ class WatcherComponent:
         return InterventionKind(best_kind)
 
     # -- Public API ------------------------------------------------------
+
+    def mode_balance(self) -> dict[str, Any]:
+        """Summarize cognitive mode distribution across observed stages."""
+        observational = 0
+        action_oriented = 0
+        mismatches = 0
+        for sig in self.signals:
+            if sig.source == "cognitive_mode":
+                cm = sig.detail.get("cognitive_mode")
+                if cm == "observational":
+                    observational += 1
+                elif cm == "action_oriented":
+                    action_oriented += 1
+                if sig.detail.get("mismatch"):
+                    mismatches += 1
+        total = observational + action_oriented
+        return {
+            "observational": observational,
+            "action_oriented": action_oriented,
+            "balance_ratio": observational / total if total > 0 else 0.5,
+            "mismatches": mismatches,
+        }
 
     def summary(self) -> dict[str, Any]:
         """Return watcher statistics."""

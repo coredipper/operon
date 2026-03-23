@@ -13,6 +13,8 @@ Start here:
 - [`examples/73_watcher_component.py`](../../examples/73_watcher_component.py) — runtime monitoring with signal classification and interventions
 - [`examples/74_adaptive_assembly.py`](../../examples/74_adaptive_assembly.py) — adaptive assembly loop with template selection and outcome recording
 - [`examples/75_experience_driven_watcher.py`](../../examples/75_experience_driven_watcher.py) — experience pool driving intervention recommendations
+- [`examples/76_cognitive_modes.py`](../../examples/76_cognitive_modes.py) — System A/B cognitive mode annotations
+- [`examples/77_sleep_consolidation.py`](../../examples/77_sleep_consolidation.py) — sleep consolidation cycle with counterfactual replay
 - [`examples/66_epistemic_topology.py`](../../examples/66_epistemic_topology.py) — epistemic analysis layer underneath
 
 ## Full Example Index

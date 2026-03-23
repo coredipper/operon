@@ -14,6 +14,8 @@ This is a lightweight map of the current library surface.
   - `InterventionKind`, `WatcherIntervention`
   - `adaptive_skill_organism(...)`, `assemble_pattern(...)`
   - `AdaptiveSkillOrganism`, `AdaptiveRunResult`, `ExperienceRecord`
+  - `CognitiveMode`, `resolve_cognitive_mode()`
+  - `SleepConsolidation`, `ConsolidationResult`, `CounterfactualResult`, `counterfactual_replay()`
 
 ## Core Runtime and Analysis
 

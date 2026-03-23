@@ -240,6 +240,12 @@ The \texttt{WatcherComponent} implements System~M as a \texttt{SkillRuntimeCompo
 
 The \texttt{AdaptiveSkillOrganism} wrapper closes the loop. Given a task, it auto-fingerprints the input, retrieves the best-scoring template from the library, assembles it into a runnable topology via \texttt{assemble\_pattern()}, attaches a watcher and telemetry probe, runs, and records the outcome as a \texttt{PatternRunRecord}. The watcher's intervention history is recorded as \texttt{ExperienceRecord} instances in a cross-run experience pool, enabling future intervention recommendations based on which actions succeeded for similar (fingerprint, stage, signal) tuples. This is the full evo-devo inner loop: one organism run is one developmental lifetime; the library scoring across many lifetimes is evolutionary selection.
 
+\paragraph{Cognitive Modes and Sleep Consolidation.}
+\label{sec:cognitive-modes}
+The \texttt{CognitiveMode} enum reframes Operon's fast/deep nucleus distinction as a cognitive architecture principle: stages declare whether they are \emph{observational} (System~A---passive sensing, statistical pattern matching) or \emph{action-oriented} (System~B---goal-directed deliberation). The watcher detects mismatches between declared mode and actual execution model, providing an informational signal for mode balance analysis.
+
+The \texttt{SleepConsolidation} cycle extends the \texttt{AutophagyDaemon} into the imagination-based learning mode described by Dupoux et al.~\cite{dupoux2026learning}. During consolidation, successful patterns are replayed from the \texttt{PatternLibrary} into \texttt{EpisodicMemory} with tier promotion (WORKING $\to$ EPISODIC $\to$ LONGTERM), recurring patterns are compressed into new \texttt{PatternTemplate} instances, and frequently-accessed ACETYLATION histone marks are promoted to permanent METHYLATION. When a \texttt{BiTemporalMemory} is available, the \texttt{counterfactual\_replay()} function analyzes whether corrections that occurred after a run would have changed the outcome---operationalizing the ``what if'' reasoning that the paper associates with imagination during sleep.
+
 \subsubsection{Epistemic Topology of Wiring Diagrams}
 \label{sec:epistemic-topology}
 

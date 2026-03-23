@@ -54,6 +54,16 @@ Use this to explore:
 - adaptive organism assembly from ranked templates
 - experience pool and intervention recommendations
 
+### Sleep Consolidation
+
+- https://huggingface.co/spaces/coredipper/operon-consolidation
+
+Use this to explore:
+
+- sleep consolidation cycle: replay, compress, counterfactual replay, histone promotion
+- memory tier distribution before and after consolidation
+- counterfactual analysis of corrected bi-temporal facts
+
 ## How These Fit
 
 The current demos are best understood as interactive front doors into the same structure the library uses locally.

@@ -61,6 +61,13 @@ from .autophagy_daemon import (
     create_simple_summarizer,
 )
 
+from .consolidation import (
+    SleepConsolidation,
+    ConsolidationResult,
+    CounterfactualResult,
+    counterfactual_replay,
+)
+
 __all__ = [
     # Chaperone Loop (Structural Healing)
     "ChaperoneLoop",
@@ -84,4 +91,9 @@ __all__ = [
     "ContextMetrics",
     "ContextHealthStatus",
     "create_simple_summarizer",
+    # Sleep Consolidation (Cognitive Consolidation)
+    "SleepConsolidation",
+    "ConsolidationResult",
+    "CounterfactualResult",
+    "counterfactual_replay",
 ]

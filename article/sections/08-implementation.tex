@@ -255,6 +255,16 @@ The \texttt{AdaptiveSkillOrganism} wrapper composes the full adaptive loop. The 
 
 After execution, the wrapper records a \texttt{PatternRunRecord} in the library (closing the scoring feedback loop) and populates the watcher's experience pool with \texttt{ExperienceRecord} instances for each intervention. The experience pool persists across runs: when rule-based decision logic returns no intervention, the watcher consults past experiences with matching (stage, signal category, fingerprint shape) and recommends the intervention kind that was most often successful. Rule-based decisions always take priority; experience is a fallback. Example~74 demonstrates the full lifecycle; Example~75 demonstrates experience-driven recommendations.
 
+\paragraph{Cognitive Mode Annotations.}
+\label{sec:cognitive-modes-impl}
+The \texttt{CognitiveMode} enum classifies stages as \texttt{OBSERVATIONAL} (System~A: passive sensing, information gathering) or \texttt{ACTION\_ORIENTED} (System~B: active decision-making, execution). The annotation is an optional field on \texttt{SkillStage}; when absent, it is inferred from the existing \texttt{mode} field (\texttt{fast}/\texttt{fixed} $\to$ \texttt{OBSERVATIONAL}, \texttt{fuzzy}/\texttt{deep} $\to$ \texttt{ACTION\_ORIENTED}). The \texttt{WatcherComponent} collects cognitive-mode signals and reports mode mismatches (e.g., an observational stage routed to the deep nucleus) as informational epistemic signals. The \texttt{mode\_balance()} method summarizes the System~A/B distribution across a run.
+
+\paragraph{Sleep Consolidation Implementation.}
+\label{sec:consolidation-impl}
+The \texttt{SleepConsolidation} class composes \texttt{AutophagyDaemon}, \texttt{PatternLibrary}, \texttt{EpisodicMemory}, \texttt{HistoneStore}, and optionally \texttt{BiTemporalMemory} into a five-step post-batch consolidation cycle: (1)~prune stale context via autophagy, (2)~replay successful run records and promote them from WORKING to EPISODIC tier in episodic memory, (3)~compress recurring high-success patterns into new consolidated \texttt{PatternTemplate} instances, (4)~run counterfactual replay over bi-temporal corrections to detect cases where updated facts would have changed the outcome, and (5)~promote frequently-accessed ACETYLATION histone marks to permanent METHYLATION.
+
+The \texttt{counterfactual\_replay()} function performs static analysis: it calls \texttt{diff\_between(run\_time, now, axis="record")} to find corrections that occurred after the original run, then matches corrected fact subjects/predicates against stage names in the template. When matches are found, it reports that the outcome may have differed, without re-executing the workflow. Example~77 demonstrates the full consolidation cycle.
+
 \subsection{Coalgebraic State Machines Implementation}
 
 The coalgebra formalism (\S3.5) is made explicit and composable:
