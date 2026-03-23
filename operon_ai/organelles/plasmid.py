@@ -46,6 +46,7 @@ class Plasmid:
     parameters_schema: dict = field(
         default_factory=lambda: {"type": "object", "properties": {}}
     )
+    min_stage: str | None = None  # DevelopmentalStage value, e.g. "adolescent"
 
     def to_tool(self) -> SimpleTool:
         """Convert this plasmid into a SimpleTool for engulfment."""

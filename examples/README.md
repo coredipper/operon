@@ -47,6 +47,10 @@ reconstructing past belief states:
   cross-organism template sharing with trust-weighted adoption (epistemic vigilance)
 - [`79_curiosity_driven_exploration.py`](79_curiosity_driven_exploration.py) —
   curiosity signals triggering escalation on novel inputs
+- [`80_developmental_staging.py`](80_developmental_staging.py) —
+  developmental stages, capability gating, and critical periods
+- [`81_critical_periods.py`](81_critical_periods.py) —
+  teacher-learner scaffolding with developmental awareness
 
 ## Import Style Guide
 

@@ -120,6 +120,7 @@ class WatcherComponent:
     budget: ATP_Store | None = None
     immune_system: ImmuneSystem | None = None
     immune_agent_id: str | None = None
+    development: Any = None  # DevelopmentController (Phase 7)
 
     # Internal state (per-run — cleared on on_run_start)
     signals: list[WatcherSignal] = field(default_factory=list)
@@ -146,6 +147,7 @@ class WatcherComponent:
     ) -> None:
         """Collect pre-stage somatic signals."""
         somatic = self._collect_somatic_signals(stage)
+        somatic.extend(self._collect_developmental_signals(stage))
         self.signals.extend(somatic)
 
     def on_stage_result(
@@ -234,6 +236,28 @@ class WatcherComponent:
                 "epiplexity": ep_result.epiplexity,
             },
         )]
+
+    def _collect_developmental_signals(self, stage: Any) -> list[WatcherSignal]:
+        """Emit SOMATIC signals for developmental stage."""
+        if self.development is None:
+            return []
+        try:
+            from ..state.development import _STAGE_ORDER
+            dev_stage = self.development.stage
+            maturity = _STAGE_ORDER[dev_stage] / 3.0
+            return [WatcherSignal(
+                category=SignalCategory.SOMATIC,
+                source="development",
+                stage_name=getattr(stage, "name", None),
+                value=maturity,
+                detail={
+                    "developmental_stage": dev_stage.value,
+                    "learning_plasticity": self.development.learning_plasticity,
+                    "open_periods": [p.name for p in self.development.open_critical_periods()],
+                },
+            )]
+        except Exception:
+            return []
 
     def _collect_somatic_signals(self, stage: Any) -> list[WatcherSignal]:
         """Read ATP_Store balance if available."""

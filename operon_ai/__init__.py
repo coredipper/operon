@@ -135,6 +135,15 @@ from .state.telomere import (
     SenescenceReason,
     LifecycleEvent,
 )
+from .state.development import (
+    DevelopmentController,
+    DevelopmentConfig,
+    DevelopmentalStage,
+    DevelopmentStatus,
+    CriticalPeriod,
+    StageTransition,
+    stage_reached,
+)
 
 # =============================================================================
 # Topologies
@@ -326,6 +335,7 @@ from .coordination import (
     TrustRegistry,
     AdoptionResult,
     AdoptionOutcome,
+    ScaffoldingResult,
 )
 
 # =============================================================================
@@ -519,6 +529,15 @@ __all__ = [
     "SenescenceReason",
     "LifecycleEvent",
 
+    # State - Development
+    "DevelopmentController",
+    "DevelopmentConfig",
+    "DevelopmentalStage",
+    "DevelopmentStatus",
+    "CriticalPeriod",
+    "StageTransition",
+    "stage_reached",
+
     # Topology - Loops
     "CoherentFeedForwardLoop",
     "NegativeFeedbackLoop",
@@ -679,6 +698,7 @@ __all__ = [
     "TrustRegistry",
     "AdoptionResult",
     "AdoptionOutcome",
+    "ScaffoldingResult",
 
     # Multi-cellular Organization
     "ExpressionProfile",
@@ -690,4 +710,4 @@ __all__ = [
     "MetabolicAccessPolicy",
 ]
 
-__version__ = "0.22.1"
+__version__ = "0.23.0"
