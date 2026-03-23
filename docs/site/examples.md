@@ -15,6 +15,8 @@ Start here:
 - [`examples/75_experience_driven_watcher.py`](../../examples/75_experience_driven_watcher.py) — experience pool driving intervention recommendations
 - [`examples/76_cognitive_modes.py`](../../examples/76_cognitive_modes.py) — System A/B cognitive mode annotations
 - [`examples/77_sleep_consolidation.py`](../../examples/77_sleep_consolidation.py) — sleep consolidation cycle with counterfactual replay
+- [`examples/78_social_learning.py`](../../examples/78_social_learning.py) — cross-organism template sharing with trust
+- [`examples/79_curiosity_driven_exploration.py`](../../examples/79_curiosity_driven_exploration.py) — curiosity-driven escalation
 - [`examples/66_epistemic_topology.py`](../../examples/66_epistemic_topology.py) — epistemic analysis layer underneath
 
 ## Full Example Index

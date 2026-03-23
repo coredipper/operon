@@ -72,6 +72,9 @@ class WatcherConfig:
     max_intervention_rate: float = 0.5  # interventions / stages ratio
     max_retries_per_stage: int = 2
 
+    # Curiosity — novelty threshold for escalation (Phase 6)
+    curiosity_escalation_threshold: float = 0.6
+
     # shared_state key
     state_key: str = WATCHER_STATE_KEY
 
@@ -155,8 +158,12 @@ class WatcherComponent:
         """Evaluate signals, decide intervention, write to shared_state."""
         self._total_stages += 1
 
+        # Measure epiplexity once, share result across collectors
+        ep_result = self._measure_epiplexity(stage, result)
+
         stage_signals: list[WatcherSignal] = []
-        stage_signals.extend(self._collect_epistemic_signals(stage, result))
+        stage_signals.extend(self._collect_epistemic_signals(stage, result, ep_result))
+        stage_signals.extend(self._collect_curiosity_signals(stage, result, ep_result))
         stage_signals.extend(self._collect_species_signals(stage, result))
         stage_signals.extend(self._collect_cognitive_mode_signals(stage, result))
         self.signals.extend(stage_signals)
@@ -175,29 +182,58 @@ class WatcherComponent:
 
     # -- Signal collection -----------------------------------------------
 
+    def _measure_epiplexity(self, stage: Any, result: Any) -> Any:
+        """Measure epiplexity once per stage, returning result for reuse."""
+        if self.epiplexity_monitor is None:
+            return None
+        try:
+            output_str = str(getattr(result, "output", result))
+            return self.epiplexity_monitor.measure(output_str)
+        except Exception:
+            return None
+
     def _collect_epistemic_signals(
         self,
         stage: Any,
         result: Any,
+        ep_result: Any = None,
     ) -> list[WatcherSignal]:
-        """Feed stage output to EpiplexityMonitor if available."""
-        if self.epiplexity_monitor is None:
+        """Emit epistemic signals from pre-computed EpiplexityResult."""
+        if ep_result is None:
             return []
-        try:
-            output_str = str(getattr(result, "output", result))
-            ep_result = self.epiplexity_monitor.measure(output_str)
-            return [WatcherSignal(
-                category=SignalCategory.EPISTEMIC,
-                source="epiplexity",
-                stage_name=getattr(stage, "name", None),
-                value=ep_result.epiplexity,
-                detail={
-                    "status": ep_result.status.value,
-                    "integral": ep_result.epiplexic_integral,
-                },
-            )]
-        except Exception:
+        return [WatcherSignal(
+            category=SignalCategory.EPISTEMIC,
+            source="epiplexity",
+            stage_name=getattr(stage, "name", None),
+            value=ep_result.epiplexity,
+            detail={
+                "status": ep_result.status.value,
+                "integral": ep_result.epiplexic_integral,
+            },
+        )]
+
+    def _collect_curiosity_signals(
+        self,
+        stage: Any,
+        result: Any,
+        ep_result: Any = None,
+    ) -> list[WatcherSignal]:
+        """Emit curiosity signals when epiplexity status is EXPLORING."""
+        if ep_result is None:
             return []
+        if ep_result.status.value != "exploring":
+            return []
+        return [WatcherSignal(
+            category=SignalCategory.EPISTEMIC,
+            source="curiosity",
+            stage_name=getattr(stage, "name", None),
+            value=ep_result.embedding_novelty,
+            detail={
+                "status": "exploring",
+                "embedding_novelty": ep_result.embedding_novelty,
+                "epiplexity": ep_result.epiplexity,
+            },
+        )]
 
     def _collect_somatic_signals(self, stage: Any) -> list[WatcherSignal]:
         """Read ATP_Store balance if available."""
@@ -352,6 +388,20 @@ class WatcherComponent:
                 stage_name=stage_name,
                 reason="stagnant epiplexity on fast model — escalating",
             )
+
+        # 4.5. Curiosity: high novelty on fast model → ESCALATE
+        for sig in signals:
+            if (
+                sig.category == SignalCategory.EPISTEMIC
+                and sig.source == "curiosity"
+                and model_alias == "fast"
+                and sig.value > self.config.curiosity_escalation_threshold
+            ):
+                return WatcherIntervention(
+                    kind=InterventionKind.ESCALATE,
+                    stage_name=stage_name,
+                    reason=f"curiosity: high novelty ({sig.value:.2f}) on fast model — escalating",
+                )
 
         # 5. Stage FAILURE + retries available → RETRY
         action_type = getattr(result, "action_type", "")

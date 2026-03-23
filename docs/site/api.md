@@ -16,6 +16,7 @@ This is a lightweight map of the current library surface.
   - `AdaptiveSkillOrganism`, `AdaptiveRunResult`, `ExperienceRecord`
   - `CognitiveMode`, `resolve_cognitive_mode()`
   - `SleepConsolidation`, `ConsolidationResult`, `CounterfactualResult`, `counterfactual_replay()`
+  - `SocialLearning`, `PeerExchange`, `TrustRegistry`, `AdoptionResult`, `AdoptionOutcome`
 
 ## Core Runtime and Analysis
 

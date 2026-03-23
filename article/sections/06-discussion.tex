@@ -246,6 +246,12 @@ The \texttt{CognitiveMode} enum reframes Operon's fast/deep nucleus distinction 
 
 The \texttt{SleepConsolidation} cycle extends the \texttt{AutophagyDaemon} into the imagination-based learning mode described by Dupoux et al.~\cite{dupoux2026learning}. During consolidation, successful patterns are replayed from the \texttt{PatternLibrary} into \texttt{EpisodicMemory} with tier promotion (WORKING $\to$ EPISODIC $\to$ LONGTERM), recurring patterns are compressed into new \texttt{PatternTemplate} instances, and frequently-accessed ACETYLATION histone marks are promoted to permanent METHYLATION. When a \texttt{BiTemporalMemory} is available, the \texttt{counterfactual\_replay()} function analyzes whether corrections that occurred after a run would have changed the outcome---operationalizing the ``what if'' reasoning that the paper associates with imagination during sleep.
 
+\paragraph{Social Learning and Epistemic Vigilance.}
+\label{sec:social-learning}
+The \texttt{SocialLearning} module enables cross-organism template exchange, following the biological analogy of horizontal gene transfer (HGT) in bacteria. Organisms export successful \texttt{PatternTemplate} instances via \texttt{export\_templates()} and import from peers via \texttt{import\_from\_peer()}. Adoption is modulated by a \texttt{TrustRegistry} that implements epistemic vigilance: per-peer trust scores are updated via exponential moving average over adoption outcomes (whether imported templates actually succeeded for the importing organism). Trust below a configurable threshold blocks adoption entirely, preventing contamination from unreliable peers. Provenance tracking (\texttt{get\_provenance()}) traces which peer contributed each adopted template, closing the feedback loop between template performance and peer trust.
+
+The watcher also gains curiosity signals derived from the \texttt{EpiplexityMonitor}'s EXPLORING status. When embedding novelty is high (the agent is encountering genuinely unfamiliar territory) and the stage uses a fast model, the watcher recommends ESCALATE to engage the deep model for more thorough investigation. This operationalizes intrinsic motivation: the organism actively seeks deeper understanding of novel inputs rather than processing them with cheap statistical pattern matching.
+
 \subsubsection{Epistemic Topology of Wiring Diagrams}
 \label{sec:epistemic-topology}
 

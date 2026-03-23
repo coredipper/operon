@@ -64,6 +64,16 @@ Use this to explore:
 - memory tier distribution before and after consolidation
 - counterfactual analysis of corrected bi-temporal facts
 
+### Social Learning
+
+- https://huggingface.co/spaces/coredipper/operon-social
+
+Use this to explore:
+
+- cross-organism template exchange with trust-weighted adoption
+- epistemic vigilance (TrustRegistry) with EMA trust scoring
+- curiosity signals triggering escalation on novel inputs
+
 ## How These Fit
 
 The current demos are best understood as interactive front doors into the same structure the library uses locally.
