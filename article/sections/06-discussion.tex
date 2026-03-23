@@ -252,6 +252,10 @@ The \texttt{SocialLearning} module enables cross-organism template exchange, fol
 
 The watcher also gains curiosity signals derived from the \texttt{EpiplexityMonitor}'s EXPLORING status. When embedding novelty is high (the agent is encountering genuinely unfamiliar territory) and the stage uses a fast model, the watcher recommends ESCALATE to engage the deep model for more thorough investigation. This operationalizes intrinsic motivation: the organism actively seeks deeper understanding of novel inputs rather than processing them with cheap statistical pattern matching.
 
+\paragraph{Critical Periods and Developmental Gating.}
+\label{sec:developmental-gating}
+The \texttt{DevelopmentController} maps telomere consumption to a \texttt{DevelopmentalStage} (EMBRYONIC, JUVENILE, ADOLESCENT, MATURE), extending the lifecycle model from binary alive/dead to a graded maturation process. \texttt{CriticalPeriod} instances declare time-limited learning windows that close permanently as the organism matures---analogous to neurodevelopmental critical periods where specific neural circuits are maximally plastic. Tool acquisition (\texttt{Plasmid}) respects developmental stage via a \texttt{min\_stage} field, preventing premature capability exposure. Teacher-learner scaffolding, mediated by \texttt{SocialLearning.scaffold\_learner()}, filters templates by the learner's stage and applies a learning plasticity bonus, enabling mature organisms to guide younger ones through progressively more complex capabilities.
+
 \subsubsection{Epistemic Topology of Wiring Diagrams}
 \label{sec:epistemic-topology}
 

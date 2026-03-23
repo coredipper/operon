@@ -61,6 +61,17 @@ class AdoptionOutcome:
     recorded_at: datetime = field(default_factory=datetime.now)
 
 
+@dataclass(frozen=True)
+class ScaffoldingResult:
+    """Result of a scaffolded teacher-learner exchange."""
+
+    adoption: AdoptionResult
+    teacher_stage: str
+    learner_stage: str
+    plasticity_bonus: float
+    templates_filtered_out: tuple[str, ...]
+
+
 # ---------------------------------------------------------------------------
 # Trust registry (epistemic vigilance)
 # ---------------------------------------------------------------------------
@@ -244,6 +255,66 @@ class SocialLearning:
     def get_provenance(self, template_id: str) -> str | None:
         """Return peer_id that shared a template, or None if locally created."""
         return self._adopted_from.get(template_id)
+
+    def scaffold_learner(
+        self,
+        learner: SocialLearning,
+        *,
+        learner_stage: str | None = None,
+        teacher_stage: str | None = None,
+        trust_override: float | None = None,
+    ) -> ScaffoldingResult:
+        """Teacher-learner scaffolding: guide a younger organism.
+
+        Filters exported templates based on the learner's stage,
+        applies plasticity bonus to effective trust. Falls back to
+        standard import if no stages provided.
+        """
+        from ..state.development import DevelopmentalStage, _STAGE_ORDER, _PLASTICITY, stage_reached
+
+        exchange = self.export_templates()
+
+        t_stage = DevelopmentalStage(teacher_stage) if teacher_stage else None
+        l_stage = DevelopmentalStage(learner_stage) if learner_stage else None
+
+        # Filter templates too advanced for learner
+        filtered_out: list[str] = []
+        if l_stage is not None:
+            eligible = []
+            for tmpl in exchange.templates:
+                for spec in tmpl.stage_specs:
+                    min_s = spec.get("min_stage")
+                    if min_s and not stage_reached(l_stage, DevelopmentalStage(min_s)):
+                        filtered_out.append(tmpl.template_id)
+                        break
+                else:
+                    eligible.append(tmpl)
+            eligible_records = tuple(
+                r for r in exchange.records
+                if r.template_id in {t.template_id for t in eligible}
+            )
+            exchange = PeerExchange(
+                peer_id=exchange.peer_id,
+                templates=tuple(eligible),
+                records=eligible_records,
+            )
+
+        # Plasticity bonus
+        plasticity = _PLASTICITY.get(l_stage, 0.5) if l_stage else 0.5
+        effective_trust = trust_override
+        if effective_trust is None:
+            base_trust = learner.trust.trust_score(self.organism_id)
+            effective_trust = min(1.0, base_trust + plasticity * 0.2)
+
+        adoption = learner.import_from_peer(exchange, trust_override=effective_trust)
+
+        return ScaffoldingResult(
+            adoption=adoption,
+            teacher_stage=teacher_stage or "unknown",
+            learner_stage=learner_stage or "unknown",
+            plasticity_bonus=plasticity * 0.2,
+            templates_filtered_out=tuple(filtered_out),
+        )
 
     def summary(self) -> dict[str, Any]:
         """Return social learning statistics."""

@@ -237,6 +237,7 @@ class Mitochondria:
         self.max_ros = max_ros
         self.silent = silent
         self.allowed_capabilities = allowed_capabilities
+        self._development = None  # Set via set_development() for Phase 7 gating
 
         # Tool registry (endosymbiotic organelles)
         self.tools: dict[str, Tool] = {}
@@ -703,6 +704,20 @@ class Mitochondria:
                 plasmid_name=plasmid_name,
                 error=f"Insufficient capabilities: missing {missing}",
             )
+
+        # Developmental stage gating (Phase 7)
+        if plasmid.min_stage is not None and hasattr(self, '_development') and self._development is not None:
+            from ..state.development import DevelopmentalStage, stage_reached
+            required_stage = DevelopmentalStage(plasmid.min_stage)
+            if not stage_reached(self._development.stage, required_stage):
+                return AcquisitionResult(
+                    success=False,
+                    plasmid_name=plasmid_name,
+                    error=(
+                        f"Developmental stage too early: requires {plasmid.min_stage}, "
+                        f"current is {self._development.stage.value}"
+                    ),
+                )
 
         # Duplicate check
         if plasmid_name in self.tools:

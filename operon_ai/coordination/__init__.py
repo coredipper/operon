@@ -50,6 +50,7 @@ from .social_learning import (
     TrustRegistry,
     AdoptionResult,
     AdoptionOutcome,
+    ScaffoldingResult,
 )
 
 __all__ = [
@@ -93,4 +94,5 @@ __all__ = [
     "TrustRegistry",
     "AdoptionResult",
     "AdoptionOutcome",
+    "ScaffoldingResult",
 ]

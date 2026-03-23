@@ -2,6 +2,27 @@
 
 This page tracks the recent direction of the project.
 
+## v0.23.0
+
+Focus:
+
+- developmental staging (EMBRYONIC → JUVENILE → ADOLESCENT → MATURE)
+- critical periods that close as organisms mature
+- capability gating on Plasmid acquisition
+- teacher-learner scaffolding
+
+New:
+
+- `DevelopmentController`, `DevelopmentConfig`, `DevelopmentalStage`, `DevelopmentStatus`
+- `CriticalPeriod`, `StageTransition`, `stage_reached()`
+- `Plasmid.min_stage` — developmental gating on tool acquisition
+- `SocialLearning.scaffold_learner()` + `ScaffoldingResult`
+- Watcher developmental signals (SOMATIC/development)
+- `examples/80_developmental_staging.py` — lifecycle progression and gating
+- `examples/81_critical_periods.py` — teacher-learner scaffolding
+- [Developmental Staging Space](https://huggingface.co/spaces/coredipper/operon-development)
+- Article updates: critical periods (§6), developmental staging impl (§8)
+
 ## v0.22.1
 
 Focus:

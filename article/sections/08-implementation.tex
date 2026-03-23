@@ -269,6 +269,12 @@ The \texttt{counterfactual\_replay()} function performs static analysis: it call
 \label{sec:social-learning-impl}
 The \texttt{SocialLearning} class wraps a \texttt{PatternLibrary} with peer-exchange semantics. \texttt{export\_templates()} filters by success rate and run count; \texttt{import\_from\_peer()} computes an effective score (peer success rate $\times$ trust score) for each template and adopts those exceeding the adoption threshold. The \texttt{TrustRegistry} uses exponential moving average: $s_{t+1} = \alpha \cdot \text{outcome} + (1-\alpha) \cdot s_t$ with $\alpha=0.3$, giving more weight to recent outcomes. Provenance tracking maps each adopted template to its source peer, enabling trust updates when adoption outcomes are recorded. The watcher's curiosity signals extend the epistemic signal category with a \texttt{source="curiosity"} derived from \texttt{EpiplexityMonitor}'s EXPLORING status, triggering ESCALATE when embedding novelty exceeds a configurable threshold on fast models. Example~78 demonstrates template exchange; Example~79 demonstrates curiosity signals.
 
+\paragraph{Developmental Staging Implementation.}
+\label{sec:developmental-impl}
+The \texttt{DevelopmentController} wraps a \texttt{Telomere} (composition, not inheritance) and maps the fraction of telomere consumed to a \texttt{DevelopmentalStage}: EMBRYONIC ($<10\%$), JUVENILE ($10\text{--}35\%$), ADOLESCENT ($35\text{--}70\%$), MATURE ($>70\%$). Thresholds are configurable via \texttt{DevelopmentConfig}; transitions are one-directional and never regress, even if telomeres are renewed. Learning plasticity decreases monotonically (1.0 at EMBRYONIC, 0.25 at MATURE).
+
+\texttt{CriticalPeriod} frozen dataclasses declare time-limited learning windows by specifying \texttt{opens\_at} and \texttt{closes\_at} stages. The controller evaluates period status on each tick: once the organism passes \texttt{closes\_at}, the window is permanently shut. The \texttt{Plasmid} dataclass gains a \texttt{min\_stage} field; \texttt{Mitochondria.acquire()} checks the organism's current developmental stage before granting tool access. Teacher-learner scaffolding via \texttt{SocialLearning.scaffold\_learner()} filters templates by the learner's stage and applies a plasticity bonus to effective trust, enabling mature organisms to guide younger ones. Example~80 demonstrates the full lifecycle; Example~81 demonstrates scaffolding.
+
 \subsection{Coalgebraic State Machines Implementation}
 
 The coalgebra formalism (\S3.5) is made explicit and composable:

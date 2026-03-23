@@ -44,6 +44,16 @@ from .telomere import (
     LifecycleEvent,
 )
 
+from .development import (
+    DevelopmentController,
+    DevelopmentConfig,
+    DevelopmentalStage,
+    DevelopmentStatus,
+    CriticalPeriod,
+    StageTransition,
+    stage_reached,
+)
+
 __all__ = [
     # Metabolism
     "ATP_Store",
@@ -70,4 +80,12 @@ __all__ = [
     "LifecyclePhase",
     "SenescenceReason",
     "LifecycleEvent",
+    # Development (Phase 7)
+    "DevelopmentController",
+    "DevelopmentConfig",
+    "DevelopmentalStage",
+    "DevelopmentStatus",
+    "CriticalPeriod",
+    "StageTransition",
+    "stage_reached",
 ]

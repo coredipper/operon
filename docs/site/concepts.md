@@ -53,6 +53,7 @@ The lower-level layer models modules, ports, wires, and topology explicitly so t
 - `v0.19` added bi-temporal memory with dual time axes
 - `v0.20` integrated bi-temporal memory into the SkillOrganism runtime as an auditable substrate, formalizing the three-layer context model (topology, ephemeral, bi-temporal)
 - `v0.21` added pattern repository, watcher component, adaptive assembly, and experience pool — the adaptive structure layer
-- `v0.22` added cognitive mode annotations (System A/B) and sleep consolidation — the cognitive architecture layer
+- `v0.22` added cognitive mode annotations (System A/B), sleep consolidation, social learning, and curiosity — the cognitive architecture layer
+- `v0.23` added developmental staging with critical periods and capability gating — the developmental layer
 
 The current center of gravity is pattern-first workflows with auditable state.
