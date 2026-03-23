@@ -12,6 +12,7 @@ References:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
@@ -19,6 +20,7 @@ from .types import InterventionKind, WatcherIntervention, WATCHER_STATE_KEY
 
 if TYPE_CHECKING:
     from ..health.epiplexity import EpiplexityMonitor
+    from ..repository import TaskFingerprint
     from ..state.metabolism import ATP_Store
     from ..surveillance.immune_system import ImmuneSystem
 
@@ -75,6 +77,25 @@ class WatcherConfig:
 
 
 # ---------------------------------------------------------------------------
+# Experience pool
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class ExperienceRecord:
+    """A past intervention with its context, for cross-run learning."""
+
+    fingerprint: TaskFingerprint | None
+    stage_name: str
+    signal_category: str
+    signal_detail: dict[str, Any] = field(default_factory=dict)
+    intervention_kind: str = ""
+    intervention_reason: str = ""
+    outcome_success: bool | None = None
+    recorded_at: datetime = field(default_factory=datetime.now)
+
+
+# ---------------------------------------------------------------------------
 # WatcherComponent
 # ---------------------------------------------------------------------------
 
@@ -97,11 +118,15 @@ class WatcherComponent:
     immune_system: ImmuneSystem | None = None
     immune_agent_id: str | None = None
 
-    # Internal state
+    # Internal state (per-run — cleared on on_run_start)
     signals: list[WatcherSignal] = field(default_factory=list)
     interventions: list[WatcherIntervention] = field(default_factory=list)
     _stage_retry_counts: dict[str, int] = field(default_factory=dict)
     _total_stages: int = field(default=0, init=False)
+
+    # Experience pool (persists across runs)
+    experience_pool: list[ExperienceRecord] = field(default_factory=list)
+    _current_fingerprint: TaskFingerprint | None = field(default=None, init=False)
 
     # -- SkillRuntimeComponent protocol ----------------------------------
 
@@ -307,6 +332,26 @@ class WatcherComponent:
                     reason=f"stage failure — retry {retry_count + 1}/{self.config.max_retries_per_stage}",
                 )
 
+        # 6. Experience-based recommendation (Phase 4)
+        if self.experience_pool and self._current_fingerprint is not None:
+            dominant_category = None
+            for sig in signals:
+                if sig.value > 0.3:
+                    dominant_category = sig.category.value
+                    break
+            if dominant_category:
+                recommended = self.recommend_intervention(
+                    stage_name=stage_name,
+                    signal_category=dominant_category,
+                    fingerprint=self._current_fingerprint,
+                )
+                if recommended is not None:
+                    return WatcherIntervention(
+                        kind=recommended,
+                        stage_name=stage_name,
+                        reason=f"experience-based: {recommended.value} for {dominant_category}",
+                    )
+
         return None
 
     def _check_convergence(self) -> bool:
@@ -315,6 +360,84 @@ class WatcherComponent:
             return True
         rate = len(self.interventions) / self._total_stages
         return rate <= self.config.max_intervention_rate
+
+    # -- Experience pool -------------------------------------------------
+
+    def set_fingerprint(self, fingerprint: TaskFingerprint) -> None:
+        """Set the current task fingerprint for experience-based recommendations."""
+        self._current_fingerprint = fingerprint
+
+    def record_experience(
+        self,
+        *,
+        fingerprint: TaskFingerprint | None = None,
+        stage_name: str,
+        signal_category: str,
+        signal_detail: dict[str, Any] | None = None,
+        intervention_kind: str,
+        intervention_reason: str,
+        outcome_success: bool | None = None,
+    ) -> ExperienceRecord:
+        """Record an intervention outcome for future reference."""
+        record = ExperienceRecord(
+            fingerprint=fingerprint or self._current_fingerprint,
+            stage_name=stage_name,
+            signal_category=signal_category,
+            signal_detail=signal_detail or {},
+            intervention_kind=intervention_kind,
+            intervention_reason=intervention_reason,
+            outcome_success=outcome_success,
+        )
+        self.experience_pool.append(record)
+        return record
+
+    def retrieve_similar_experiences(
+        self,
+        *,
+        stage_name: str | None = None,
+        signal_category: str | None = None,
+        fingerprint: TaskFingerprint | None = None,
+        limit: int = 10,
+    ) -> list[ExperienceRecord]:
+        """Retrieve past experiences matching the given criteria."""
+        matches = []
+        for exp in self.experience_pool:
+            if stage_name is not None and exp.stage_name != stage_name:
+                continue
+            if signal_category is not None and exp.signal_category != signal_category:
+                continue
+            if fingerprint is not None and exp.fingerprint is not None:
+                if exp.fingerprint.task_shape != fingerprint.task_shape:
+                    continue
+            matches.append(exp)
+        matches.sort(key=lambda e: e.recorded_at, reverse=True)
+        return matches[:limit]
+
+    def recommend_intervention(
+        self,
+        *,
+        stage_name: str,
+        signal_category: str,
+        fingerprint: TaskFingerprint | None = None,
+    ) -> InterventionKind | None:
+        """Recommend an intervention based on past successful experiences."""
+        similar = self.retrieve_similar_experiences(
+            stage_name=stage_name,
+            signal_category=signal_category,
+            fingerprint=fingerprint,
+        )
+        if not similar:
+            return None
+        success_by_kind: dict[str, int] = {}
+        for exp in similar:
+            if exp.outcome_success:
+                success_by_kind[exp.intervention_kind] = (
+                    success_by_kind.get(exp.intervention_kind, 0) + 1
+                )
+        if not success_by_kind:
+            return None
+        best_kind = max(success_by_kind, key=lambda k: success_by_kind[k])
+        return InterventionKind(best_kind)
 
     # -- Public API ------------------------------------------------------
 

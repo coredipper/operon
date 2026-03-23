@@ -1,5 +1,11 @@
 """Pattern-first wrappers for common Operon coordination motifs."""
 
+from .adaptive import (
+    AdaptiveRunResult,
+    AdaptiveSkillOrganism,
+    adaptive_skill_organism,
+    assemble_pattern,
+)
 from .advisor import advise_topology
 from .organism import SkillOrganism, TelemetryProbe, skill_organism
 from .repository import (
@@ -26,6 +32,7 @@ from .types import (
     WatcherIntervention,
 )
 from .watcher import (
+    ExperienceRecord,
     SignalCategory,
     WatcherComponent,
     WatcherConfig,
@@ -33,6 +40,9 @@ from .watcher import (
 )
 
 __all__ = [
+    "AdaptiveRunResult",
+    "AdaptiveSkillOrganism",
+    "ExperienceRecord",
     "InterventionKind",
     "PatternLibrary",
     "PatternRunRecord",
@@ -54,7 +64,9 @@ __all__ = [
     "WatcherConfig",
     "WatcherIntervention",
     "WatcherSignal",
+    "adaptive_skill_organism",
     "advise_topology",
+    "assemble_pattern",
     "reviewer_gate",
     "skill_organism",
     "SpecialistSwarm",

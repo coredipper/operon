@@ -11,6 +11,8 @@ Start here:
 - [`examples/71_bitemporal_skill_organism.py`](../../examples/71_bitemporal_skill_organism.py) — substrate integration with belief-state reconstruction
 - [`examples/72_pattern_repository.py`](../../examples/72_pattern_repository.py) — register, score, and retrieve reusable pattern templates
 - [`examples/73_watcher_component.py`](../../examples/73_watcher_component.py) — runtime monitoring with signal classification and interventions
+- [`examples/74_adaptive_assembly.py`](../../examples/74_adaptive_assembly.py) — adaptive assembly loop with template selection and outcome recording
+- [`examples/75_experience_driven_watcher.py`](../../examples/75_experience_driven_watcher.py) — experience pool driving intervention recommendations
 - [`examples/66_epistemic_topology.py`](../../examples/66_epistemic_topology.py) — epistemic analysis layer underneath
 
 ## Full Example Index

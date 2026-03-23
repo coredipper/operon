@@ -340,6 +340,9 @@ from .state.metabolism import MetabolicAccessPolicy
 # Pattern-First API
 # =============================================================================
 from .patterns import (
+    AdaptiveRunResult,
+    AdaptiveSkillOrganism,
+    ExperienceRecord,
     InterventionKind,
     PatternLibrary,
     PatternRunRecord,
@@ -367,7 +370,9 @@ from .patterns import (
     WatcherConfig,
     WatcherIntervention,
     WatcherSignal,
+    adaptive_skill_organism,
     advise_topology,
+    assemble_pattern,
     skill_organism,
 )
 
@@ -430,6 +435,9 @@ __all__ = [
     "ExecutionReport",
     "DiagramExecutor",
     # Pattern-First API
+    "AdaptiveRunResult",
+    "AdaptiveSkillOrganism",
+    "ExperienceRecord",
     "InterventionKind",
     "PatternLibrary",
     "PatternRunRecord",
@@ -457,7 +465,9 @@ __all__ = [
     "WatcherConfig",
     "WatcherIntervention",
     "WatcherSignal",
+    "adaptive_skill_organism",
     "advise_topology",
+    "assemble_pattern",
     "skill_organism",
 
     # State - Metabolism
@@ -655,4 +665,4 @@ __all__ = [
     "MetabolicAccessPolicy",
 ]
 
-__version__ = "0.21.0"
+__version__ = "0.21.1"

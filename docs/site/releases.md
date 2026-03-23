@@ -2,6 +2,25 @@
 
 This page tracks the recent direction of the project.
 
+## v0.21.1
+
+Focus:
+
+- adaptive assembly loop (fingerprint → template → assemble → run → record)
+- experience pool on WatcherComponent for cross-run intervention learning
+
+New:
+
+- `AdaptiveSkillOrganism`, `AdaptiveRunResult` — compose-run-record lifecycle wrapper
+- `adaptive_skill_organism()` — public factory for adaptive assembly
+- `assemble_pattern()` — convert PatternTemplate into runnable topology
+- `ExperienceRecord` — cross-run intervention memory on WatcherComponent
+- `record_experience()`, `retrieve_similar_experiences()`, `recommend_intervention()`
+- `examples/74_adaptive_assembly.py` — full adaptive loop
+- `examples/75_experience_driven_watcher.py` — experience-driven recommendations
+- [Adaptive Assembly Space](https://huggingface.co/spaces/coredipper/operon-adaptive)
+- Article updates: evo-devo inner loop (§6), adaptive assembly impl (§8)
+
 ## v0.21.0
 
 Focus:

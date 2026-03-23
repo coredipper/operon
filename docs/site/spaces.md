@@ -44,6 +44,16 @@ Use this to explore:
 - intervention timeline showing retry, escalate, and halt decisions
 - configurable thresholds to see how watcher behavior changes
 
+### Adaptive Assembly
+
+- https://huggingface.co/spaces/coredipper/operon-adaptive
+
+Use this to explore:
+
+- task fingerprinting and template scoring from the PatternLibrary
+- adaptive organism assembly from ranked templates
+- experience pool and intervention recommendations
+
 ## How These Fit
 
 The current demos are best understood as interactive front doors into the same structure the library uses locally.
