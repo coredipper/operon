@@ -103,6 +103,18 @@ class SkillStage:
     fact_extractor: Callable[..., Any] | None = None
     emit_output_fact: bool = False
     fact_tags: tuple[str, ...] = ()
+    # --- Cognitive mode (Phase 5: System A/B) ---
+    cognitive_mode: CognitiveMode | None = None
+
+
+def resolve_cognitive_mode(stage: SkillStage) -> CognitiveMode:
+    """Resolve the cognitive mode of a stage, inferring from mode if not set."""
+    if stage.cognitive_mode is not None:
+        return stage.cognitive_mode
+    mode = stage.mode.strip().lower().replace("-", "_")
+    if mode in {"fixed", "fast", "deterministic"}:
+        return CognitiveMode.OBSERVATIONAL
+    return CognitiveMode.ACTION_ORIENTED
 
 
 @dataclass(frozen=True)
@@ -198,3 +210,13 @@ class WatcherIntervention:
     kind: InterventionKind
     stage_name: str
     reason: str
+
+
+# --- Cognitive mode types (Phase 5: System A/B) ---
+
+
+class CognitiveMode(Enum):
+    """Dual-process cognitive mode annotation (Dupoux/LeCun/Malik System A/B)."""
+
+    OBSERVATIONAL = "observational"      # System A: passive sensing
+    ACTION_ORIENTED = "action_oriented"  # System B: active decision-making

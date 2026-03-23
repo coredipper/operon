@@ -339,9 +339,16 @@ from .state.metabolism import MetabolicAccessPolicy
 # =============================================================================
 # Pattern-First API
 # =============================================================================
+from .healing import (
+    SleepConsolidation,
+    ConsolidationResult,
+    CounterfactualResult,
+    counterfactual_replay,
+)
 from .patterns import (
     AdaptiveRunResult,
     AdaptiveSkillOrganism,
+    CognitiveMode,
     ExperienceRecord,
     InterventionKind,
     PatternLibrary,
@@ -373,6 +380,7 @@ from .patterns import (
     adaptive_skill_organism,
     advise_topology,
     assemble_pattern,
+    resolve_cognitive_mode,
     skill_organism,
 )
 
@@ -434,9 +442,15 @@ __all__ = [
     "ModuleExecution",
     "ExecutionReport",
     "DiagramExecutor",
+    # Healing
+    "SleepConsolidation",
+    "ConsolidationResult",
+    "CounterfactualResult",
+    "counterfactual_replay",
     # Pattern-First API
     "AdaptiveRunResult",
     "AdaptiveSkillOrganism",
+    "CognitiveMode",
     "ExperienceRecord",
     "InterventionKind",
     "PatternLibrary",
@@ -468,6 +482,7 @@ __all__ = [
     "adaptive_skill_organism",
     "advise_topology",
     "assemble_pattern",
+    "resolve_cognitive_mode",
     "skill_organism",
 
     # State - Metabolism
@@ -665,4 +680,4 @@ __all__ = [
     "MetabolicAccessPolicy",
 ]
 
-__version__ = "0.21.1"
+__version__ = "0.22.0"

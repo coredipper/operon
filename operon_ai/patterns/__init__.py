@@ -17,6 +17,7 @@ from .repository import (
 from .review import ReviewerGate, reviewer_gate
 from .swarm import SpecialistSwarm, specialist_swarm
 from .types import (
+    CognitiveMode,
     InterventionKind,
     ReviewerGateConfig,
     ReviewerGateResult,
@@ -30,6 +31,7 @@ from .types import (
     TelemetryEvent,
     TopologyAdvice,
     WatcherIntervention,
+    resolve_cognitive_mode,
 )
 from .watcher import (
     ExperienceRecord,
@@ -42,6 +44,7 @@ from .watcher import (
 __all__ = [
     "AdaptiveRunResult",
     "AdaptiveSkillOrganism",
+    "CognitiveMode",
     "ExperienceRecord",
     "InterventionKind",
     "PatternLibrary",
@@ -67,6 +70,7 @@ __all__ = [
     "adaptive_skill_organism",
     "advise_topology",
     "assemble_pattern",
+    "resolve_cognitive_mode",
     "reviewer_gate",
     "skill_organism",
     "SpecialistSwarm",

@@ -2,6 +2,25 @@
 
 This page tracks the recent direction of the project.
 
+## v0.22.0
+
+Focus:
+
+- cognitive mode annotations (System A/B on SkillStage)
+- sleep consolidation cycle (replay, compress, counterfactual, histone promotion)
+- counterfactual replay over bi-temporal corrections
+
+New:
+
+- `CognitiveMode` enum, `resolve_cognitive_mode()` helper
+- `SleepConsolidation`, `ConsolidationResult`, `CounterfactualResult`
+- `counterfactual_replay()` — static analysis of corrected facts
+- Watcher `mode_balance()` for System A/B distribution
+- `examples/76_cognitive_modes.py` — mode annotations and watcher balance
+- `examples/77_sleep_consolidation.py` — full consolidation cycle
+- [Consolidation Space](https://huggingface.co/spaces/coredipper/operon-consolidation)
+- Article updates: cognitive modes (§6, §8), sleep consolidation (§8)
+
 ## v0.21.1
 
 Focus:

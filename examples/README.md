@@ -39,6 +39,10 @@ reconstructing past belief states:
   task fingerprinting, template selection, automatic organism construction, and outcome recording
 - [`75_experience_driven_watcher.py`](75_experience_driven_watcher.py) —
   watcher experience pool with intervention history driving future recommendations
+- [`76_cognitive_modes.py`](76_cognitive_modes.py) —
+  System A/B cognitive mode annotations with watcher mode balance reporting
+- [`77_sleep_consolidation.py`](77_sleep_consolidation.py) —
+  sleep consolidation cycle: replay, compress, counterfactual, histone promotion
 
 ## Import Style Guide
 
