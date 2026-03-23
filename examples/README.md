@@ -35,6 +35,10 @@ reconstructing past belief states:
   register, retrieve, and score reusable collaboration pattern templates
 - [`73_watcher_component.py`](73_watcher_component.py) —
   runtime monitoring with signal classification and retry/escalate/halt interventions
+- [`74_adaptive_assembly.py`](74_adaptive_assembly.py) —
+  task fingerprinting, template selection, automatic organism construction, and outcome recording
+- [`75_experience_driven_watcher.py`](75_experience_driven_watcher.py) —
+  watcher experience pool with intervention history driving future recommendations
 
 ## Import Style Guide
 

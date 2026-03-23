@@ -12,6 +12,8 @@ This is a lightweight map of the current library surface.
   - `PatternLibrary`, `TaskFingerprint`, `PatternTemplate`, `PatternRunRecord`
   - `WatcherComponent`, `WatcherConfig`, `WatcherSignal`, `SignalCategory`
   - `InterventionKind`, `WatcherIntervention`
+  - `adaptive_skill_organism(...)`, `assemble_pattern(...)`
+  - `AdaptiveSkillOrganism`, `AdaptiveRunResult`, `ExperienceRecord`
 
 ## Core Runtime and Analysis
 

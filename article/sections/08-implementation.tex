@@ -249,6 +249,12 @@ After each stage, the watcher evaluates collected signals against configured thr
 
 The intervention-count convergence signal operationalizes the BIGMAS finding~\cite{hao2026bigmas}: when the ratio of interventions to observed stages exceeds \texttt{max\_intervention\_rate} (default 0.5), the watcher emits a non-convergence HALT. Example~73 demonstrates all three intervention paths.
 
+\paragraph{Adaptive Assembly Implementation.}
+\label{sec:adaptive-impl}
+The \texttt{AdaptiveSkillOrganism} wrapper composes the full adaptive loop. The public factory \texttt{adaptive\_skill\_organism(task, fingerprint, library, ...)} auto-fingerprints the task if no fingerprint is provided, queries \texttt{PatternLibrary.top\_templates\_for()} for the best template, and calls \texttt{assemble\_pattern()} to convert the template's \texttt{stage\_specs} into a runnable topology (dispatching on \texttt{topology}: \texttt{skill\_organism}, \texttt{reviewer\_gate}, \texttt{specialist\_swarm}, or \texttt{single\_worker}). A \texttt{WatcherComponent} and \texttt{TelemetryProbe} are automatically attached.
+
+After execution, the wrapper records a \texttt{PatternRunRecord} in the library (closing the scoring feedback loop) and populates the watcher's experience pool with \texttt{ExperienceRecord} instances for each intervention. The experience pool persists across runs: when rule-based decision logic returns no intervention, the watcher consults past experiences with matching (stage, signal category, fingerprint shape) and recommends the intervention kind that was most often successful. Rule-based decisions always take priority; experience is a fallback. Example~74 demonstrates the full lifecycle; Example~75 demonstrates experience-driven recommendations.
+
 \subsection{Coalgebraic State Machines Implementation}
 
 The coalgebra formalism (\S3.5) is made explicit and composable:

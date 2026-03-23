@@ -238,6 +238,8 @@ The \texttt{advise\_topology()} function (\S\ref{sec:multi-cellular}) provides a
 
 The \texttt{WatcherComponent} implements System~M as a \texttt{SkillRuntimeComponent} that observes stage execution and classifies signals into three categories: \emph{epistemic} (epiplexity, prediction error), \emph{somatic} (ATP/metabolic state), and \emph{species-specific} (immune threats). When signals cross configured thresholds, the watcher writes a \texttt{WatcherIntervention} (retry, escalate, or halt) to \texttt{shared\_state}, which the run loop consumes after component hooks complete. Crucially, the watcher monitors its own intervention rate: when the ratio of cumulative interventions to observed stages exceeds a configurable threshold, it emits a non-convergence HALT signal. This operationalizes the finding of Hao et al.~\cite{hao2026bigmas} that failing multi-agent runs systematically require more routing decisions than successful ones.
 
+The \texttt{AdaptiveSkillOrganism} wrapper closes the loop. Given a task, it auto-fingerprints the input, retrieves the best-scoring template from the library, assembles it into a runnable topology via \texttt{assemble\_pattern()}, attaches a watcher and telemetry probe, runs, and records the outcome as a \texttt{PatternRunRecord}. The watcher's intervention history is recorded as \texttt{ExperienceRecord} instances in a cross-run experience pool, enabling future intervention recommendations based on which actions succeeded for similar (fingerprint, stage, signal) tuples. This is the full evo-devo inner loop: one organism run is one developmental lifetime; the library scoring across many lifetimes is evolutionary selection.
+
 \subsubsection{Epistemic Topology of Wiring Diagrams}
 \label{sec:epistemic-topology}
 
