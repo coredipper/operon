@@ -96,6 +96,21 @@ class AdapterResult:
 - AnimaWorks role mapping produces valid SkillStages that pass organism assembly
 - No runtime dependency on either external project
 
+**Article updates:**
+
+| Section | Change |
+|---------|--------|
+| `02-related-work.tex` | New subsection: "Convergence with Operational Runtimes" citing AnimaWorks, Swarms |
+| `08-implementation.tex` | New subsection: convergence adapter architecture, ExternalTopology type |
+
+**Documentation updates:**
+- `docs/site/releases.md` — v0.24.0 section
+- `docs/site/api.md` — new convergence package section
+- `docs/site/concepts.md` — convergence layer in architecture
+- New page: `docs/site/convergence.md` — overview of three-layer architecture
+- `examples/README.md` — examples 82-83
+- Blog post: "Operon v0.24: Convergence Begins"
+
 ---
 
 ## Phase C2 — Template Exchange (v0.24.x)
@@ -134,6 +149,20 @@ Operon's adaptive assembly a strong starting catalog.
 - Seeded library contains valid templates for all 10+ Swarms patterns
 - `top_templates_for()` ranks seeded templates sensibly for test fingerprints
 - Hybrid assembly falls back to LLM generation for novel tasks, then improves with scoring
+
+**Article updates:**
+
+| Section | Change |
+|---------|--------|
+| `06-discussion.tex` | Extend adaptive structure: seeded libraries, hybrid assembly, LLM-generated templates |
+| `08-implementation.tex` | New subsection: template exchange protocol, hybrid assembly pipeline |
+
+**Documentation updates:**
+- `docs/site/releases.md` — v0.24.x section
+- `docs/site/convergence.md` — template exchange section
+- `examples/README.md` — examples 84-85
+- HF Space: `operon-convergence-catalog` — browse seeded templates, compare rankings
+- Blog post: "Operon v0.24: Seeding the Library from Swarms"
 
 ---
 
@@ -191,6 +220,22 @@ continue to work via arity-aware dispatch. `PrimingView` is a superset.
 - PrimingView provides all 6 AnimaWorks priming channels via Operon data sources
 - HeartbeatDaemon triggers consolidation autonomously after accumulated runs
 
+**Article updates:**
+
+| Section | Change |
+|---------|--------|
+| `06-discussion.tex` | Extend memory discussion: PrimingView multi-channel model, heartbeat as always-on System M |
+| `08-implementation.tex` | New subsection: memory bridge architecture, PrimingView channels, HeartbeatDaemon lifecycle |
+
+**Documentation updates:**
+- `docs/site/releases.md` — v0.25.0 section
+- `docs/site/bitemporal-memory.md` — memory bridge section
+- `docs/site/skill-organisms.md` — PrimingView replacing SubstrateView
+- `docs/site/convergence.md` — memory convergence section
+- `examples/README.md` — examples 86-88
+- HF Space: `operon-priming` — visualize multi-channel priming for stages
+- Blog post: "Operon v0.25: Memory Convergence and the Heartbeat"
+
 ---
 
 ## Phase C4 — Formal Verification (v0.25.x)
@@ -236,6 +281,20 @@ invariants hold across all interleavings.
 - Liveness properties checked with fairness assumptions
 - At least one atomicity refinement (coarse → fine-grained) verified
 
+**Article updates:**
+
+| Section | Change |
+|---------|--------|
+| `06-discussion.tex` | New subsection: "Formal Verification of Convergence Properties" — TLA+ methodology, locally stable guards |
+| `08-implementation.tex` | New subsection: TLA+ spec descriptions, invariant catalog, TLC verification results |
+| `09-conclusion.tex` | Update future work: formal verification now done, reference results |
+
+**Documentation updates:**
+- `docs/site/releases.md` — v0.25.x section
+- `docs/site/convergence.md` — formal verification section with invariant catalog
+- New page: `docs/site/theory.md` — extend with TLA+ verification methodology
+- Blog post: "Operon v0.25: Proving Convergence with TLA+"
+
 ---
 
 ## Phase C5 — Production Runtime (v0.26.0)
@@ -275,6 +334,21 @@ convergence detection.
 - Watcher detects non-convergence in a Swarms-deployed workflow
 - Performance overhead of the Operon structural layer < 5% of total execution time
 
+**Article updates:**
+
+| Section | Change |
+|---------|--------|
+| `03-mapping.tex` | Extend typed composition: organism-to-workflow compilation as functor between categories |
+| `08-implementation.tex` | New subsection: Swarms compiler, distributed watcher transport layer |
+
+**Documentation updates:**
+- `docs/site/releases.md` — v0.26.0 section
+- `docs/site/convergence.md` — production runtime section
+- `docs/site/skill-organisms.md` — distributed watcher documentation
+- `examples/README.md` — examples 89-90
+- HF Space: `operon-deployment` — visualize Operon topology compiled to Swarms workflow
+- Blog post: "Operon v0.26: From Library to Production Runtime"
+
 ---
 
 ## Phase C6 — Evaluation + Publication (v0.26.x)
@@ -311,6 +385,63 @@ AnimaWorks' consolidation benefit from bi-temporal auditability?
 - At least two working proof-of-concept adapters demonstrated
 - Seeded PatternLibrary outperforms empty library on benchmark tasks
 - Convergence paper submitted or published
+
+**Article updates:**
+
+| Section | Change |
+|---------|--------|
+| `00-abstract.tex` | Final rewrite to include convergence results |
+| `08-implementation.tex` | New subsection: evaluation protocol, benchmark results table |
+| `09-conclusion.tex` | Rewrite to include convergence findings, three-layer architecture as validated result |
+| `references.bib` | Add AnimaWorks, Swarms as software references |
+
+**Documentation updates:**
+- `docs/site/releases.md` — v0.26.x section
+- `docs/site/convergence.md` — evaluation results, recommendations
+- Full docs site mirror to `coredipper.github.io`
+- Blog post: "Operon v0.26: Convergence Complete — Three Layers Validated"
+
+---
+
+## HuggingFace Space Allocation
+
+| Space | Phase | Purpose |
+|-------|-------|---------|
+| `operon-convergence-catalog` | C2 | Browse seeded templates, compare Operon vs. Swarms rankings |
+| `operon-priming` | C3 | Visualize multi-channel PrimingView for stages |
+| `operon-deployment` | C5 | Operon topology compiled to Swarms workflow visualization |
+
+---
+
+## Blog Post Allocation
+
+| Blog Post | Phase | Topic |
+|-----------|-------|-------|
+| "Convergence Begins" | C1 | Foundation adapters, topology analysis, three-layer vision |
+| "Seeding the Library from Swarms" | C2 | Template exchange, hybrid assembly |
+| "Memory Convergence and the Heartbeat" | C3 | PrimingView, memory bridge, heartbeat daemon |
+| "Proving Convergence with TLA+" | C4 | Formal verification, invariants, model checking results |
+| "From Library to Production Runtime" | C5 | Swarms compiler, distributed watcher |
+| "Convergence Complete" | C6 | Evaluation results, three-layer validation, recommendations |
+
+---
+
+## Documentation Site Updates
+
+Each phase updates `coredipper.github.io`:
+
+| Page | Phase | Change |
+|------|-------|--------|
+| `operon/releases/` | All | New version section per phase |
+| `operon/convergence/` (new) | C1 | Created; extended each subsequent phase |
+| `operon/api/` | C1, C3, C5 | New convergence types |
+| `operon/skill-organisms/` | C3 | PrimingView replacing SubstrateView |
+| `operon/bitemporal-memory/` | C3 | Memory bridge section |
+| `operon/concepts/` | C1, C6 | Architecture evolution |
+| `operon/theory/` | C4 | TLA+ verification methodology |
+| `operon/spaces/` | C2, C3, C5 | New spaces |
+| `operon/examples/` | All | Examples 82-90 |
+| `blog/` | All | One blog post per phase |
 
 ---
 
