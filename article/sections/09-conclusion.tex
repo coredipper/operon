@@ -111,25 +111,28 @@ framework. The connection between morphogen-driven topology switching and episte
 suggests a path toward more formally analyzed adaptive multi-agent systems, where topological transitions
 can be justified under explicit epistemic and resource assumptions.
 
+\subsection*{The Six-Layer Arc}
+
+The v0.19--v0.23 progression demonstrates that the biological analogy extends beyond structural safety into temporal reasoning, adaptive behavior, and cognitive development:
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Structure} (v0.17--0.18): Typed wiring diagrams, topology advice, pattern-first API.
+\item \textbf{Memory} (v0.19--0.20): Bi-temporal facts with dual time axes; auditable substrate integration with three-layer context model.
+\item \textbf{Adaptation} (v0.21): Pattern libraries for evolutionary template memory; watcher with three-category signal taxonomy (epistemic/somatic/species); intervention-count convergence signal grounded in Hao et al.~\cite{hao2026bigmas}; experience-driven adaptive assembly.
+\item \textbf{Cognition} (v0.22): System A/B cognitive mode annotations per Dupoux et al.~\cite{dupoux2026learning}; sleep consolidation with counterfactual replay; social learning with epistemic vigilance (trust-weighted template exchange); curiosity signals for intrinsic motivation.
+\item \textbf{Development} (v0.23): Critical periods that close as organisms mature; capability gating via developmental stage on tool acquisition; teacher-learner scaffolding.
+\item \textbf{Integration} (v0.23.x): Cross-subsystem integration tests; memory adapters bridging histone and episodic memory into the bi-temporal store; paper and documentation finalization.
+\end{enumerate}
+
+Each layer assumes the previous one is stable. The progression from structural safety to temporal epistemics to adaptive cognition to developmental staging is not arbitrary---it mirrors the biological sequence from genome (fixed structure) through epigenetics (learned bias) to neural development (plastic then crystallizing).
+
 \subsection*{Future Work}
 
 Several directions remain open:
 \begin{itemize}[leftmargin=*]
-\item \textbf{Epiplexity Validation:} Empirical calibration of the $\alpha$ mixing parameter and threshold
-$\delta$ across diverse task types and LLM families. The current implementation uses a mock embedding
-provider; integration with production embedding APIs remains future work.
-\item \textbf{Correlation Estimation:} Lightweight methods for estimating $\rho$ between agent error modes
-without exhaustive pairwise testing.
-\item \textbf{Distributed Diffusion:} The morphogen diffusion field currently operates in a single process.
-Extending to distributed multi-process deployments with eventual consistency remains open.
-\item \textbf{Adversarial Robustness:} Red-team evaluation of immune evasion vectors, including novel
-injection syntax, tool poisoning, and behavioral mimicry attacks. Development of continuous adaptation
-mechanisms (signature updates, thymic retraining, threat intelligence sharing).
-\item \textbf{Production Benchmarks:} Validation on real LLM outputs at scale, measuring both security
-efficacy and performance overhead of the defense layers.
-\item \textbf{Finite-Trace Equivalence at Scale:} The current equivalence check operates over finite input sequences.
-Extending it to coinductive bisimulation for infinite-trace or continuously interacting agent systems is an open challenge.
-\item \textbf{Learned Rewriting Rules:} The current optimization passes are hand-crafted. Learning
-rewriting rules from execution traces---identifying recurring subdiagram patterns and their optimized
-replacements---would connect diagram optimization to program synthesis and equality saturation techniques.
+\item \textbf{Convergence Investigation:} Combining Operon's structural guarantees with operational runtimes (AnimaWorks~\cite{animaworks}, Swarms~\cite{swarms}) to create structurally guaranteed persistent organizations with cognitive capabilities.
+\item \textbf{Production Benchmarks:} Validation on real LLM outputs at scale via BFCL and AgentDojo evaluation harnesses, measuring both reliability and the impact of adaptive assembly on task performance.
+\item \textbf{Adversarial Robustness:} Red-team evaluation of immune evasion vectors and development of continuous adaptation mechanisms.
+\item \textbf{Distributed Diffusion:} Extending morphogen fields to distributed multi-process deployments with eventual consistency.
+\item \textbf{Learned Rewriting Rules:} Learning diagram optimization rules from execution traces, connecting to program synthesis and equality saturation.
 \end{itemize}
