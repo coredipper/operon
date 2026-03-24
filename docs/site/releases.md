@@ -2,6 +2,22 @@
 
 This page tracks the recent direction of the project.
 
+## v0.23.1
+
+Focus:
+
+- release integration and publication polish
+- bi-temporal memory adapters (HistoneStore → BiTemporal, EpisodicMemory → BiTemporal)
+- cross-subsystem integration tests (5 end-to-end tests)
+- article rewrite (abstract, conclusion updated for full v0.19–v0.23 scope)
+
+New:
+
+- `histone_to_bitemporal()`, `episodic_to_bitemporal()` — memory bridge adapters
+- Integration tests covering substrate+watcher, adaptive+consolidation, social+development, full lifecycle
+- Article abstract covering six-layer progression
+- Article conclusion with roadmap arc and updated future work
+
 ## v0.23.0
 
 Focus:

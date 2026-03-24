@@ -23,6 +23,10 @@ from .bitemporal import (
     FactSnapshot,
     CorrectionResult,
 )
+from .adapters import (
+    histone_to_bitemporal,
+    episodic_to_bitemporal,
+)
 
 __all__ = [
     "MemoryTier",
@@ -33,4 +37,6 @@ __all__ = [
     "BiTemporalMemory",
     "FactSnapshot",
     "CorrectionResult",
+    "histone_to_bitemporal",
+    "episodic_to_bitemporal",
 ]
