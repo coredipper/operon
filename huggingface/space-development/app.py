@@ -123,13 +123,13 @@ def _run_lifecycle(max_ops, juv_t, adol_t, mat_t):
 
 
 def build_app():
-    with gr.Blocks(title="Operon Developmental Staging", theme=gr.themes.Base()) as demo:
+    with gr.Blocks(title="Operon Developmental Staging") as demo:
         gr.Markdown("# Operon Developmental Staging\nLifecycle progression, critical periods, and capability gating.")
 
-        max_ops = gr.Slider(10, 500, value=100, step=10, label="Max Operations")
-        juv = gr.Slider(1, 50, value=10, step=1, label="Juvenile Threshold (%)")
-        adol = gr.Slider(10, 80, value=35, step=5, label="Adolescent Threshold (%)")
-        mat = gr.Slider(30, 95, value=70, step=5, label="Mature Threshold (%)")
+        max_ops = gr.Slider(minimum=10, maximum=500, value=100, step=10, label="Max Operations")
+        juv = gr.Slider(minimum=1, maximum=50, value=10, step=1, label="Juvenile Threshold (%)")
+        adol = gr.Slider(minimum=10, maximum=80, value=35, step=5, label="Adolescent Threshold (%)")
+        mat = gr.Slider(minimum=30, maximum=95, value=70, step=5, label="Mature Threshold (%)")
         btn = gr.Button("Run Lifecycle")
         out = gr.HTML()
         btn.click(_run_lifecycle, inputs=[max_ops, juv, adol, mat], outputs=[out])

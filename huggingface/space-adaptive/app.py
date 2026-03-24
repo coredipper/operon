@@ -177,17 +177,17 @@ def _run_experience(exp_preset):
 # ---------------------------------------------------------------------------
 
 def build_app():
-    with gr.Blocks(title="Operon Adaptive Assembly", theme=gr.themes.Base()) as demo:
+    with gr.Blocks(title="Operon Adaptive Assembly") as demo:
         gr.Markdown("# Operon Adaptive Assembly\nTemplate selection, organism construction, and experience-driven intervention.")
 
         with gr.Tab("Template Selection"):
-            preset = gr.Dropdown(list(PRESETS.keys()), label="Task Preset", value="Enterprise Analysis")
+            preset = gr.Dropdown(choices=list(PRESETS.keys()), label="Task Preset", value="Enterprise Analysis")
             btn = gr.Button("Select Template")
             out = gr.HTML()
             btn.click(_run_selection, inputs=[preset], outputs=[out])
 
         with gr.Tab("Experience Pool"):
-            exp_preset = gr.Dropdown(list(EXPERIENCE_PRESETS.keys()), label="Experience Preset", value="Fresh (no experience)")
+            exp_preset = gr.Dropdown(choices=list(EXPERIENCE_PRESETS.keys()), label="Experience Preset", value="Fresh (no experience)")
             btn2 = gr.Button("Show Pool & Recommendation")
             out2 = gr.HTML()
             btn2.click(_run_experience, inputs=[exp_preset], outputs=[out2])

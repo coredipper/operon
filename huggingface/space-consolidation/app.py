@@ -148,14 +148,14 @@ def _run_consolidation(preset_name):
 # ---------------------------------------------------------------------------
 
 def build_app():
-    with gr.Blocks(title="Operon Sleep Consolidation", theme=gr.themes.Base()) as demo:
+    with gr.Blocks(title="Operon Sleep Consolidation") as demo:
         gr.Markdown("# Operon Sleep Consolidation\nReplay, compress, counterfactual replay, and histone promotion.")
 
         with gr.Tab("Consolidation Cycle"):
-            preset = gr.Dropdown(list(PRESETS.keys()), label="Scenario", value="After 10 Runs (8 successful)")
+            preset = gr.Dropdown(choices=list(PRESETS.keys()), label="Scenario", value="After 10 Runs (8 successful)")
             btn = gr.Button("Run Consolidation")
-            out = gr.HTML(label="Result")
-            tiers = gr.HTML(label="Memory Tiers")
+            out = gr.HTML()
+            tiers = gr.HTML()
             btn.click(_run_consolidation, inputs=[preset], outputs=[out, tiers])
 
         with gr.Tab("Memory Tiers"):

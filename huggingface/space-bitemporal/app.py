@@ -411,8 +411,8 @@ def build_app() -> gr.Blocks:
                     )
                     load_btn = gr.Button("Load Scenario", variant="primary", scale=1)
 
-                summary_html = gr.HTML(label="Summary")
-                timeline_html = gr.HTML(label="Fact Timeline")
+                summary_html = gr.HTML()
+                timeline_html = gr.HTML()
 
                 load_btn.click(
                     fn=_load_preset,
@@ -445,15 +445,15 @@ def build_app() -> gr.Blocks:
                     )
                 with gr.Row():
                     valid_slider = gr.Slider(
-                        1, 7, value=2, step=1,
+                        minimum=1, maximum=7, value=2, step=1,
                         label="Valid-Time Day",
                     )
                     record_slider = gr.Slider(
-                        1, 7, value=4, step=1,
+                        minimum=1, maximum=7, value=4, step=1,
                         label="Record-Time Day",
                     )
                 query_btn = gr.Button("Query", variant="primary")
-                query_output = gr.HTML(label="Query Results")
+                query_output = gr.HTML()
 
                 query_btn.click(
                     fn=_run_query,
@@ -475,10 +475,10 @@ def build_app() -> gr.Blocks:
                         value="Record-Time",
                         label="Axis",
                     )
-                    diff_t1 = gr.Slider(1, 7, value=1, step=1, label="From Day")
-                    diff_t2 = gr.Slider(1, 7, value=5, step=1, label="To Day")
+                    diff_t1 = gr.Slider(minimum=1, maximum=7, value=1, step=1, label="From Day")
+                    diff_t2 = gr.Slider(minimum=1, maximum=7, value=5, step=1, label="To Day")
                 diff_btn = gr.Button("Compute Diff", variant="primary")
-                diff_output = gr.HTML(label="Diff Results")
+                diff_output = gr.HTML()
 
                 diff_btn.click(
                     fn=_run_diff,
@@ -496,8 +496,8 @@ def build_app() -> gr.Blocks:
                     )
                     audit_btn = gr.Button("Audit", variant="primary", scale=1)
 
-                audit_history = gr.HTML(label="History (Record Order)")
-                audit_timeline = gr.HTML(label="Timeline (Valid Order)")
+                audit_history = gr.HTML()
+                audit_timeline = gr.HTML()
 
                 audit_btn.click(
                     fn=_run_audit,
@@ -510,4 +510,4 @@ def build_app() -> gr.Blocks:
 
 if __name__ == "__main__":
     app = build_app()
-    app.launch(theme=gr.themes.Soft())
+    app.launch()

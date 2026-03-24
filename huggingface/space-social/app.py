@@ -143,25 +143,25 @@ def _run_curiosity(threshold):
 # ---------------------------------------------------------------------------
 
 def build_app():
-    with gr.Blocks(title="Operon Social Learning", theme=gr.themes.Base()) as demo:
+    with gr.Blocks(title="Operon Social Learning") as demo:
         gr.Markdown("# Operon Social Learning\nTemplate exchange, trust registry, and curiosity-driven exploration.")
 
         with gr.Tab("Template Exchange"):
-            sr = gr.Slider(0, 100, value=60, step=5, label="Min Success Rate (%)")
-            trust = gr.Slider(0, 100, value=50, step=5, label="Default Trust (%)")
+            sr = gr.Slider(minimum=0, maximum=100, value=60, step=5, label="Min Success Rate (%)")
+            trust = gr.Slider(minimum=0, maximum=100, value=50, step=5, label="Default Trust (%)")
             btn = gr.Button("Run Exchange")
             out = gr.HTML()
             btn.click(_run_exchange, inputs=[sr, trust], outputs=[out])
 
         with gr.Tab("Trust Registry"):
-            ns = gr.Slider(0, 10, value=3, step=1, label="Successes")
-            nf = gr.Slider(0, 10, value=2, step=1, label="Failures")
+            ns = gr.Slider(minimum=0, maximum=10, value=3, step=1, label="Successes")
+            nf = gr.Slider(minimum=0, maximum=10, value=2, step=1, label="Failures")
             btn2 = gr.Button("Simulate Trust")
             out2 = gr.HTML()
             btn2.click(_run_trust_sim, inputs=[ns, nf], outputs=[out2])
 
         with gr.Tab("Curiosity Signals"):
-            thresh = gr.Slider(0, 100, value=60, step=5, label="Curiosity Threshold (%)")
+            thresh = gr.Slider(minimum=0, maximum=100, value=60, step=5, label="Curiosity Threshold (%)")
             btn3 = gr.Button("Show Signals")
             out3 = gr.HTML()
             btn3.click(_run_curiosity, inputs=[thresh], outputs=[out3])

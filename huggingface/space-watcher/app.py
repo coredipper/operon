@@ -297,14 +297,14 @@ def _run_custom(preset_name, ep_thresh, atp_thresh, max_rate):
 # ---------------------------------------------------------------------------
 
 def build_app():
-    with gr.Blocks(title="Operon Watcher Dashboard", theme=gr.themes.Base()) as demo:
+    with gr.Blocks(title="Operon Watcher Dashboard") as demo:
         gr.Markdown("# Operon Watcher Dashboard\nSignal classification and intervention timeline for multi-stage workflows.")
 
         with gr.Tab("Signal Classification"):
-            preset_dd = gr.Dropdown(list(PRESETS.keys()), label="Preset Scenario", value="Normal Run")
+            preset_dd = gr.Dropdown(choices=list(PRESETS.keys()), label="Preset Scenario", value="Normal Run")
             load_btn = gr.Button("Load & Run")
-            signal_out = gr.HTML(label="Signals")
-            timeline_out = gr.HTML(label="Timeline")
+            signal_out = gr.HTML()
+            timeline_out = gr.HTML()
             load_btn.click(_load_preset, inputs=[preset_dd], outputs=[signal_out, timeline_out])
 
         with gr.Tab("Intervention Timeline"):
@@ -312,12 +312,12 @@ def build_app():
 
         with gr.Tab("Live Configuration"):
             gr.Markdown("Adjust thresholds and re-run the selected scenario.")
-            preset_dd2 = gr.Dropdown(list(PRESETS.keys()), label="Preset", value="Normal Run")
-            ep_slider = gr.Slider(0.05, 0.8, value=0.3, step=0.05, label="Epiplexity Stagnant Threshold")
-            atp_slider = gr.Slider(0.01, 0.5, value=0.1, step=0.01, label="ATP Low Fraction")
-            rate_slider = gr.Slider(0.1, 1.0, value=0.5, step=0.1, label="Max Intervention Rate")
+            preset_dd2 = gr.Dropdown(choices=list(PRESETS.keys()), label="Preset", value="Normal Run")
+            ep_slider = gr.Slider(minimum=0.05, maximum=0.8, value=0.3, step=0.05, label="Epiplexity Stagnant Threshold")
+            atp_slider = gr.Slider(minimum=0.01, maximum=0.5, value=0.1, step=0.01, label="ATP Low Fraction")
+            rate_slider = gr.Slider(minimum=0.1, maximum=1.0, value=0.5, step=0.1, label="Max Intervention Rate")
             run_btn = gr.Button("Run with Custom Config")
-            custom_out = gr.HTML(label="Result")
+            custom_out = gr.HTML()
             run_btn.click(_run_custom, inputs=[preset_dd2, ep_slider, atp_slider, rate_slider], outputs=[custom_out])
 
     return demo
