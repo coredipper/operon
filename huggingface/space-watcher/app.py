@@ -242,11 +242,13 @@ def _timeline_html(
         stage_sigs = [s for s in signals if s.stage_name == stage.name]
         ep_val = next((s.value for s in stage_sigs if s.category == SignalCategory.EPISTEMIC), None)
         atp_val = next((s.detail.get("fraction") for s in stage_sigs if s.category == SignalCategory.SOMATIC), None)
+        ep_str = f"{ep_val:.2f}" if ep_val is not None else "—"
+        atp_str = f"{atp_val:.0%}" if atp_val is not None else "—"
         rows += f"""<tr style="border-bottom:1px solid #222">
             <td style="padding:10px;font-weight:600">{stage.name}</td>
             <td style="padding:10px">{stage.model}</td>
-            <td style="padding:10px">{ep_val:.2f if ep_val is not None else '—'}</td>
-            <td style="padding:10px">{f'{atp_val:.0%}' if atp_val is not None else '—'}</td>
+            <td style="padding:10px">{ep_str}</td>
+            <td style="padding:10px">{atp_str}</td>
             <td style="padding:10px">{intv_cell or '<span style="color:#4a4">OK</span>'}</td>
         </tr>"""
     rate = f"{len(interventions)}/{len(stages)}" if stages else "0/0"
