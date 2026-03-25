@@ -4,13 +4,63 @@ Date: 2026-03-24
 Status: Active
 Depends on: v0.23.1 (complete), convergence investigation doc
 
-> **Goal:** Implement the three-layer convergence architecture (Operon structural /
-> Swarms orchestration / AnimaWorks cognitive) through phased adapter development,
-> TLA+ formal verification, and shared evaluation.
+> **Goal:** Implement the four-layer convergence architecture (Operon structural /
+> AsyncThink thinking / Swarms orchestration / AnimaWorks cognitive) through
+> phased adapter development, co-design formalization, TLA+ formal verification,
+> and shared evaluation.
 
 This roadmap turns the convergence investigation doc into a dependency-ordered
 implementation plan with concrete deliverables, success criteria, and version
 targets.
+
+### Theoretical foundations
+
+Two additional sources inform this roadmap beyond the original investigation:
+
+**Zardini (2023), "Co-Design of Complex Systems" (ETH Zurich thesis).**
+Provides a monotone theory of co-design using category theory — design problems
+as monotone maps between posets, composed via series/parallel/feedback. Directly
+applicable to formalizing the adapter composition in the four-layer stack:
+each adapter is a design problem, the full convergence is their composition,
+and Zardini's fixed-point theory proves whether the adaptive assembly loop
+converges. Key concepts: feasibility relations (what resources are sufficient
+for what capabilities), functorial solution schemes (queries as functors),
+and assume-guarantee contracts for compositional reasoning.
+
+**Chi et al. (2025), "AsyncThink: The Era of Agentic Organization" (Microsoft Research).**
+Introduces learned Fork/Join thinking structure within a single LLM via RL-
+optimized organizer-worker protocol. Fills the gap between Operon's inter-agent
+topology and individual agent reasoning: Operon decides stage structure,
+AsyncThink decides how each stage thinks internally. Key concepts: thinking
+concurrency ratio (η), critical-path latency optimization, and organization
+policy generalization to unseen tasks.
+
+### Four-layer architecture
+
+```
+┌─────────────────────────────────────────────┐
+│  AnimaWorks (cognitive layer)               │
+│  Identity, memory consolidation, forgetting,│
+│  heartbeat, social coordination, priming    │
+├─────────────────────────────────────────────┤
+│  AsyncThink (thinking layer)                │
+│  Fork/Join policy, concurrency optimization,│
+│  learned execution structure within agents  │
+├─────────────────────────────────────────────┤
+│  Swarms (orchestration layer)               │
+│  Enterprise deployment, scaling, monitoring,│
+│  pattern execution, multi-provider routing  │
+├─────────────────────────────────────────────┤
+│  Operon (structural layer)                  │
+│  Topology advice, epistemic analysis,       │
+│  pattern scoring, watcher, auditability,    │
+│  co-design formalization (Zardini)          │
+└─────────────────────────────────────────────┘
+```
+
+Operon designs and validates the structure. AsyncThink optimizes how each
+agent thinks within that structure. Swarms executes it at scale. AnimaWorks
+gives it persistent cognition. Each layer is independently useful.
 
 ---
 
@@ -20,12 +70,12 @@ targets.
 |---------|-------|------------------|
 | v0.24.0 | **Foundation adapters** | Swarms topology analysis, AnimaWorks role mapping, shared types |
 | v0.24.x | **Template exchange** | Swarms catalog → PatternLibrary seeding, AutoSwarmBuilder hybrid |
-| v0.25.0 | **Memory convergence** | AnimaWorks memory bridge, PrimingView, heartbeat daemon |
-| v0.25.x | **Formal verification** | TLA+ specs for template exchange, developmental gating, convergence |
-| v0.26.0 | **Production runtime** | Swarms execution backend, distributed watcher, scaling tests |
+| v0.25.0 | **Memory + thinking convergence** | AnimaWorks memory bridge, PrimingView, AsyncThink thinking mode |
+| v0.25.x | **Formal verification** | TLA+ specs, Zardini co-design formalization, fixed-point proofs |
+| v0.26.0 | **Production runtime** | Swarms execution backend, distributed watcher, async stages |
 | v0.26.x | **Evaluation + publication** | Shared benchmarks, convergence paper, documentation |
 
-The progression: **adapters → exchange → memory → verification → runtime → evaluation**.
+The progression: **adapters → exchange → memory/thinking → verification → runtime → evaluation**.
 
 ---
 
@@ -166,15 +216,19 @@ Operon's adaptive assembly a strong starting catalog.
 
 ---
 
-## Phase C3 — Memory Convergence (v0.25.0)
+## Phase C3 — Memory + Thinking Convergence (v0.25.0)
 
-**Theme:** Bridge AnimaWorks' memory systems into Operon's bi-temporal store
-and evolve SubstrateView into a richer PrimingView.
+**Theme:** Bridge AnimaWorks' memory systems into Operon's bi-temporal store,
+evolve SubstrateView into a richer PrimingView, and add AsyncThink-inspired
+intra-stage thinking structure.
 
 **Justification:** AnimaWorks' 6-channel priming and consolidation pipeline
 represent operational evidence for memory patterns Operon has formalized but
-not deployed at scale. The bridge creates auditable records from AnimaWorks'
-mutable memory.
+not deployed at scale. AsyncThink's organizer-worker protocol demonstrates
+that intra-stage thinking structure (Fork/Join) can be learned via RL and
+significantly reduce latency while improving accuracy. The bridge creates
+auditable records from AnimaWorks' mutable memory; the async thinking mode
+gives stages a richer internal execution model.
 
 **Deliverables:**
 
@@ -183,10 +237,29 @@ mutable memory.
 | `operon_ai/convergence/memory_bridge.py` | AnimaWorks episodic/semantic/procedural → BiTemporalMemory |
 | `operon_ai/patterns/priming.py` | `PrimingView` — multi-channel frozen envelope replacing flat SubstrateView |
 | `operon_ai/patterns/heartbeat.py` | `HeartbeatDaemon` — always-on watcher with periodic consolidation |
+| `operon_ai/patterns/async_thinking.py` | `AsyncThinkingMode` — Fork/Join execution within a single stage (inspired by Chi et al.) |
 | `examples/86_memory_bridge.py` | AnimaWorks memory → bi-temporal facts |
 | `examples/87_priming_view.py` | Multi-channel stage priming |
 | `examples/88_heartbeat_daemon.py` | Idle-time consolidation and curiosity |
-| Tests | Bridge auditability, PrimingView channels, heartbeat scheduling |
+| `examples/88b_async_thinking.py` | Stage with Fork/Join sub-queries and concurrency tracking |
+| Tests | Bridge auditability, PrimingView channels, heartbeat scheduling, async thinking |
+
+**AsyncThinkingMode (from Chi et al. "AsyncThink"):**
+
+A new execution mode for `SkillStage` that allows a stage to internally Fork
+sub-queries to parallel workers within the same nucleus, then Join results.
+The organizer (stage handler) decides when to fork and when to join based on
+an organization policy. Key additions:
+
+- `mode="async"` on `SkillStage` — signals that this stage uses Fork/Join
+- `AsyncOrganizer` manages sub-query dispatch within a single stage execution
+- `ThinkingConcurrencyRatio` (η = avg active workers / capacity) as a new
+  watcher signal source — low concurrency on parallelizable tasks triggers
+  escalation
+- `CriticalPathLatency` metric for async stages — minimum sequential depth
+  of the Fork/Join DAG, computed via dynamic programming per Chi et al. §4.1
+- Organization policy stored as `intervention_policy` in `PatternTemplate`,
+  so `adaptive_skill_organism()` selects both topology and thinking structure
 
 **PrimingView (evolves SubstrateView):**
 
@@ -238,10 +311,10 @@ continue to work via arity-aware dispatch. `PrimingView` is a superset.
 
 ---
 
-## Phase C4 — Formal Verification (v0.25.x)
+## Phase C4 — Formal Verification + Co-Design Theory (v0.25.x)
 
-**Theme:** TLA+ specifications for the three candidate protocols, model-checked
-with TLC.
+**Theme:** TLA+ specifications for the three candidate protocols, Zardini
+co-design formalization for the adapter composition, model-checked with TLC.
 
 **Justification:** The convergence introduces distributed coordination problems
 (template exchange, developmental gating, convergence detection across
@@ -256,7 +329,35 @@ invariants hold across all interleavings.
 | `specs/DevelopmentalGating.tla` | Lifecycle progression with critical periods |
 | `specs/ConvergenceDetection.tla` | Intervention-rate convergence across organisms |
 | `specs/README.md` | How to install TLA+ toolbox and run TLC model checker |
-| Documentation | Safety invariants verified, liveness properties checked |
+| `operon_ai/convergence/codesign.py` | Zardini co-design formalization: adapters as monotone maps, composition as monoidal product |
+| Documentation | Safety invariants verified, liveness properties checked, co-design fixed-point convergence proved |
+
+**Zardini co-design formalization (from Zardini 2023, ETH thesis):**
+
+Each convergence adapter is formalized as a **design problem (DP)** in Zardini's
+framework — a monotone map between a poset of resources (inputs/constraints)
+and a poset of functionalities (outputs/capabilities):
+
+- `SwarmTopologyAdapter` as a DP: resources = Swarms pattern spec; functionalities = Operon TopologyAdvice + risk score
+- `MemoryBridgeAdapter` as a DP: resources = AnimaWorks memory entries; functionalities = BiTemporalFact records
+- `AsyncThinkingAdapter` as a DP: resources = agent pool capacity + latency budget; functionalities = thinking concurrency ratio + accuracy
+
+The full convergence stack is the **series composition** of these DPs (Ch. 5 of
+Zardini). The adaptive assembly loop (`run → record → score → select`) is a
+**feedback composition** (§5.4), and Zardini's domain-theoretic fixed-point
+theory (§7.5) proves whether this loop converges to stable template rankings.
+
+Key deliverable: `codesign.py` provides:
+- `AdapterDP` protocol — monotone map interface for convergence adapters
+- `compose_series(dp1, dp2)` — series composition
+- `compose_parallel(dp1, dp2)` — parallel composition
+- `feedback_fixed_point(dp, initial)` — iterative fixed-point computation
+- `feasibility_check(dp, resources)` — does the adapter produce valid output for given input?
+
+This gives the convergence stack a mathematical proof framework beyond TLA+:
+TLA+ verifies temporal properties (safety/liveness over interleavings);
+co-design theory verifies structural properties (feasibility, compositionality,
+convergence of the adaptive loop).
 
 **TemplateExchangeProtocol.tla:**
 - State: `library[org]`, `trust[org][peer]`, `stage[org]`, `records[org]`
@@ -300,9 +401,10 @@ invariants hold across all interleavings.
 ## Phase C5 — Production Runtime (v0.26.0)
 
 **Theme:** Compile Operon organisms into Swarms workflows for production
-deployment.
+deployment, with AsyncThink-optimized stages.
 
-**Justification:** Operon designs topologies; Swarms deploys them at scale.
+**Justification:** Operon designs topologies; AsyncThink optimizes how each
+stage thinks internally; Swarms deploys the result at scale.
 This phase builds the compiler that translates `SkillOrganism` into Swarms'
 `SequentialWorkflow` / `GraphWorkflow`, preserving watcher signals and
 convergence detection.
@@ -392,14 +494,14 @@ AnimaWorks' consolidation benefit from bi-temporal auditability?
 |---------|--------|
 | `00-abstract.tex` | Final rewrite to include convergence results |
 | `08-implementation.tex` | New subsection: evaluation protocol, benchmark results table |
-| `09-conclusion.tex` | Rewrite to include convergence findings, three-layer architecture as validated result |
-| `references.bib` | Add AnimaWorks, Swarms as software references |
+| `09-conclusion.tex` | Rewrite to include convergence findings, four-layer architecture as validated result |
+| `references.bib` | Add AnimaWorks, Swarms, Zardini, Chi et al. as references |
 
 **Documentation updates:**
 - `docs/site/releases.md` — v0.26.x section
 - `docs/site/convergence.md` — evaluation results, recommendations
 - Full docs site mirror to `coredipper.github.io`
-- Blog post: "Operon v0.26: Convergence Complete — Three Layers Validated"
+- Blog post: "Operon v0.26: Convergence Complete — Four Layers Validated"
 
 ---
 
@@ -417,12 +519,12 @@ AnimaWorks' consolidation benefit from bi-temporal auditability?
 
 | Blog Post | Phase | Topic |
 |-----------|-------|-------|
-| "Convergence Begins" | C1 | Foundation adapters, topology analysis, three-layer vision |
+| "Convergence Begins" | C1 | Foundation adapters, topology analysis, four-layer vision |
 | "Seeding the Library from Swarms" | C2 | Template exchange, hybrid assembly |
-| "Memory Convergence and the Heartbeat" | C3 | PrimingView, memory bridge, heartbeat daemon |
-| "Proving Convergence with TLA+" | C4 | Formal verification, invariants, model checking results |
-| "From Library to Production Runtime" | C5 | Swarms compiler, distributed watcher |
-| "Convergence Complete" | C6 | Evaluation results, three-layer validation, recommendations |
+| "Memory, Thinking, and the Heartbeat" | C3 | PrimingView, memory bridge, AsyncThink thinking mode, heartbeat |
+| "Proving Convergence: TLA+ and Co-Design" | C4 | TLA+ verification, Zardini co-design formalization, fixed-point proofs |
+| "From Library to Production Runtime" | C5 | Swarms compiler, async stages, distributed watcher |
+| "Convergence Complete" | C6 | Evaluation results, four-layer validation, recommendations |
 
 ---
 
@@ -438,7 +540,7 @@ Each phase updates `coredipper.github.io`:
 | `operon/skill-organisms/` | C3 | PrimingView replacing SubstrateView |
 | `operon/bitemporal-memory/` | C3 | Memory bridge section |
 | `operon/concepts/` | C1, C6 | Architecture evolution |
-| `operon/theory/` | C4 | TLA+ verification methodology |
+| `operon/theory/` | C4 | TLA+ verification methodology + co-design theory |
 | `operon/spaces/` | C2, C3, C5 | New spaces |
 | `operon/examples/` | All | Examples 82-90 |
 | `blog/` | All | One blog post per phase |
@@ -456,8 +558,11 @@ Each phase updates `coredipper.github.io`:
 | 86 | `86_memory_bridge.py` | C3 |
 | 87 | `87_priming_view.py` | C3 |
 | 88 | `88_heartbeat_daemon.py` | C3 |
-| 89 | `89_swarms_deployment.py` | C5 |
-| 90 | `90_distributed_watcher.py` | C5 |
+| 88b | `88b_async_thinking.py` | C3 |
+| 89 | `89_codesign_composition.py` | C4 |
+| 90 | `90_swarms_deployment.py` | C5 |
+| 91 | `91_distributed_watcher.py` | C5 |
+| 92 | `92_async_stage_execution.py` | C5 |
 
 ---
 
@@ -470,6 +575,8 @@ Each phase updates `coredipper.github.io`:
 | AnimaWorks memory format undocumented | Bridge guesses wrong | Start with documented REST/JSON endpoints; iterate |
 | TLA+ model state space explosion | TLC doesn't terminate | Limit to 2-3 organisms, 5-10 stages; use symmetry reduction |
 | Agency Tax too high | Operon layer adds unacceptable latency | Measure overhead explicitly; optimize hot paths; cache topology analysis |
+| AsyncThink training data unavailable | Can't learn organization policies | Start with rule-based Fork/Join heuristics; add RL later when training infra available |
+| Co-design fixed-point doesn't converge | Adaptive loop oscillates | Zardini's domain theory gives sufficient conditions; add damping if needed |
 | Convergence paper rejected | No publication | Blog series as fallback; the code is the primary artifact |
 
 ---
@@ -486,6 +593,8 @@ Each phase updates `coredipper.github.io`:
 - Jiang et al. (arXiv:2602.19320) — Anatomy of Agentic Memory (Agency Tax, append-only robustness)
 - Lin et al. (arXiv:2603.18718) — MemMA (probe-based memory verification)
 - Feng et al. (arXiv:2602.04411) — Self-evolving Embodied AI (five co-evolving components)
+- **Zardini (2023), "Co-Design of Complex Systems" (ETH Zurich thesis)** — monotone co-design theory, category of design problems, feasibility relations, functorial solution schemes, feedback fixed points
+- **Chi et al. (arXiv:2510.26658), "AsyncThink: The Era of Agentic Organization"** — learned Fork/Join thinking structure, organizer-worker protocol, thinking concurrency ratio, critical-path latency, RL-optimized organization policy
 
 ### Internal
 - Convergence investigation: `docs/plans/2026-03-23-operon-animaworks-convergence.md`
