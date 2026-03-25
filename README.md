@@ -5,7 +5,7 @@
 > *From agent heuristics toward structural guarantees.*
 
 ![Status](https://img.shields.io/badge/status-experimental-orange)
-![Version](https://img.shields.io/badge/pypi-v0.23.0-blue)
+![Version](https://img.shields.io/badge/pypi-v0.23.2-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![Publish to PyPI](https://github.com/coredipper/operon/actions/workflows/publish.yml/badge.svg)](https://github.com/coredipper/operon/actions/workflows/publish.yml)
 
@@ -35,6 +35,7 @@ If you are new to Operon, start here rather than with the full biological vocabu
 - `reviewer_gate(...)` when you want one worker plus a review bottleneck
 - `specialist_swarm(...)` when you want centralized specialist decomposition
 - `skill_organism(...)` when you want a provider-bound workflow with cheap vs expensive stages and attachable telemetry
+- `managed_organism(...)` when you want the full stack — adaptive assembly, watcher, substrate, development, social learning — in one call
 
 ### Get topology advice
 

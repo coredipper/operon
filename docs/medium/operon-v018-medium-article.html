@@ -266,7 +266,30 @@ for _ in range(80):
 
 <p>Five integration tests exercise the full stack. Memory adapters bridge histone marks and episodic memories into the bi-temporal store, creating auditable facts from previously mutable memory. The article abstract and conclusion were rewritten to cover the full arc: <strong>structure → memory → adaptation → cognition → development → integration</strong>.</p>
 
-<p>1,130 tests. 81 examples. 8 HuggingFace Spaces. The roadmap is complete.</p>
+<p>1,141 tests. 82 examples. 8 HuggingFace Spaces. The roadmap is complete.</p>
+
+<h2>One Function to Rule Them All</h2>
+
+<p>After the roadmap, the obvious next step was ergonomics. Using the full stack required manually wiring 5-7 components. <code>managed_organism()</code> composes everything behind a single factory function:</p>
+
+<pre><code>from operon_ai import managed_organism, PatternLibrary, Telomere, BiTemporalMemory
+
+m = managed_organism(
+    task="Process quarterly report",
+    library=lib,
+    fast_nucleus=fast, deep_nucleus=deep,
+    handlers={"intake": intake_fn, "process": process_fn},
+    substrate=BiTemporalMemory(),
+    telomere=Telomere(max_operations=100),
+    organism_id="org-A",
+)
+
+result = m.run("Process quarterly report")
+m.consolidate()     # sleep consolidation
+m.export_templates()  # social learning
+m.status()          # all subsystem summaries</code></pre>
+
+<p>Everything is opt-in. Omit <code>telomere</code> and there's no developmental staging. Omit <code>organism_id</code> and there's no social learning. Omit <code>substrate</code> and there's no bi-temporal memory. The full stack or any subset — one function call.</p>
 
 <h2>What Comes Next</h2>
 
@@ -291,7 +314,7 @@ The deeper point remains: agents that cannot explain their past decisions are ag
 <div class="cta-box">
   <p><strong>Links</strong></p>
   <p>Repo: <a href="https://github.com/coredipper/operon">Operon on GitHub</a><br>
-  PyPI: <a href="https://pypi.org/project/operon-ai/">operon-ai v0.23.1</a><br>
+  PyPI: <a href="https://pypi.org/project/operon-ai/">operon-ai v0.23.2</a><br>
   Documentation: <a href="https://coredipper.github.io/operon/">banu.be/operon</a><br>
   White paper: <a href="https://github.com/coredipper/operon/blob/main/article/main.pdf">article/main.pdf</a><br>
   Blog: <a href="https://coredipper.github.io/blog/">coredipper.github.io/blog</a><br>

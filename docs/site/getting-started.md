@@ -31,3 +31,4 @@ That is why the current front door is pattern-first rather than theory-first.
 - `reviewer_gate(...)` for one-worker-plus-reviewer
 - `specialist_swarm(...)` for centralized specialist decomposition
 - `skill_organism(...)` for multi-stage workflows with attachable components
+- `managed_organism(...)` for the full stack in one call (adaptive assembly, watcher, substrate, development, social learning)
