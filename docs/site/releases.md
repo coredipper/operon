@@ -2,6 +2,22 @@
 
 This page tracks the recent direction of the project.
 
+## v0.23.2
+
+Focus:
+
+- pattern-first ergonomics pass for the v0.19-0.23 subsystems
+- one-call `managed_organism()` factory wiring the full stack
+- top-level `consolidate()` convenience function
+
+New:
+
+- `ManagedOrganism`, `ManagedRunResult` — full-stack organism with run/consolidate/export/scaffold
+- `managed_organism()` — batteries-included factory with sensible defaults
+- `consolidate()` — one-call sleep consolidation
+- `advise_topology()` gains optional `library` and `fingerprint` params
+- `examples/82_managed_organism.py`
+
 ## v0.23.1
 
 Focus:

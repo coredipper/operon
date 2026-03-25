@@ -16,8 +16,27 @@ def advise_topology(
     tool_count: int,
     subtask_count: int,
     error_tolerance: float = 0.1,
+    library: object | None = None,
+    fingerprint: object | None = None,
 ) -> TopologyAdvice:
-    """Return a pattern-first recommendation from simple task inputs."""
+    """Return a pattern-first recommendation from simple task inputs.
+
+    If ``library`` (a PatternLibrary) and ``fingerprint`` (a TaskFingerprint)
+    are provided, the advice includes a ``suggested_template`` from the library.
+    """
+    advice = _compute_advice(task_shape, tool_count, subtask_count, error_tolerance)
+    if library is not None and fingerprint is not None:
+        advice = _enrich_with_library(advice, library, fingerprint)
+    return advice
+
+
+def _compute_advice(
+    task_shape: str,
+    tool_count: int,
+    subtask_count: int,
+    error_tolerance: float,
+) -> TopologyAdvice:
+    """Core topology advice logic."""
     normalized = task_shape.strip().lower().replace("-", "_")
 
     if normalized in {"sequential", "pipeline", "serial"}:
@@ -91,3 +110,22 @@ def advise_topology(
     raise ValueError(
         "task_shape must be one of: sequential, parallel, independent, mixed"
     )
+
+
+def _enrich_with_library(advice: TopologyAdvice, library: object, fingerprint: object) -> TopologyAdvice:
+    """If a library and fingerprint are available, attach the best template."""
+    try:
+        ranked = library.top_templates_for(fingerprint)  # type: ignore[union-attr]
+        if ranked:
+            template, score = ranked[0]
+            return TopologyAdvice(
+                recommended_pattern=advice.recommended_pattern,
+                suggested_api=advice.suggested_api,
+                topology=advice.topology,
+                rationale=advice.rationale + f" Library match: '{template.name}' (score={score:.3f}).",
+                raw=advice.raw,
+                suggested_template=template,
+            )
+    except Exception:
+        pass
+    return advice
