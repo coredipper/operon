@@ -51,6 +51,8 @@ reconstructing past belief states:
   developmental stages, capability gating, and critical periods
 - [`81_critical_periods.py`](81_critical_periods.py) —
   teacher-learner scaffolding with developmental awareness
+- [`82_managed_organism.py`](82_managed_organism.py) —
+  one-call managed_organism() wiring the full v0.19-0.23 stack
 
 ## Import Style Guide
 

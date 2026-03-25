@@ -7,6 +7,12 @@ from .adaptive import (
     assemble_pattern,
 )
 from .advisor import advise_topology
+from .managed import (
+    ManagedOrganism,
+    ManagedRunResult,
+    managed_organism,
+    consolidate,
+)
 from .organism import SkillOrganism, TelemetryProbe, skill_organism
 from .repository import (
     PatternLibrary,
@@ -47,6 +53,8 @@ __all__ = [
     "CognitiveMode",
     "ExperienceRecord",
     "InterventionKind",
+    "ManagedOrganism",
+    "ManagedRunResult",
     "PatternLibrary",
     "PatternRunRecord",
     "PatternTemplate",
@@ -70,6 +78,8 @@ __all__ = [
     "adaptive_skill_organism",
     "advise_topology",
     "assemble_pattern",
+    "consolidate",
+    "managed_organism",
     "resolve_cognitive_mode",
     "reviewer_gate",
     "skill_organism",

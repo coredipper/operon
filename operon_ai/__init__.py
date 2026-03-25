@@ -395,6 +395,10 @@ from .patterns import (
     adaptive_skill_organism,
     advise_topology,
     assemble_pattern,
+    consolidate,
+    managed_organism,
+    ManagedOrganism,
+    ManagedRunResult,
     resolve_cognitive_mode,
     skill_organism,
 )
@@ -497,6 +501,10 @@ __all__ = [
     "adaptive_skill_organism",
     "advise_topology",
     "assemble_pattern",
+    "consolidate",
+    "managed_organism",
+    "ManagedOrganism",
+    "ManagedRunResult",
     "resolve_cognitive_mode",
     "skill_organism",
 
@@ -710,4 +718,4 @@ __all__ = [
     "MetabolicAccessPolicy",
 ]
 
-__version__ = "0.23.1"
+__version__ = "0.23.2"
