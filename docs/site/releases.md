@@ -2,6 +2,22 @@
 
 This page tracks the recent direction of the project.
 
+## v0.23.3
+
+Focus:
+
+- CLI stage handler for external tool integration
+- Shell out to any CLI tool (Claude Code, Copilot, ruff, custom scripts) as organism stages
+
+New:
+
+- `cli_handler()` — factory that wraps any CLI command as a SkillStage handler
+- `cli_organism()` — convenience for multi-CLI workflows via managed_organism
+- `CLIResult` — structured output with stdout, stderr, returncode, latency, timed_out
+- `_action_type` convention in handler output for signaling FAILURE to the watcher
+- Output parsers: `parse_json()`, `parse_lines()`
+- `examples/83_cli_stage_handler.py`
+
 ## v0.23.2
 
 Focus:
