@@ -55,6 +55,8 @@ reconstructing past belief states:
   one-call managed_organism() wiring the full v0.19-0.23 stack
 - [`83_cli_stage_handler.py`](83_cli_stage_handler.py) —
   shell out to external CLI tools (Claude Code, Copilot, ruff) as organism stages
+- [`84_cli_organism.py`](84_cli_organism.py) —
+  full managed CLI organism from a dict of commands with watcher and substrate
 
 ## Import Style Guide
 

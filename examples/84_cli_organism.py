@@ -1,0 +1,86 @@
+"""
+Example 84 — CLI Organism
+===========================
+
+Demonstrates cli_organism(): build a full managed organism from a dict
+of CLI commands. The watcher monitors all stages, the substrate records
+outputs as bi-temporal facts, and convergence detection works on
+CLI-backed workflows.
+
+Usage:
+    python examples/84_cli_organism.py
+"""
+
+from operon_ai import (
+    BiTemporalMemory,
+    MockProvider,
+    Nucleus,
+    cli_organism,
+)
+
+# ---------------------------------------------------------------------------
+# 1. Build a CLI organism from a command dict
+# ---------------------------------------------------------------------------
+
+fast = Nucleus(provider=MockProvider(responses={}))
+deep = Nucleus(provider=MockProvider(responses={}))
+
+m = cli_organism(
+    commands={
+        "generate": "echo",
+        "transform": ["tr", "a-z", "A-Z"],
+        "count": "wc -c",
+    },
+    input_mode="stdin",
+    fast_nucleus=fast,
+    deep_nucleus=deep,
+    watcher=True,
+    substrate=BiTemporalMemory(),
+)
+
+# ---------------------------------------------------------------------------
+# 2. Run the pipeline
+# ---------------------------------------------------------------------------
+
+result = m.run("hello from the cli organism")
+
+print("=== CLI Organism Pipeline ===")
+for sr in result.run_result.stage_results:
+    output = sr.output
+    if isinstance(output, dict):
+        output = output.get("output", output)
+    print(f"  {sr.stage_name}: {output}")
+print()
+
+# ---------------------------------------------------------------------------
+# 3. Watcher summary
+# ---------------------------------------------------------------------------
+
+print("=== Watcher ===")
+print(f"  {result.watcher_summary}")
+print()
+
+# ---------------------------------------------------------------------------
+# 4. Substrate facts
+# ---------------------------------------------------------------------------
+
+print("=== Substrate ===")
+print(f"  Facts recorded: {len(m._substrate._facts) if m._substrate else 0}")
+print()
+
+# ---------------------------------------------------------------------------
+# 5. Status
+# ---------------------------------------------------------------------------
+
+print("=== Full Status ===")
+for key, value in m.status().items():
+    print(f"  {key}: {value}")
+
+# ---------------------------------------------------------------------------
+# --test
+# ---------------------------------------------------------------------------
+
+assert len(result.run_result.stage_results) == 3
+assert result.watcher_summary is not None
+assert result.watcher_summary["total_stages_observed"] == 3
+print("\n--- all assertions passed ---")
