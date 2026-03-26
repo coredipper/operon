@@ -43,8 +43,12 @@ def _coerce_handler_output(value: Any, stage_name: str) -> ActionProtein:
     if isinstance(value, ActionProtein):
         value.source_agent = value.source_agent or stage_name
         return value
+    # Convention: handler can signal action_type via _action_type key (e.g., CLI handlers)
+    action_type = "EXECUTE"
+    if isinstance(value, dict) and "_action_type" in value:
+        action_type = value.pop("_action_type")
     return ActionProtein(
-        action_type="EXECUTE",
+        action_type=action_type,
         payload=value,
         confidence=1.0,
         source_agent=stage_name,

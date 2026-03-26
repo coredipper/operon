@@ -395,6 +395,9 @@ from .patterns import (
     adaptive_skill_organism,
     advise_topology,
     assemble_pattern,
+    CLIResult,
+    cli_handler,
+    cli_organism,
     consolidate,
     managed_organism,
     ManagedOrganism,
@@ -501,6 +504,9 @@ __all__ = [
     "adaptive_skill_organism",
     "advise_topology",
     "assemble_pattern",
+    "CLIResult",
+    "cli_handler",
+    "cli_organism",
     "consolidate",
     "managed_organism",
     "ManagedOrganism",
@@ -718,4 +724,4 @@ __all__ = [
     "MetabolicAccessPolicy",
 ]
 
-__version__ = "0.23.2"
+__version__ = "0.23.3"

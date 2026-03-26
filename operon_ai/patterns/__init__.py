@@ -7,6 +7,7 @@ from .adaptive import (
     assemble_pattern,
 )
 from .advisor import advise_topology
+from .cli import CLIResult, cli_handler, cli_organism
 from .managed import (
     ManagedOrganism,
     ManagedRunResult,
@@ -50,6 +51,7 @@ from .watcher import (
 __all__ = [
     "AdaptiveRunResult",
     "AdaptiveSkillOrganism",
+    "CLIResult",
     "CognitiveMode",
     "ExperienceRecord",
     "InterventionKind",
@@ -77,6 +79,8 @@ __all__ = [
     "WatcherSignal",
     "adaptive_skill_organism",
     "advise_topology",
+    "cli_handler",
+    "cli_organism",
     "assemble_pattern",
     "consolidate",
     "managed_organism",
