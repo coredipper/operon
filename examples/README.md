@@ -57,6 +57,8 @@ reconstructing past belief states:
   shell out to external CLI tools (Claude Code, Copilot, ruff) as organism stages
 - [`84_cli_organism.py`](84_cli_organism.py) —
   full managed CLI organism from a dict of commands with watcher and substrate
+- [`85_claude_code_pipeline.py`](85_claude_code_pipeline.py) —
+  live 3-stage pipeline (plan → implement → review) using `claude --print` with context chaining
 
 ## Import Style Guide
 
