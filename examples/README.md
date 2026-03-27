@@ -1,6 +1,6 @@
 # Operon Examples
 
-This directory contains 70 runnable numbered examples demonstrating the
+This directory contains 85 runnable numbered examples demonstrating the
 `operon_ai` library, progressing from basic concepts to complete
 LLM-powered cell simulations.
 
@@ -107,7 +107,12 @@ from operon_ai.providers import MockProvider, ProviderConfig
 | 66 | Epistemic Topology | Classification, error bounds, parallelism, recommendations |
 | 67 | Pattern-First API | Reviewer gates, specialist swarms, topology advice |
 | 68 | Skill Organisms | Provider-bound stages, fast/deep routing, attachable telemetry |
-| 69-70 | Temporal Memory | Bi-temporal facts, belief-state reconstruction, compliance audit |
+| 69-71 | Temporal Memory | Bi-temporal facts, belief-state reconstruction, compliance audit |
+| 72-75 | Adaptive Structure | Pattern repository, watcher, adaptive assembly, experience pool |
+| 76-79 | Cognitive Architecture | Cognitive modes, sleep consolidation, social learning, curiosity |
+| 80-81 | Developmental Staging | Telomere-driven stages, critical periods, teacher-learner scaffolding |
+| 82 | Managed Organism | One-call `managed_organism()` wiring full v0.19–0.23 stack |
+| 83-85 | CLI Integration | Shell-out stage handlers, CLI organisms, Claude Code pipelines |
 
 ## Running Examples
 

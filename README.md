@@ -5,7 +5,7 @@
 > *From agent heuristics toward structural guarantees.*
 
 ![Status](https://img.shields.io/badge/status-experimental-orange)
-![Version](https://img.shields.io/badge/pypi-v0.23.2-blue)
+![Version](https://img.shields.io/badge/pypi-v0.23.3-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![Publish to PyPI](https://github.com/coredipper/operon/actions/workflows/publish.yml/badge.svg)](https://github.com/coredipper/operon/actions/workflows/publish.yml)
 
@@ -167,7 +167,8 @@ Public docs now live at [banu.be/operon](https://banu.be/operon/). The tracked s
 
 Direct links:
 
-- [Examples index](https://github.com/coredipper/operon/blob/main/examples/README.md)
+- [Examples index](https://github.com/coredipper/operon/blob/main/examples/README.md) (85 runnable examples)
+- [Wiring diagrams](https://github.com/coredipper/operon/blob/main/examples/wiring_diagrams.md) (61 architecture diagrams)
 - [Main whitepaper](https://github.com/coredipper/operon/blob/main/article/main.pdf)
 - [Epistemic topology paper](https://github.com/coredipper/operon/blob/main/article/paper1/main.pdf)
 - [PyPI package](https://pypi.org/project/operon-ai/)

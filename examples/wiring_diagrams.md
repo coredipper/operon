@@ -74,60 +74,60 @@ Each arrow implies a typed connection with integrity constraints.
 
 ### Multicellular + State (v0.13–v0.15)
 
-- Example 56: Metabolic Epigenetic Coupling
-- Example 57: Cell Type Specialization
-- Example 58: Tissue Architecture
-- Example 59: Plasmid Registry
-- Example 60: Denaturation Layers
+- [Example 56: Metabolic Epigenetic Coupling](wiring_diagrams/example56_metabolic_epigenetic_coupling.md)
+- [Example 57: Cell Type Specialization](wiring_diagrams/example57_cell_type_specialization.md)
+- [Example 58: Tissue Architecture](wiring_diagrams/example58_tissue_architecture.md)
+- [Example 59: Plasmid Registry](wiring_diagrams/example59_plasmid_registry.md)
+- [Example 60: Denaturation Layers](wiring_diagrams/example60_denaturation_layers.md)
 
 ### Formal Theory (v0.14–v0.15)
 
-- Example 61: Coalgebraic State Machines
-- Example 62: Morphogen Diffusion
-- Example 63: Optic-Based Wiring
-- Example 64: Diagram Optimization
+- [Example 61: Coalgebraic State Machines](wiring_diagrams/example61_coalgebraic_state_machines.md)
+- [Example 62: Morphogen Diffusion](wiring_diagrams/example62_morphogen_diffusion.md)
+- [Example 63: Optic-Based Wiring](wiring_diagrams/example63_optic_based_wiring.md)
+- [Example 64: Diagram Optimization](wiring_diagrams/example64_diagram_optimization.md)
 
 ### Provider + Topology (v0.16–v0.17)
 
-- Example 65: OpenAI-Compatible (LM Studio)
-- Example 66: Epistemic Topology
+- [Example 65: OpenAI-Compatible (LM Studio)](wiring_diagrams/example65_openai_compatible_lmstudio.md)
+- [Example 66: Epistemic Topology](wiring_diagrams/example66_epistemic_topology.md)
 
 ### Pattern-First API (v0.18)
 
-- Example 67: Pattern-First API
-- Example 68: Skill Organism Runtime
+- [Example 67: Pattern-First API](wiring_diagrams/example67_pattern_first_api.md)
+- [Example 68: Skill Organism Runtime](wiring_diagrams/example68_skill_organism_runtime.md)
 
 ### Temporal Epistemics (v0.19–v0.20)
 
-- Example 69: Bi-Temporal Memory
-- Example 70: Bi-Temporal Compliance Audit
-- Example 71: Bi-Temporal Skill Organism
+- [Example 69: Bi-Temporal Memory](wiring_diagrams/example69_bitemporal_memory.md)
+- [Example 70: Bi-Temporal Compliance Audit](wiring_diagrams/example70_bitemporal_compliance_audit.md)
+- [Example 71: Bi-Temporal Skill Organism](wiring_diagrams/example71_bitemporal_skill_organism.md)
 
 ### Adaptive Structure (v0.21)
 
-- Example 72: Pattern Repository
-- Example 73: Watcher Component
-- Example 74: Adaptive Assembly
-- Example 75: Experience-Driven Watcher
+- [Example 72: Pattern Repository](wiring_diagrams/example72_pattern_repository.md)
+- [Example 73: Watcher Component](wiring_diagrams/example73_watcher_component.md)
+- [Example 74: Adaptive Assembly](wiring_diagrams/example74_adaptive_assembly.md)
+- [Example 75: Experience-Driven Watcher](wiring_diagrams/example75_experience_driven_watcher.md)
 
 ### Cognitive Architecture (v0.22)
 
-- Example 76: Cognitive Modes
-- Example 77: Sleep Consolidation
-- Example 78: Social Learning
-- Example 79: Curiosity-Driven Exploration
+- [Example 76: Cognitive Modes](wiring_diagrams/example76_cognitive_modes.md)
+- [Example 77: Sleep Consolidation](wiring_diagrams/example77_sleep_consolidation.md)
+- [Example 78: Social Learning](wiring_diagrams/example78_social_learning.md)
+- [Example 79: Curiosity-Driven Exploration](wiring_diagrams/example79_curiosity_driven_exploration.md)
 
 ### Developmental Staging (v0.23)
 
-- Example 80: Developmental Staging
-- Example 81: Critical Periods
+- [Example 80: Developmental Staging](wiring_diagrams/example80_developmental_staging.md)
+- [Example 81: Critical Periods](wiring_diagrams/example81_critical_periods.md)
 
 ### Ergonomics + CLI (v0.23.2–v0.23.3)
 
-- Example 82: Managed Organism
-- Example 83: CLI Stage Handler
-- Example 84: CLI Organism
-- Example 85: Claude Code Pipeline
+- [Example 82: Managed Organism](wiring_diagrams/example82_managed_organism.md)
+- [Example 83: CLI Stage Handler](wiring_diagrams/example83_cli_stage_handler.md)
+- [Example 84: CLI Organism](wiring_diagrams/example84_cli_organism.md)
+- [Example 85: Claude Code Pipeline](wiring_diagrams/example85_claude_code_pipeline.md)
 
 ## Example 17: Typed Wiring (Integrity + Capabilities)
 
@@ -682,4 +682,338 @@ managed_organism(task, library, stages, substrate, telomere, organism_id, ...)
 
                   _action_type="EXECUTE" on success
                   _action_type="FAILURE" on non-zero returncode → watcher RETRY
+```
+
+## Example 56: Metabolic-Epigenetic Coupling (v0.13)
+
+```
+[ATP_Store(100)] ---state---> [MetabolicAccessPolicy(cost=5)]
+       |                                  |
+       v                                  v
+  MetabolicState                    [HistoneStore]
+       |                            /    |    \      \
+  NORMAL ──────> Access(WEAK)   ──>  P   A    M(S)   M(P)     (4 markers)
+  CONSERVING ──> Access(STRONG) ──>           M(S)   M(P)     (2 markers)
+  STARVING ───> Access(PERM)   ──>                   M(P)     (1 marker)
+
+Marker Types: P=PHOSPHORYLATION, A=ACETYLATION, M=METHYLATION
+Strengths:    (S)=STRONG, (P)=PERMANENT
+```
+
+## Example 57: Cell Type Specialization (v0.13)
+
+```
+                         [Genome] (8 genes, shared by all)
+                              |
+            +-----------------+-----------------+
+            |                 |                 |
+   [ExpressionProfile]  [ExpressionProfile]  [ExpressionProfile]
+     Classifier            Researcher           Validator
+   class: OVER           research: OVER       verify: OVER
+   code: SILENCED        reasoning: OVER      code: SILENCED
+            |                 |                 |
+            v                 v                 v
+   [DifferentiatedCell]  [DifferentiatedCell]  [DifferentiatedCell]
+     temp=0.5              temp=0.9              temp=0.3
+     tokens=4096           tokens=8192           tokens=4096
+     caps={NET}            caps={NET,READ_FS}    caps={}
+
+Genome unchanged after differentiation — same DNA, different phenotypes
+```
+
+## Example 58: Tissue Architecture (v0.13)
+
+```
+                              [Shared Genome]
+                      /            |              \
+                     v             v               v
+  [ClassificationTissue]   [ResearchTissue]    [ValidationTissue]
+  Boundary: {NET}          Boundary: {NET,FS}  Boundary: {} (isolated)
+  ┌─────────────────┐      ┌──────────────────┐ ┌─────────────────┐
+  │ [classifier]    │      │ [researcher_1]   │ │ [validator_1]   │
+  │   ↓             │      │ [researcher_2]   │ │   ↓             │
+  │ label (V/JSON)  │      │   ↓              │ │ verdict (V/JSON)│
+  └────────┬────────┘      │ findings (V/JSON)│ └─────────────────┘
+           │               └────────┬─────────┘          ▲
+           └───── label → query ────┘                    │
+                                    └── findings → draft ─┘
+
+  Organism-level WiringDiagram: Classification → Research → Validation
+```
+
+## Example 59: Plasmid Registry (v0.14)
+
+```
+[PlasmidRegistry]
+  ├─ reverse     (text, utility)   caps: none
+  ├─ word_count  (text, analysis)  caps: none
+  └─ fetch_url   (network, io)     caps: {NET}
+        │
+        v
+[Mitochondria] caps={READ_FS}
+  ├── acquire("reverse")    ──> SUCCESS (no caps required)
+  ├── acquire("fetch_url")  ──> BLOCKED (needs NET, has READ_FS)
+  ├── release("reverse")    ──> tools shrink
+  └── acquire("reverse")    ──> re-acquisition OK
+```
+
+## Example 60: Denaturation Layers (v0.14)
+
+```
+[Injection Payload]
+  │  "Normal text" + <|im_start|>system... + ```python...``` + [INST]...
+  │
+  ├──> [StripMarkupFilter] ──> ChatML removed, code blocks removed
+  ├──> [SummarizeFilter(100)] ──> Truncated to 100 chars
+  ├──> [NormalizeFilter] ──> All lowercase, collapsed whitespace
+  └──> [ChainFilter: Strip → Normalize → Summarize(200)] ──> fully denatured
+
+Wire-Level:
+  [agent_a] ──response(V)──> [ChainFilter] ──> [agent_b] input(V)  ← safe
+  [agent_a] ──response(V)──> [agent_b] input(V)  ← DANGEROUS: injection passes
+```
+
+## Example 61: Coalgebraic State Machines (v0.14)
+
+```
+FunctionalCoalgebra:
+  readout: S → O        (observe current state)
+  update:  S × I → S    (evolve state on input)
+
+Parallel Composition (A || B):
+  input i ──> A.readout(s_a) ──> out_a ──┐
+  input i ──> B.readout(s_b) ──> out_b ──┤──> (out_a, out_b)
+
+Sequential Composition (A >> B):
+  input i ──> A.update + readout ──> intermediate ──> B.update + readout ──> final
+
+Bisimulation: Machine(0, counter) vs Machine(10, counter) → NOT EQUIVALENT
+```
+
+## Example 62: Morphogen Diffusion (v0.15)
+
+```
+Linear Chain with Source at A:
+  [A]====[B]====[C]====[D]====[E]
+   ↑
+  Source(COMPLEXITY, rate=0.5)
+
+  After 50 steps:
+  A=HIGH ──> B=HIGH ──> C=MEDIUM ──> D=LOW ──> E=LOW
+
+Star Topology:
+           [N]
+            |
+  [W] ── [center] ── [E]
+            |
+           [S]
+   Source(URGENCY) at center → Equal diffusion to all arms
+
+Diffusion cycle: emit(sources) → diffuse(edges) → decay(rate) → clamp([0,1])
+```
+
+## Example 63: Optic-Based Wiring (v0.15)
+
+```
+LensOptic: constitutive — always passes data through
+PrismOptic: conditional — routes by DataType
+TraversalOptic: maps over collection elements
+
+  [Router] ──out(V/JSON)──> [PrismOptic(JSON)]  ──> [JSONHandler]  ✓
+                         ──> [PrismOptic(ERROR)] ──> [ErrorHandler] ✗ blocked
+
+ComposedOptic: [PrismOptic(JSON)] → [TraversalOptic(x*10)]
+  transmit([1,2,3]) = [10, 20, 30]
+
+Optic + DenatureFilter on same wire:
+  [Source] ──> SummarizeFilter(20) ──> TraversalOptic(upper) ──> [Sink]
+```
+
+## Example 64: Diagram Optimization (v0.15)
+
+```
+Before:
+  [Parser] ──┬──> [Validator]  (ATP=10)  ──valid──┐
+  ATP=5      ├──> [Enricher]   (ATP=30) ──enriched──┤──> [Output]
+             ├──> [Logger]     (ATP=2)  ──logged──┘
+             └──> [ErrorSink]  (DEAD WIRE: ERROR prism on JSON)
+
+After:
+  Dead wire eliminated, parallel groups identified
+  NORMAL:   Parser → [Validator || Enricher || Logger] → Output
+  STARVING: Parser → [Validator] → Output (non-essential skipped)
+```
+
+## Example 65: OpenAI-Compatible Provider (v0.16)
+
+```
+[OpenAI-Compatible Server]         [OpenAICompatibleProvider]
+  LM Studio / Ollama / vLLM            base_url: localhost:1234/v1
+         │                              model: qwen/qwen3.5-35b-a3b
+         │                                    │
+         │                    ┌───────────────┼───────────────┐
+         │                    │               │               │
+         │              [Direct Path]   [Nucleus Path]        │
+         │              provider.complete() nucleus.transcribe()│
+         │                    │               │               │
+         ├──────────── ProviderResponse  NucleusResponse      │
+         │              content           + energy tracking   │
+         └────────────────────────────────────────────────────┘
+```
+
+## Example 66: Epistemic Topology (v0.17)
+
+```
+Independent:  [Summarizer]   [Translator]   [Formatter]     (full parallel)
+Sequential:   [Ingestor] --raw(V)--> [Parser] --parsed(V)--> [Validator] --valid(V)--> [Writer]
+Centralized:  [Worker1] --out(V)--+
+              [Worker2] --out(V)--+--> [Aggregator]
+              [Worker3] --out(V)--+
+Diamond:      [Dispatcher] --PrismOptic----> [Analyzer]  --+
+                           --DenatureFilter-> [Enricher] --+--> [Synthesizer]
+
+Analysis: ObservationProfiles → EpistemicPartition → TopologyClassification → Theorems 1-4
+```
+
+## Example 67: Pattern-First API (v0.18)
+
+```
+1. advise_topology:
+   TaskShape + tool_count + subtask_count + error_tolerance → TopologyAdvice
+
+2. reviewer_gate:
+   [Prompt] --> [Executor(U)] --> candidate --> [Reviewer(V)] --> allowed/rejected
+
+3. specialist_swarm:
+   [Task(U)] --+--> [Legal(V)]    --+
+               +--> [Security(V)] --+--> [Aggregator(T)] --> SwarmResult
+               +--> [Finance(V)]  --+
+```
+
+## Example 69: Bi-Temporal Memory (v0.19)
+
+```
+Valid Time (world):   day1 -------- day3 -------- day5
+                       |                            |
+                  risk = "medium"           correction to "high"
+
+Record Time (system): day2 -------- day4 -------- day6
+                       |                            |
+                  system ingests              system records
+                  "medium"                    correction "high"
+
+Belief Matrix:
+                    record_at=day2    record_at=day6
+  valid_at=day2:     ["medium"]       ["high"]   (after correction)
+```
+
+## Example 70: Bi-Temporal Compliance Audit (v0.20)
+
+```
+World-time:  day1: risk=42  day2: liquidity=A  day3: reg_category=standard
+Record-time: day5: ingest   day6: ingest       day7: ingest
+             day8: APPROVAL (all known)        day10: CORRECTION risk=78
+
+  belief(v=day4, r=day8):   risk=42, liquidity=A, category=standard
+  belief(v=day4, r=day11):  risk=78, liquidity=A, category=standard
+  diff(day8 → day11):       [NEW risk=78 from manual_review]
+  history(risk):            [closed] 42 → [active] 78 (supersedes)
+```
+
+## Example 72: Pattern Repository (v0.21)
+
+```
+PatternLibrary
+  ├── register_template(PatternTemplate)
+  │     ├── Sequential Review Pipeline (reviewer_gate)
+  │     ├── Research Swarm (specialist_swarm)
+  │     └── Enterprise Review Organism (skill_organism)
+  │
+  ├── TaskFingerprint(shape, tools, subtasks, roles)
+  │     → top_templates_for(fingerprint) → ranked list
+  │
+  └── record_run(PatternRunRecord) → updates success rates → re-rank
+```
+
+## Example 75: Experience-Driven Watcher (v0.21)
+
+```
+Experience Pool:
+  [ESCALATE, router, epistemic, success=true]
+  [RETRY, router, epistemic, success=false]
+       |
+  retrieve_similar_experiences(stage=router, signal=epistemic)
+       |
+  recommend_intervention() → ESCALATE (better success rate)
+
+  [Task(U)] --> [intake(V)] --> [router(V)] --> [planner(V)] --> Output(T)
+                    |                |               |
+              WatcherComponent (experience-enriched)
+```
+
+## Example 76: Cognitive Modes (v0.22)
+
+```
+[Task(U)] --> [intake: OBSERVATIONAL/SystemA] --> [classifier: OBSERVATIONAL/SystemA]
+                                                        |
+                                                        v
+                                              [planner: ACTION_ORIENTED/SystemB] --> Output(T)
+
+  WatcherComponent: observational=2, action_oriented=1, balance_ratio=0.67
+```
+
+## Example 79: Curiosity-Driven Exploration (v0.22)
+
+```
+[Task(U)] --> [intake(V)] --> [classifier: fast] --> [analyst: deep] --> Output(T)
+                                     |
+                               WatcherComponent
+                               └─ EpiplexityMonitor: status=EXPLORING
+                                  curiosity > threshold + model=fast
+                                  → ESCALATE to deep model
+```
+
+## Example 81: Critical Periods (v0.23)
+
+```
+TEACHER (MATURE, 80 ticks)
+  └─ scaffold_learner(learner)
+         ├─ "basic"     → ADOPTED (no min_stage)
+         └─ "advanced"  → FILTERED (requires adolescent+)
+
+LEARNER (starts EMBRYONIC)
+  ├─ CriticalPeriod("rapid_adoption", EMBRYONIC → JUVENILE)
+  │     EMBRYONIC: OPEN  ← free adoption
+  │     JUVENILE+: CLOSED ← permanently shut
+  └─ PatternLibrary: receives templates via scaffolding
+```
+
+## Example 83: CLI Stage Handler (v0.23.3)
+
+```
+=== Basic Pipeline ===
+  "hello world" --stdin--> [echo] cli_handler → stdout --stdin--> [wc -w] cli_handler → count
+
+=== Failure Detection ===
+  "test" --> [echo] → OK --> [false] → FAILURE (exit 1)
+                                          |
+                               halt_on_block=True → pipeline stops
+
+=== JSON Parsing ===
+  [python3 -c ...] cli_handler(parse_output=json.loads) → {'status': 'ok', 'count': 42}
+```
+
+## Example 84: CLI Organism (v0.23.3)
+
+```
+cli_organism(commands={"generate": "echo", "transform": "tr a-z A-Z", "count": "wc -c"})
+  │
+  ├── [generate]  echo           → "hello from the cli organism"
+  │       | (stdin)
+  ├── [transform] tr a-z A-Z     → "HELLO FROM THE CLI ORGANISM"
+  │       | (stdin)
+  ├── [count]     wc -c          → character count
+  │
+  ├── [WatcherComponent]         → total_stages_observed: 3
+  └── [BiTemporalMemory]         → facts recorded per stage
 ```
