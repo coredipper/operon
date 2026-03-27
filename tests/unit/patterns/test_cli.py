@@ -139,13 +139,8 @@ def test_stdin_sanitizes_by_default():
     h = cli_handler("cat", input_mode="stdin")  # sanitize_task=True by default
     task = "hello\n$(world)!"
     result = h(task)
-    # Metacharacters $()! and newlines should be stripped
-    assert "$" not in result["output"]
-    assert "(" not in result["output"]
-    assert "!" not in result["output"]
-    assert "\n" not in result["output"]
-    assert "hello" in result["output"]
-    assert "world" in result["output"]
+    # All shell metacharacters and newlines should be stripped
+    assert result["output"] == "helloworld"
 
 
 def test_action_type_not_mutated_on_reuse():
