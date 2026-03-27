@@ -234,7 +234,7 @@ class TestWatchdog:
         ctx1.created_at = datetime.utcnow() - timedelta(hours=1)  # naive, older
 
         ctx2 = controller.start_operation("op2", "agent2")
-        ctx2.created_at = datetime.utcnow()  # naive, newer
+        ctx2.created_at = datetime.now(UTC)  # aware, newer — mixed with naive above
 
         controller.advance(ctx1)
         controller.advance(ctx2)

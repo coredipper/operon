@@ -135,14 +135,15 @@ def test_stdin_preserves_special_characters_when_opted_out():
 
 
 def test_stdin_sanitizes_by_default():
-    """Default sanitize_task=True strips metacharacters even on stdin mode."""
+    """Default sanitize_task=True strips metacharacters and newlines on stdin."""
     h = cli_handler("cat", input_mode="stdin")  # sanitize_task=True by default
-    task = "hello $(world)!"
+    task = "hello\n$(world)!"
     result = h(task)
-    # Metacharacters $()! should be stripped
+    # Metacharacters $()! and newlines should be stripped
     assert "$" not in result["output"]
     assert "(" not in result["output"]
     assert "!" not in result["output"]
+    assert "\n" not in result["output"]
     assert "hello" in result["output"]
     assert "world" in result["output"]
 
