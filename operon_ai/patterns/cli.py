@@ -101,7 +101,7 @@ def cli_handler(
             cmd_parts = list(command)
 
         task_input = task
-        if sanitize_task and not shell and input_mode != "stdin":
+        if sanitize_task and not shell:
             task_input = _sanitize(task)
 
         stdin_data = None

@@ -126,9 +126,9 @@ def test_shell_true_with_arg_mode():
     assert result["_action_type"] == "EXECUTE"
 
 
-def test_stdin_preserves_special_characters():
-    """stdin mode with shell=False should not strip punctuation or newlines."""
-    h = cli_handler("cat", input_mode="stdin", sanitize_task=True)
+def test_stdin_preserves_special_characters_when_opted_out():
+    """sanitize_task=False preserves punctuation and newlines in stdin."""
+    h = cli_handler("cat", input_mode="stdin", sanitize_task=False)
     task = "line1\nline2() {x:$y}!"
     result = h(task)
     assert result["output"] == task

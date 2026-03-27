@@ -386,17 +386,10 @@ def error_amplification_bound(
     Independent bound = n (each worker fails independently).
     Centralized bound = n * (1 - d) (hub catches fraction d).
 
-    ``n`` counts all non-source modules -- any module that has at least
-    one input wire. These are the modules that process data and can
-    propagate or originate errors. Source-only modules (no inputs) are
-    excluded because they are external inputs, not error-producing stages.
+    ``n`` counts all modules in the diagram — each module is an
+    independent agent that can originate or propagate errors.
     """
-    in_degree = {name: 0 for name in diagram.modules}
-    for wire in diagram.wires:
-        in_degree[wire.dst_module] += 1
-
-    # Count all non-source modules (modules with at least one input)
-    n = sum(1 for name in diagram.modules if in_degree[name] > 0)
+    n = len(diagram.modules)
 
     if n == 0:
         return ErrorAmplificationBound(

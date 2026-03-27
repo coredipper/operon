@@ -150,7 +150,7 @@ class Watchdog:
             victim = min(involved, key=lambda ctx: ctx.priority)
         elif self.deadlock_strategy == "oldest":
             # Kill oldest operation
-            victim = min(involved, key=lambda ctx: ctx.created_at)
+            victim = min(involved, key=lambda ctx: _coerce_utc(ctx.created_at))
         else:
             victim = involved[0]
 

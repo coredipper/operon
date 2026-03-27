@@ -236,23 +236,21 @@ def test_classify_hub_correctly_identified():
 
 
 def test_error_amplification_independent():
-    """Independent diagram (no wires) has zero non-source modules."""
+    """Independent diagram (no wires) counts all modules as agents."""
     d = _independent()
     bound = error_amplification_bound(d)
-    # All modules are sources (no inputs), so n_agents = 0
-    assert bound.n_agents == 0
-    assert bound.independent_bound == 0
-    assert bound.centralized_bound == 0
-    assert bound.amplification_ratio == 0.0
+    # All 3 modules are independent agents
+    assert bound.n_agents == 3
+    assert bound.independent_bound == 3
 
 
 def test_error_amplification_centralized():
-    """Centralized bound counts only non-source modules (the hub)."""
+    """Centralized bound uses all modules."""
     d = _fan_in()
     bound = error_amplification_bound(d, detection_rate=0.75)
-    # Only D has inputs, so n_agents = 1
-    assert bound.n_agents == 1
-    assert bound.centralized_bound == 1 * (1 - 0.75)
+    # A, B, C, D — all 4 modules are agents
+    assert bound.n_agents == 4
+    assert bound.centralized_bound == 4 * (1 - 0.75)
     assert bound.detection_rate == 0.75
 
 
@@ -264,36 +262,30 @@ def test_error_amplification_custom_rate():
     assert bound.amplification_ratio == 1 / (1 - 0.5)
 
 
-def test_error_amplification_zero_workers():
-    """All-independent diagram (no wires) returns zeros for all bounds."""
-    d = _independent()
+def test_error_amplification_zero_modules():
+    """Empty diagram (no modules) returns zeros for all bounds."""
+    d = WiringDiagram(modules={}, wires=[])
     bound = error_amplification_bound(d)
     assert bound.n_agents == 0
     assert bound.independent_bound == 0
     assert bound.centralized_bound == 0
     assert bound.amplification_ratio == 0.0
-    # detection_rate is still preserved
-    assert bound.detection_rate == 0.75
 
 
-def test_error_amplification_linear_chain_counts_sinks():
-    """Linear chain A -> B -> C counts both B and C (including the sink)."""
+def test_error_amplification_linear_chain_counts_all():
+    """Linear chain A -> B -> C counts all 3 modules."""
     d = _linear_chain()
     bound = error_amplification_bound(d)
-    # B has in_degree=1 (counted), C has in_degree=1 (counted)
-    # A is a source (in_degree=0), not counted
-    assert bound.n_agents == 2
-    assert bound.independent_bound == 2
+    assert bound.n_agents == 3
+    assert bound.independent_bound == 3
 
 
-def test_error_amplification_single_module_returns_zero():
-    """Single isolated module has no non-source modules, returns zeros."""
+def test_error_amplification_single_module():
+    """Single module is one agent."""
     d = _single_module()
     bound = error_amplification_bound(d)
-    assert bound.n_agents == 0
-    assert bound.independent_bound == 0
-    assert bound.centralized_bound == 0
-    assert bound.amplification_ratio == 0.0
+    assert bound.n_agents == 1
+    assert bound.independent_bound == 1
 
 
 # ── sequential_penalty ─────────────────────────────────────────────
