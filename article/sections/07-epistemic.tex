@@ -170,7 +170,7 @@ S = \frac{\sum_{i=1}^{m} c_{\mathrm{sub}_i}}{\max_i(c_{\mathrm{sub}_i}) + c_{\ma
 \end{equation}
 where $c_{\mathrm{assign}}$ is the coordinator's distribution cost and $c_{\mathrm{agg}}$ is aggregation cost. With equal subtasks, $S \approx m$ minus coordinator overhead.
 \item[(b)] For propositions determined solely by the tuple of worker outputs, the coordinator attains the corresponding pooled-output knowledge at aggregation as an architectural byproduct---it must receive all outputs to combine them. Error detection (Theorem~\ref{thm:error-amplification}) comes free.
-\item[(c)] \textbf{Epistemic ceiling:} If subtasks have unresolved dependencies---$I(\varphi_i; \varphi_j \mid \mathrm{obs}_i) > 0$, meaning agent $i$'s observations do not screen off the dependence on $\varphi_j$---then parallel execution can sacrifice solution quality whenever the unresolved dependence is action-relevant (i.e., the optimal action for subtask $i$ varies with $\varphi_j$).
+\item[(c)] \textbf{Epistemic ceiling:} If subtasks have unresolved dependencies---$I(\varphi_i; \varphi_j \mid \mathrm{obs}_i) > 0$, meaning agent $i$'s observations do not screen off the dependence on $\varphi_j$---then parallel execution can sacrifice solution quality whenever the dependence is action-relevant: there exist states $s, s'$ with $\mathrm{obs}_i(s) = \mathrm{obs}_i(s')$ but $f_i^*(s) \ne f_i^*(s')$ due to differing $\varphi_j$.
 \end{enumerate}
 \end{theorem}
 
