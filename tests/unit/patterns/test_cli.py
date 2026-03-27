@@ -134,6 +134,19 @@ def test_stdin_preserves_special_characters_when_opted_out():
     assert result["output"] == task
 
 
+def test_stdin_sanitizes_by_default():
+    """Default sanitize_task=True strips metacharacters even on stdin mode."""
+    h = cli_handler("cat", input_mode="stdin")  # sanitize_task=True by default
+    task = "hello $(world)!"
+    result = h(task)
+    # Metacharacters $()! should be stripped
+    assert "$" not in result["output"]
+    assert "(" not in result["output"]
+    assert "!" not in result["output"]
+    assert "hello" in result["output"]
+    assert "world" in result["output"]
+
+
 def test_action_type_not_mutated_on_reuse():
     """_coerce_handler_output must not mutate the handler's returned dict."""
     h = cli_handler("false")  # returns _action_type=FAILURE

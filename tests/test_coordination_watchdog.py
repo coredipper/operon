@@ -219,3 +219,33 @@ class TestWatchdog:
         events = watchdog.check(controller)
         assert len(events) >= 1
         assert events[0].reason == ApoptosisReason.TIMEOUT
+
+    def test_deadlock_oldest_with_naive_timestamps(self):
+        """Regression: deadlock_strategy='oldest' with naive created_at should not crash."""
+        controller = CellCycleController()
+        lock_a = ResourceLock(resource_id="file_a")
+        lock_b = ResourceLock(resource_id="file_b")
+        controller.register_resource(lock_a)
+        controller.register_resource(lock_b)
+
+        watchdog = Watchdog(deadlock_strategy="oldest")
+
+        ctx1 = controller.start_operation("op1", "agent1")
+        ctx1.created_at = datetime.utcnow() - timedelta(hours=1)  # naive, older
+
+        ctx2 = controller.start_operation("op2", "agent2")
+        ctx2.created_at = datetime.utcnow()  # naive, newer
+
+        controller.advance(ctx1)
+        controller.advance(ctx2)
+
+        controller.acquire_resource(ctx1, "file_a")
+        controller.acquire_resource(ctx2, "file_b")
+        controller.acquire_resource(ctx1, "file_b")
+        controller.acquire_resource(ctx2, "file_a")
+
+        # Should not raise TypeError on naive vs aware comparison
+        events = watchdog.check(controller)
+        deadlock_events = [e for e in events if e.reason == ApoptosisReason.DEADLOCK]
+        assert len(deadlock_events) == 1
+        assert deadlock_events[0].operation_id == "op1"  # oldest
