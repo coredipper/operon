@@ -44,7 +44,7 @@ offers an Output (the cap) and exposes specific Input ports (the stalks) depende
 
 We now apply this abstract definition to our specific domains.
 
-\paragraph{Definition 1 (The Gene Object).}
+\begin{definition}[The Gene Object]\label{def:gene-object}
 A gene $G$ is a polynomial functor where $O_G$ is the set of expressed proteins and
 $I_G=(I_{\text{prot}})_{\text{prot}\in O_G}$ is the \textbf{family} of regulatory-signal sets (transcription factors)
 available at each expressed protein:
@@ -52,17 +52,19 @@ available at each expressed protein:
 P_{\text{Gene}}(y) = \sum_{\text{prot}\in O_G} y^{I_{\text{prot}}}.
 \label{eq:poly-gene}
 \end{equation}
+\end{definition}
 
-\paragraph{Definition 2 (The Agent-Capability Object).}
+\begin{definition}[The Agent-Capability Object]\label{def:agent-capability}
 An agent capability $A$ is a polynomial functor where $O_A$ is the set of generated messages/actions, and
 $I_A=(I_{\text{action}})_{\text{action}\in O_A}$ is the \textbf{family} of observation sets available at each action:
 \begin{equation}
 P_{\text{Agent}}(y) = \sum_{\text{action}\in O_A} y^{I_{\text{action}}}.
 \label{eq:poly-agent}
 \end{equation}
+\end{definition}
 
 \paragraph{Multi-Scale Composition.}
-The polynomial functor formalism applies at every level of biological and software organization. Definitions~1 and~2 establish the \textit{atomic} correspondence: a single gene and a single agent capability share the same interface form. Polynomial functors then compose---via the parallel ($\otimes$), serial ($\circ$), and trace ($\mathrm{Tr}$) operations of \S\ref{sec:operad}---allowing the same interface language to describe progressively richer assemblies:
+The polynomial functor formalism applies at every level of biological and software organization. Definitions~\ref{def:gene-object} and~\ref{def:agent-capability} establish the \textit{atomic} correspondence: a single gene and a single agent capability share the same interface form. Polynomial functors then compose---via the parallel ($\otimes$), serial ($\circ$), and trace ($\mathrm{Tr}$) operations of \S\ref{sec:operad}---allowing the same interface language to describe progressively richer assemblies:
 
 \begin{center}
 \small
@@ -156,7 +158,7 @@ By expanding $P(S)$, we derive the two fundamental operations of the state machi
 $i\in I_{o(s)}$ compatible with its current output $o(s)$, what is my new state?)
 \end{enumerate}
 
-By establishing this formal dictionary (Table~1), we can compare selected GRN components and agentic
+By establishing this formal dictionary (Table~\ref{tab:correspondence-dictionary}), we can compare selected GRN components and agentic
 components as instances of the same abstract class of typed dynamical interfaces \textbf{under this
 interface-level abstraction}.
 
@@ -185,7 +187,7 @@ S_{\mathrm{bt}} \;=\; S \times \underbrace{[\mathcal{T}, \mathcal{T} \cup \{\inf
 \end{equation}
 where an open-ended interval $[t, \infty)$ denotes a currently active fact. The key invariant is \emph{append-only correction}: closing a record's transaction interval and appending a new record with a \texttt{supersedes} pointer, rather than mutating the original. This ensures that for any pair $(t_v, t_r)$, the \emph{belief state}---the set of facts valid at $t_v$ and known at $t_r$---is uniquely reconstructible by filtering on both intervals simultaneously.
 
-The readout function becomes time-parameterized: $\mathrm{readout}(s, t_v, t_r)$ returns only those facts whose valid interval contains $t_v$ and whose record interval contains $t_r$. This separates two questions that a single-time coalgebra conflates: ``what is true now?'' (valid-time query) versus ``what did the system believe at decision time?'' (bi-temporal query). The implementation (\S8.4) instantiates this as \texttt{BiTemporalMemory} with explicit \texttt{retrieve\_valid\_at}, \texttt{retrieve\_known\_at}, and \texttt{retrieve\_belief\_state} methods.
+The readout function becomes time-parameterized: $\mathrm{readout}(s, t_v, t_r)$ returns only those facts whose valid interval contains $t_v$ and whose record interval contains $t_r$. This separates two questions that a single-time coalgebra conflates: ``what is true now?'' (valid-time query) versus ``what did the system believe at decision time?'' (bi-temporal query). The implementation (\S\ref{sec:bitemporal-impl}) instantiates this as \texttt{BiTemporalMemory} with explicit \texttt{retrieve\_valid\_at}, \texttt{retrieve\_known\_at}, and \texttt{retrieve\_belief\_state} methods.
 
 \begin{figure}[h]
 \centering
@@ -242,6 +244,7 @@ Periodic Scheduling & Circadian Oscillator & Health Checks / Heartbeat\\
 \bottomrule
 \end{tabular}
 \caption{The Correspondence Dictionary (Extended)}
+\label{tab:correspondence-dictionary}
 \end{table}
 
 \begin{table}[h]

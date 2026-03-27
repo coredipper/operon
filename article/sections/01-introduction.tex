@@ -50,6 +50,8 @@ P_A(y) = \sum_{o\in O} y^{I_o}.
 \subsection{Contributions}
 
 This paper makes the following contributions:
+
+\paragraph{Structural Safety.}
 \begin{enumerate}[leftmargin=*]
 \item \textbf{A Typed Correspondence:} We establish a disciplined mapping between biological components
 (Genes, Promoters, Plasmids, Organelles) and software components (Capabilities, Schemas, Tools, Runtimes),
@@ -57,27 +59,39 @@ including multi-cellular organization for multi-agent systems.
 \item \textbf{The Agentic Operad:} We define WAgent, a syntax for agent wiring that forbids specific classes
 of \textbf{ill-typed wirings} at the topological level. We prove error suppression bounds for the CFFL
 topology, explicitly accounting for correlation between error modes.
+\item \textbf{Wire-Level Optics:} We extend the Lens formalism with Prism (conditional type-based routing)
+and Traversal (batch element-wise processing) optics, enabling richer signal processing at the wiring level.
+\item \textbf{Composable Coalgebras:} We make the coalgebraic state machine framework explicit and
+composable, with parallel/sequential composition and observational equivalence criteria.
+\end{enumerate}
+
+\paragraph{Security and Trust.}
+\begin{enumerate}[leftmargin=*,resume]
 \item \textbf{Adaptive Immunity:} We formalize the Provenance Functor and Trust-Gated Lens, providing
 structural resistance to content-level trust forgery, where content-based attacks cannot elevate trust levels.
+\item \textbf{Pathology \& Homeostasis:} We classify agentic failures as biological diseases and derive
+continuous self-repair mechanisms (Chaperone Loop, Regeneration, Autophagy).
+\item \textbf{Capability-Gated Tool Acquisition:} The Plasmid Registry implements Horizontal Gene
+Transfer with capability gating, preventing privilege escalation when agents dynamically acquire tools.
+\end{enumerate}
+
+\paragraph{Epistemic and Metabolic Intelligence.}
+\begin{enumerate}[leftmargin=*,resume]
 \item \textbf{Epistemic Health:} We define Epiplexity (Bayesian Surprise) with operational approximations
 using embedding similarity and perplexity, connecting agent dynamics to the Free Energy Principle.
 \item \textbf{Metabolic Intelligence:} We distinguish fast (Apoptosis) and slow (Retrograde Response)
 interventions, and formalize the Metabolic-Epigenetic Coupling for cost-gated retrieval.
-\item \textbf{Pathology \& Homeostasis:} We classify agentic failures as biological diseases and derive
-continuous self-repair mechanisms (Chaperone Loop, Regeneration, Autophagy).
 \item \textbf{Evolutionary Dynamics:} We situate agentic AI within the Vermeij Trend, identifying three
 selective pressures (adversarial, complexity, efficiency) that drive architectural evolution.
-\item \textbf{Wire-Level Optics:} We extend the Lens formalism with Prism (conditional type-based routing)
-and Traversal (batch element-wise processing) optics, enabling richer signal processing at the wiring level.
 \item \textbf{Morphogen Diffusion:} We formalize spatially varying coordination as a discrete-time
 dynamical system on the agent graph, producing position-dependent behavior without central control.
-\item \textbf{Composable Coalgebras:} We make the coalgebraic state machine framework explicit and
-composable, with parallel/sequential composition and observational equivalence criteria.
 \item \textbf{Epistemic Topology:} We derive Kripke-style knowledge operators from wiring diagram
 structure and prove four predictive theorems for multi-agent scaling (error amplification, sequential
-penalty, parallel acceleration, tool density), then compare their qualitative predictions to empirical results.
-\item \textbf{Capability-Gated Tool Acquisition:} The Plasmid Registry implements Horizontal Gene
-Transfer with capability gating, preventing privilege escalation when agents dynamically acquire tools.
+penalty, parallel acceleration, tool density), then check their qualitative consistency with published architecture-level results.
+\end{enumerate}
+
+\paragraph{Optimization.}
+\begin{enumerate}[leftmargin=*,resume]
 \item \textbf{Diagram Optimization:} Cost-annotated wiring diagrams admit categorical rewriting
 rules that preserve observational equivalence while improving resource utilization.
 \end{enumerate}

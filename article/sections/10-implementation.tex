@@ -138,7 +138,7 @@ This operationalizes the Trust-Gated Lens: actions requiring high integrity must
 
 \subsection{Plasmid Registry Implementation}
 
-The Horizontal Gene Transfer mechanism (\S6.2) is implemented as a \texttt{PlasmidRegistry} with capability-gated acquisition:
+The Horizontal Gene Transfer mechanism (\S\ref{sec:hgt}) is implemented as a \texttt{PlasmidRegistry} with capability-gated acquisition:
 
 \begin{verbatim}
 @dataclass(frozen=True)
@@ -177,7 +177,7 @@ Filters attach to wires in the \texttt{WiringDiagram}. The \texttt{DiagramExecut
 
 \subsection{Multi-Cellular Organization Implementation}
 
-The multi-cellular abstractions (\S6.5) are implemented in the \texttt{multicell/} package:
+The multi-cellular abstractions (\S\ref{sec:multi-cellular}) are implemented in the \texttt{multicell/} package:
 
 \paragraph{Cell Type Specialization.}
 The \texttt{CellType} class encapsulates an \texttt{ExpressionProfile}---a mapping from gene names to expression levels (\texttt{OVEREXPRESSED}, \texttt{SILENCED}, etc.). Calling \texttt{differentiate(genome)} applies the profile to a shared \texttt{Genome}, producing a \texttt{DifferentiatedCell} with role-specific configuration. This implements the biological principle that a single genotype produces many
@@ -199,7 +199,7 @@ The \texttt{HistoneStore} accepts an optional \texttt{energy\_gate} parameter pa
 \subsection{Bi-Temporal Memory Implementation}
 \label{sec:bitemporal-impl}
 
-The bi-temporal coalgebra (\S3.5) and temporal epistemic framework (\S6.5) are implemented in \texttt{operon\_ai/memory/bitemporal.py} as a standalone append-only fact store. The design deliberately avoids mutation: facts are frozen dataclasses, corrections close old records and append new ones, and point-in-time queries are pure filters.
+The bi-temporal coalgebra (\S3.5) and temporal epistemic framework (\S\ref{sec:temporal-epistemics}) are implemented in \texttt{operon\_ai/memory/bitemporal.py} as a standalone append-only fact store. The design deliberately avoids mutation: facts are frozen dataclasses, corrections close old records and append new ones, and point-in-time queries are pure filters.
 
 \paragraph{Data Model.}
 A \texttt{BiTemporalFact} carries 12 fields: subject/predicate/value triple, valid-time interval (\texttt{valid\_from}, \texttt{valid\_to}), record-time interval (\texttt{recorded\_from}, \texttt{recorded\_to}), source provenance, confidence, tags, and an optional \texttt{supersedes} pointer to the corrected fact. All facts are \texttt{@dataclass(frozen=True)}---a deliberate departure from the mutable \texttt{MemoryEntry} used by \texttt{EpisodicMemory}, justified by the append-only semantics.
@@ -213,7 +213,7 @@ Three query methods implement the temporal epistemic operators: \texttt{retrieve
 \paragraph{History and Audit.}
 \texttt{history(subject)} returns all facts (including closed) sorted by record time; \texttt{diff\_between(t1, t2, axis)} computes set differences on either axis; \texttt{timeline\_for(subject)} returns all facts sorted by valid time. Together, these support the audit question: ``what changed between $t_1$ and $t_2$, and on which axis?''
 
-This subsystem is intentionally decoupled from \texttt{HistoneStore} and \texttt{EpisodicMemory}. Integration bridges---converting histone marks to bi-temporal facts, or promoting episodic memories into the bi-temporal substrate---are planned for future work (\S9).
+This subsystem is intentionally decoupled from \texttt{HistoneStore} and \texttt{EpisodicMemory}. Integration bridges---converting histone marks to bi-temporal facts, or promoting episodic memories into the bi-temporal substrate---are planned for future work (\S\ref{sec:conclusion}).
 
 \paragraph{SkillOrganism Substrate Integration.}
 \label{sec:substrate-integration}
@@ -235,7 +235,7 @@ After a stage executes, two mechanisms can emit facts: (1)~the convenience flag 
 
 When \texttt{substrate} is \texttt{None} (the default), the run loop is unchanged: no datetime operations are invoked, no metadata is injected, and all four original lifecycle hooks remain unmodified. Existing tests pass without alteration.
 
-The integration directly enables the audit question from \S6.5: given a completed run, \texttt{retrieve\_belief\_state(at\_valid=t, at\_record=t\_stage)} reconstructs exactly what the organism believed at the moment stage $X$ executed, even if subsequent stages corrected or invalidated facts. Example~71 demonstrates this with a four-stage enterprise workflow where an adversary stage corrects a research assumption, and the original belief state remains fully reconstructible.
+The integration directly enables the audit question from \S\ref{sec:temporal-epistemics}: given a completed run, \texttt{retrieve\_belief\_state(at\_valid=t, at\_record=t\_stage)} reconstructs exactly what the organism believed at the moment stage $X$ executed, even if subsequent stages corrected or invalidated facts. Example~71 demonstrates this with a four-stage enterprise workflow where an adversary stage corrects a research assumption, and the original belief state remains fully reconstructible.
 
 \paragraph{PatternLibrary Implementation.}
 \label{sec:pattern-library-impl}
@@ -340,9 +340,9 @@ The repository also includes interactive Gradio demonstrations for individual or
 patterns---from single motifs (Membrane, Chaperone, Quorum Sensing) to multi-organelle orchestrations.
 These demos are illustrative artifacts rather than controlled benchmarks.
 
-\subsection{Evaluation Protocol (Synthetic Harness)}
+\subsection{Implementation Verification (Synthetic Harness)}
 
-We define a synthetic evaluation harness to exercise three motifs with reproducible procedures:
+We define a synthetic evaluation harness to verify that three motifs behave as designed with reproducible procedures:
 \begin{enumerate}[leftmargin=*]
 \item \textbf{Chaperone Folding.} Generate JSON schemas with 3--8 required fields. Sample valid JSON and
 apply 1--3 corruptions (e.g., missing quotes, trailing commas, type swaps, dropped fields). Measure the
@@ -368,7 +368,7 @@ The output is a machine-readable JSON report (per-suite config + metrics) suitab
 in tables or plots.
 
 \paragraph{Status.}
-Synthetic runs indicate consistent qualitative gains within this harness (cascade $>$ strict, error-context $>$ blind retry,
+Synthetic runs verify that each motif functions as designed within this harness (cascade $>$ strict, error-context $>$ blind retry,
 immune detection $>$ chance). Table~\ref{tab:eval-summary} reports aggregated numeric results across
 multiple seeds; real-world validation with LLM outputs remains ongoing.
 

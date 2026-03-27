@@ -78,7 +78,7 @@ For readers coming from AI agent systems rather than category theory, each resul
 A topological structure where Signal $X$ activates $Z$ directly, but also activates $Y$ which gates $Z$. The node
 $Z$ functions as an AND gate: it fires if and only if $X \wedge Y$.
 
-\paragraph{Theorem 1 (Error Suppression in CFFL).}\label{thm:cffl-error-suppression}
+\begin{theorem}[Error Suppression in CFFL]\label{thm:cffl-error-suppression}
 Let $A_{\mathrm{gen}}$ be a generator agent and $A_{\mathrm{ver}}$ be a verifier agent. Let
 $E_{\mathrm{gen}}$ denote the event that the generator emits an erroneous candidate, and let
 $M_{\mathrm{ver}}$ denote the event that the verifier \emph{misses} that error and still emits an approval token.
@@ -91,7 +91,7 @@ P(\mathrm{Fail}_{\mathrm{direct}}) = P(E_{\mathrm{gen}}).
 \[
 P(\mathrm{Fail}_{\mathrm{CFFL}}) = P(E_{\mathrm{gen}})\times P(M_{\mathrm{ver}}).
 \]
-\item \textbf{Case 3: CFFL Topology (Correlated).} In practice, generator errors and verifier misses are often correlated---if the generator hallucinates a plausible-sounding function, the verifier (especially if using the same base model or training distribution) may be more likely to accept it. Let $\rho$ be the (Pearson/phi) correlation between the Bernoulli variables $E_{\mathrm{gen}}$ and $M_{\mathrm{ver}}$, with $p = P(E_{\mathrm{gen}})$ and $q = P(M_{\mathrm{ver}})$ (assume $p,q\in(0,1)$ so $\rho$ is well-defined). Then:
+\item \textbf{Case 3: CFFL Topology (Correlated).} In practice, generator errors and verifier misses are often correlated---if the generator hallucinates a plausible-sounding function, the verifier (especially if using the same base model or training distribution) may be more likely to accept it. Let $\rho$ be the phi coefficient between the Bernoulli variables $E_{\mathrm{gen}}$ and $M_{\mathrm{ver}}$, with $p = P(E_{\mathrm{gen}})$ and $q = P(M_{\mathrm{ver}})$ (assume $p,q\in(0,1)$ so $\rho$ is well-defined). Then:
 \[
 P(E_{\mathrm{gen}} \wedge M_{\mathrm{ver}}) = pq + \rho\sqrt{p(1-p)q(1-q)}.
 \]
@@ -104,16 +104,18 @@ equivalently
 \rho \in \left[\frac{\max(0,p+q-1)-pq}{\sqrt{p(1-p)q(1-q)}},\;\frac{\min(p,q)-pq}{\sqrt{p(1-p)q(1-q)}}\right].
 \]
 \end{itemize}
+\end{theorem}
 
 \paragraph{Assumptions.}
 The theorem uses the minimal failure model appropriate for a two-stage execution gate: in the direct serial case, an erroneous action is emitted exactly when the generator emits an erroneous candidate; in the CFFL case, an erroneous action is emitted exactly when the generator emits an error \emph{and} the verifier still approves it.
 
-\paragraph{Corollary (Correlation Degradation).}
+\begin{corollary}[Correlation Degradation]\label{cor:correlation-degradation}
 Let $p = P(E_{\mathrm{gen}}) = P(M_{\mathrm{ver}})$ for simplicity. The failure probability becomes:
 \[
 P(\mathrm{Fail}) = p^2 + \rho p(1-p) = p^2(1-\rho) + \rho p
 \]
 with $\rho \in \left[-\min\!\left(\frac{p}{1-p},\frac{1-p}{p}\right),\,1\right]$. When $\rho = 0$ (independence), we recover $p^2$. As $\rho$ increases toward its upper bound, the gain vanishes and $P(\mathrm{Fail}) \to p$.
+\end{corollary}
 
 \paragraph{Architectural Implications.}
 This result makes precise when the CFFL topology provides genuine safety benefits:
@@ -132,7 +134,7 @@ determines the actual error suppression achieved.
 \paragraph{Operational takeaway.}
 For agent designers, the result is simple: adding a reviewer buys multiplicative safety only when the reviewer is not making the same mistakes as the generator. The AND gate gives the multiplicative structure; correlation gives that improvement back.
 
-\paragraph{Proof sketch.}
+\begin{proof}[Proof sketch]
 In the direct serial topology there is only one path from the generator to the action sink, so an erroneous final action occurs iff the generator emits an erroneous candidate. Thus
 \[
 \mathrm{Fail}_{\mathrm{direct}} = E_{\mathrm{gen}},
@@ -155,6 +157,7 @@ P(E_{\mathrm{gen}} \wedge M_{\mathrm{ver}})=\mathbb{E}[XY]
 =pq+\rho\sqrt{p(1-p)q(1-q)}.
 \]
 The Fr\'echet--Hoeffding bounds then give the admissible range of $\rho$. The topology contributes the conjunction; implementation diversity determines the covariance term.
+\end{proof}
 
 \begin{figure}[h]
 \centering
@@ -292,12 +295,13 @@ s' & \text{if } \mathcal{P}(m) \succeq \tau_{\text{action}} \\
 where $\tau_{\text{action}}$ is the minimum trust level required for the action.
 \end{itemize}
 
-\paragraph{Theorem 2 (Resistance to Content-Level Trust Forgery).}\label{thm:injection-resistance}
+\begin{theorem}[Resistance to Content-Level Trust Forgery]\label{thm:injection-resistance}
 Let $\mathcal{I}$ be an injection attack that attempts to insert a message $m_{\text{mal}}$ while forging a higher-trust provenance label in its \emph{content}. If the provenance labels are \textbf{structurally enforced} (i.e., $\mathcal{P}$ is computed from message metadata / ingress channel, not content), then:
 \[
 \mathcal{P}(m_{\text{mal}}) = \chi(m_{\text{mal}}) \quad \text{(actual ingress-channel provenance)}
 \]
 where $\chi(m_{\text{mal}}) \in \{U, R, S, T\}$ is fixed by the wire through which the message enters. Therefore any Trust-Gated action whose threshold satisfies $\chi(m_{\text{mal}}) \nsucceq \tau_{\text{action}}$ will reject $m_{\text{mal}}$ regardless of its content.
+\end{theorem}
 
 \paragraph{Assumptions.}
 The theorem assumes that provenance is assigned by the runtime or wiring layer from ingress-channel metadata, that the trust gate decides solely from that assigned provenance and the action threshold, and that the attacker can modify message \emph{content} but not the channel through which the message enters.
@@ -305,7 +309,7 @@ The theorem assumes that provenance is assigned by the runtime or wiring layer f
 \paragraph{Operational takeaway.}
 For an AI agent system, this means a user string can \emph{look} like a system message or tool result, but if the runtime tags it as user-originated before the model sees it, wording alone cannot authorize a privileged action.
 
-\paragraph{Proof sketch.}
+\begin{proof}[Proof sketch]
 Let $c=\chi(m)$ denote the ingress channel of message $m$. By assumption, provenance is computed from channel metadata rather than payload, so the provenance map factors through the channel:
 \[
 \mathcal{P}(m) = \widetilde{\mathcal{P}}(c)
@@ -315,6 +319,7 @@ for some policy map $\widetilde{\mathcal{P}}$. Hence any two messages entering o
 \widetilde{\mathcal{P}}(c) \succeq \tau_{\text{action}}.
 \]
 Since payload edits do not change $c$, content alone cannot change the acceptance decision. The only way to obtain a higher-trust label is to compromise or impersonate a genuinely higher-trust ingress channel, which lies outside the theorem's model.
+\end{proof}
 
 \paragraph{Scope.}
 The theorem is intentionally narrow. It shows that content alone cannot promote a message into a

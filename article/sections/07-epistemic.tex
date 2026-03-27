@@ -1,0 +1,305 @@
+\section{Epistemic Topology}\label{sec:epistemic-topology-section}
+
+\label{sec:epistemic-topology}
+
+The preceding subsections define \textit{what} agents communicate (morphogens, typed signals) and \textit{how} they are organized (tissues, organs). We now formalize \textit{what agents know}---deriving epistemic properties directly from the wiring diagram's observation structure, without introducing new primitives. This follows the Operon philosophy: safety (and knowledge) from structure, not strings.
+
+The key insight is that the membrane and optics already \textit{are} an epistemic accessibility relation. We make this precise using the framework of epistemic logic \cite{fagin1995reasoning}.
+
+\begin{definition}[Observation Function]
+\label{def:observation-function}
+Given a wiring diagram $D = (M, W)$ and agent $i \in M$, the \textbf{observation function} $\mathrm{obs}_i: S_D \to O_i$ maps the global system state to agent $i$'s local observation---the values on $i$'s input wires, as filtered by their optics. Formally:
+\begin{equation}
+\mathrm{obs}_i(s) = \bigl(\mathrm{optic}_w(\pi_{w}(s))\bigr)_{w \in W_{\to i}}
+\label{eq:observation-function}
+\end{equation}
+where $W_{\to i}$ is the set of wires targeting $i$'s input ports, $\pi_w(s)$ projects the global state to wire $w$'s source value, and $\mathrm{optic}_w$ is the wire's optic (identity for Lens, conditional for Prism, cost-gated for BudgetOptic).
+\end{definition}
+
+\begin{definition}[Epistemic Indistinguishability]
+\label{def:epistemic-indistinguishability}
+Two global states $s, s' \in S_D$ are \textbf{indistinguishable to agent $i$} (written $s \sim_i s'$) iff $\mathrm{obs}_i(s) = \mathrm{obs}_i(s')$. This is an equivalence relation. Agent $i$ \textbf{knows} proposition $\varphi$ in state $s$ (written $K_i(\varphi)$ at $s$) iff $\varphi$ holds in all states $s'$ such that $s \sim_i s'$ \cite{fagin1995reasoning}.
+\end{definition}
+
+The group epistemic operators follow from the individual accessibility relations:
+
+\begin{definition}[Group Epistemic Operators]
+\label{def:group-epistemic-operators}
+For a group of agents $G \subseteq M$:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Mutual Knowledge:} $E_G(\varphi) = \bigwedge_{i \in G} K_i(\varphi)$. Every agent in $G$ individually knows $\varphi$.
+\item \textbf{Common Knowledge:} $C_G(\varphi) = \bigwedge_{k=1}^{\infty} E_G^k(\varphi)$. Everyone knows that everyone knows$\ldots$ ad infinitum. Strictly stronger than mutual knowledge and famously difficult to achieve in asynchronous systems \cite{halpern1990knowledge}.
+\item \textbf{Distributed Knowledge:} $D_G(\varphi)$ holds iff $\varphi$ is true in all states indistinguishable under $\sim_D = \bigcap_{i \in G} \sim_i$. This is the finest partition achievable by pooling all agents' observations.
+\end{itemize}
+\end{definition}
+
+\paragraph{Topology Determines Epistemic Capacity.}
+The wiring diagram's topology directly determines which epistemic operators a multi-agent system can achieve:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Independent ($\otimes$, no inter-agent wires):} Each $\sim_i$ is independent. $D_G$ can be rich (agents observe different aspects), but $E_G$ is limited to propositions in the shared initial input. No path to $C_G$.
+\item \textbf{Centralized ($\circ$ with hub):} The hub observes all worker outputs, so for propositions expressible in that output tuple its partition refines the pooled worker-output partition. Workers observe only their own results---$E_G$ requires the hub to broadcast aggregated information back.
+\item \textbf{Decentralized ($\otimes$ with $\mathrm{Tr}$ feedback):} Peer-to-peer wires create overlapping observation partitions. Each feedback round refines mutual knowledge toward common knowledge, at communication cost proportional to the number of rounds.
+\end{itemize}
+
+\subsection{Temporal Epistemics: What Did the Agent Know?}
+\label{sec:temporal-epistemics}
+
+The epistemic framework above answers ``what does agent $i$ know \emph{now}?'' In practice, a more pressing question is: ``what did agent $i$ \emph{believe} at the time it made decision $d$?'' This is the domain of \emph{temporal epistemics}---the intersection of epistemic logic with bi-temporal data management~\cite{snodgrass2000temporal}.
+
+Consider a multi-stage workflow where facts are ingested at different times and may be corrected after a decision has already been made. A single-time epistemic model cannot distinguish between two scenarios: (1)~the world changed after the decision, and (2)~the agent's knowledge was corrected retroactively. Both appear as ``the agent knew $\varphi$ and now knows $\neg\varphi$,'' but their implications for audit are radically different.
+
+Bi-temporal memory resolves this by tracking two independent time axes for every fact:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Valid time} ($t_v$): when the fact is true in the world.
+\item \textbf{Record time} ($t_r$): when the system learned the fact.
+\end{itemize}
+The \emph{belief state} at coordinates $(t_v, t_r)$ is the set of facts whose valid interval contains $t_v$ and whose record interval contains $t_r$. Corrections are append-only: closing the old record's transaction interval and inserting a new record with a \texttt{supersedes} pointer preserves the full correction history without mutating prior state.
+
+This has direct implications for the epistemic operators defined above. The knowledge operator $K_i(\varphi)$ becomes time-parameterized: $K_i^{(t_v, t_r)}(\varphi)$ holds iff $\varphi$ is true in all states indistinguishable to agent $i$ \emph{given what was recorded by $t_r$ about validity at $t_v$}. Two key properties follow:
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Axes can disagree:} $K_i^{(t, \cdot)}(\varphi)$ (valid-time query) and $K_i^{(\cdot, t)}(\varphi)$ (record-time query) can produce different results for the same $t$. A fact may be valid in the world but not yet recorded, or recorded but not yet valid.
+\item \textbf{Belief-state reconstruction:} For any past decision at time $t_d$ with record horizon $t_r$, the belief state $K_i^{(t_d, t_r)}$ is exactly reconstructible from the append-only history. This is the foundation for compliance auditing: ``was the decision justified given what was known at the time?''
+\end{enumerate}
+
+The implementation (\S\ref{sec:bitemporal-impl}) provides \texttt{retrieve\_belief\_state(at\_valid, at\_record)} as the programmatic interface to this temporal epistemic query. Examples~69--70 demonstrate the divergence between valid-time and record-time queries in compliance and audit scenarios.
+
+\subsection{Predictive Theorems for Multi-Agent Coordination}
+
+We now derive four results connecting topology class to coordination performance. Each theorem has a qualitative statement (universally true for the topology class) and an empirical calibration paragraph checking consistency with the architecture-level aggregates reported by Kim et al.~\cite{kim2025scaling}. These reported benchmark metrics are not literal plug-in values of the simplified theorem parameters.
+
+\paragraph{Reading Guide for Agent-Systems Readers.}
+Each theorem below has the same structure. First, the topology fixes what each worker or coordinator can observe. Second, the proof translates that visibility pattern into a cost, error, or planning bound using a simple inequality (typically a union bound, the data processing inequality, or a critical-path argument). The epistemic notation is bookkeeping for visibility: if an agent cannot observe a fact directly, recovering that fact later requires communication, compression, or a reviewer.
+
+\paragraph{Worked examples.}
+Each theorem is also followed by a small illustrative agent-architecture example. These examples are design calculations, not benchmark measurements.
+
+\begin{theorem}[Error Amplification Bound]
+\label{thm:error-amplification}
+Consider $n$ agents processing independent subtasks with error probability $p$, aggregated by a final combiner. The error amplification factor $A$ (ratio of aggregate failure probability to single-agent failure probability) depends on the coordination topology:
+\begin{enumerate}[leftmargin=*]
+\item[(a)] \textbf{Independent ($\otimes$):} The aggregator observes only final results. Without $K_{\mathrm{hub}}(\mathrm{error}_j)$, errors pass unchecked:
+\begin{equation}
+A_{\otimes} \le n.
+\label{eq:error-amp-independent}
+\end{equation}
+\item[(b)] \textbf{Centralized ($\circ$ with hub):} The hub's observation function covers all worker outputs. Its finer partition enables inconsistency detection with rate $d = P(\text{hub detects error} \mid \text{error occurred})$:
+\begin{equation}
+A_{\circ} \le n \cdot (1 - d).
+\label{eq:error-amp-centralized}
+\end{equation}
+\end{enumerate}
+\end{theorem}
+
+\paragraph{Assumptions.}
+Worker errors are independent across subtasks, the aggregate fails when at least one erroneous subtask survives to the final output, and in the centralized case the hub has an approximately stationary per-error detection rate $d$ across subtasks.
+
+\paragraph{Operational takeaway.}
+For architecture design, the theorem says: adding workers without an effective review bottleneck scales failure opportunities roughly with the number of workers. A hub helps exactly to the extent that it can see and suppress cross-worker inconsistencies.
+
+\begin{proof}[Proof sketch]
+\textbf{Part (a).} Let $E_j$ denote the event that agent $j$ produces an erroneous output, with $P(E_j) = p$ independently across agents. In the independent topology, the aggregator's observation function is $\mathrm{obs}_{\mathrm{agg}}(s) = (o_1, \ldots, o_n)$ where $o_j$ is agent $j$'s final output. Crucially, $\mathrm{obs}_{\mathrm{agg}}$ does not include intermediate reasoning states---the aggregator's indistinguishability relation satisfies $s \sim_{\mathrm{agg}} s'$ whenever all final outputs coincide, regardless of whether those outputs contain errors. Thus $\neg K_{\mathrm{agg}}(\neg E_j)$ for any $j$: the aggregator cannot know that agent $j$ did \textit{not} err.
+
+The aggregate output fails if any component contains an undetected error. Under independence, the exact failure probability is $P(\text{failure}_{\otimes}) = 1 - (1-p)^n$; by the union bound this is at most $\sum_{j=1}^{n} P(E_j) = np$. Since a single agent fails with probability $p$, the amplification factor satisfies $A_{\otimes} = P(\text{failure}_{\otimes})/p \le n$.
+
+\textbf{Part (b).} In the centralized topology, the hub's observation function covers all worker outputs \textit{before} aggregation: $\mathrm{obs}_{\mathrm{hub}}(s) = (o_1, \ldots, o_n, \mathbf{x})$ where $\mathbf{x}$ includes the original task decomposition. The hub's partition $\sim_{\mathrm{hub}}$ is strictly finer than $\sim_{\mathrm{agg}}$ from part (a), because the hub can compare outputs against each other and against the task specification. Define the detection rate $d = P(K_{\mathrm{hub}}(E_j) \mid E_j)$---the probability that the hub's finer partition enables it to identify the error. An error in subtask $j$ reaches the aggregate output only if it occurs ($P = p$) \textit{and} escapes detection ($P = 1-d$). Under independence across subtasks, the exact centralized failure probability is $P(\text{failure}_{\circ}) = 1 - (1-p(1-d))^n$, which in particular satisfies the union-bound estimate $P(\text{failure}_{\circ}) \le \sum_{j=1}^{n} p(1-d) = np(1-d)$. Hence $A_{\circ} = P(\text{failure}_{\circ})/p \le n(1-d)$.
+
+Comparing the exact expressions gives
+\[
+\frac{A_{\otimes}}{A_{\circ}} =
+\frac{1 - (1-p)^n}{1 - (1-p(1-d))^n}
+\xrightarrow[p \to 0]{} \frac{1}{1-d}.
+\]
+Thus the small-$p$ regime recovers the intuitive $\frac{1}{1-d}$ improvement factor, while the union bounds retain the topology-level guarantees $A_{\otimes} \le n$ and $A_{\circ} \le n(1-d)$.
+\end{proof}
+
+\paragraph{Consistency Check.} Kim et al.~\cite{kim2025scaling} report architecture-level error-amplification factors of $A_e = 17.2$ for Independent and $A_e = 4.4$ for Centralized coordination, a ratio of $\approx 3.9$. This is qualitatively consistent with the theorem's claim that a validation bottleneck suppresses unchecked error propagation. However, their metric $A_e = E_{\mathrm{MAS}}/E_{\mathrm{SAS}}$ is an aggregate empirical ratio across heterogeneous tasks and architectures, not a direct plug-in instance of the theorem's $P(\mathrm{failure})/p$ model for fixed $(n,p,d)$. The reported values therefore support the ordering $A_{\otimes} \gg A_{\circ}$, but they should not be read as literal estimates of $d$ or $n$ in Eqs.~\eqref{eq:error-amp-independent}--\eqref{eq:error-amp-centralized}.
+
+\paragraph{Worked Agent Example (Code Review Gate).}
+Suppose three code-generation workers each draft part of a deployment change, and a release gate accepts the merged result. If each worker has error rate $p=0.1$, an ungated independent aggregate fails with probability $1-(1-0.1)^3 = 0.271$, so $A_{\otimes}=2.71$. If a central reviewer catches half of all worker errors ($d=0.5$), then the centralized failure rate becomes $1-(1-0.1(1-0.5))^3 \approx 0.143$, so $A_{\circ}\approx 1.43$. The reviewer does not eliminate risk, but it roughly halves amplification.
+
+\begin{theorem}[Sequential Coordination Penalty]
+\label{thm:sequential-penalty}
+For a task with $k$ strictly ordered steps decomposed across $n$ agents, each inter-agent handoff must at minimum establish $K_{\mathrm{receiver}}(\mathrm{result}_j)$. The overhead is:
+\begin{enumerate}[leftmargin=*]
+\item[(a)] \textbf{Single agent:} $K_i(\mathrm{result}_j)$ is trivially satisfied (the agent computed it). Total cost $= k \cdot c_{\mathrm{step}}$.
+\item[(b)] \textbf{Multi-agent:} Each of $h \le k-1$ handoffs incurs communication cost $c_{\mathrm{comm}}$ and \textbf{epistemic reconstruction loss}:
+\begin{equation}
+\Delta I_j = I(S_{\mathrm{sender}}; r_j) - I(\mathrm{obs}_{\mathrm{receiver}}(S_{\mathrm{sender}}); r_j)
+\label{eq:epistemic-reconstruction-loss}
+\end{equation}
+which is nonnegative by data processing, and is strictly positive whenever the handoff map is lossy on the task-relevant support.
+\end{enumerate}
+\end{theorem}
+
+\paragraph{Assumptions.}
+The task is strictly sequential, so later steps depend on earlier results; each handoff transmits only a summary of the sender's relevant state; and the receiver must reconstruct enough of that state to continue execution.
+
+\paragraph{Operational takeaway.}
+For agent designers, this is the warning against gratuitous decomposition: a sequential pipeline only benefits from multiple agents if a handoff creates new observations or new capabilities. Otherwise the system just pays communication cost plus lossy-summary cost.
+
+\begin{proof}[Proof sketch]
+\textbf{Part (a).} A single agent executing all $k$ steps maintains coalgebraic state $S = (L, \mathcal{R})$ throughout. After computing step $j$, the result $r_j$ is stored in that agent's own local state / readout, so no inter-agent communication is required to reuse it at step $j+1$. Hence $K_i(r_j)$ holds without handoff cost. The total cost is exactly $k \cdot c_{\mathrm{step}}$.
+
+\textbf{Part (b).} When step $j$ is performed by agent $a$ and step $j+1$ by agent $b$, establishing $K_b(r_j)$ requires transmitting enough information about $r_j$ across a wire $w: a \to b$. The receiver's observation is $\mathrm{obs}_b(s) = \mathrm{optic}_w(\pi_w(s))$, which maps the sender's full state through the wire's optic. By the data processing inequality applied to the Markov chain $S_a \to \mathrm{obs}_b(S_a) \to \hat{r}_j$ (where $\hat{r}_j$ is the receiver's reconstruction):
+\[
+I(\mathrm{obs}_b(S_a); r_j) \le I(S_a; r_j) = H(r_j)
+\]
+with equality iff the wire is lossless for the task-relevant signal ($\mathrm{optic}_w \circ \pi_w$ is a sufficient statistic for $r_j$ on the relevant support). Therefore $\Delta I_j \ge 0$, with strict inequality whenever the handoff is lossy. Finite context windows make such lossy handoffs typical, though not logically unavoidable.
+
+Each of $h$ handoffs incurs: (i) communication cost $c_{\mathrm{comm}}$ for message construction and parsing, and (ii) reconstruction cost $c_{\mathrm{recon},j}$ proportional to $\Delta I_j$, as the receiver must expend reasoning tokens to compensate for the missing context. The total multi-agent cost is:
+\[
+C_{\mathrm{multi}} = k \cdot c_{\mathrm{step}} + \sum_{j=1}^{h} \bigl(c_{\mathrm{comm}} + c_{\mathrm{recon},j}\bigr)
+\]
+The overhead ratio $(C_{\mathrm{multi}} - C_{\mathrm{single}})/C_{\mathrm{single}} = \sum_j (c_{\mathrm{comm}} + c_{\mathrm{recon},j}) / (k \cdot c_{\mathrm{step}})$ grows with $h$ and with the typical per-handoff information loss $\Delta I_j$. When lossy handoffs accumulate, reconstruction failures at step $j$ degrade the input quality for step $j+1$, so later handoffs operate on progressively more compressed representations and can exhibit superadditive degradation.
+\end{proof}
+
+\paragraph{Consistency Check.} Kim et al.~\cite{kim2025scaling} report that PlanCraft degrades under every multi-agent topology, from $-39.1\%$ (Hybrid) to $-70.1\%$ (Independent) relative to SAS, and attribute this to artificial decomposition of a strictly sequential task into redundant coordination steps. This is qualitatively consistent with the theorem: when handoffs add communication and reconstruction without creating new task-relevant observations, manufactured $K_{\mathrm{receiver}}$ is pure cost. The paper does not separately estimate $c_{\mathrm{comm}}/c_{\mathrm{step}}$ or $\Delta I_j$, so these quantities should be read as explanatory variables rather than fitted benchmark parameters.
+
+\paragraph{Worked Agent Example (Bug-Fix Relay).}
+Consider a three-step bug-fix task: interpret the failing test, locate the root cause, and write the patch. A single coding agent pays $3c_{\mathrm{step}}$. If the task is split across planner/debugger/patcher with $h=2$ handoffs, $c_{\mathrm{step}}=100$ tokens, $c_{\mathrm{comm}}=25$, and reconstruction cost $c_{\mathrm{recon}}=20$ per handoff, then $C_{\mathrm{single}}=300$ while $C_{\mathrm{multi}}=3\cdot100+2\cdot(25+20)=390$. Unless one specialist contributes genuinely new observations or capabilities, the decomposition is net overhead.
+
+\begin{theorem}[Parallel Acceleration under Epistemic Independence]
+\label{thm:parallel-acceleration}
+A task decomposes into $m$ subtasks. Define two subtasks as \textbf{epistemically independent} iff neither's solution requires knowledge of the other's result: $\neg(K_i(\varphi_j) \text{ is a precondition for solving subtask } i)$.
+\begin{enumerate}[leftmargin=*]
+\item[(a)] Under full epistemic independence with centralized coordination, the speedup is:
+\begin{equation}
+S = \frac{\sum_{i=1}^{m} c_{\mathrm{sub}_i}}{\max_i(c_{\mathrm{sub}_i}) + c_{\mathrm{assign}} + c_{\mathrm{agg}}}
+\label{eq:parallel-speedup}
+\end{equation}
+where $c_{\mathrm{assign}}$ is the coordinator's distribution cost and $c_{\mathrm{agg}}$ is aggregation cost. With equal subtasks, $S \approx m$ minus coordinator overhead.
+\item[(b)] For propositions determined solely by the tuple of worker outputs, the coordinator attains the corresponding pooled-output knowledge at aggregation as an architectural byproduct---it must receive all outputs to combine them. Error detection (Theorem~\ref{thm:error-amplification}) comes free.
+\item[(c)] \textbf{Epistemic ceiling:} If subtasks are only partially independent---$I(\varphi_i; \varphi_j) > 0$---then parallel execution sacrifices solution quality bounded below by a function of the unresolved mutual information.
+\end{enumerate}
+\end{theorem}
+
+\paragraph{Assumptions.}
+Subtasks can be assigned independently, the coordinator's assignment and aggregation costs are additive overhead terms, and no hidden blocking dependency forces a worker to wait for another worker's intermediate result.
+
+\paragraph{Operational takeaway.}
+This is the positive case for multi-agent systems: if subtasks can be solved from local observations alone, then specialization plus a coordinator can reduce wall-clock cost and often improve quality. If subtasks share unresolved dependencies, parallelism turns into premature decomposition.
+
+\begin{proof}[Proof sketch]
+\textbf{Part (a).} Let subtasks $\varphi_1, \ldots, \varphi_m$ be epistemically independent: for all $i \ne j$, agent $i$ can achieve $K_i(\varphi_i)$ from $\mathrm{obs}_i$ alone without requiring $K_i(\varphi_j)$. Formally, let $f_i^*$ denote the optimal solution function for subtask $i$. Epistemic independence means $f_i^*$ depends only on the initial task description and agent $i$'s local observations: $f_i^*(s) = f_i^*(\mathrm{obs}_i(s))$ for all global states $s$.
+
+Under parallel execution, all $m$ subtasks run concurrently. The wall-clock cost is determined by the slowest subtask plus coordination overhead: $C_{\mathrm{parallel}} = \max_i(c_{\mathrm{sub}_i}) + c_{\mathrm{assign}} + c_{\mathrm{agg}}$. Sequential execution by a single agent costs $C_{\mathrm{sequential}} = \sum_{i=1}^m c_{\mathrm{sub}_i}$. The speedup $S = C_{\mathrm{sequential}}/C_{\mathrm{parallel}}$ yields the stated formula. With equal subtask costs, $C_{\mathrm{sequential}} = m \cdot c_{\mathrm{sub}}$ and $C_{\mathrm{parallel}} = c_{\mathrm{sub}} + c_{\mathrm{assign}} + c_{\mathrm{agg}}$, so $S = m \cdot c_{\mathrm{sub}} / (c_{\mathrm{sub}} + c_{\mathrm{assign}} + c_{\mathrm{agg}}) \approx m$ when coordinator overhead is small relative to subtask cost.
+
+\textbf{Part (b).} The coordinator receives all $m$ outputs $(o_1, \ldots, o_m)$ as part of the aggregation step. Assume each worker's relevant local observation for aggregation is its own result $o_j$. Then the pooled worker-output partition is generated by the tuple $(o_1, \ldots, o_m)$, and the hub observes that tuple directly: $\mathrm{obs}_{\mathrm{hub}}(s) \supseteq (o_1, \ldots, o_m)$. Therefore for any proposition $\varphi$ measurable with respect to the worker-output tuple, $D_G(\varphi) \Rightarrow K_{\mathrm{hub}}(\varphi)$. Error detection from Theorem~\ref{thm:error-amplification}(b) follows because the hub can cross-check outputs at no additional communication cost.
+
+\textbf{Part (c).} When $I(\varphi_i; \varphi_j) > 0$, the optimal solution $f_i^*$ depends on the value of $\varphi_j$: there exist global states $s, s'$ with $\mathrm{obs}_i(s) = \mathrm{obs}_i(s')$ but $f_i^*(s) \ne f_i^*(s')$, because the states differ in $\varphi_j$ which affects $\varphi_i$'s optimal answer. Under independent execution, agent $i$ cannot distinguish $s$ from $s'$ and must choose a single action, incurring expected quality loss proportional to $I(\varphi_i; \varphi_j)$---the unresolved mutual information between subtask solutions.
+\end{proof}
+
+\paragraph{Consistency Check.} Kim et al.'s Finance-Agent traces show at least three largely separable workstreams---regulatory/news analysis, SEC filing research, and operational-impact assessment---handled by three sub-agents plus an orchestrator \cite{kim2025scaling}. Centralized MAS improves benchmark success from $0.349$ to $0.631$ ($+80.8\%$), which is qualitatively consistent with the theorem's decomposable-task regime. But the reported $+80.8\%$ is a success-rate improvement, not a direct measurement of the speedup $S$ in Eq.~\eqref{eq:parallel-speedup}; it should therefore be interpreted as evidence that approximate epistemic independence can improve solution quality, not as a literal estimate of wall-clock acceleration.
+
+\paragraph{Worked Agent Example (Due-Diligence Swarm).}
+Suppose an orchestrator assigns three largely independent subtasks for a vendor assessment: legal review, security posture, and cost modeling. If each subtask costs about $8$ minutes of agent time and assignment plus aggregation costs $2$ minutes total, then
+\[
+S = \frac{8+8+8}{8+2} = 2.4.
+\]
+The coordinator also receives all three outputs at aggregation, so cross-checking across the workstreams comes with little extra communication cost.
+
+\begin{theorem}[Tool Density Scaling]
+\label{thm:tool-density}
+Consider $t$ tools distributed across $n$ agents, with $|T_i| = t/n$ tools per agent (balanced partition).
+\begin{enumerate}[leftmargin=*]
+\item[(a)] \textbf{Single agent:} The agent's observation partition over tool outputs is unified. Planning cost is $O(t)$ per step (linear scan of tool descriptions in context).
+\item[(b)] \textbf{Multi-agent:} When agent $i$ needs a tool in $T_j$ ($j \ne i$), it must first know the tool exists ($K_i(T_j \ni \mathrm{tool}_k)$), then request execution, then interpret the result with information loss $\Delta I$ (Eq.~\eqref{eq:epistemic-reconstruction-loss}). The coordination overhead per step scales as:
+\begin{equation}
+C_{\mathrm{coord}} = O\!\left(t \cdot \left(1 - \frac{|T_i \cap T_{\mathrm{needed}}|}{|T_{\mathrm{needed}}|}\right) \cdot c_{\mathrm{comm}}\right)
+\label{eq:tool-coord-overhead}
+\end{equation}
+which approaches $O(t \cdot c_{\mathrm{comm}})$ as $t$ grows for any fixed partition.
+\item[(c)] \textbf{Cross-agent planning overhead:} Agent $i$ must reason about remote tool capabilities---$K_i(K_j(\mathrm{tool}_k \text{ can solve subproblem}))$---a second-order epistemic query. This scales as $O(t \cdot n)$ in the worst case:
+\begin{equation}
+C_{\mathrm{plan}} = O(t \cdot n) \gg O(t)
+\label{eq:tool-planning-cost}
+\end{equation}
+yielding a multiplicative $n$-factor over the single-agent baseline and bilinear growth when both $t$ and $n$ increase.
+\end{enumerate}
+\end{theorem}
+
+\paragraph{Assumptions.}
+Tools are partitioned approximately evenly across agents, remote tool use requires explicit discovery and delegation, and the planner may in the worst case need to reason over every tool-agent pairing relevant to the current subgoal.
+
+\paragraph{Operational takeaway.}
+For agentic tool systems, splitting a toolset across agents changes one local decision into three coordination steps: discover who has the tool, delegate execution, then interpret the returned result without the executor's full context. That is why tool-heavy tasks often punish over-distribution.
+
+\begin{proof}[Proof sketch]
+\textbf{Part (a).} A single agent holds all $t$ tools in its context. Its observation function $\mathrm{obs}(s) = (o_1(s), \ldots, o_t(s))$ covers all tool outputs. At each planning step, the agent selects the next tool by scanning descriptions in context. This is a linear search over $t$ candidates: each tool description must be evaluated against the current subgoal, yielding $O(t)$ planning cost per step.
+
+\textbf{Part (b).} With $n$ agents and a balanced partition $T_1, \ldots, T_n$ where $|T_i| = t/n$, agent $i$'s observation function covers only $T_i$'s outputs: $\mathrm{obs}_i(s) = (o_k(s))_{k \in T_i}$. When agent $i$ needs tool $k \in T_j$ ($j \ne i$), three epistemic gaps must be bridged:
+
+\begin{enumerate}
+\item \textbf{Discovery:} Agent $i$ must establish $K_i(\exists k \in T_j : k \text{ solves subproblem})$. Since $k \notin T_i$, this requires communication---agent $i$ cannot determine tool $k$'s existence from $\mathrm{obs}_i$ alone. There exist global states $s, s'$ where $\mathrm{obs}_i(s) = \mathrm{obs}_i(s')$ but $T_j$ differs, so $s \sim_i s'$ yet the available remote tools are different.
+\item \textbf{Delegation:} Agent $i$ must transmit the subproblem context to agent $j$ and receive the result, incurring communication cost $c_{\mathrm{comm}}$ per remote tool invocation.
+\item \textbf{Reconstruction:} Agent $j$'s output $o_k$ is interpreted by $i$ without $j$'s full execution context. By the data processing inequality, $I(\text{subproblem}; o_k|_{\mathrm{received}}) \le I(\text{subproblem}; o_k|_{\mathrm{full context}})$, yielding information loss $\Delta I \ge 0$.
+\end{enumerate}
+
+The fraction of tools requiring remote access is $1 - |T_i \cap T_{\mathrm{needed}}|/|T_{\mathrm{needed}}|$. For each remote tool, the coordination cost is $c_{\mathrm{comm}}$. Over all $t$ potentially needed tools, the total coordination overhead is:
+\[
+C_{\mathrm{coord}} = t \cdot \left(1 - \frac{|T_i \cap T_{\mathrm{needed}}|}{|T_{\mathrm{needed}}|}\right) \cdot c_{\mathrm{comm}}.
+\]
+As $t$ grows with fixed $n$ and balanced partitions, the local coverage fraction $|T_i|/t = 1/n$ is constant, so the remote fraction approaches $(n-1)/n$ and $C_{\mathrm{coord}} \to O(t \cdot c_{\mathrm{comm}})$.
+
+\textbf{Part (c).} Planning requires not just first-order knowledge of tool outputs but second-order knowledge of other agents' capabilities. Specifically, to construct a multi-step plan, agent $i$ must evaluate propositions of the form $K_i(K_j(\mathrm{tool}_k \text{ can solve subproblem } \varphi))$---``I know that agent $j$ knows that tool $k$ is applicable.''
+
+Consider the Kripke structure. For agent $i$ to establish $K_i(K_j(\varphi))$, we need: for all $s'$ with $s \sim_i s'$, and for all $s''$ with $s' \sim_j s''$, $\varphi$ holds at $s''$. Agent $i$ must reason over $j$'s indistinguishability classes, which requires a model of $j$'s observation partition. This model has size $O(|T_j|) = O(t/n)$ per agent. Since $i$ must model all $n-1$ remote agents, the total planning state is $O((n-1) \cdot t/n) = O(t)$ per planning step. However, to route each of $t$ subgoals the planner must evaluate all $n$ agents' capability profiles, yielding $O(t \cdot n)$ comparisons in the worst case.
+
+Contrast with the single-agent case: planning cost is $O(t)$ (linear scan, no modeling of other agents' capabilities). The multi-agent case introduces a multiplicative factor of $n$ from the second-order epistemic reasoning, so $C_{\mathrm{plan}} = O(t \cdot n)$. For fixed $n$, this is still linear in $t$ but with a larger constant; when $t$ and $n$ grow jointly it becomes bilinear in the two scaling parameters. This explains why increasing tool density in multi-agent systems can produce disproportionate overhead that may negate parallelism benefits.
+\end{proof}
+
+\paragraph{Consistency Check.} In Kim et al.'s setup, the tool-heavy Workbench domain uses $T = 16$ tools and most MAS configurations use $n = 3$ agents \cite{kim2025scaling}. Under a balanced partition, each agent directly holds only about $T/n \approx 5$ tools, so roughly two-thirds of tool access is remote. The second-order planning term therefore scales from $O(16)$ in SAS to roughly $O(48)$ cross-agent capability checks in the balanced three-agent case. Kim et al. report a strong negative efficiency--tool interaction ($\hat{\beta}_{E_c \times T} = -0.267$, $p < 0.001$), which is consistent with this combinatorial tax. Their results also show that the penalty is topology-dependent rather than absolute: Centralized and Hybrid underperform on Workbench, while Decentralized remains slightly above SAS ($+5.7\%$), so high tool count stresses coordination but does not universally eliminate multi-agent value. In the low-tool regime discussed in the paper ($T \le 4$), the efficiency interaction is negligible.
+
+\paragraph{Worked Agent Example (Tool-Split SWE Agent).}
+Imagine a software-engineering assistant with $18$ tools split across $3$ agents: one owns search tools, one owns git and test tools, and one owns deployment tools. A planner diagnosing a failing CI job directly holds only $6$ tools and must treat the remaining $12$ as remote. The planning problem therefore expands from ``which of $18$ tools should I call next?'' to ``which agent owns the relevant tool, how do I route the subproblem, and how do I interpret the result without that agent's full execution context?'' That is the $O(tn)$ tax in operational form.
+
+\paragraph{Summary: Consistency with Known Design Intuitions.}
+Table~\ref{tab:epistemic-predictions} summarizes the qualitative correspondence between the theoretical predictions and Kim et al.'s empirical findings across 180 agent configurations \cite{kim2025scaling}.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}p{0.18\textwidth}p{0.20\textwidth}p{0.25\textwidth}p{0.25\textwidth}@{}}
+\toprule
+\textbf{Topology} & \textbf{Epistemic Property} & \textbf{Formal Prediction} & \textbf{Published Result} \\
+\midrule
+Independent ($\otimes$) & No inter-agent $K_i$ & Highest error amplification & Architecture-level $A_e = 17.2$ \\
+Centralized ($\circ$+hub) & Hub pools worker outputs & Validation bottleneck lowers amplification & Architecture-level $A_e = 4.4$ \\
+Multi-agent + sequential & Requires manufactured $K_{\mathrm{receiver}}$ & Strictly sequential tasks degrade under handoffs & PlanCraft: $-39.1\%$ to $-70.1\%$ vs.\ SAS \\
+Multi-agent + parallel & Approximate epistemic independence & Large gains on decomposable tasks & Finance-Agent Centralized: $+80.8\%$ vs.\ SAS \\
+Multi-agent + high $|T|$ & Knowledge fragmentation & Coordination tax grows with $t$ and $n$ & Workbench $T=16$; $\hat{\beta}_{E_c \times T} = -0.267$ \\
+\bottomrule
+\end{tabular}
+\caption{Epistemic predictions vs.\ empirical observations from Kim et al.~\cite{kim2025scaling}. The table compares topology-level qualitative predictions to the paper's architecture-level metrics. Reported percentages and error-amplification factors are empirical aggregates, not literal plug-in values of the simplified theorem parameters. The correspondence formalizes known design intuitions rather than providing independent empirical validation.}
+\label{tab:epistemic-predictions}
+\end{table}
+
+\begin{center}
+\fbox{%
+\begin{minipage}{0.94\linewidth}
+\textbf{Design Implications for Agent Architects.}
+\begin{enumerate}[leftmargin=*]
+\item Use a reviewer or hub when multiple workers can independently introduce high-cost errors. The gain comes from visibility and suppression, not from agent count alone.
+\item Keep strictly sequential reasoning in one agent unless a handoff adds a genuinely new capability, observation source, or trust level.
+\item Use specialist swarms for decomposable tasks only when coordinator overhead is small relative to subtask cost and the subtasks are close to conditionally independent.
+\item Avoid fragmenting large toolsets across many agents unless tool routing is a first-class design problem. Otherwise, remote-tool discovery and second-order planning will dominate.
+\item Treat topology as a runtime policy, not a fixed ideology. When observed task structure shifts from sequential to parallel or from low-risk to high-risk, the coordination pattern should shift with it.
+\end{enumerate}
+\end{minipage}}
+\end{center}
+
+\subsection{Epistemic Dynamics and Adaptive Topology}
+
+The preceding theorems treat topology as fixed. In practice, the Operon framework supports \textbf{dynamic topology switching}---morphogen gradients (Eq.~\eqref{eq:morphogen-diffusion}) can trigger reorganization at runtime. We connect this to the epistemic formalization.
+
+The Epiplexity monitor ($\hat{\mathcal{E}}_t$, Eq.~\eqref{eq:epiplexity-approx}) can be reinterpreted as a heuristic proxy for \emph{finite-horizon} epistemic stagnation. Define
+\begin{equation}
+\mathrm{Stagnant}_i^{(h)}(\varphi) := \neg K_i(\varphi) \wedge \neg \Diamond_{\le h} K_i(\varphi)
+\label{eq:epistemic-starvation}
+\end{equation}
+where $\Diamond_{\le h}$ means ``reachable within $h$ coordination rounds under the current topology.'' Low epiplexity does not \emph{prove} this modal condition, but it provides an operational signal that the current wiring is failing to generate new task-relevant observations. This is precisely the regime in which topology switching is warranted: the current wiring diagram's epistemic capacity is insufficient for the task.
+
+Morphogen-driven adaptation then becomes \textbf{epistemic optimization}: the system senses when its topology's knowledge properties are mismatched to the task and restructures accordingly. An independent topology ($\otimes$) failing on a sequential task triggers convergence to centralized coordination ($\circ$); a centralized topology bottlenecking on a parallelizable task triggers distribution to independent execution. This is the adaptive capability that purely empirical approaches \cite{kim2025scaling} identify as necessary but cannot yet provide---biological systems have evolved it as homeostatic regulation; the Operon framework operationalizes it through the morphogen-epiplexity coupling.
+
+Recent work on unifying epistemic and temporal logic for distributed system verification \cite{davis2026reasoning} suggests that these dynamic epistemic properties may be mechanically verifiable, opening a path toward formally certified adaptive agent topologies.

@@ -1,0 +1,142 @@
+\section{Multi-Cellular Organization: From Agents to Tissues}\label{sec:multi-cellular}
+
+The preceding analysis focuses on single-cell analogies: one agent as one cell. However, most agentic systems
+involve multiple distinct agents with different ``genomes'' (system prompts) and specialized functions. We extend
+the correspondence to multi-cellular organization, drawing on developmental biology.
+
+\subsection{Cell Types and Agent Specialization}
+
+In multi-cellular organisms, a single genome gives rise to hundreds of distinct cell types through differential
+gene expression. Each cell type has a characteristic \textbf{expression profile}---which genes are active---that
+determines its function (neuron, hepatocyte, immune cell).
+
+In multi-agent systems, a single base model can instantiate multiple \textbf{agent phenotypes}. Differential
+context selects which phenotype is expressed:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Genome} $\to$ Base model weights (shared)
+\item \textbf{Epigenome} $\to$ System prompt + RAG context (phenotype-specific)
+\item \textbf{Cell Type} $\to$ Agent role (Coder, Reviewer, Planner, Executor)
+\end{itemize}
+
+This reframes the ``multi-agent'' architecture question: rather than asking ``how many agents?'', we ask
+``what is the developmental program?''---the specification of which phenotypes exist and how they differentiate.
+
+\textbf{Bounds of the Analogy.} We clarify which aspects of development transfer to agentic systems:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Cell Division} $\to$ \textbf{Agent Spawning:} Creating a new agent with similar (or identical)
+context. Unlike biological division, agent spawning is cheap and reversible.
+\item \textbf{Lineage Commitment:} In biology, differentiated cells rarely change type (a neuron doesn't become
+a hepatocyte). In agentic systems, \textbf{phenotype is fixed at instantiation}---an agent's system prompt
+determines its role for that execution. Re-differentiation requires spawning a new agent with different context.
+\item \textbf{Apoptosis of Excess:} Development involves programmed death of cells that fail to integrate properly.
+This transfers directly: agents that fail to produce useful output are terminated (metabolic apoptosis).
+\item \textbf{Does NOT transfer:} Slow developmental timescales (hours/days in biology vs. milliseconds in agents),
+physical spatial embedding (agents occupy graph-topological positions, not physical space), irreversibility (agents can be restarted).
+\end{itemize}
+
+\subsection{Morphogen Gradients: Coordination Without Central Control}
+
+In embryonic development, cells coordinate their behavior through \textbf{morphogen gradients}---diffusible
+signaling molecules whose concentration varies spatially. Cells read their local concentration and differentiate
+accordingly, enabling pattern formation without a central controller.
+
+In multi-agent systems, the morphogen maps to \textbf{shared context variables} that influence agent behavior:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Task Complexity Gradient:} A variable indicating current task difficulty. Agents in ``high
+complexity'' regions activate detailed reasoning; those in ``low complexity'' regions use fast heuristics.
+\item \textbf{Confidence Gradient:} A variable indicating certainty about the current solution. Low confidence
+triggers Quorum Sensing (recruit more agents); high confidence enables direct execution.
+\item \textbf{Resource Gradient:} Budget ratio remaining. Agents sense ``metabolic scarcity'' and adapt their
+strategies accordingly (the Metabolic-Epigenetic Coupling).
+\end{itemize}
+
+\textbf{Implementation Pattern.} The gradient is represented as a JSON structure injected into each agent's
+context by the orchestrator:
+\begin{verbatim}
+{
+  "morphogens": {
+    "complexity": 0.8,    // High: use detailed reasoning
+    "confidence": 0.3,    // Low: consider recruiting help
+    "budget": 0.6,        // 60% of budget remaining
+    "error_rate": 0.05    // Recent failure rate
+  }
+}
+\end{verbatim}
+Agents read their local concentration via a standardized preamble in the system prompt:
+``\textit{Current environment state: [morphogens]. Adjust your strategy accordingly.}''
+The orchestrator updates gradients after each step, and agents condition their behavior on the current values.
+This is analogous to cells reading morphogen concentrations through membrane receptors.
+
+\paragraph{Diffusion Dynamics.}
+The preceding description treats morphogens as globally shared variables. In biological development, morphogens \textit{diffuse} through tissue, creating spatially varying concentration profiles. We formalize this as a discrete-time dynamical system on the agent graph $G = (V, E)$. Let $c_v^t(m)$ denote the concentration of morphogen $m$ at node $v$ at time $t$, and let $\tilde{c}_v^t(m) = c_v^t(m) + \sigma_v(m)$ denote the post-emission concentration used by the reference implementation before diffusion. The update rule is:
+\begin{equation}
+c_v^{t+1}(m) = (1 - \gamma)\left[\tilde{c}_v^t(m) - d\,\mathbf{1}_{|N(v)|>0}\,\tilde{c}_v^t(m) + d \sum_{u \in N(v)} \frac{\tilde{c}_u^t(m)}{|N(u)|}\right]
+\label{eq:morphogen-diffusion}
+\end{equation}
+where $\sigma_v(m)$ is the emission rate at source nodes (zero for non-sources), $d$ is the diffusion coefficient (fraction flowing to neighbors per step), $\gamma$ is the decay rate, and $N(v)$ is the neighbor set of $v$. The indicator $\mathbf{1}_{|N(v)|>0}$ prevents spurious outflow from isolated nodes, matching the implementation. This ordering makes newly emitted morphogen available for same-step propagation, matching the implementation's emit $\to$ diffuse $\to$ decay pipeline. The resulting concentration profile provides \textit{local} coordination signals: agents near sources experience high concentrations; distant agents experience low concentrations. This enables position-dependent behavior without requiring a central controller or global state.
+
+\subsection{Tissue Architecture: The Agent Graph as Organism}
+
+We propose a hierarchy of organizational levels:
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Cell (Agent):} A single LLM instantiation with specific context. The atomic unit.
+\item \textbf{Tissue (Agent Cluster):} A group of agents with shared function and direct communication
+(e.g., a Coding Team: Planner + Coder + Reviewer). Corresponds to parallel composition with shared state.
+\item \textbf{Organ (Subsystem):} Multiple tissues coordinating to perform a complex function
+(e.g., the Development Organ: Design Tissue + Implementation Tissue + Testing Tissue).
+\item \textbf{Organism (System):} The complete agent graph, with homeostatic regulation maintaining
+system-level health metrics.
+\end{enumerate}
+
+The key insight is that \textbf{boundaries matter}. In biology, tissue boundaries prevent inappropriate mixing
+(epithelial barriers). In agent systems, trust boundaries (the Adaptive Immunity motif) prevent information
+leakage between subsystems with different security requirements. The wiring diagram's type system enforces
+these boundaries: an agent in the ``User-Facing Tissue'' cannot directly wire to an agent in the ``Database
+Tissue'' without passing through a ``Membrane'' (API boundary with provenance tagging).
+
+\paragraph{Capability Isolation.}
+The reference implementation enforces a capability ceiling at the tissue level: each \texttt{TissueBoundary} declares its \texttt{allowed\_capabilities} $\subseteq \mathcal{C}$. A cell type can only be registered in a tissue if its required capabilities are a subset of the tissue's allowed capabilities. This provides defense-in-depth: even if an individual agent is compromised, it cannot escalate privileges beyond its tissue boundary. Tissues compose into organism-level wiring diagrams through typed boundary ports, enabling hierarchical security policies.
+
+\paragraph{Morphogen Diffusion in Tissues.}
+Tissues optionally embed a \texttt{DiffusionField} (Eq.~\eqref{eq:morphogen-diffusion}). When cells are added, they become nodes in the diffusion graph; when cells are connected, edges are added. The tissue's \texttt{diffuse()} method runs the simulation, and each cell reads its local gradient via \texttt{get\_cell\_gradient()}. This couples the organizational structure (wiring topology) to the coordination mechanism (morphogen concentrations), creating a biologically faithful model where position in the tissue influences cell behavior.
+
+\paragraph{Three-Layer Context Model.}
+\label{par:three-layer-context}
+The \texttt{SkillOrganism} runtime (\S\ref{sec:substrate-integration}) surfaces a recurring architectural question: when multiple stages share and revise knowledge during a workflow, which state is ephemeral coordination glue and which is durable auditable knowledge? We distinguish three layers of context, each with different lifetime and mutability semantics:
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Topology layer.}
+The wiring diagram $G = (V, E)$ and its optics determine who can directly observe whom. This layer is structural: it does not change within a single organism run. Epistemic properties ($K_i$, common knowledge) derive from the observation functions $\mathrm{obs}_i$ defined over this graph (\S\ref{sec:epistemic-topology}).
+
+\item \textbf{Ephemeral layer.}
+The \texttt{shared\_state} dictionary carries routing hints, counters, morphogen concentrations $c_v^t(m)$, and temporary stage outputs. Its lifetime is one organism run; it is mutable and not historically reconstructible. This is the coordination scratchpad.
+
+\item \textbf{Bi-temporal layer.}
+The \texttt{BiTemporalMemory} substrate carries durable factual knowledge with dual time axes: valid time $t_v$ (when the fact is true in the world) and record time $t_r$ (when the system learned the fact). Facts are append-only: corrections close old records and insert new ones with \texttt{supersedes} pointers. The belief-state operator $K_i^{(t_v, t_r)}$ is exactly reconstructible at any historical coordinate.
+\end{enumerate}
+
+The three layers compose cleanly: topology constrains visibility, ephemeral state carries execution context, and bi-temporal memory provides the audit trail. A stage reads its \texttt{SubstrateView}---a frozen envelope of facts known at the current record-time horizon---and writes factual events (assertions, corrections, invalidations) back to the substrate after execution. This separation ensures that the question ``what did the organism know when stage $X$ made its decision?'' is always answerable from the append-only history, independent of subsequent corrections or ephemeral state mutations.
+
+\paragraph{Adaptive Structure Selection.}
+\label{sec:adaptive-structure}
+The \texttt{advise\_topology()} function (\S\ref{sec:multi-cellular}) provides a static prior: given task shape and operating constraints, recommend a topology. The \texttt{PatternLibrary} extends this with experiential refinement. Successful collaboration patterns are stored as \texttt{PatternTemplate} instances, each paired with a \texttt{TaskFingerprint}---a feature vector comprising task shape, tool count, subtask count, required roles, and tags. Template retrieval uses a weighted scoring function (task-shape match, tool/subtask proximity, role Jaccard overlap, historical success rate) to rank candidates. This is the evo-devo outer loop described by Dupoux et al.~\cite{dupoux2026learning}: the genome ($\phi$) is the pattern template; evolutionary selection is the run-record scoring.
+
+The \texttt{WatcherComponent} implements System~M as a \texttt{SkillRuntimeComponent} that observes stage execution and classifies signals into three categories: \emph{epistemic} (epiplexity, prediction error), \emph{somatic} (ATP/metabolic state), and \emph{species-specific} (immune threats). When signals cross configured thresholds, the watcher writes a \texttt{WatcherIntervention} (retry, escalate, or halt) to \texttt{shared\_state}, which the run loop consumes after component hooks complete. Crucially, the watcher monitors its own intervention rate: when the ratio of cumulative interventions to observed stages exceeds a configurable threshold, it emits a non-convergence HALT signal. This operationalizes the finding of Hao et al.~\cite{hao2026bigmas} that failing multi-agent runs systematically require more routing decisions than successful ones.
+
+The \texttt{AdaptiveSkillOrganism} wrapper closes the loop. Given a task, it auto-fingerprints the input, retrieves the best-scoring template from the library, assembles it into a runnable topology via \texttt{assemble\_pattern()}, attaches a watcher and telemetry probe, runs, and records the outcome as a \texttt{PatternRunRecord}. The watcher's intervention history is recorded as \texttt{ExperienceRecord} instances in a cross-run experience pool, enabling future intervention recommendations based on which actions succeeded for similar (fingerprint, stage, signal) tuples. This is the full evo-devo inner loop: one organism run is one developmental lifetime; the library scoring across many lifetimes is evolutionary selection.
+
+\paragraph{Cognitive Modes and Sleep Consolidation.}
+\label{sec:cognitive-modes}
+The \texttt{CognitiveMode} enum reframes Operon's fast/deep nucleus distinction as a cognitive architecture principle: stages declare whether they are \emph{observational} (System~A---passive sensing, statistical pattern matching) or \emph{action-oriented} (System~B---goal-directed deliberation). The watcher detects mismatches between declared mode and actual execution model, providing an informational signal for mode balance analysis.
+
+The \texttt{SleepConsolidation} cycle extends the \texttt{AutophagyDaemon} into the imagination-based learning mode described by Dupoux et al.~\cite{dupoux2026learning}. During consolidation, successful patterns are replayed from the \texttt{PatternLibrary} into \texttt{EpisodicMemory} with tier promotion (WORKING $\to$ EPISODIC $\to$ LONGTERM), recurring patterns are compressed into new \texttt{PatternTemplate} instances, and frequently-accessed ACETYLATION histone marks are promoted to permanent METHYLATION. When a \texttt{BiTemporalMemory} is available, the \texttt{counterfactual\_replay()} function analyzes whether corrections that occurred after a run would have changed the outcome---operationalizing the ``what if'' reasoning that the paper associates with imagination during sleep.
+
+\paragraph{Social Learning and Epistemic Vigilance.}
+\label{sec:social-learning}
+The \texttt{SocialLearning} module enables cross-organism template exchange, following the biological analogy of horizontal gene transfer (HGT) in bacteria. Organisms export successful \texttt{PatternTemplate} instances via \texttt{export\_templates()} and import from peers via \texttt{import\_from\_peer()}. Adoption is modulated by a \texttt{TrustRegistry} that implements epistemic vigilance: per-peer trust scores are updated via exponential moving average over adoption outcomes (whether imported templates actually succeeded for the importing organism). Trust below a configurable threshold blocks adoption entirely, preventing contamination from unreliable peers. Provenance tracking (\texttt{get\_provenance()}) traces which peer contributed each adopted template, closing the feedback loop between template performance and peer trust.
+
+The watcher also gains curiosity signals derived from the \texttt{EpiplexityMonitor}'s EXPLORING status. When embedding novelty is high (the agent is encountering genuinely unfamiliar territory) and the stage uses a fast model, the watcher recommends ESCALATE to engage the deep model for more thorough investigation. This operationalizes intrinsic motivation: the organism actively seeks deeper understanding of novel inputs rather than processing them with cheap statistical pattern matching.
+
+\paragraph{Critical Periods and Developmental Gating.}
+\label{sec:developmental-gating}
+The \texttt{DevelopmentController} maps telomere consumption to a \texttt{DevelopmentalStage} (EMBRYONIC, JUVENILE, ADOLESCENT, MATURE), extending the lifecycle model from binary alive/dead to a graded maturation process. \texttt{CriticalPeriod} instances declare time-limited learning windows that close permanently as the organism matures---analogous to neurodevelopmental critical periods where specific neural circuits are maximally plastic. Tool acquisition (\texttt{Plasmid}) respects developmental stage via a \texttt{min\_stage} field, preventing premature capability exposure. Teacher-learner scaffolding, mediated by \texttt{SocialLearning.scaffold\_learner()}, filters templates by the learner's stage and applies a learning plasticity bonus, enabling mature organisms to guide younger ones through progressively more complex capabilities.

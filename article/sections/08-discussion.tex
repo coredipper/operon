@@ -1,0 +1,197 @@
+\section{Discussion: Towards ``Epigenetic'' Software}
+
+The correspondence developed in this paper extends beyond the immediate execution of tasks (Gene Expression) to the
+management of long-term behavior and state. In biology, the DNA sequence is static; a neuron and a liver cell
+possess the exact same genetic code. Their distinct behaviors are determined by Epigenetics---chemical markers
+(like methylation) that restrict access to certain parts of the genome, effectively biasing the system toward
+specific outcomes.
+
+\subsection{RAG as Digital Methylation}
+
+In Agentic Systems, the Large Language Model (LLM) weights act as the DNA---a static, pre-trained substrate of
+potentiality. To create specialized agents, we do not typically retrain the model (mutation); instead, we use
+Retrieval Augmented Generation (RAG) and System Prompts.
+
+We define this formally as Phenotypic Plasticity. The output of an agent is not solely a function of its weights
+($W$) and the user query ($Q$), but of its epigenetic state ($E$):
+\begin{equation}
+O_{\text{agent}} = f(W,E,Q).
+\label{eq:phenotypic-plasticity}
+\end{equation}
+
+Context injection (RAG) acts as a restrictive morphism. By populating the context window with specific documents
+(e.g., ``SQL Syntax Guide''), we effectively ``methylate'' (silence) the vast majority of the LLM's general
+knowledge (e.g., poetry, history) to force the expression of a specific ``SQL Agent'' phenotype.
+
+This suggests that the State Monad for an agentic system should not merely be a log of messages, but a structured
+Epigenetic Landscape \cite{waddington1957} that strictly controls which ``genes'' (capabilities) are accessible
+at any given step in the workflow. Waddington's original metaphor---a ball rolling down a landscape of valleys
+representing developmental fates---applies directly: the agent's trajectory through solution space is channeled
+by the contours of its RAG context.
+
+\subsubsection{Metabolic-Epigenetic Coupling}
+
+Recent evidence suggests that chromatin accessibility is coupled to mitochondrial function via metabolite
+availability (e.g., Acetyl-CoA) \cite{chandel2024mitochondria}. The cell cannot express certain genes without
+sufficient metabolic substrate. We map this to \textbf{Cost-Gated Retrieval}. The accessibility of a RAG
+document $d$ is a function of the Metabolic State $\mathcal{R}$:
+\begin{equation}
+Access(d) =
+\begin{cases}
+  \text{Open} & \text{if } \mathcal{R} \ge Cost(d) \\
+  \text{Silenced} & \text{if } \mathcal{R} < Cost(d)
+\end{cases}
+\label{eq:cost-gated-retrieval}
+\end{equation}
+Just as a cell silences energy-intensive genes during starvation, the Runtime ``methylates'' (hides) expensive
+context when the token budget is low. This creates an adaptive epigenetic landscape where the agent's accessible
+capabilities dynamically contract and expand based on resource availability. In the reference implementation,
+\texttt{MarkerStrength} acts as a discrete proxy for $Cost(d)$ (weak markers are cheapest to silence; permanent
+markers are hardest to silence), and each retrieval also incurs a fixed ATP cost at the \texttt{HistoneStore}
+boundary. The equation above is therefore realized as a tiered approximation rather than a per-document price model.
+
+\subsection{Horizontal Gene Transfer: Dynamic Tool Loading}
+\label{sec:hgt}
+
+Standard evolution relies on vertical inheritance (Pre-training). However, bacteria utilize Horizontal Gene
+Transfer (HGT) to acquire new capabilities (Plasmids) from the environment in real-time.
+
+In Agentic Systems, we map Plasmids to Tool Schemas. An agent operating in a novel environment may encounter a
+problem for which its ``genomic'' (pre-trained) capabilities are insufficient.
+\begin{equation}
+\mathrm{Agent}_{\text{new}} = \mathrm{Agent}_{\text{old}} \otimes \mathrm{ToolSchema}.
+\label{eq:horizontal-gene-transfer}
+\end{equation}
+By dynamically retrieving a tool definition (e.g., a Calculator API or SQL Interface) from a registry and
+injecting it into the Context Window, the agent undergoes a topological transformation, acquiring a new
+input/output modality instantly.
+
+\paragraph{Capability-Gated Acquisition.}
+The reference implementation provides a \textbf{PlasmidRegistry} with optional capability gating. Each Plasmid declares a set of required capabilities $C_p \subseteq \mathcal{C}$. When an agent is instantiated with an allowed-capability envelope $C_a$, it can only acquire the plasmid if $C_p \subseteq C_a$:
+\begin{equation}
+\mathrm{acquire}(p, a) =
+\begin{cases}
+a \otimes p & \text{if } C_p \subseteq C_a \\
+\bot_{\text{insufficient}} & \text{otherwise}
+\end{cases}
+\label{eq:capability-gated-acquisition}
+\end{equation}
+This prevents privilege escalation whenever a capability envelope is configured: an agent restricted to read-only file access cannot acquire a tool requiring network capabilities. Plasmid curing (release) removes the tool, restoring the original topology.
+
+\subsection{The Cost of State}
+The metabolic constraint formalized in Section~3 applies directly: the agent graph should be compiled with a conservative upper bound on token consumption, and unguarded loops must require an explicit budget certificate.
+
+\subsection{Endosymbiosis: The Neuro-Symbolic Integration}
+
+The evolution of complex life was triggered by Endosymbiosis, where a host cell engulfed a bacterium (the future
+Mitochondrion), gaining the ability to generate massive energy (ATP) via aerobic respiration. This represents the
+integration of two distinct metabolic substrates.
+
+In Agentic AI, this maps to the integration of Connectionist (Neural) and Symbolic (Code) subsystems. An LLM acts
+as the host organism---capable of planning and semantic reasoning but energetically inefficient at arithmetic and
+logic. By ``engulfing'' a deterministic runtime (e.g., a Python REPL or Wolfram Engine), the agent delegates
+high-precision tasks to the symbolic organelle.
+\begin{equation}
+\mathrm{Agent}_{\text{Eukaryote}} = \mathrm{LLM}_{\text{Host}} \oplus \mathrm{Runtime}_{\text{Mitochondria}}.
+\label{eq:endosymbiosis}
+\end{equation}
+Just as the host cell provides nutrients to the mitochondria in exchange for ATP, the LLM provides parsed
+variables to the runtime in exchange for deterministic truth.
+
+This symbiosis is computational: as Picard argues \cite{picard2022mips}, the mitochondria acts as a ``Motherboard,''
+integrating signals to determine cell state. The Symbolic Runtime provides the deterministic ``ground truth'' (ATP)
+required for the probabilistic LLM to reliably affect the world.
+
+\subsection{Temporal State in Agentic Systems}
+
+In the agentic setting, temporal state management is more than a storage concern. An autonomous agent that corrects a past belief must distinguish between the world changing (valid-time update) and the agent learning something new (transaction-time update). Without this distinction, auditing a past decision becomes impossible: the agent cannot reconstruct what it believed at the time the decision was made. The bi-temporal model treats facts as append-only records with dual timestamps, corrections as new records that close their predecessors, and point-in-time queries as intersections over the two time axes.
+
+\subsection{Bioenergetic Intelligence: Beyond the Battery Metaphor}
+
+Recent work in mitochondrial psychobiology \cite{allen2022energy, picard2022signaling} challenges the view of
+mitochondria as passive energy sources. They function as ``social signaling organelles'' that actively participate
+in cellular decision-making. This refines our correspondence:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Mitochondrial Sociality $\to$ Context Fusion:} Just as mitochondria fuse to share resources under
+stress, resource-constrained agents should implement \textbf{Context Fusion}---merging sparse Epigenetic States
+into a shared summary to survive ``Token Ischemia.''
+\item \textbf{Energy as Attention:} The Agentic Runtime does not merely limit the chain-of-thought, but actively
+\textit{directs} it. High-energy states permit ``Exploratory'' reasoning (Divergent), while low-energy states
+force ``Consolidatory'' reasoning (Convergent). The Metabolic Coalgebra is a \textbf{Cognitive Control Policy}.
+\end{itemize}
+
+\subsubsection{The Vermeij Trend: Why Agents Must Evolve}
+
+Finally, we situate this architecture within the broader history of complexity. Geerat Vermeij \cite{vermeij2023power}
+argues that evolution is driven by the maximization of \textbf{Power}---the rate at which a system acquires and
+applies energy. Life has consistently trended from low-power states (anaerobic bacteria) to high-power states
+(endothermic mammals) by internalizing energy production (endosymbiosis).
+
+We observe an identical trend in AI. The shift from ``Generative AI'' (Zero-Shot) to ``Agentic AI'' (Chain-of-Thought)
+is a shift from low-metabolism to high-metabolism architectures. However, Vermeij notes that high power requires
+high structural integrity; a system that amplifies energy without proper constraints self-destructs.
+
+\textbf{The Competitive Dynamics.} Vermeij's argument is about \textit{escalation}: competitive pressure
+between predators and prey drives both toward higher power. What is the analogue in agentic AI?
+
+We identify three sources of selective pressure:
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Adversarial Robustness (Predator-Prey):} Prompt injection attacks, jailbreaks, and adversarial
+inputs act as ``predators'' that exploit agent vulnerabilities. Agents that survive deployment develop
+``immune systems'' (the Adaptive Immunity motif). This is a direct Red Queen dynamic: attackers evolve new
+injection techniques; defenders evolve new detection mechanisms. The CFFL and Trust-Gated Lens are
+``armor'' adaptations.
+
+\item \textbf{Task Complexity (Environmental Pressure):} Users demand agents that can handle increasingly
+complex, multi-step tasks. Simple prompt-response systems (``anaerobic'') cannot compete with agentic
+systems that chain reasoning, use tools, and maintain state (``aerobic''). This is analogous to the
+oxygen revolution: organisms that could exploit the new energy source (aerobic respiration) outcompeted
+those that could not.
+
+\item \textbf{Resource Efficiency (Metabolic Selection):} Token costs and latency create selection pressure
+for efficient architectures. Agents that accomplish tasks with fewer tokens (higher metabolic efficiency)
+are deployed more widely. The Metabolic Coalgebra provides the formal framework for this optimization:
+systems evolve toward the Pareto frontier of capability vs. resource consumption.
+\end{enumerate}
+
+\textbf{The Cambrian Parallel.} The progression from prompt engineering to agentic engineering may parallel aspects of the
+Cambrian explosion: a sudden increase in metabolic capability (LLM reasoning power) that enables new
+``body plans'' (agent architectures). The Cambrian saw the emergence of eyes, shells, and predation---all
+requiring sophisticated metabolic support. Similarly, agentic AI sees the emergence of tool use, planning,
+and adversarial robustness---all requiring the structural integrity that the Operon framework provides.
+
+If the analogy holds: agent architectures that lack proper metabolic regulation, immune defense, and
+homeostatic mechanisms may be outcompeted by those that possess them. The Operon framework is not merely
+a safety feature; it may serve as an important structural adaptation---the ``vascularization'' of software---that
+enables high-power cognition to function without collapsing into incoherent noise (thermodynamic death).
+
+\subsubsection{Immune Evasion and Adversarial Limits}
+
+No static defense is perfect against adaptive attackers. Biology faces this reality: pathogens evolve
+to evade immune detection (antigenic drift, molecular mimicry, immunosuppression). The same dynamics
+apply to agentic security.
+
+\textbf{Evasion Vectors.} An adversary who understands the defense layers can craft inputs that:
+\begin{itemize}[leftmargin=*]
+\item Pass innate filters by avoiding known PAMP signatures (novel injection syntax)
+\item Evade provenance checks by exploiting trusted channels (tool poisoning)
+\item Fool T-cell detection by mimicking normal behavioral distributions (low-and-slow attacks)
+\end{itemize}
+
+\textbf{Mitigation Strategies.} Biology's answer is continuous adaptation:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Signature Updates:} Innate PAMP databases must be continuously updated as new attack
+patterns are discovered (analogous to antiviral signature updates).
+\item \textbf{Thymic Retraining:} Baseline behavioral profiles should be periodically refreshed,
+especially after system updates that legitimately change agent behavior.
+\item \textbf{Immune Memory Sharing:} Threat signatures discovered by one deployment should propagate
+to others (analogous to herd immunity via shared threat intelligence).
+\item \textbf{Diversity:} Heterogeneous defenses (different filter implementations, multiple verifier
+models) reduce the probability of universal evasion.
+\end{itemize}
+
+The honest conclusion is that security is a process, not a product. The Operon framework provides the
+\textit{architecture} for defense-in-depth, but the \textit{content} of that defense (specific patterns,
+behavioral baselines, trust policies) must evolve with the threat landscape.
+
+The preceding discussion identifies structural and epistemic principles that guide agent architecture design. In the next section, we show that the wiring diagrams themselves admit systematic optimization via categorical rewriting, making resource utilization a first-class compositional concern.
