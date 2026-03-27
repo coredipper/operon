@@ -111,3 +111,45 @@ def test_action_type_execute_passes_through():
     result = organism.run("hello")
     assert len(result.stage_results) == 2
     assert result.final_output == "finished"
+
+
+# ---------------------------------------------------------------------------
+# Regression tests for Job 64 findings
+# ---------------------------------------------------------------------------
+
+
+def test_shell_true_with_arg_mode():
+    """shell=True + input_mode='arg' must include the task in the command."""
+    h = cli_handler("printf %s", shell=True, input_mode="arg")
+    result = h("hello")
+    assert result["output"] == "hello"
+    assert result["_action_type"] == "EXECUTE"
+
+
+def test_stdin_preserves_special_characters():
+    """stdin mode with shell=False should not strip punctuation or newlines."""
+    h = cli_handler("cat", input_mode="stdin", sanitize_task=True)
+    task = "line1\nline2() {x:$y}!"
+    result = h(task)
+    assert result["output"] == task
+
+
+def test_action_type_not_mutated_on_reuse():
+    """_coerce_handler_output must not mutate the handler's returned dict."""
+    h = cli_handler("false")  # returns _action_type=FAILURE
+    result1 = h("")
+    assert result1["_action_type"] == "FAILURE"
+    # Running the same handler again should still see FAILURE
+    result2 = h("")
+    assert result2["_action_type"] == "FAILURE"
+
+
+def test_coerce_handler_output_does_not_mutate_shared_dict():
+    """_coerce_handler_output should not pop _action_type from the original dict."""
+    from operon_ai.patterns.organism import _coerce_handler_output
+
+    shared = {"output": "test", "_action_type": "FAILURE"}
+    protein = _coerce_handler_output(shared, "stage1")
+    assert protein.action_type == "FAILURE"
+    # Original dict must be unchanged
+    assert "_action_type" in shared

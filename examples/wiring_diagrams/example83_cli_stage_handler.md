@@ -80,7 +80,7 @@ detection, and developmental gating all work unchanged on CLI-backed stages.
 | # | Motif | Role in Pipeline |
 |---|-------|-----------------|
 | 1 | cli_handler(cmd) | Wraps shell command as a SkillStage handler |
-| 2 | input_mode="stdin" | Pipes previous stage output to command stdin |
+| 2 | input_mode="stdin" | Sends the task string to command stdin |
 | 3 | input_mode="none" | Command takes no input from pipeline |
 | 4 | parse_output=fn | Custom output parser (e.g., json.loads) |
 | 5 | WatcherComponent | Monitors CLI stages for failures (non-zero exit) |

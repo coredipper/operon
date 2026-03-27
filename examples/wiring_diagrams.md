@@ -526,9 +526,9 @@ Coordination without central control: agents read local gradient concentrations
                                    ^  |
                           write    |  | read (SubstrateView)
                                    |  v
-[task] --> [research]  --> [strategist]  --> [evaluator]  --> [adversary]
-           emit_output_fact  read_query      fact_extractor   fact_extractor
-           fact_extractor    "acct:42"       (assert)         (op="correct")
+[task] --> [research]  --> [strategist]       --> [evaluator]  --> [adversary]
+           fact_extractor    read_query="acct:42"  fact_extractor   fact_extractor
+                             emit_output_fact       (assert)         (op="correct")
                |                |                |                |
                +----shared_state (ephemeral)-----+----topology---+
                |                                                  |
@@ -665,11 +665,12 @@ managed_organism(task, library, stages, substrate, telomere, organism_id, ...)
 ## Example 85: Claude Code Pipeline (v0.23.3)
 
 ```
-[task] --stdin--> [claude --print]  --stdout--> [claude --print]  --stdout--> [claude --print]
-                  (plan stage)                  (implement stage)              (review stage)
-                  system: "planner"             system: "developer"           system: "reviewer"
-                       |                             |                             |
-                       +---context chain: each stage receives all prior outputs---+
+[task] --stdin--> [claude --print]     [claude --print]            [claude --print]
+                  (plan stage)        (implement stage)            (review stage)
+                  system: "planner"   system: "developer"          system: "reviewer"
+                       |                   |                             |
+                       +---context chain: chained_claude() builds prompt from prior outputs---+
+                       |   (note: use sanitize_task=False to preserve code/plan context)      |
                        |                             |                             |
                   [cli_handler]                [cli_handler]                 [cli_handler]
                   input_mode="stdin"            input_mode="stdin"           input_mode="stdin"
@@ -678,7 +679,7 @@ managed_organism(task, library, stages, substrate, telomere, organism_id, ...)
                        +----------[WatcherComponent]----------+
                        |          convergence monitoring       |
                        +----------[BiTemporalMemory]----------+
-                                  substrate recording
+                                  substrate attached (no auto-recording)
 
                   _action_type="EXECUTE" on success
                   _action_type="FAILURE" on non-zero returncode → watcher RETRY
@@ -991,8 +992,10 @@ LEARNER (starts EMBRYONIC)
 ## Example 83: CLI Stage Handler (v0.23.3)
 
 ```
-=== Basic Pipeline ===
-  "hello world" --stdin--> [echo] cli_handler → stdout --stdin--> [wc -w] cli_handler → count
+=== Basic Stages ===
+  "hello world" --stdin--> [echo] cli_handler → stdout
+  "hello world" --stdin--> [wc -w] cli_handler → count
+  (each stage receives the original task, not prior stage output)
 
 === Failure Detection ===
   "test" --> [echo] → OK --> [false] → FAILURE (exit 1)
@@ -1008,12 +1011,11 @@ LEARNER (starts EMBRYONIC)
 ```
 cli_organism(commands={"generate": "echo", "transform": "tr a-z A-Z", "count": "wc -c"})
   │
-  ├── [generate]  echo           → "hello from the cli organism"
-  │       | (stdin)
-  ├── [transform] tr a-z A-Z     → "HELLO FROM THE CLI ORGANISM"
-  │       | (stdin)
-  ├── [count]     wc -c          → character count
+  ├── [generate]  echo           → receives original task via stdin
+  ├── [transform] tr a-z A-Z     → receives original task via stdin (independent)
+  ├── [count]     wc -c          → receives original task via stdin (independent)
+  │   (note: stages are independent, not piped — each gets the original task)
   │
   ├── [WatcherComponent]         → total_stages_observed: 3
-  └── [BiTemporalMemory]         → facts recorded per stage
+  └── [BiTemporalMemory]         → substrate attached (no auto-recording)
 ```

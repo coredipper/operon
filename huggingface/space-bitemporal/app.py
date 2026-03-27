@@ -385,7 +385,7 @@ def _run_audit(subject):
 
 
 def build_app() -> gr.Blocks:
-    with gr.Blocks(title="Bi-Temporal Memory Explorer") as app:
+    with gr.Blocks(title="Bi-Temporal Memory Explorer", theme=gr.themes.Soft()) as app:
         gr.Markdown(
             "# Bi-Temporal Memory Explorer\n"
             "Explore **dual time axes**: valid time (when a fact is true) vs "

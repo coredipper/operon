@@ -121,6 +121,10 @@ class DevelopmentController:
     _transitions: list[StageTransition] = field(default_factory=list, init=False)
     _tick_count: int = field(default=0, init=False)
 
+    def __post_init__(self) -> None:
+        """Synchronize initial stage from the telomere's current state."""
+        self._update_stage()
+
     def tick(self, cost: int = 1) -> bool:
         """Delegate to telomere.tick() and update developmental stage."""
         can_continue = self.telomere.tick(cost)

@@ -123,7 +123,7 @@ def _run_lifecycle(max_ops, juv_t, adol_t, mat_t):
 
 
 def build_app():
-    with gr.Blocks(title="Operon Developmental Staging") as demo:
+    with gr.Blocks(title="Operon Developmental Staging", theme=gr.themes.Base()) as demo:
         gr.Markdown("# Operon Developmental Staging\nLifecycle progression, critical periods, and capability gating.")
 
         max_ops = gr.Slider(minimum=10, maximum=500, value=100, step=10, label="Max Operations")

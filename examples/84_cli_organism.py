@@ -3,9 +3,13 @@ Example 84 — CLI Organism
 ===========================
 
 Demonstrates cli_organism(): build a full managed organism from a dict
-of CLI commands. The watcher monitors all stages, the substrate records
-outputs as bi-temporal facts, and convergence detection works on
-CLI-backed workflows.
+of CLI commands. Each stage receives the original task string via stdin
+(stages are independent, not piped). The watcher monitors all stages,
+and a BiTemporalMemory substrate is attached for optional fact recording.
+
+Note: to record outputs as bi-temporal facts, configure stages with
+``emit_output_fact=True`` or a ``fact_extractor``. By default the
+substrate is attached but empty.
 
 Usage:
     python examples/84_cli_organism.py
@@ -39,7 +43,7 @@ m = cli_organism(
 )
 
 # ---------------------------------------------------------------------------
-# 2. Run the pipeline
+# 2. Run the organism (each stage receives the task independently)
 # ---------------------------------------------------------------------------
 
 result = m.run("hello from the cli organism")
@@ -65,7 +69,8 @@ print()
 # ---------------------------------------------------------------------------
 
 print("=== Substrate ===")
-print(f"  Facts recorded: {len(m._substrate._facts) if m._substrate else 0}")
+status = m.status()
+print(f"  Facts recorded: {status.get('substrate_facts', 0)}")
 print()
 
 # ---------------------------------------------------------------------------

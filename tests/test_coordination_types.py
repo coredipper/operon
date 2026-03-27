@@ -172,3 +172,17 @@ class TestDependencyGraph:
         graph.add_dependency(waiter="a", blocking="b", resource="r1")
         graph.clear()
         assert len(graph.edges) == 0
+
+
+class TestResourceLockNaiveTimestamps:
+    """Regression: naive timestamps should not crash hold_duration."""
+
+    def test_hold_duration_with_naive_acquired_at(self):
+        lock = ResourceLock(resource_id="r1")
+        lock.owner = "agent1"
+        lock.acquired_at = datetime.utcnow() - timedelta(seconds=5)
+
+        # Should not raise TypeError on naive vs aware comparison
+        duration = lock.hold_duration
+        assert duration is not None
+        assert duration.total_seconds() >= 4

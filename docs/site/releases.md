@@ -175,7 +175,7 @@ New:
 - `BiTemporalMemory`, `BiTemporalFact`, `BiTemporalQuery`, `FactSnapshot`, `CorrectionResult`
 - `examples/69_bitemporal_memory.py` — core API demo
 - `examples/70_bitemporal_compliance_audit.py` — enterprise audit scenario
-- [Bi-Temporal Memory docs](../bitemporal-memory/)
+- [Bi-Temporal Memory docs](bitemporal-memory.md)
 
 ## v0.18
 

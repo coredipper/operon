@@ -14,6 +14,7 @@ Run locally:
     python space-diagram-builder/app.py
 """
 
+import html
 import sys
 from pathlib import Path
 
@@ -237,7 +238,7 @@ def _build_diagram(modules_text, wires_text):
         return None, (
             f'<div style="padding:12px;background:#fef2f2;border:2px solid #fca5a5;'
             f'border-radius:8px;color:#991b1b">'
-            f'<strong>Parse error:</strong> {e}</div>'
+            f'<strong>Parse error:</strong> {html.escape(str(e))}</div>'
         )
 
     # Collect ports needed per module
@@ -277,7 +278,7 @@ def _badge(text, color="#6366f1"):
     return (
         f'<span style="display:inline-block;padding:4px 12px;border-radius:6px;'
         f'background:{color};color:#fff;font-weight:600;margin:2px">'
-        f'{text}</span>'
+        f'{html.escape(str(text))}</span>'
     )
 
 
@@ -291,7 +292,7 @@ def _progress_bar(value, max_val, label, color="#6366f1"):
     return (
         f'<div style="margin:4px 0">'
         f'<div style="display:flex;justify-content:space-between;font-size:0.85em;margin-bottom:2px">'
-        f'<span>{label}</span><span style="font-weight:600">{value:.3f}</span></div>'
+        f'<span>{html.escape(str(label))}</span><span style="font-weight:600">{value:.3f}</span></div>'
         f'<div style="background:#e5e7eb;border-radius:4px;height:14px;overflow:hidden">'
         f'<div style="background:{color};height:100%;width:{pct:.1f}%;border-radius:4px">'
         f'</div></div></div>'
@@ -308,9 +309,9 @@ def _profile_table_html(profiles):
         denat = "Yes" if p.has_denature_filter else "-"
         rows.append(
             f"<tr>"
-            f"<td style='padding:4px 8px;font-weight:600'>{name}</td>"
-            f"<td style='padding:4px 8px'>{direct}</td>"
-            f"<td style='padding:4px 8px'>{trans}</td>"
+            f"<td style='padding:4px 8px;font-weight:600'>{html.escape(name)}</td>"
+            f"<td style='padding:4px 8px'>{html.escape(direct)}</td>"
+            f"<td style='padding:4px 8px'>{html.escape(trans)}</td>"
             f"<td style='padding:4px 8px;text-align:center'>{p.observation_width}</td>"
             f"<td style='padding:4px 8px;text-align:center'>{optic}</td>"
             f"<td style='padding:4px 8px;text-align:center'>{denat}</td>"
@@ -335,7 +336,7 @@ def _full_analysis_html(diagram, detection_rate, comm_cost_ratio):
     """Run full analysis and return combined HTML."""
     cls = classify_topology(diagram)
     tb = _topology_badge(cls.topology_class)
-    hub = cls.hub_module or "-"
+    hub = html.escape(cls.hub_module) if cls.hub_module else "-"
 
     profiles = observation_profiles(diagram)
     prof_html = _profile_table_html(profiles)
@@ -343,7 +344,7 @@ def _full_analysis_html(diagram, detection_rate, comm_cost_ratio):
     part = epistemic_partition(diagram)
     part_parts = []
     for i, eq_class in enumerate(part.equivalence_classes, 1):
-        members = ", ".join(sorted(eq_class))
+        members = html.escape(", ".join(sorted(eq_class)))
         part_parts.append(f'<span style="margin-right:12px">Class {i}: [{members}]</span>')
 
     eb = error_amplification_bound(diagram, detection_rate=detection_rate)
@@ -440,12 +441,12 @@ def _run_compare(
     td_b = tool_density(diag_b)
 
     def _row(label, val_a, val_b, fmt="{}", highlight=False):
-        a_str = fmt.format(val_a)
-        b_str = fmt.format(val_b)
+        a_str = html.escape(fmt.format(val_a))
+        b_str = html.escape(fmt.format(val_b))
         style = "font-weight:600;" if highlight else ""
         return (
             f"<tr>"
-            f"<td style='padding:4px 10px;{style}'>{label}</td>"
+            f"<td style='padding:4px 10px;{style}'>{html.escape(str(label))}</td>"
             f"<td style='padding:4px 10px;text-align:center;{style}'>{a_str}</td>"
             f"<td style='padding:4px 10px;text-align:center;{style}'>{b_str}</td>"
             f"</tr>"

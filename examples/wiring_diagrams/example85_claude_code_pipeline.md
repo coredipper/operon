@@ -70,8 +70,9 @@ Task: "Write a Python function that validates an email address using regex"
 
 ### Live LLM Pipeline with Context Chaining
 Each stage calls `claude --print` via `cli_handler`, and the `chained_claude()`
-helper accumulates all previous stage outputs into the prompt. This creates an
-information-rich pipeline where later stages have full context from earlier ones.
+helper accumulates all previous stage outputs into the prompt. Note: use
+`sanitize_task=False` for stdin handlers to preserve code/plan context intact,
+since the default sanitizer strips characters like `(){}$!<>` and newlines.
 
 | # | Motif | Role in Pipeline |
 |---|-------|-----------------|
@@ -79,7 +80,7 @@ information-rich pipeline where later stages have full context from earlier ones
 | 2 | cli_handler("claude --print") | Shells out to Claude Code CLI for each stage |
 | 3 | managed_organism() | Wires full stack around the CLI-backed stages |
 | 4 | WatcherComponent | Monitors for failures, max_retries_per_stage=1 |
-| 5 | BiTemporalMemory | Substrate records stage outputs as facts |
+| 5 | BiTemporalMemory | Substrate attached (no auto-recording without emit_output_fact) |
 | 6 | Context accumulation | Each stage sees [prev_name]: prev_output from all predecessors |
 
 ### Three-Role Architecture
@@ -124,7 +125,7 @@ review output (str, bullet points)
 ManagedResult
   ├─ run_result: RunResult (3 stage_results)
   ├─ watcher_summary: {stages_observed: 3, interventions: N}
-  └─ substrate facts recorded
+  └─ substrate attached (no facts recorded without emit_output_fact)
 ```
 
 ## Pipeline Stages

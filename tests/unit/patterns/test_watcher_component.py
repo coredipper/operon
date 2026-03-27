@@ -274,3 +274,45 @@ def test_summary_includes_signal_and_intervention_counts():
     assert s["total_interventions"] >= 1
     assert "escalate" in s["interventions_by_kind"]
     assert s["total_stages_observed"] == 1
+
+
+# ---------------------------------------------------------------------------
+# State leak across runs
+# ---------------------------------------------------------------------------
+
+
+def test_on_run_start_clears_signals_and_interventions():
+    """Regression: signals and interventions must not leak across runs."""
+    monitor = _FakeEpiplexityMonitor(status_value="stagnant")
+    w = WatcherComponent(epiplexity_monitor=monitor)
+    state: dict[str, Any] = {}
+
+    # --- Run 1: accumulate signals and interventions ---
+    w.on_run_start("task-1", state)
+    w.on_stage_start(_stage("s1"), state, {})
+    w.on_stage_result(_stage("s1"), _FakeResult(model_alias="fast"), state, {})
+    w.on_run_complete(_FakeResult(), state)
+
+    # Verify run 1 produced data
+    assert len(w.signals) > 0, "Run 1 should have produced signals"
+    assert len(w.interventions) > 0, "Run 1 should have produced interventions"
+
+    # --- Run 2: on_run_start must clear prior-run state ---
+    w.on_run_start("task-2", state)
+
+    assert w.signals == [], "signals must be empty after on_run_start"
+    assert w.interventions == [], "interventions must be empty after on_run_start"
+    assert w._total_stages == 0
+    assert w._stage_retry_counts == {}
+
+    # summary and mode_balance should reflect the clean slate
+    s = w.summary()
+    assert s["total_signals"] == 0
+    assert s["total_interventions"] == 0
+    assert s["total_stages_observed"] == 0
+    assert s["convergent"] is True
+
+    mb = w.mode_balance()
+    assert mb["observational"] == 0
+    assert mb["action_oriented"] == 0
+    assert mb["mismatches"] == 0

@@ -148,7 +148,7 @@ def _run_consolidation(preset_name):
 # ---------------------------------------------------------------------------
 
 def build_app():
-    with gr.Blocks(title="Operon Sleep Consolidation") as demo:
+    with gr.Blocks(title="Operon Sleep Consolidation", theme=gr.themes.Base()) as demo:
         gr.Markdown("# Operon Sleep Consolidation\nReplay, compress, counterfactual replay, and histone promotion.")
 
         with gr.Tab("Consolidation Cycle"):

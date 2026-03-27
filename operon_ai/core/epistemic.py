@@ -386,22 +386,27 @@ def error_amplification_bound(
     Independent bound = n (each worker fails independently).
     Centralized bound = n * (1 - d) (hub catches fraction d).
 
-    ``n`` counts modules that can originate errors: any module with
-    outgoing wires, plus isolated modules. Pure sink / aggregator
-    modules are excluded.
+    ``n`` counts all non-source modules -- any module that has at least
+    one input wire. These are the modules that process data and can
+    propagate or originate errors. Source-only modules (no inputs) are
+    excluded because they are external inputs, not error-producing stages.
     """
     in_degree = {name: 0 for name in diagram.modules}
-    out_degree = {name: 0 for name in diagram.modules}
     for wire in diagram.wires:
-        out_degree[wire.src_module] += 1
         in_degree[wire.dst_module] += 1
 
-    n = sum(
-        1
-        for name in diagram.modules
-        if out_degree[name] > 0 or (in_degree[name] == 0 and out_degree[name] == 0)
-    )
-    n = max(n, 1)  # Avoid zero division for single-module diagrams
+    # Count all non-source modules (modules with at least one input)
+    n = sum(1 for name in diagram.modules if in_degree[name] > 0)
+
+    if n == 0:
+        return ErrorAmplificationBound(
+            n_agents=0,
+            independent_bound=0,
+            centralized_bound=0,
+            detection_rate=detection_rate,
+            amplification_ratio=0.0,
+        )
+
     ind_bound = n
     cent_bound = n * (1 - detection_rate)
     ratio = 1.0 / (1 - detection_rate) if detection_rate < 1.0 else float("inf")
@@ -494,7 +499,17 @@ def tool_density(diagram: WiringDiagram) -> ToolDensityAnalysis:
         if spec.capabilities:
             all_caps |= spec.capabilities
             modules_with_caps += 1
-    n = max(modules_with_caps, 1)
+
+    if modules_with_caps == 0:
+        return ToolDensityAnalysis(
+            total_tools=0,
+            num_modules=0,
+            tools_per_module=0.0,
+            remote_fraction=0.0,
+            planning_cost_ratio=0.0,
+        )
+
+    n = modules_with_caps
     t = len(all_caps)
     return ToolDensityAnalysis(
         total_tools=t,

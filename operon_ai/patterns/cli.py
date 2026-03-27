@@ -101,7 +101,7 @@ def cli_handler(
             cmd_parts = list(command)
 
         task_input = task
-        if sanitize_task and not shell:
+        if sanitize_task and not shell and input_mode != "stdin":
             task_input = _sanitize(task)
 
         stdin_data = None
@@ -114,7 +114,15 @@ def cli_handler(
         else:
             raise ValueError(f"Unknown input_mode: {input_mode!r}")
 
-        cmd_str = " ".join(cmd_parts) if not shell else (command if isinstance(command, str) else " ".join(command))
+        if shell:
+            # Build shell string from the original command, plus any appended args
+            base = command if isinstance(command, str) else " ".join(command)
+            if input_mode == "arg":
+                cmd_str = f"{base} {shlex.quote(task_input)}"
+            else:
+                cmd_str = base
+        else:
+            cmd_str = " ".join(cmd_parts)
 
         # Execute
         start = time.time()

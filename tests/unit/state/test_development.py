@@ -43,6 +43,20 @@ def test_initial_stage_is_embryonic():
     assert dc.stage == DevelopmentalStage.EMBRYONIC
 
 
+def test_initial_stage_syncs_from_already_consumed_telomere():
+    """Wrapping an already-aged telomere should reflect the correct stage immediately."""
+    t = Telomere(max_operations=100, silent=True)
+    t.start()
+    # Consume 50% of capacity — well past the adolescent threshold (0.35)
+    for _ in range(50):
+        t.tick()
+    dc = DevelopmentController(telomere=t)
+    # With default thresholds (juvenile=0.10, adolescent=0.35, mature=0.70),
+    # 50% consumed should land at ADOLESCENT — definitely not EMBRYONIC.
+    assert dc.stage != DevelopmentalStage.EMBRYONIC
+    assert dc.stage == DevelopmentalStage.ADOLESCENT
+
+
 def test_tick_delegates_to_telomere():
     t = Telomere(max_operations=100)
     t.start()

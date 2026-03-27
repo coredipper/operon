@@ -44,9 +44,11 @@ def _coerce_handler_output(value: Any, stage_name: str) -> ActionProtein:
         value.source_agent = value.source_agent or stage_name
         return value
     # Convention: handler can signal action_type via _action_type key (e.g., CLI handlers)
+    # Read without mutating — the caller may reuse the same dict object.
     action_type = "EXECUTE"
     if isinstance(value, dict) and "_action_type" in value:
-        action_type = value.pop("_action_type")
+        action_type = value["_action_type"]
+        value = {k: v for k, v in value.items() if k != "_action_type"}
     return ActionProtein(
         action_type=action_type,
         payload=value,
@@ -563,6 +565,15 @@ def skill_organism(
     stage_tuple = tuple(stages)
     if not stage_tuple:
         raise ValueError("skill_organism requires at least one stage")
+
+    seen_names: set[str] = set()
+    for stage in stage_tuple:
+        if stage.name in seen_names:
+            raise ValueError(
+                f"Duplicate stage name '{stage.name}'. "
+                "Each SkillStage in an organism must have a unique name."
+            )
+        seen_names.add(stage.name)
 
     nuclei_map = dict(nuclei or {})
     if fast_nucleus is not None:

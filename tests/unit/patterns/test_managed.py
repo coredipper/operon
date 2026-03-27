@@ -65,6 +65,24 @@ def test_managed_with_stages():
     assert result.run_result.final_output == "hello"
 
 
+def test_managed_with_stages_applies_handlers():
+    """handlers dict should patch matching stages on the direct path."""
+    fast, deep = _nuclei()
+    m = managed_organism(
+        stages=[
+            SkillStage(name="greet", role="Greeter", handler=lambda t: "original"),
+            SkillStage(name="shout", role="Shouter", handler=lambda t: "also original"),
+        ],
+        fast_nucleus=fast,
+        deep_nucleus=deep,
+        handlers={"greet": lambda t: "patched"},
+    )
+    result = m.run("hi")
+    stage_map = {sr.stage_name: sr.output for sr in result.run_result.stage_results}
+    assert stage_map["greet"] == "patched"
+    assert stage_map["shout"] == "also original"
+
+
 def test_managed_with_watcher_false():
     fast, deep = _nuclei()
     m = managed_organism(

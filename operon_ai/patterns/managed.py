@@ -7,7 +7,7 @@ sensible defaults. Everything is opt-in.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 
@@ -234,7 +234,15 @@ def managed_organism(
             handlers=handlers,
         )
     elif stages is not None:
-        # Direct path
+        # Direct path — patch stages with user-supplied handlers
+        if handlers:
+            patched: list = []
+            for stage in stages:
+                h = handlers.get(stage.name)
+                if h is not None:
+                    stage = replace(stage, handler=h)
+                patched.append(stage)
+            stages = patched
         organism = skill_organism_fn(
             stages=stages,
             fast_nucleus=fast_nucleus,

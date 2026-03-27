@@ -143,7 +143,7 @@ def _run_curiosity(threshold):
 # ---------------------------------------------------------------------------
 
 def build_app():
-    with gr.Blocks(title="Operon Social Learning") as demo:
+    with gr.Blocks(title="Operon Social Learning", theme=gr.themes.Base()) as demo:
         gr.Markdown("# Operon Social Learning\nTemplate exchange, trust registry, and curiosity-driven exploration.")
 
         with gr.Tab("Template Exchange"):

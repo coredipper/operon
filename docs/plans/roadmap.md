@@ -427,8 +427,9 @@ These run alongside the phased work and are not blocked by it.
 
 ### Provider Ecosystem
 
-Extend provider support beyond Anthropic and Gemini. Each new provider gets
-a nucleus binding and at least one example demonstrating it.
+Continue expanding provider support (currently Anthropic, Gemini, OpenAI, and
+OpenAI-compatible backends). Each new provider gets a nucleus binding and at
+least one example demonstrating it.
 
 ### Tissue Patterns
 
@@ -460,13 +461,14 @@ Phase 8 publication.
 - `2025-12-25-examples-consistency.md`
 
 Standardize all existing examples (imports, error handling, documentation).
-Best completed before v0.19.0 to avoid rework on examples 01–70.
+This was originally targeted for before v0.19.0; the current priority is
+to complete it before adding further examples beyond 85.
 
 ---
 
 ## Example Allocation
 
-Existing examples: 01–70 (70 files; no gaps).
+Existing examples: 01–85 (85 files; no gaps).
 
 | # | Example | Phase |
 |---|---------|-------|

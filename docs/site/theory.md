@@ -4,7 +4,7 @@ Operon has two main paper layers right now.
 
 ## Main Whitepaper
 
-- [Biological Motifs for Agentic Control](../../article/main.pdf)
+- [Biological Motifs for Agentic Control](https://github.com/coredipper/operon/blob/main/article/main.pdf)
 
 This is the broad umbrella document for the project.
 
@@ -17,7 +17,7 @@ It covers:
 
 ## Narrower Paper
 
-- [Epistemic Topology for AI Agent Systems](../../article/paper1/main.pdf)
+- [Epistemic Topology for AI Agent Systems](https://github.com/coredipper/operon/blob/main/article/paper1/main.pdf)
 
 This is the tighter paper extracted from the whitepaper.
 

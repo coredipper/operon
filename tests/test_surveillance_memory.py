@@ -139,3 +139,21 @@ class TestImmuneMemory:
         stats = memory.stats()
         assert stats["stored"] == 1
         assert "capacity" in stats
+
+    def test_import_legacy_naive_timestamps_then_prune(self):
+        """Regression: importing pre-UTC-refactor exports should not crash prune_old()."""
+        memory = ImmuneMemory()
+        sig = make_signature()
+        memory.store(sig)
+
+        # Export and manually strip timezone info to simulate legacy export
+        exported = memory.export_signatures()
+        naive_ts = datetime.utcnow().isoformat()  # naive ISO string
+        exported[0]["created_at"] = naive_ts
+
+        memory2 = ImmuneMemory()
+        memory2.import_signatures(exported)
+
+        # This should not raise TypeError on naive vs aware comparison
+        removed = memory2.prune_old(max_age=timedelta(days=30))
+        assert removed == 0  # signature is recent, not pruned

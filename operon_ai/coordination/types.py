@@ -11,6 +11,16 @@ def utc_now() -> datetime:
     return datetime.now(UTC)
 
 
+def _coerce_utc(dt: datetime) -> datetime:
+    """Normalize a datetime to timezone-aware UTC.
+
+    Treats naive datetimes as UTC for backward compatibility.
+    """
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
+
+
 class Phase(Enum):
     """Cell cycle phases for operation coordination."""
     G0 = "g0"  # Quiescent - not active
@@ -72,7 +82,7 @@ class ResourceLock:
         """Get how long lock has been held."""
         if self.acquired_at is None:
             return None
-        return utc_now() - self.acquired_at
+        return utc_now() - _coerce_utc(self.acquired_at)
 
     def try_acquire(self, owner: str, priority: int = 0) -> LockResult:
         """

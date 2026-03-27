@@ -13,6 +13,17 @@ def utc_now() -> datetime:
     return datetime.now(UTC)
 
 
+def _coerce_utc(dt: datetime) -> datetime:
+    """Normalize a datetime to timezone-aware UTC.
+
+    Treats naive datetimes as UTC (for backward compatibility with
+    timestamps exported before the UTC-aware refactor).
+    """
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
+
+
 @dataclass
 class ThreatSignature:
     """
@@ -75,7 +86,7 @@ class ThreatSignature:
             violation_types=tuple(data["violation_types"]),
             threat_level=ThreatLevel(data["threat_level"]),
             effective_response=ResponseAction(data["effective_response"]),
-            created_at=datetime.fromisoformat(data["created_at"]),
+            created_at=_coerce_utc(datetime.fromisoformat(data["created_at"])),
             recall_count=data.get("recall_count", 0),
         )
 

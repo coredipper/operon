@@ -46,7 +46,10 @@ This is a lightweight map of the current library surface.
 
 - `operon_ai.memory`
   - episodic memory
-  - bi-temporal memory (`BiTemporalMemory`, `BiTemporalFact`, `BiTemporalQuery`, `SubstrateView`)
+  - bi-temporal memory (`BiTemporalMemory`, `BiTemporalFact`, `BiTemporalQuery`)
+
+- `operon_ai.patterns`
+  - `SubstrateView` — read-only view passed to stage handlers during substrate-backed runs
 
 ## Coordination / Surveillance / Healing
 

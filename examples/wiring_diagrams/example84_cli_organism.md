@@ -57,7 +57,7 @@ cli_organism(
   ├── [count]     wc -c          → character count
   │
   ├── [WatcherComponent]         → total_stages_observed: 3
-  └── [BiTemporalMemory]         → facts recorded per stage
+  └── [BiTemporalMemory]         → substrate attached (no auto-recording)
          │
          v
   ManagedResult
@@ -77,9 +77,9 @@ is the highest-level abstraction for CLI-backed pipelines.
 |---|-------|-----------------|
 | 1 | cli_organism() | Factory: dict of commands → full managed organism |
 | 2 | cli_handler (auto-created) | Each command wrapped as a SkillStage handler |
-| 3 | input_mode="stdin" | All stages receive previous output via stdin pipe |
+| 3 | input_mode="stdin" | Each stage receives the original task via stdin |
 | 4 | WatcherComponent | Auto-created when watcher=True, monitors all stages |
-| 5 | BiTemporalMemory | Substrate records stage outputs as bi-temporal facts |
+| 5 | BiTemporalMemory | Substrate attached; use emit_output_fact to record |
 | 6 | ManagedOrganism | Returned object with run(), status(), consolidate() |
 
 ### Unix Pipeline as Organism

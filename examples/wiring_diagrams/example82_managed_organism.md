@@ -56,7 +56,7 @@ managed_organism(
   │       ├── handler: intake  → lambda task: {"parsed": task}
   │       └── handler: process → lambda: "Report processed successfully."
   ├── [WatcherComponent] ── monitors all stages
-  ├── [BiTemporalMemory] ── substrate records outputs as facts
+  ├── [BiTemporalMemory] ── substrate attached (use emit_output_fact or fact_extractor to record)
   ├── [Telomere] + [DevelopmentController] ── developmental gating
   └── [SocialLearning] ── export/import templates
          │

@@ -136,6 +136,8 @@ class WatcherComponent:
 
     def on_run_start(self, task: str, shared_state: dict[str, Any]) -> None:
         """Reset per-run counters."""
+        self.signals.clear()
+        self.interventions.clear()
         self._stage_retry_counts.clear()
         self._total_stages = 0
 

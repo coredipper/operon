@@ -108,10 +108,13 @@ print(result.final_output)
 
 ### Drop down a layer when you need to
 
-The pattern layer is additive, not a separate framework. You can still inspect the generated structure and analysis underneath:
+The pattern layer is additive, not a separate framework. You can still inspect the generated structure and analysis underneath. For a gate returned by `reviewer_gate(...)`:
 
 - `gate.diagram`
 - `gate.analysis`
+
+For a swarm returned by `specialist_swarm(...)`:
+
 - `swarm.diagram`
 - `swarm.analysis`
 
@@ -120,9 +123,10 @@ The pattern layer is additive, not a separate framework. You can still inspect t
 Append-only factual memory with dual time axes (valid time vs record time) for auditable decision-making. Stages can read from and write to a shared `BiTemporalMemory` substrate, enabling belief-state reconstruction ("what did the organism know when stage X decided?").
 
 ```python
-from operon_ai import BiTemporalMemory, SkillStage, skill_organism
+from operon_ai import BiTemporalMemory, MockProvider, Nucleus, SkillStage, skill_organism
 
 mem = BiTemporalMemory()
+nucleus = Nucleus(provider=MockProvider(responses={}))
 
 organism = skill_organism(
     stages=[
@@ -130,22 +134,22 @@ organism = skill_organism(
             name="research",
             role="Researcher",
             handler=lambda task: {"risk": "medium", "sector": "fintech"},
-            emit_output_fact=True,
+            emit_output_fact=True,  # records output under subject=task
         ),
         SkillStage(
             name="strategist",
             role="Strategist",
             handler=lambda task, state, outputs, stage, view: f"Recommend based on {len(view.facts)} facts",
-            read_query="acct:1",
+            read_query="Review account acct:1",  # must match the task string used as subject
         ),
     ],
-    fast_nucleus=fast,
-    deep_nucleus=deep,
+    fast_nucleus=nucleus,
+    deep_nucleus=nucleus,
     substrate=mem,
 )
 
 result = organism.run("Review account acct:1")
-print(mem.history())  # full append-only audit trail
+print(mem.history("Review account acct:1"))  # full append-only audit trail
 ```
 
 See the [Bi-Temporal Memory docs](https://banu.be/operon/bitemporal-memory/), [examples 69–71](examples/), and the [interactive explorer](https://huggingface.co/spaces/coredipper/operon-bitemporal).

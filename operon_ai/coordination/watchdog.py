@@ -14,6 +14,13 @@ def utc_now() -> datetime:
     return datetime.now(UTC)
 
 
+def _coerce_utc(dt: datetime) -> datetime:
+    """Normalize a datetime to timezone-aware UTC."""
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
+
+
 class ApoptosisReason(Enum):
     """Reason for operation termination."""
     TIMEOUT = "timeout"
@@ -70,7 +77,7 @@ class Watchdog:
 
             # Check operation timeout
             if self.max_operation_time:
-                elapsed = now - ctx.created_at
+                elapsed = now - _coerce_utc(ctx.created_at)
                 if elapsed > self.max_operation_time:
                     events.append(ApoptosisEvent(
                         operation_id=op_id,
@@ -82,7 +89,7 @@ class Watchdog:
 
             # Check starvation (waiting in G1 for resources)
             if self.starvation_timeout and ctx.phase == Phase.G1:
-                phase_time = now - ctx.phase_entered_at
+                phase_time = now - _coerce_utc(ctx.phase_entered_at)
                 if phase_time > self.starvation_timeout:
                     # Check if actually waiting for resources
                     if not ctx.resources_acquired:
@@ -96,7 +103,7 @@ class Watchdog:
 
             # Check no progress (stuck in S phase)
             if self.progress_timeout and ctx.phase == Phase.S:
-                phase_time = now - ctx.phase_entered_at
+                phase_time = now - _coerce_utc(ctx.phase_entered_at)
                 if phase_time > self.progress_timeout:
                     events.append(ApoptosisEvent(
                         operation_id=op_id,

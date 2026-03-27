@@ -299,7 +299,7 @@ def _run_custom(preset_name, ep_thresh, atp_thresh, max_rate):
 # ---------------------------------------------------------------------------
 
 def build_app():
-    with gr.Blocks(title="Operon Watcher Dashboard") as demo:
+    with gr.Blocks(title="Operon Watcher Dashboard", theme=gr.themes.Base()) as demo:
         gr.Markdown("# Operon Watcher Dashboard\nSignal classification and intervention timeline for multi-stage workflows.")
 
         with gr.Tab("Signal Classification"):

@@ -78,7 +78,9 @@ m.consolidate()
 m.export_templates()
 ```
 
-Methods: `.run()`, `.consolidate()`, `.export_templates()`, `.import_from_peer()`, `.scaffold()`, `.status()`. Each returns `None` if the relevant subsystem was not configured.
+Methods: `.run()` returns a `ManagedRunResult`; `.status()` returns a dict. The optional subsystem methods — `.consolidate()`, `.export_templates()`, `.import_from_peer()`, `.scaffold()` — return `None` if the relevant subsystem was not configured.
+
+Note: adaptive assembly requires `library` to already have templates, or you must pass `stages=` explicitly.
 
 ## `consolidate(...)`
 

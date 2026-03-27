@@ -109,9 +109,9 @@ Handlers receive the `SubstrateView` as an additional argument (via arity-aware 
 
 ## Examples
 
-- [`examples/69_bitemporal_memory.py`](../../examples/69_bitemporal_memory.py) — core valid-time vs record-time divergence with corrections
-- [`examples/70_bitemporal_compliance_audit.py`](../../examples/70_bitemporal_compliance_audit.py) — multi-fact compliance audit with belief-state reconstruction
-- [`examples/71_bitemporal_skill_organism.py`](../../examples/71_bitemporal_skill_organism.py) — multi-stage organism with substrate, belief-state reconstruction, and temporal diffs
+- [`examples/69_bitemporal_memory.py`](https://github.com/coredipper/operon/blob/main/examples/69_bitemporal_memory.py) — core valid-time vs record-time divergence with corrections
+- [`examples/70_bitemporal_compliance_audit.py`](https://github.com/coredipper/operon/blob/main/examples/70_bitemporal_compliance_audit.py) — multi-fact compliance audit with belief-state reconstruction
+- [`examples/71_bitemporal_skill_organism.py`](https://github.com/coredipper/operon/blob/main/examples/71_bitemporal_skill_organism.py) — multi-stage organism with substrate, belief-state reconstruction, and temporal diffs
 - [Bi-Temporal Memory Explorer](https://huggingface.co/spaces/coredipper/operon-bitemporal) — interactive HuggingFace Space
 
 ## Relationship to other memory systems

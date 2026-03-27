@@ -72,6 +72,6 @@ For cross-cutting concerns you do not want to hardcode:
 
 ## Recommended Examples
 
-- [`examples/68_skill_organism_runtime.py`](../../examples/68_skill_organism_runtime.py) — deterministic intake, fast routing, deep planning, attached telemetry
-- [`examples/71_bitemporal_skill_organism.py`](../../examples/71_bitemporal_skill_organism.py) — multi-stage workflow with bi-temporal substrate, belief-state reconstruction, and temporal diffs
-- [`examples/73_watcher_component.py`](../../examples/73_watcher_component.py) — runtime monitoring with signal classification and retry/escalate/halt interventions
+- [`examples/68_skill_organism_runtime.py`](https://github.com/coredipper/operon/blob/main/examples/68_skill_organism_runtime.py) — deterministic intake, fast routing, deep planning, attached telemetry
+- [`examples/71_bitemporal_skill_organism.py`](https://github.com/coredipper/operon/blob/main/examples/71_bitemporal_skill_organism.py) — multi-stage workflow with bi-temporal substrate, belief-state reconstruction, and temporal diffs
+- [`examples/73_watcher_component.py`](https://github.com/coredipper/operon/blob/main/examples/73_watcher_component.py) — runtime monitoring with signal classification and retry/escalate/halt interventions

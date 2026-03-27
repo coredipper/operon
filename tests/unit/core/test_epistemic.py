@@ -236,19 +236,23 @@ def test_classify_hub_correctly_identified():
 
 
 def test_error_amplification_independent():
-    """Independent bound scales with the number of isolated worker modules."""
+    """Independent diagram (no wires) has zero non-source modules."""
     d = _independent()
     bound = error_amplification_bound(d)
-    assert bound.n_agents == 3
-    assert bound.independent_bound == 3
+    # All modules are sources (no inputs), so n_agents = 0
+    assert bound.n_agents == 0
+    assert bound.independent_bound == 0
+    assert bound.centralized_bound == 0
+    assert bound.amplification_ratio == 0.0
 
 
 def test_error_amplification_centralized():
-    """Centralized bound counts worker sources, not the aggregator hub."""
+    """Centralized bound counts only non-source modules (the hub)."""
     d = _fan_in()
     bound = error_amplification_bound(d, detection_rate=0.75)
-    assert bound.n_agents == 3
-    assert bound.centralized_bound == bound.n_agents * (1 - 0.75)
+    # Only D has inputs, so n_agents = 1
+    assert bound.n_agents == 1
+    assert bound.centralized_bound == 1 * (1 - 0.75)
     assert bound.detection_rate == 0.75
 
 
@@ -258,6 +262,38 @@ def test_error_amplification_custom_rate():
     bound = error_amplification_bound(d, detection_rate=0.5)
     assert bound.detection_rate == 0.5
     assert bound.amplification_ratio == 1 / (1 - 0.5)
+
+
+def test_error_amplification_zero_workers():
+    """All-independent diagram (no wires) returns zeros for all bounds."""
+    d = _independent()
+    bound = error_amplification_bound(d)
+    assert bound.n_agents == 0
+    assert bound.independent_bound == 0
+    assert bound.centralized_bound == 0
+    assert bound.amplification_ratio == 0.0
+    # detection_rate is still preserved
+    assert bound.detection_rate == 0.75
+
+
+def test_error_amplification_linear_chain_counts_sinks():
+    """Linear chain A -> B -> C counts both B and C (including the sink)."""
+    d = _linear_chain()
+    bound = error_amplification_bound(d)
+    # B has in_degree=1 (counted), C has in_degree=1 (counted)
+    # A is a source (in_degree=0), not counted
+    assert bound.n_agents == 2
+    assert bound.independent_bound == 2
+
+
+def test_error_amplification_single_module_returns_zero():
+    """Single isolated module has no non-source modules, returns zeros."""
+    d = _single_module()
+    bound = error_amplification_bound(d)
+    assert bound.n_agents == 0
+    assert bound.independent_bound == 0
+    assert bound.centralized_bound == 0
+    assert bound.amplification_ratio == 0.0
 
 
 # ── sequential_penalty ─────────────────────────────────────────────
@@ -366,6 +402,17 @@ def test_tool_density_planning_cost():
     d.add_module(ModuleSpec("C", capabilities={Capability.EXEC_CODE}))
     td = tool_density(d)
     assert td.planning_cost_ratio == 3.0
+
+
+def test_tool_density_no_capabilities():
+    """Diagram with no capabilities returns zeros for all fields."""
+    d = _linear_chain()  # No modules have capabilities
+    td = tool_density(d)
+    assert td.total_tools == 0
+    assert td.num_modules == 0
+    assert td.tools_per_module == 0.0
+    assert td.remote_fraction == 0.0
+    assert td.planning_cost_ratio == 0.0
 
 
 # ── recommend_topology ─────────────────────────────────────────────

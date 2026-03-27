@@ -1,11 +1,22 @@
 """Tests for the skill-organism runtime."""
 
+import pytest
 from datetime import datetime, timedelta
 
 from operon_ai import BiTemporalMemory, SkillStage, SubstrateView, TelemetryProbe, skill_organism
 from operon_ai.memory.bitemporal import BiTemporalQuery
 from operon_ai.organelles.nucleus import Nucleus
 from operon_ai.providers import MockProvider
+
+
+def test_skill_organism_rejects_duplicate_stage_names():
+    with pytest.raises(ValueError, match="Duplicate stage name 'echo'"):
+        skill_organism(
+            stages=[
+                SkillStage(name="echo", role="Echo", handler=lambda t: t),
+                SkillStage(name="echo", role="Echo2", handler=lambda t: t),
+            ],
+        )
 
 
 def test_skill_organism_routes_fixed_and_fuzzy_stages():

@@ -204,3 +204,18 @@ class TestWatchdog:
 
         events = watchdog.check(controller)
         assert len(events) == 0  # Exempt from timeout
+
+    def test_watchdog_handles_naive_timestamps(self):
+        """Regression: naive datetime.utcnow() timestamps should not crash watchdog.check()."""
+        controller = CellCycleController()
+        watchdog = Watchdog(max_operation_time=timedelta(seconds=1))
+
+        ctx = controller.start_operation("op1", "agent1")
+        # Simulate legacy code using naive utcnow()
+        ctx.created_at = datetime.utcnow() - timedelta(seconds=5)
+        ctx.phase_entered_at = datetime.utcnow() - timedelta(seconds=5)
+
+        # Should not raise TypeError on naive vs aware comparison
+        events = watchdog.check(controller)
+        assert len(events) >= 1
+        assert events[0].reason == ApoptosisReason.TIMEOUT

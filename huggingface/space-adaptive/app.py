@@ -177,7 +177,7 @@ def _run_experience(exp_preset):
 # ---------------------------------------------------------------------------
 
 def build_app():
-    with gr.Blocks(title="Operon Adaptive Assembly") as demo:
+    with gr.Blocks(title="Operon Adaptive Assembly", theme=gr.themes.Base()) as demo:
         gr.Markdown("# Operon Adaptive Assembly\nTemplate selection, organism construction, and experience-driven intervention.")
 
         with gr.Tab("Template Selection"):

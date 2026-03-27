@@ -157,7 +157,7 @@ class AdapterResult:
 - `docs/site/releases.md` — v0.24.0 section
 - `docs/site/api.md` — new convergence package section
 - `docs/site/concepts.md` — convergence layer in architecture
-- New page: `docs/site/convergence.md` — overview of three-layer architecture
+- New page: `docs/site/convergence.md` — overview of four-layer architecture
 - `examples/README.md` — examples 82-83
 - Blog post: "Operon v0.24: Convergence Begins"
 
@@ -278,8 +278,11 @@ class PrimingView:
     trust_context: dict[str, float]             # peer trust scores
 ```
 
-Backward-compatible: existing handlers that accept `SubstrateView` as 5th arg
-continue to work via arity-aware dispatch. `PrimingView` is a superset.
+**Breaking-change note:** `SubstrateView` is currently a concrete exported
+dataclass (see `operon_ai/patterns/types.py`), and downstream tests assert
+`isinstance(view, SubstrateView)`. `PrimingView` must subclass or alias
+`SubstrateView` to preserve backward compatibility, or this becomes a breaking
+change requiring a migration path.
 
 **HeartbeatDaemon:**
 - Extends `WatcherComponent` with a periodic `heartbeat()` method
@@ -393,7 +396,7 @@ convergence of the adaptive loop).
 **Documentation updates:**
 - `docs/site/releases.md` — v0.25.x section
 - `docs/site/convergence.md` — formal verification section with invariant catalog
-- New page: `docs/site/theory.md` — extend with TLA+ verification methodology
+- Update `docs/site/theory.md` — extend with TLA+ verification methodology
 - Blog post: "Operon v0.25: Proving Convergence with TLA+"
 
 ---
@@ -415,8 +418,9 @@ convergence detection.
 |----------|-------------|
 | `operon_ai/convergence/swarms_compiler.py` | `organism_to_swarms(SkillOrganism) -> SwarmWorkflow` |
 | `operon_ai/convergence/distributed_watcher.py` | Watcher that operates via async signals (for heartbeat runtimes) |
-| `examples/89_swarms_deployment.py` | Operon-designed topology running in Swarms |
-| `examples/90_distributed_watcher.py` | Watcher operating across process boundaries |
+| `examples/90_swarms_deployment.py` | Operon-designed topology running in Swarms |
+| `examples/91_distributed_watcher.py` | Watcher operating across process boundaries |
+| `examples/92_async_stage_execution.py` | AsyncThink-style concurrent stage execution |
 | Integration tests | End-to-end: design in Operon → deploy in Swarms → record in library |
 
 **Compiler:**
@@ -467,7 +471,7 @@ AnimaWorks' consolidation benefit from bi-temporal auditability?
 |----------|-------------|
 | Shared eval harness | BFCL + AgentDojo benchmarks across all three projects |
 | Comparative analysis | Operon topology advice vs. Swarms SwarmRouter vs. AnimaWorks defaults |
-| Convergence paper | Article or blog series covering the three-layer architecture |
+| Convergence paper | Article or blog series covering the four-layer architecture |
 | Documentation | Updated docs site, API reference for convergence package |
 
 **Evaluation protocol:**
@@ -548,6 +552,11 @@ Each phase updates `coredipper.github.io`:
 ---
 
 ## Example Allocation
+
+> **Note:** Examples 82–85 are already committed in the repository
+> (`82_managed_organism.py`, `83_cli_stage_handler.py`, `84_cli_organism.py`,
+> `85_claude_code_pipeline.py`). The convergence examples below need to be
+> renumbered starting from 86 to avoid collisions.
 
 | # | Example | Phase |
 |---|---------|-------|
