@@ -199,7 +199,7 @@ The \texttt{HistoneStore} accepts an optional \texttt{energy\_gate} parameter pa
 \subsection{Bi-Temporal Memory Implementation}
 \label{sec:bitemporal-impl}
 
-The bi-temporal coalgebra (\S3.5) and temporal epistemic framework (\S\ref{sec:temporal-epistemics}) are implemented in \texttt{operon\_ai/memory/bitemporal.py} as a standalone append-only fact store. The design deliberately avoids mutation: facts are frozen dataclasses, corrections close old records and append new ones, and point-in-time queries are pure filters.
+The bi-temporal coalgebra (\S\ref{sec:coalgebra}) and temporal epistemic framework (\S\ref{sec:temporal-epistemics}) are implemented in \texttt{operon\_ai/memory/bitemporal.py} as a standalone append-only fact store. The design deliberately avoids mutation: facts are frozen dataclasses, corrections close old records and append new ones, and point-in-time queries are pure filters.
 
 \paragraph{Data Model.}
 A \texttt{BiTemporalFact} carries 12 fields: subject/predicate/value triple, valid-time interval (\texttt{valid\_from}, \texttt{valid\_to}), record-time interval (\texttt{recorded\_from}, \texttt{recorded\_to}), source provenance, confidence, tags, and an optional \texttt{supersedes} pointer to the corrected fact. All facts are \texttt{@dataclass(frozen=True)}---a deliberate departure from the mutable \texttt{MemoryEntry} used by \texttt{EpisodicMemory}, justified by the append-only semantics.
@@ -277,7 +277,7 @@ The \texttt{DevelopmentController} wraps a \texttt{Telomere} (composition, not i
 
 \subsection{Coalgebraic State Machines Implementation}
 
-The coalgebra formalism (\S3.5) is made explicit and composable:
+The coalgebra formalism (\S\ref{sec:coalgebra}) is made explicit and composable:
 
 \begin{verbatim}
 class Coalgebra(Protocol[S, I, O]):
@@ -294,7 +294,7 @@ class StateMachine(Generic[S, I, O]):
     def run(self, inputs: list[I]) -> list[O]: ...
 \end{verbatim}
 
-\texttt{ParallelCoalgebra} and \texttt{SequentialCoalgebra} implement the composition operations from \S3.5. The \texttt{check\_bisimulation()} function tests observational equivalence (Eq.~\eqref{eq:bisimulation}) over an input sequence, returning a witness on divergence. Existing organelles (\texttt{HistoneStore}, \texttt{ATP\_Store}, \texttt{CellCycleController}) can be wrapped as coalgebras, enabling formal composition and finite-trace comparison of multi-organelle systems.
+\texttt{ParallelCoalgebra} and \texttt{SequentialCoalgebra} implement the composition operations from \S\ref{sec:coalgebra}. The \texttt{check\_bisimulation()} function tests observational equivalence (Eq.~\eqref{eq:bisimulation}) over an input sequence, returning a witness on divergence. Existing organelles (\texttt{HistoneStore}, \texttt{ATP\_Store}, \texttt{CellCycleController}) can be wrapped as coalgebras, enabling formal composition and finite-trace comparison of multi-organelle systems.
 
 \subsection{Morphogen Diffusion Implementation}
 

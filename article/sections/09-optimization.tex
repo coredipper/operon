@@ -43,7 +43,7 @@ Each optimization pass is an endofunctor $F : \mathbf{WDiag} \to \mathbf{WDiag}$
 on the category of wiring diagrams that preserves input-output behavior.
 Two diagrams $D_1, D_2$ are \emph{behaviorally equivalent} if, for all
 admissible input assignments under the deterministic execution model fixed
-in Section~3.5, they produce the same observable outputs. In the current
+in Section~\ref{sec:coalgebra}, they produce the same observable outputs. In the current
 implementation this notion is checked over finite supplied input suites
 rather than by a general coinductive procedure.
 
@@ -173,7 +173,7 @@ reveals optimization opportunities---but different cost models.
 \item \textbf{Dynamic state.} Their functional equivalence ($\equiv$)
 preserves input-output mappings: two diagrams are equivalent when they
 produce the same outputs for the same inputs, differing only in resource
-profile. Our coalgebraic observational semantics (Section~3.5) is aimed at
+profile. Our coalgebraic observational semantics (Section~\ref{sec:coalgebra}) is aimed at
 \emph{stateful} systems and tracks observable behavior across transitions
 under a chosen input schedule, not just terminal outputs.
 

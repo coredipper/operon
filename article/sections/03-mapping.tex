@@ -135,6 +135,7 @@ This models batch processing at the wire level: a list of candidate outputs is t
 Optics compose: a \textbf{ComposedOptic} applies its constituent optics left-to-right, transmitting only if all accept. A wire may carry both a DenatureFilter (\S5.3) and an Optic, applied in sequence: denaturation strips syntactic structure, then the optic routes or transforms the sanitized content. This layered processing models the biological reality that signal reception involves multiple sequential steps (ligand binding $\to$ receptor conformational change $\to$ intracellular cascade).
 
 \subsection{Epigenetics and State: The Coalgebra}
+\label{sec:coalgebra}
 
 Neither genes nor agents are stateless functions. They possess memory.
 \begin{itemize}[leftmargin=*]
