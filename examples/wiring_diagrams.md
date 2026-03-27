@@ -72,6 +72,63 @@ Each arrow implies a typed connection with integrity constraints.
 - [Example 54: LLM Swarm with Graceful Cleanup](wiring_diagrams/example54_swarm_graceful_cleanup.md)
 - [Example 55: Adaptive Multi-Agent Orchestrator](wiring_diagrams/example55_multi_agent_orchestrator.md)
 
+### Multicellular + State (v0.13–v0.15)
+
+- Example 56: Metabolic Epigenetic Coupling
+- Example 57: Cell Type Specialization
+- Example 58: Tissue Architecture
+- Example 59: Plasmid Registry
+- Example 60: Denaturation Layers
+
+### Formal Theory (v0.14–v0.15)
+
+- Example 61: Coalgebraic State Machines
+- Example 62: Morphogen Diffusion
+- Example 63: Optic-Based Wiring
+- Example 64: Diagram Optimization
+
+### Provider + Topology (v0.16–v0.17)
+
+- Example 65: OpenAI-Compatible (LM Studio)
+- Example 66: Epistemic Topology
+
+### Pattern-First API (v0.18)
+
+- Example 67: Pattern-First API
+- Example 68: Skill Organism Runtime
+
+### Temporal Epistemics (v0.19–v0.20)
+
+- Example 69: Bi-Temporal Memory
+- Example 70: Bi-Temporal Compliance Audit
+- Example 71: Bi-Temporal Skill Organism
+
+### Adaptive Structure (v0.21)
+
+- Example 72: Pattern Repository
+- Example 73: Watcher Component
+- Example 74: Adaptive Assembly
+- Example 75: Experience-Driven Watcher
+
+### Cognitive Architecture (v0.22)
+
+- Example 76: Cognitive Modes
+- Example 77: Sleep Consolidation
+- Example 78: Social Learning
+- Example 79: Curiosity-Driven Exploration
+
+### Developmental Staging (v0.23)
+
+- Example 80: Developmental Staging
+- Example 81: Critical Periods
+
+### Ergonomics + CLI (v0.23.2–v0.23.3)
+
+- Example 82: Managed Organism
+- Example 83: CLI Stage Handler
+- Example 84: CLI Organism
+- Example 85: Claude Code Pipeline
+
 ## Example 17: Typed Wiring (Integrity + Capabilities)
 
 ```
@@ -447,4 +504,182 @@ flowchart TB
     +-----step_result-----+-----step_result-----+----step_result-----+
 
 Coordination without central control: agents read local gradient concentrations
+```
+
+## Example 68: Skill Organism Runtime (v0.18)
+
+```
+[task] --text--> [intake]     --dict--> [router]      --text--> [planner]
+                 (handler)              (fast_nucleus)           (deep_nucleus)
+                 deterministic          mode="fixed"             mode="fuzzy"
+                     |                      |                        |
+                     +------shared_state----+------shared_state------+
+                     |                      |                        |
+                     +-----[TelemetryProbe]----stage_result----------+
+```
+
+## Example 71: Bi-Temporal Skill Organism (v0.20)
+
+```
+                          [BiTemporalMemory]
+                               (substrate)
+                                   ^  |
+                          write    |  | read (SubstrateView)
+                                   |  v
+[task] --> [research]  --> [strategist]  --> [evaluator]  --> [adversary]
+           emit_output_fact  read_query      fact_extractor   fact_extractor
+           fact_extractor    "acct:42"       (assert)         (op="correct")
+               |                |                |                |
+               +----shared_state (ephemeral)-----+----topology---+
+               |                                                  |
+               +-------------- three-layer context ---------------+
+                    topology | ephemeral | bi-temporal
+```
+
+## Example 73: Watcher Component (v0.21)
+
+```
+                    [EpiplexityMonitor]  [ATP_Store]  [ImmuneSystem]
+                         (epistemic)     (somatic)    (species)
+                              |              |             |
+                              v              v             v
+[stage] --result--> [WatcherComponent] --signals--> [_decide_intervention]
+                          |                                |
+                     on_stage_result                  priority chain:
+                          |                          1. convergence → HALT
+                          v                          2. immune → HALT
+                    shared_state                     3. critical epiplexity → ESCALATE
+                    ["_watcher_intervention"]         4. stagnant + fast → ESCALATE
+                          |                          5. curiosity + fast → ESCALATE
+                          v                          6. FAILURE → RETRY
+                    [organism.run() loop]             7. experience pool → recommend
+                    RETRY | ESCALATE | HALT
+```
+
+## Example 74: Adaptive Assembly (v0.21.1)
+
+```
+[task] --fingerprint--> [PatternLibrary]
+                             |
+                        top_templates_for()
+                             |
+                             v
+                      [assemble_pattern()]
+                             |
+              +--------------+--------------+
+              |              |              |
+         skill_organism  reviewer_gate  specialist_swarm
+              |
+              v
+[AdaptiveSkillOrganism] --run()--> [SkillRunResult]
+         |                              |
+    record_run()                   record_experience()
+         |                              |
+         v                              v
+   [PatternLibrary]              [ExperiencePool]
+   (scoring feedback)            (intervention memory)
+```
+
+## Example 77: Sleep Consolidation (v0.22)
+
+```
+[PatternLibrary] --records--> [SleepConsolidation]
+[EpisodicMemory] ----------->         |
+[HistoneStore]   ----------->    5-step cycle:
+[AutophagyDaemon] --------->     1. prune (autophagy)
+[BiTemporalMemory] -------->     2. replay (WORKING → EPISODIC)
+                                 3. compress (→ new templates)
+                                 4. counterfactual (diff corrections)
+                                 5. promote (ACETYLATION → METHYLATION)
+                                      |
+                                      v
+                              [ConsolidationResult]
+```
+
+## Example 78: Social Learning (v0.22.1)
+
+```
+[Organism A]                                    [Organism B]
+     |                                               |
+export_templates()                          import_from_peer()
+     |                                               |
+     v                                               v
+[PeerExchange] --------templates+records-------> [TrustRegistry]
+  (peer_id="A")                                  trust_score("A")
+                                                      |
+                                                effective_score = sr × trust
+                                                      |
+                                             adopt if > threshold
+                                                      |
+                                                      v
+                                              record_adoption_outcome()
+                                                      |
+                                               trust ↑ on success
+                                               trust ↓ on failure
+```
+
+## Example 80: Developmental Staging (v0.23)
+
+```
+                    [Telomere]
+                   max_operations=100
+                        |
+                   consumed fraction
+                        |
+                        v
+              [DevelopmentController]
+                        |
+         +--------------+--------------+
+         |              |              |
+    EMBRYONIC      JUVENILE       ADOLESCENT      MATURE
+    (<10%)         (10-35%)       (35-70%)        (>70%)
+    plasticity=1.0  0.75           0.50            0.25
+         |
+    [CriticalPeriod]
+    opens_at → closes_at
+    (permanently shut)
+         |
+    [Plasmid.min_stage]
+    tool acquisition gated
+    by developmental stage
+```
+
+## Example 82: Managed Organism (v0.23.2)
+
+```
+managed_organism(task, library, stages, substrate, telomere, organism_id, ...)
+         |
+         +--→ [PatternLibrary] → adaptive_skill_organism()  ──┐
+         |         or                                          |
+         +--→ [stages] → skill_organism()  ───────────────────┤
+                                                               |
+         +--→ [WatcherComponent] ──────────────────────────────+──→ [ManagedOrganism]
+         +--→ [TelemetryProbe]  ───────────────────────────────┤        |
+         +--→ [DevelopmentController] ─────────────────────────┤    .run()
+         +--→ [SocialLearning] ────────────────────────────────┤    .consolidate()
+         +--→ [BiTemporalMemory] ──────────────────────────────┘    .export_templates()
+                                                                    .scaffold()
+              one function call → full stack                        .status()
+```
+
+## Example 85: Claude Code Pipeline (v0.23.3)
+
+```
+[task] --stdin--> [claude --print]  --stdout--> [claude --print]  --stdout--> [claude --print]
+                  (plan stage)                  (implement stage)              (review stage)
+                  system: "planner"             system: "developer"           system: "reviewer"
+                       |                             |                             |
+                       +---context chain: each stage receives all prior outputs---+
+                       |                             |                             |
+                  [cli_handler]                [cli_handler]                 [cli_handler]
+                  input_mode="stdin"            input_mode="stdin"           input_mode="stdin"
+                  timeout=120s                  timeout=120s                 timeout=120s
+                       |                             |                             |
+                       +----------[WatcherComponent]----------+
+                       |          convergence monitoring       |
+                       +----------[BiTemporalMemory]----------+
+                                  substrate recording
+
+                  _action_type="EXECUTE" on success
+                  _action_type="FAILURE" on non-zero returncode → watcher RETRY
 ```
