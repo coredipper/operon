@@ -1,6 +1,6 @@
 # Operon Examples
 
-This directory contains 85 runnable numbered examples demonstrating the
+This directory contains 88 runnable numbered examples demonstrating the
 `operon_ai` library, progressing from basic concepts to complete
 LLM-powered cell simulations.
 
@@ -59,6 +59,12 @@ reconstructing past belief states:
   full managed CLI organism from a dict of commands with watcher and substrate
 - [`85_claude_code_pipeline.py`](85_claude_code_pipeline.py) —
   live 3-stage pipeline (plan → implement → review) using `claude --print` with context chaining
+- [`86_swarms_topology_analysis.py`](86_swarms_topology_analysis.py) —
+  analyze Swarms workflow patterns with Operon's epistemic theorems
+- [`87_animaworks_role_mapping.py`](87_animaworks_role_mapping.py) —
+  map AnimaWorks organizational configs to Operon's typed stage system
+- [`88_deerflow_workflow_analysis.py`](88_deerflow_workflow_analysis.py) —
+  analyze DeerFlow 2.0 session configs with Operon's epistemic theorems
 
 ## Import Style Guide
 
