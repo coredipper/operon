@@ -169,6 +169,9 @@ def hybrid_skill_organism(
             **organism_kwargs,
         )
         org._library = library
+        # Rebind social learning subsystem to the real library if present.
+        if org._social is not None:
+            org._social.library = library
         return org
 
     # 4. No options left
