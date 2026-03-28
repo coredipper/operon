@@ -146,8 +146,10 @@ def _build_wiring_diagram(topology: ExternalTopology) -> WiringDiagram:
         outputs = {"out": _DEFAULT_PORT}
 
         # Propagate capabilities/skills onto the ModuleSpec.
+        # Only convert recognized Capability enum values; skip unknown tool names.
+        _cap_values = {c.value for c in Capability}
         agent_caps = _get_agent_capabilities(spec)
-        caps = {Capability(c) for c in agent_caps} if agent_caps else set()
+        caps = {Capability(c) for c in agent_caps if c in _cap_values}
 
         diagram.add_module(ModuleSpec(name=name, inputs=inputs, outputs=outputs, capabilities=caps))
 
@@ -178,8 +180,15 @@ def _classify_task_shape(topology: ExternalTopology) -> str:
     # Structural heuristic: no edges → parallel; linear chain → sequential.
     if len(topology.edges) == 0:
         return "parallel"
-    n_agents = len(topology.agents)
-    if n_agents > 0 and len(topology.edges) == n_agents - 1:
+    # Detect a true linear chain: every node has indegree ≤ 1 and outdegree ≤ 1.
+    in_deg: dict[str, int] = {}
+    out_deg: dict[str, int] = {}
+    for src, dst in topology.edges:
+        out_deg[src] = out_deg.get(src, 0) + 1
+        in_deg[dst] = in_deg.get(dst, 0) + 1
+    is_chain = all(out_deg.get(a.get("name", ""), 0) <= 1 for a in topology.agents) and \
+               all(in_deg.get(a.get("name", ""), 0) <= 1 for a in topology.agents)
+    if is_chain and len(topology.edges) > 0:
         return "sequential"
     return "mixed"
 
@@ -341,6 +350,19 @@ def topology_to_template(topology: ExternalTopology) -> PatternTemplate:
     Dispatches to source-specific converters when available, otherwise
     builds a generic template preserving the source metadata.
     """
+    # Dispatch to source-specific converters that understand metadata semantics.
+    if topology.source == "animaworks":
+        from .animaworks_adapter import animaworks_to_template
+        org_config = topology.metadata.get("_org_config")
+        if org_config is not None:
+            return animaworks_to_template(org_config)
+    elif topology.source == "deerflow":
+        from .deerflow_adapter import deerflow_to_template
+        session_config = topology.metadata.get("_session_config")
+        if session_config is not None:
+            return deerflow_to_template(session_config)
+
+    # Generic fallback for Swarms and unknown sources.
     task_shape = _classify_task_shape(topology)
     topo_label = _shape_to_topology(task_shape, len(topology.agents))
 

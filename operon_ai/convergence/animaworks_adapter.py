@@ -130,7 +130,7 @@ def parse_animaworks_org(org_config: dict[str, Any]) -> ExternalTopology:
         pattern_name=org_config.get("name", "animaworks_org"),
         agents=tuple(agent_dicts),
         edges=edges,
-        metadata={"communication": communication},
+        metadata={"communication": communication, "_org_config": org_config},
     )
 
 

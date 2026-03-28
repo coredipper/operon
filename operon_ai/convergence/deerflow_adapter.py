@@ -111,6 +111,7 @@ def parse_deerflow_session(session_config: dict) -> ExternalTopology:
             "recursion_limit": recursion_limit,
             "config": config,
             "skills": skills,
+            "_session_config": session_config,
         },
     )
 
