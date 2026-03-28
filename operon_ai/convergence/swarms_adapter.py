@@ -293,17 +293,14 @@ def analyze_external_topology(topology: ExternalTopology) -> AdapterResult:
     effective_tools = max(density.total_tools, raw_tool_count)
     modules_with_tools = sum(1 for s in topology.agents if _get_agent_capabilities(s))
     effective_modules = max(density.num_modules, modules_with_tools)
-    if effective_tools > 0 and effective_modules > 0:
-        # Mirror tool_density() formula: tools_per_module * planning overhead.
-        tools_per_module = effective_tools / effective_modules
-        remote_fraction = (effective_modules - 1) / effective_modules if effective_modules > 1 else 0.0
-        approx_planning_ratio = tools_per_module * (1.0 + remote_fraction * effective_modules)
-        if approx_planning_ratio > _TOOL_DENSITY_WARN_THRESHOLD:
-            warnings.append(
-                f"Tool density: planning cost ratio ~{approx_planning_ratio:.1f} "
-                f"exceeds threshold {_TOOL_DENSITY_WARN_THRESHOLD:.1f} "
-                f"({effective_tools} tools across {effective_modules} modules)"
-            )
+    # planning_cost_ratio = number of capability-bearing modules (per tool_density()).
+    effective_planning_ratio = max(density.planning_cost_ratio, float(effective_modules))
+    if effective_planning_ratio > _TOOL_DENSITY_WARN_THRESHOLD:
+        warnings.append(
+            f"Tool density: planning cost ratio {effective_planning_ratio:.1f} "
+            f"exceeds threshold {_TOOL_DENSITY_WARN_THRESHOLD:.1f} "
+            f"({effective_tools} tools across {effective_modules} modules)"
+        )
 
     # 6. Operon's recommendation.
     task_shape = _classify_task_shape(topology)
@@ -343,13 +340,7 @@ def analyze_external_topology(topology: ExternalTopology) -> AdapterResult:
     n = max(err.n_agents, 1)
     error_risk = min(err.centralized_bound / (n * 2), 1.0)
     seq_risk = min(effective_overhead / 1.0, 1.0)
-    # Use raw tool count for density risk when WiringDiagram capabilities are empty.
-    effective_density_ratio = density.planning_cost_ratio
-    if effective_density_ratio == 0.0 and effective_tools > 0 and effective_modules > 0:
-        tpm = effective_tools / effective_modules
-        rf = (effective_modules - 1) / effective_modules if effective_modules > 1 else 0.0
-        effective_density_ratio = tpm * (1.0 + rf * effective_modules)
-    density_risk = min(effective_density_ratio / 10.0, 1.0) if (density.num_modules > 0 or effective_tools > 0) else 0.0
+    density_risk = min(effective_planning_ratio / 10.0, 1.0) if effective_planning_ratio > 0 else 0.0
 
     risk_score = (
         _W_ERROR * error_risk
