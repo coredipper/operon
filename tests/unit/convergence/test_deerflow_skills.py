@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from operon_ai.convergence.deerflow_skills import (
     extract_workflow_steps,
     parse_skill_frontmatter,
@@ -205,16 +207,12 @@ class TestExtractSteps:
 
 
 class TestEmptySkill:
-    """Handle empty or blank input gracefully."""
+    """Empty or blank input should raise ValueError."""
 
-    def test_empty_string_produces_valid_template(self) -> None:
-        result = skill_to_template("")
-        assert isinstance(result, PatternTemplate)
-        assert result.name == "unnamed_skill"
-        assert result.stage_specs == ()
-        assert result.fingerprint.subtask_count == 0
+    def test_empty_string_raises(self) -> None:
+        with pytest.raises(ValueError, match="no workflow steps"):
+            skill_to_template("")
 
-    def test_whitespace_only_produces_valid_template(self) -> None:
-        result = skill_to_template("   \n\n  ")
-        assert isinstance(result, PatternTemplate)
-        assert result.stage_specs == ()
+    def test_whitespace_only_raises(self) -> None:
+        with pytest.raises(ValueError, match="no workflow steps"):
+            skill_to_template("   \n\n  ")

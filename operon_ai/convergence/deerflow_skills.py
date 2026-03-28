@@ -87,17 +87,24 @@ def skill_to_template(skill_md: str) -> PatternTemplate:
     name = frontmatter.get("name", "unnamed_skill")
     category = frontmatter.get("category", "worker")
 
+    # Use per-step roles from frontmatter if available (roundtrip fidelity).
+    roles_str = frontmatter.get("roles", "")
+    per_step_roles = [r.strip() for r in roles_str.split(",") if r.strip()] if roles_str else []
+
     # Build stage specs — one per numbered step.
     stage_specs: list[dict[str, Any]] = []
     for idx, step_text in enumerate(steps, start=1):
+        role = per_step_roles[idx - 1] if idx - 1 < len(per_step_roles) else category
         stage_specs.append({
             "name": f"step_{idx}",
-            "role": category,
+            "role": role,
             "instructions": step_text,
         })
 
-    # Determine task shape from step count.
+    # Reject empty skills — a template with zero stages is invalid.
     step_count = len(steps)
+    if step_count == 0:
+        raise ValueError("Skill has no workflow steps — cannot create a valid template")
     if step_count >= 4:
         task_shape = "mixed"
     else:
@@ -160,12 +167,16 @@ def template_to_skill(template: PatternTemplate) -> str:
     category = _TOPOLOGY_CATEGORY_MAP.get(template.topology, "general")
     tags_str = ", ".join(template.tags) if template.tags else ""
 
+    # Preserve roles as comma-separated list in frontmatter for roundtrip fidelity.
+    roles = ", ".join(spec.get("role", "worker") for spec in template.stage_specs)
+
     lines: list[str] = [
         "---",
         f"name: {template.name}",
         "description: Operon pattern template",
         "version: 1.0",
         f"category: {category}",
+        f"roles: {roles}",
         f"tags: {tags_str}",
         "---",
         "",
@@ -174,9 +185,8 @@ def template_to_skill(template: PatternTemplate) -> str:
     ]
 
     for idx, spec in enumerate(template.stage_specs, start=1):
-        spec_name = spec.get("name", f"step_{idx}")
         instructions = spec.get("instructions", spec.get("role", "worker"))
-        lines.append(f"{idx}. {spec_name}: {instructions}")
+        lines.append(f"{idx}. {instructions}")
 
     # Trailing newline.
     lines.append("")
