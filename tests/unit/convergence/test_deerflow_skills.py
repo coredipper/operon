@@ -155,6 +155,28 @@ class TestTemplateToSkillRoundtrip:
         assert "1. " in md
         assert "4. " in md
 
+    def test_roundtrip_preserves_roles(self) -> None:
+        original = skill_to_template(_BASIC_SKILL)
+        md = template_to_skill(original)
+        recovered = skill_to_template(md)
+        original_roles = tuple(s["role"] for s in original.stage_specs)
+        recovered_roles = tuple(s["role"] for s in recovered.stage_specs)
+        assert recovered_roles == original_roles
+
+    def test_roundtrip_preserves_instructions(self) -> None:
+        original = skill_to_template(_BASIC_SKILL)
+        md = template_to_skill(original)
+        recovered = skill_to_template(md)
+        for orig_spec, rec_spec in zip(original.stage_specs, recovered.stage_specs):
+            assert rec_spec["instructions"] == orig_spec["instructions"]
+
+    def test_roundtrip_no_name_prefix_in_instructions(self) -> None:
+        original = skill_to_template(_BASIC_SKILL)
+        md = template_to_skill(original)
+        recovered = skill_to_template(md)
+        for spec in recovered.stage_specs:
+            assert not spec["instructions"].startswith("step_")
+
 
 # ---------------------------------------------------------------------------
 # parse_skill_frontmatter

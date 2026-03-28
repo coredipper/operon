@@ -152,18 +152,24 @@ def hybrid_skill_organism(
                 **organism_kwargs,
             )
 
-    # 3. Fallback to generator — force direct-stage path (no library) so the
-    #    generated template is used, not an older library entry.
+    # 3. Fallback to generator — use direct-stage path for execution but
+    #    preserve library on the returned organism for consolidate/social features.
     if template_generator is not None:
         generated = template_generator(task)
         library.register_template(generated)
         stages = _stages_from_template(generated)
-        return managed_organism(
+        # Build with an empty library for selection (forces stages path),
+        # then attach the real library for post-run features.
+        empty = PatternLibrary()
+        org = managed_organism(
             stages=stages,
             fast_nucleus=fast_nucleus,
             deep_nucleus=deep_nucleus,
+            library=empty,
             **organism_kwargs,
         )
+        org._library = library
+        return org
 
     # 4. No options left
     raise ValueError("No templates available and no generator provided")
