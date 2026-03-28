@@ -8,7 +8,13 @@ importing any AnimaWorks code.
 
 from __future__ import annotations
 
+import copy
 from typing import Any
+
+
+def _deep_copy_config(config: dict) -> dict:
+    """Return an immutable snapshot of a config dict."""
+    return copy.deepcopy(config)
 
 from ..convergence.types import ExternalTopology
 from ..patterns.repository import PatternTemplate, TaskFingerprint
@@ -130,7 +136,7 @@ def parse_animaworks_org(org_config: dict[str, Any]) -> ExternalTopology:
         pattern_name=org_config.get("name", "animaworks_org"),
         agents=tuple(agent_dicts),
         edges=edges,
-        metadata={"communication": communication, "_org_config": org_config},
+        metadata={"communication": communication, "_org_config": _deep_copy_config(org_config)},
     )
 
 

@@ -10,6 +10,7 @@ All inputs are plain dicts; no DeerFlow, LangChain, or LangGraph imports.
 
 from __future__ import annotations
 
+import copy
 from uuid import uuid4
 
 from ..convergence.types import ExternalTopology
@@ -111,7 +112,7 @@ def parse_deerflow_session(session_config: dict) -> ExternalTopology:
             "recursion_limit": recursion_limit,
             "config": config,
             "skills": skills,
-            "_session_config": session_config,
+            "_session_config": copy.deepcopy(session_config),
         },
     )
 
