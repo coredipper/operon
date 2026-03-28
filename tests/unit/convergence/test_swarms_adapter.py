@@ -194,6 +194,24 @@ class TestAnalyzeExternalTopology:
         error_warnings = [w for w in result.warnings if "Error amplification" in w]
         assert len(error_warnings) > 0
 
+    def test_opaque_tools_drive_density_by_module_count(self):
+        """External tools (non-Capability enum) should drive density by module count."""
+        # 5 agents all sharing the same opaque tool "web_search".
+        # Density should reflect 5 modules, not 1 distinct tool.
+        agents = [
+            {"name": f"agent_{i}", "role": "worker", "skills": ["web_search"]}
+            for i in range(5)
+        ]
+        edges = [("agent_0", f"agent_{i}") for i in range(1, 5)]
+        topo = parse_swarm_topology("HierarchicalSwarm", agents, edges)
+        result = analyze_external_topology(topo)
+        # planning_cost_ratio fallback = float(effective_modules) = 5.0
+        # threshold is 4.0, so this should trigger a density warning.
+        density_warnings = [w for w in result.warnings if "Tool density" in w]
+        assert len(density_warnings) > 0
+        assert "5 modules" in density_warnings[0]
+        assert result.risk_score > 0.0
+
 
 # ── swarm_to_template ────────────────────────────────────────────
 
