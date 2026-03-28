@@ -1,6 +1,6 @@
 # Operon Examples
 
-This directory contains 88 runnable numbered examples demonstrating the
+This directory contains 91 runnable numbered examples demonstrating the
 `operon_ai` library, progressing from basic concepts to complete
 LLM-powered cell simulations.
 
@@ -65,6 +65,12 @@ reconstructing past belief states:
   map AnimaWorks organizational configs to Operon's typed stage system
 - [`88_deerflow_workflow_analysis.py`](88_deerflow_workflow_analysis.py) —
   analyze DeerFlow 2.0 session configs with Operon's epistemic theorems
+- [`89_seeded_library.py`](89_seeded_library.py) —
+  seed PatternLibrary from Swarms, DeerFlow, and ACG survey patterns
+- [`90_hybrid_assembly.py`](90_hybrid_assembly.py) —
+  hybrid assembly with library-first + LLM generator fallback
+- [`91_deerflow_skill_bridge.py`](91_deerflow_skill_bridge.py) —
+  bidirectional DeerFlow Markdown skill to PatternTemplate conversion
 
 ## Import Style Guide
 
