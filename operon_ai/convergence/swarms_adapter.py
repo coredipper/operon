@@ -190,15 +190,16 @@ def _classify_task_shape(topology: ExternalTopology) -> str:
     edge_nodes = {s for s, _ in topology.edges} | {d for _, d in topology.edges}
     # True linear chain: indegree/outdegree ≤ 1, exactly one head (in=0,out=1),
     # one tail (in=1,out=0), n-1 edges, all edge nodes are agents, connected.
-    if not edge_nodes.issubset(agent_names):
+    # Chain must cover ALL agents (no isolated nodes allowed).
+    if edge_nodes != agent_names:
         return "mixed"
     max_in = max((in_deg.get(n, 0) for n in agent_names), default=0)
     max_out = max((out_deg.get(n, 0) for n in agent_names), default=0)
     if max_in > 1 or max_out > 1:
         return "mixed"
-    heads = [n for n in edge_nodes if in_deg.get(n, 0) == 0 and out_deg.get(n, 0) == 1]
-    tails = [n for n in edge_nodes if in_deg.get(n, 0) == 1 and out_deg.get(n, 0) == 0]
-    if len(heads) == 1 and len(tails) == 1 and len(topology.edges) == len(edge_nodes) - 1:
+    heads = [n for n in agent_names if in_deg.get(n, 0) == 0 and out_deg.get(n, 0) == 1]
+    tails = [n for n in agent_names if in_deg.get(n, 0) == 1 and out_deg.get(n, 0) == 0]
+    if len(heads) == 1 and len(tails) == 1 and len(topology.edges) == len(agent_names) - 1:
         return "sequential"
     return "mixed"
 
@@ -291,14 +292,17 @@ def analyze_external_topology(topology: ExternalTopology) -> AdapterResult:
     raw_tool_count = _count_tools(topology)
     effective_tools = max(density.total_tools, raw_tool_count)
     modules_with_tools = sum(1 for s in topology.agents if _get_agent_capabilities(s))
-    if effective_tools > 0 and n_agents > 1:
-        # Approximate planning cost ratio: tools * agents for cross-agent routing.
-        approx_planning_ratio = effective_tools * n_agents / max(effective_tools, 1)
+    effective_modules = max(density.num_modules, modules_with_tools)
+    if effective_tools > 0 and effective_modules > 0:
+        # Mirror tool_density() formula: tools_per_module * planning overhead.
+        tools_per_module = effective_tools / effective_modules
+        remote_fraction = (effective_modules - 1) / effective_modules if effective_modules > 1 else 0.0
+        approx_planning_ratio = tools_per_module * (1.0 + remote_fraction * effective_modules)
         if approx_planning_ratio > _TOOL_DENSITY_WARN_THRESHOLD:
             warnings.append(
                 f"Tool density: planning cost ratio ~{approx_planning_ratio:.1f} "
                 f"exceeds threshold {_TOOL_DENSITY_WARN_THRESHOLD:.1f} "
-                f"({effective_tools} tools across {modules_with_tools} modules)"
+                f"({effective_tools} tools across {effective_modules} modules)"
             )
 
     # 6. Operon's recommendation.
@@ -341,8 +345,10 @@ def analyze_external_topology(topology: ExternalTopology) -> AdapterResult:
     seq_risk = min(effective_overhead / 1.0, 1.0)
     # Use raw tool count for density risk when WiringDiagram capabilities are empty.
     effective_density_ratio = density.planning_cost_ratio
-    if effective_density_ratio == 0.0 and effective_tools > 0 and n_agents > 1:
-        effective_density_ratio = effective_tools * n_agents / max(effective_tools, 1)
+    if effective_density_ratio == 0.0 and effective_tools > 0 and effective_modules > 0:
+        tpm = effective_tools / effective_modules
+        rf = (effective_modules - 1) / effective_modules if effective_modules > 1 else 0.0
+        effective_density_ratio = tpm * (1.0 + rf * effective_modules)
     density_risk = min(effective_density_ratio / 10.0, 1.0) if (density.num_modules > 0 or effective_tools > 0) else 0.0
 
     risk_score = (
