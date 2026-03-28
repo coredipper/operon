@@ -29,7 +29,7 @@ from ..core.epistemic import (
     sequential_penalty,
     tool_density,
 )
-from ..core.types import DataType, IntegrityLabel
+from ..core.types import Capability, DataType, IntegrityLabel
 from ..core.wagent import ModuleSpec, PortType, WiringDiagram
 from ..patterns.repository import PatternTemplate, TaskFingerprint
 from ..patterns.types import TopologyAdvice
@@ -61,11 +61,11 @@ _PATTERN_TO_SHAPE: dict[str, str] = {
 }
 
 # Map task shapes to PatternTemplate topology labels.
-_SHAPE_TO_TOPOLOGY: dict[str, str] = {
-    "sequential": "single_worker",
-    "parallel": "specialist_swarm",
-    "mixed": "specialist_swarm",
-}
+def _shape_to_topology(shape: str, n_agents: int) -> str:
+    """Pick topology label, accounting for multi-stage sequential workflows."""
+    if shape == "sequential":
+        return "skill_organism" if n_agents > 1 else "single_worker"
+    return "specialist_swarm"
 
 
 # ---------------------------------------------------------------------------
@@ -145,7 +145,11 @@ def _build_wiring_diagram(topology: ExternalTopology) -> WiringDiagram:
         # Every agent gets an output port (it may or may not be wired).
         outputs = {"out": _DEFAULT_PORT}
 
-        diagram.add_module(ModuleSpec(name=name, inputs=inputs, outputs=outputs))
+        # Propagate capabilities/skills onto the ModuleSpec.
+        agent_caps = _get_agent_capabilities(spec)
+        caps = {Capability(c) for c in agent_caps} if agent_caps else set()
+
+        diagram.add_module(ModuleSpec(name=name, inputs=inputs, outputs=outputs, capabilities=caps))
 
     # Wire edges.  Track how many wires have already landed on each dst.
     dst_cursor: dict[str, int] = {}
@@ -161,23 +165,43 @@ def _build_wiring_diagram(topology: ExternalTopology) -> WiringDiagram:
 
 
 def _classify_task_shape(topology: ExternalTopology) -> str:
-    """Derive a broad task shape from the pattern name."""
-    key = topology.pattern_name.strip().lower().replace("_", "")
-    return _PATTERN_TO_SHAPE.get(key, "mixed")
+    """Derive a broad task shape from the topology structure.
+
+    Uses the pattern name for Swarms sources, and structural heuristics
+    for DeerFlow/AnimaWorks/unknown sources.
+    """
+    key = topology.pattern_name.strip().lower().replace("_", "").replace("-", "")
+    # Check Swarms-specific pattern names first.
+    shape = _PATTERN_TO_SHAPE.get(key, None)
+    if shape is not None:
+        return shape
+    # Structural heuristic: no edges → parallel; linear chain → sequential.
+    if len(topology.edges) == 0:
+        return "parallel"
+    n_agents = len(topology.agents)
+    if n_agents > 0 and len(topology.edges) == n_agents - 1:
+        return "sequential"
+    return "mixed"
+
+
+def _get_agent_capabilities(spec: dict[str, Any]) -> list[str]:
+    """Extract capabilities from an agent spec, normalizing skills/capabilities."""
+    caps = spec.get("capabilities") or spec.get("skills") or []
+    if isinstance(caps, (list, tuple, set, frozenset)):
+        return [str(c) for c in caps]
+    return []
 
 
 def _has_capabilities(topology: ExternalTopology) -> bool:
-    """Return ``True`` if any agent spec declares capabilities."""
-    return any("capabilities" in spec for spec in topology.agents)
+    """Return ``True`` if any agent spec declares capabilities or skills."""
+    return any(_get_agent_capabilities(spec) for spec in topology.agents)
 
 
 def _count_tools(topology: ExternalTopology) -> int:
     """Count the total number of distinct capabilities across all agents."""
     tools: set[str] = set()
     for spec in topology.agents:
-        caps = spec.get("capabilities", [])
-        if isinstance(caps, (list, tuple, set, frozenset)):
-            tools.update(str(c) for c in caps)
+        tools.update(_get_agent_capabilities(spec))
     return len(tools)
 
 
@@ -271,7 +295,7 @@ def analyze_external_topology(topology: ExternalTopology) -> AdapterResult:
         )
 
     # 7. TopologyAdvice.
-    pattern_label = _SHAPE_TO_TOPOLOGY.get(task_shape, "specialist_swarm")
+    pattern_label = _shape_to_topology(task_shape, len(topology.agents))
     advice = TopologyAdvice(
         recommended_pattern=pattern_label,
         suggested_api=f"{pattern_label}(...)",
@@ -280,8 +304,8 @@ def analyze_external_topology(topology: ExternalTopology) -> AdapterResult:
         raw=rec,
     )
 
-    # 8. PatternTemplate.
-    template = swarm_to_template(topology)
+    # 8. PatternTemplate (dispatch by source for correct naming/tags).
+    template = topology_to_template(topology)
 
     # 9. Composite risk score in [0.0, 1.0].
     n = max(err.n_agents, 1)
@@ -307,7 +331,53 @@ def analyze_external_topology(topology: ExternalTopology) -> AdapterResult:
 
 
 # ---------------------------------------------------------------------------
-# swarm_to_template
+# topology_to_template (source-agnostic)
+# ---------------------------------------------------------------------------
+
+
+def topology_to_template(topology: ExternalTopology) -> PatternTemplate:
+    """Convert any :class:`ExternalTopology` to a :class:`PatternTemplate`.
+
+    Dispatches to source-specific converters when available, otherwise
+    builds a generic template preserving the source metadata.
+    """
+    task_shape = _classify_task_shape(topology)
+    topo_label = _shape_to_topology(task_shape, len(topology.agents))
+
+    stage_specs = tuple(
+        {
+            "name": spec["name"],
+            "role": spec.get("role", "worker"),
+            "mode": "fuzzy",
+        }
+        for spec in topology.agents
+    )
+
+    roles = tuple(spec.get("role", "worker") for spec in topology.agents)
+    tools = _count_tools(topology)
+    source = topology.source or "unknown"
+
+    fingerprint = TaskFingerprint(
+        task_shape=task_shape,
+        tool_count=tools,
+        subtask_count=len(topology.agents),
+        required_roles=roles,
+        tags=(f"{source}:{topology.pattern_name}",),
+    )
+
+    return PatternTemplate(
+        template_id=uuid4().hex[:8],
+        name=f"{source}_{topology.pattern_name}",
+        topology=topo_label,
+        stage_specs=stage_specs,
+        intervention_policy={"mode": "default"},
+        fingerprint=fingerprint,
+        tags=(source, topology.pattern_name),
+    )
+
+
+# ---------------------------------------------------------------------------
+# swarm_to_template (convenience alias)
 # ---------------------------------------------------------------------------
 
 
@@ -322,7 +392,7 @@ def swarm_to_template(topology: ExternalTopology) -> PatternTemplate:
     - A :class:`TaskFingerprint` is synthesized from the topology shape.
     """
     task_shape = _classify_task_shape(topology)
-    topo_label = _SHAPE_TO_TOPOLOGY.get(task_shape, "specialist_swarm")
+    topo_label = _shape_to_topology(task_shape, len(topology.agents))
 
     stage_specs = tuple(
         {

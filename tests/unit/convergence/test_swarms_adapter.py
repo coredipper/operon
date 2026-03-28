@@ -175,6 +175,7 @@ class TestAnalyzeExternalTopology:
         result = analyze_external_topology(_sequential_topology())
         assert result.topology_advice.recommended_pattern in (
             "single_worker",
+            "skill_organism",
             "specialist_swarm",
             "reviewer_gate",
         )

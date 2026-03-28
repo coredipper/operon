@@ -23,6 +23,7 @@ from .swarms_adapter import (
     analyze_external_topology,
     parse_swarm_topology,
     swarm_to_template,
+    topology_to_template,
 )
 from .types import AdapterResult, ExternalTopology, RuntimeConfig
 
@@ -36,6 +37,8 @@ __all__ = [
     # Swarms
     "parse_swarm_topology",
     "swarm_to_template",
+    # Source-agnostic
+    "topology_to_template",
     # AnimaWorks
     "parse_animaworks_org",
     "animaworks_roles_to_stages",

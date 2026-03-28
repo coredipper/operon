@@ -169,18 +169,27 @@ def deerflow_to_template(session_config: dict) -> PatternTemplate:
     sub_agents: list[dict] = session_config.get("sub_agents", [])
     skills: list[str] = session_config.get("skills", [])
 
-    # Build stage specs from sub-agents.
+    # Build stage specs from sub-agents (include lead if no sub-agents).
     stage_specs: list[dict] = []
-    for sa in sub_agents:
+    if not sub_agents:
+        # No sub-agents: the lead assistant is the only stage.
+        lead_id = session_config.get("assistant_id", "lead_agent")
         stage_specs.append({
-            "name": sa.get("name", "unnamed"),
-            "role": sa.get("role", "worker"),
-            "skills": list(sa.get("skills", [])),
+            "name": lead_id,
+            "role": "lead",
+            "skills": list(skills),
         })
+    else:
+        for sa in sub_agents:
+            stage_specs.append({
+                "name": sa.get("name", "unnamed"),
+                "role": sa.get("role", "worker"),
+                "skills": list(sa.get("skills", [])),
+            })
 
-    # Derive roles from sub-agents.
+    # Derive roles.
     roles: list[str] = sorted({
-        sa.get("role", "worker") for sa in sub_agents
+        s.get("role", "worker") for s in stage_specs
     })
 
     # Determine task shape from sub-agent count.
@@ -192,7 +201,7 @@ def deerflow_to_template(session_config: dict) -> PatternTemplate:
     fingerprint = TaskFingerprint(
         task_shape=task_shape,
         tool_count=len(skills),
-        subtask_count=len(sub_agents),
+        subtask_count=len(stage_specs),
         required_roles=tuple(roles),
         tags=("deerflow",),
     )
@@ -203,7 +212,7 @@ def deerflow_to_template(session_config: dict) -> PatternTemplate:
     return PatternTemplate(
         template_id=uuid4().hex[:8],
         name=f"deerflow_{session_config.get('assistant_id', 'session')}",
-        topology="specialist_swarm" if len(sub_agents) > 1 else "single_worker",
+        topology="specialist_swarm" if len(stage_specs) > 1 else "single_worker",
         stage_specs=tuple(stage_specs),
         intervention_policy={
             "recursion_limit": recursion_limit,
