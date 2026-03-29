@@ -33,14 +33,15 @@ print(f"  Trust context: {primed.trust_context}")
 print(f"  Developmental status: {primed.developmental_status}")
 
 # 3. Direct construction
+# Direct construction with plain dicts — __post_init__ auto-freezes them
 direct = PrimingView(
     facts=(),
     query="test",
     record_time=datetime.now(UTC),
-    recent_outputs=(MappingProxyType({"stage": "plan", "output": "Step 1: ..."}),),
+    recent_outputs=({"stage": "plan", "output": "Step 1: ..."},),
     telemetry=({"event": "stage_complete", "latency_ms": 150},),
     experience=({"action": "RETRY", "success": True},),
-    trust_context=MappingProxyType({"org_1": 0.9}),
+    trust_context={"org_1": 0.9},
 )
 print(f"\nDirect PrimingView: {len(direct.telemetry)} telemetry, {len(direct.experience)} experience")
 

@@ -28,6 +28,19 @@ class PrimingView(SubstrateView):
     developmental_status: Any = None  # DevelopmentStatus | None
     trust_context: MappingProxyType = field(default_factory=lambda: MappingProxyType({}))
 
+    def __post_init__(self) -> None:
+        """Freeze mutable inputs passed via direct construction."""
+        # Freeze trust_context if a plain dict was passed.
+        if isinstance(self.trust_context, dict) and not isinstance(self.trust_context, MappingProxyType):
+            object.__setattr__(self, "trust_context", MappingProxyType(dict(self.trust_context)))
+        # Freeze recent_outputs entries if plain dicts were passed.
+        if self.recent_outputs and any(isinstance(d, dict) and not isinstance(d, MappingProxyType) for d in self.recent_outputs):
+            frozen = tuple(
+                MappingProxyType(dict(d)) if isinstance(d, dict) and not isinstance(d, MappingProxyType) else d
+                for d in self.recent_outputs
+            )
+            object.__setattr__(self, "recent_outputs", frozen)
+
 
 def build_priming_view(
     substrate_view: SubstrateView,
