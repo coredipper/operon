@@ -1,6 +1,6 @@
 # Operon Examples
 
-This directory contains 95 runnable numbered examples demonstrating the
+This directory contains 96 runnable numbered examples demonstrating the
 `operon_ai` library, progressing from basic concepts to complete
 LLM-powered cell simulations.
 
@@ -79,6 +79,8 @@ reconstructing past belief states:
   idle-time consolidation via HeartbeatDaemon
 - [`95_async_thinking.py`](95_async_thinking.py) —
   Fork/Join sub-queries within a single stage
+- [`96_codesign_composition.py`](96_codesign_composition.py) —
+  Zardini co-design adapter composition with fixed-point convergence
 
 ## Import Style Guide
 

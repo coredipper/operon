@@ -40,6 +40,13 @@ from .hybrid_assembly import (
     default_template_generator,
     hybrid_skill_organism,
 )
+from .codesign import (
+    DesignProblem,
+    compose_parallel,
+    compose_series,
+    feasibility_check,
+    feedback_fixed_point,
+)
 from .memory_bridge import (
     bridge_animaworks_memory,
     bridge_deerflow_memory,
@@ -88,6 +95,12 @@ __all__ = [
     "AsyncOrganizer",
     "AsyncThinkResult",
     "async_stage_handler",
+    # Co-design (C4)
+    "DesignProblem",
+    "compose_series",
+    "compose_parallel",
+    "feedback_fixed_point",
+    "feasibility_check",
     # Memory bridge (C3)
     "bridge_animaworks_memory",
     "bridge_deerflow_memory",
