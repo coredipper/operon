@@ -259,6 +259,6 @@ class TestFallbackPreservesSocialLearning:
         assert isinstance(org, ManagedOrganism)
         # The organism's library should be the caller's library, not an empty one.
         assert org._library is library
-        # If social learning was initialized, it should also reference the real library.
-        if org._social is not None:
-            assert org._social.library is library
+        # Social learning must be initialized when organism_id is provided.
+        assert org._social is not None, "organism_id='test-org' should initialize social learning"
+        assert org._social.library is library
