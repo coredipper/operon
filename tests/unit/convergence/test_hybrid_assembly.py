@@ -237,3 +237,28 @@ class TestGeneratorTemplateRegisteredInLibrary:
         generated = [t for t in templates if "generated" in t.tags]
         assert len(generated) == 1
         assert len(generated[0].stage_specs) == 3
+
+
+class TestFallbackPreservesSocialLearning:
+    def test_organism_id_social_learning_uses_real_library(self):
+        """Generator fallback with organism_id should bind social learning to the real library."""
+        library = PatternLibrary()
+        fp = _make_fingerprint()
+        fast, deep = _make_nuclei()
+
+        org = hybrid_skill_organism(
+            "Plan and execute a task.",
+            library=library,
+            fingerprint=fp,
+            fast_nucleus=fast,
+            deep_nucleus=deep,
+            template_generator=default_template_generator,
+            organism_id="test-org",
+        )
+
+        assert isinstance(org, ManagedOrganism)
+        # The organism's library should be the caller's library, not an empty one.
+        assert org._library is library
+        # If social learning was initialized, it should also reference the real library.
+        if org._social is not None:
+            assert org._social.library is library
