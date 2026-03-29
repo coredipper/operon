@@ -32,7 +32,7 @@ org_config                         SkillStages
 | 3 | animaworks_roles_to_stages() | Maps roles to SkillStages with cognitive modes |
 | 4 | SkillStage | Named stage with mode (fixed/fuzzy) based on role |
 | 5 | animaworks_to_template() | Full conversion to PatternTemplate with tags |
-| 6 | Cognitive mode mapping | reviewer/writer -> fixed; engineer -> fuzzy |
+| 6 | Cognitive mode mapping | reviewer/analyst/auditor -> fixed; engineer/writer/manager -> fuzzy |
 
 ## Data Flow
 
@@ -52,7 +52,7 @@ animaworks_roles_to_stages(roles)
   ├─ backend_dev:  mode=fuzzy  (engineer — action-oriented)
   ├─ frontend_dev: mode=fuzzy  (engineer)
   ├─ qa_analyst:   mode=fixed  (reviewer — observational)
-  ├─ tech_writer:  mode=fixed  (writer — observational)
+  ├─ tech_writer:  mode=fuzzy  (writer — action-oriented)
   └─ tech_lead:    mode=fuzzy  (manager)
        ↓
 animaworks_to_template(org_config)
@@ -68,4 +68,4 @@ animaworks_to_template(org_config)
 | engineer | fuzzy | Action-oriented, generative work |
 | manager | fuzzy | Decision-making under uncertainty |
 | reviewer | fixed | Observational, deterministic checks |
-| writer | fixed | Structured output, low ambiguity |
+| writer | fuzzy | Generative, creative output |

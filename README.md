@@ -159,14 +159,22 @@ See the [Bi-Temporal Memory docs](https://banu.be/operon/bitemporal-memory/), [e
 The `operon_ai.convergence` package analyzes and integrates external agent orchestration systems ([Swarms](https://github.com/kyegomez/swarms), [DeerFlow](https://github.com/bytedance/deer-flow), [AnimaWorks](https://github.com/AnimaWorks/AnimaWorks)) through typed adapters. No external dependencies — adapters operate on plain dicts.
 
 ```python
+from operon_ai import PatternLibrary
 from operon_ai.convergence import (
     parse_swarm_topology, analyze_external_topology,
     seed_library_from_swarms, get_builtin_swarms_patterns,
-    hybrid_skill_organism,
 )
 
 # Analyze a Swarms workflow with Operon's epistemic theorems
-topology = parse_swarm_topology("HierarchicalSwarm", agents, edges)
+topology = parse_swarm_topology(
+    "HierarchicalSwarm",
+    agent_specs=[
+        {"name": "manager", "role": "Manager"},
+        {"name": "coder", "role": "Developer"},
+        {"name": "reviewer", "role": "Reviewer"},
+    ],
+    edges=[("manager", "coder"), ("manager", "reviewer")],
+)
 result = analyze_external_topology(topology)
 print(result.risk_score, result.warnings)
 

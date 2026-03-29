@@ -73,6 +73,9 @@ For concrete usage, start from the examples rather than reading the namespaces i
   - memory bridge: `bridge_animaworks_memory`, `bridge_deerflow_memory`
   - co-design: `DesignProblem`, `compose_series`, `compose_parallel`, `feedback_fixed_point`
 
-- `operon_ai.patterns`
+- `operon_ai.patterns.priming`
   - `PrimingView` — multi-channel SubstrateView subclass
+  - `build_priming_view` — promote SubstrateView to PrimingView
+
+- `operon_ai.patterns.heartbeat`
   - `HeartbeatDaemon` — WatcherComponent with idle-time consolidation

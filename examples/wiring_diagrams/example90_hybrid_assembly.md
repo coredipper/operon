@@ -36,7 +36,7 @@ task + fingerprint
 | 2 | PatternLibrary | Checked first for matching templates |
 | 3 | TaskFingerprint | Query key for library lookup |
 | 4 | score_threshold | Minimum similarity score to use library match |
-| 5 | default_template_generator | Fallback: creates template from fingerprint |
+| 5 | default_template_generator | Fallback: creates template from task string |
 | 6 | AdaptiveSkillOrganism | Returned when library has a good match |
 | 7 | ManagedOrganism | Returned when generator fallback is used |
 
@@ -60,7 +60,7 @@ hybrid_skill_organism()
   │    (uses best-match template)            │
   │                                          │
   ├─ score < threshold or library empty ─────┤
-  │  → default_template_generator(fp)        │
+  │  → template_generator(task)              │
   │    → new PatternTemplate                 │
   │    → registered into library             │
   │    → ManagedOrganism                     │
