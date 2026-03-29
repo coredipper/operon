@@ -226,3 +226,39 @@ class TestParseTimestamp:
         assert dt.tzinfo is not None
         # Should preserve the original offset, not force UTC
         assert dt.utcoffset().total_seconds() == 5 * 3600
+
+
+class TestDeerflowSessionIdValidation:
+    """Validation of session_id for DeerFlow session imports."""
+
+    def test_blank_session_id_raises(self) -> None:
+        btm = BiTemporalMemory()
+        with pytest.raises(ValueError, match="session_id is required"):
+            bridge_deerflow_memory(
+                [{"role": "user", "content": "hi", "timestamp": "2026-01-01T00:00:00"}],
+                [], btm, session_id="",
+            )
+
+    def test_whitespace_session_id_raises(self) -> None:
+        btm = BiTemporalMemory()
+        with pytest.raises(ValueError, match="session_id is required"):
+            bridge_deerflow_memory(
+                [{"role": "user", "content": "hi", "timestamp": "2026-01-01T00:00:00"}],
+                [], btm, session_id="   ",
+            )
+
+    def test_none_session_id_raises(self) -> None:
+        btm = BiTemporalMemory()
+        with pytest.raises(ValueError, match="session_id is required"):
+            bridge_deerflow_memory(
+                [{"role": "user", "content": "hi", "timestamp": "2026-01-01T00:00:00"}],
+                [], btm, session_id=None,
+            )
+
+    def test_whitespace_stripped_from_subject(self) -> None:
+        btm = BiTemporalMemory()
+        facts = bridge_deerflow_memory(
+            [{"role": "user", "content": "hi", "timestamp": "2026-01-01T00:00:00"}],
+            [], btm, session_id="  sess_A  ",
+        )
+        assert facts[0].subject == "deerflow:session:sess_A:0"
