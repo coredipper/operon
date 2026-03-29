@@ -2,6 +2,31 @@
 
 This page tracks the recent direction of the project.
 
+## v0.24.0
+
+Focus:
+
+- convergence adapters for Swarms, DeerFlow, and AnimaWorks
+- template exchange, DeerFlow skill bridge, hybrid assembly
+- PrimingView multi-channel context, memory bridge, HeartbeatDaemon
+- AsyncThink Fork/Join execution, TLA+ formal verification, co-design theory
+
+New:
+
+- `operon_ai.convergence` package with 12 modules
+- `ExternalTopology`, `AdapterResult` — shared adapter types
+- `analyze_external_topology()` — epistemic theorems as structural linter
+- `seed_library_from_swarms/deerflow/acg_survey` — catalog seeding
+- `skill_to_template()`, `template_to_skill()` — bidirectional DeerFlow skill bridge
+- `hybrid_skill_organism()` — library-first + LLM generator fallback
+- `PrimingView` — multi-channel SubstrateView subclass (immutable via MappingProxyType)
+- `HeartbeatDaemon` — idle-time consolidation via WatcherComponent extension
+- `AsyncOrganizer`, `async_stage_handler()` — Fork/Join within stages
+- `DesignProblem`, `compose_series/parallel`, `feedback_fixed_point` — Zardini co-design
+- 3 TLA+ specifications (TemplateExchange, DevelopmentalGating, ConvergenceDetection)
+- `prompt_optimizer` hook on SkillStage (interface for future DSPy integration)
+- Examples 86–96
+
 ## v0.23.3
 
 Focus:

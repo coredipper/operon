@@ -35,3 +35,23 @@ Use the repo index for the broader catalog:
 - Organelles and state systems
 - Healing and surveillance
 - Multicellular composition
+
+## Examples 80–96
+
+- [`examples/80_developmental_staging.py`](https://github.com/coredipper/operon/blob/main/examples/80_developmental_staging.py) — developmental stages and capability gating
+- [`examples/81_critical_periods.py`](https://github.com/coredipper/operon/blob/main/examples/81_critical_periods.py) — teacher-learner scaffolding
+- [`examples/82_managed_organism.py`](https://github.com/coredipper/operon/blob/main/examples/82_managed_organism.py) — one-call managed_organism()
+- [`examples/83_cli_stage_handler.py`](https://github.com/coredipper/operon/blob/main/examples/83_cli_stage_handler.py) — CLI tools as organism stages
+- [`examples/84_cli_organism.py`](https://github.com/coredipper/operon/blob/main/examples/84_cli_organism.py) — CLI organism with watcher
+- [`examples/85_claude_code_pipeline.py`](https://github.com/coredipper/operon/blob/main/examples/85_claude_code_pipeline.py) — Claude Code pipeline
+- [`examples/86_swarms_topology_analysis.py`](https://github.com/coredipper/operon/blob/main/examples/86_swarms_topology_analysis.py) — analyze Swarms patterns
+- [`examples/87_animaworks_role_mapping.py`](https://github.com/coredipper/operon/blob/main/examples/87_animaworks_role_mapping.py) — AnimaWorks role mapping
+- [`examples/88_deerflow_workflow_analysis.py`](https://github.com/coredipper/operon/blob/main/examples/88_deerflow_workflow_analysis.py) — DeerFlow workflow analysis
+- [`examples/89_seeded_library.py`](https://github.com/coredipper/operon/blob/main/examples/89_seeded_library.py) — seed PatternLibrary from external catalogs
+- [`examples/90_hybrid_assembly.py`](https://github.com/coredipper/operon/blob/main/examples/90_hybrid_assembly.py) — hybrid assembly with fallback
+- [`examples/91_deerflow_skill_bridge.py`](https://github.com/coredipper/operon/blob/main/examples/91_deerflow_skill_bridge.py) — DeerFlow skill bridge
+- [`examples/92_memory_bridge.py`](https://github.com/coredipper/operon/blob/main/examples/92_memory_bridge.py) — memory bridge to bi-temporal facts
+- [`examples/93_priming_view.py`](https://github.com/coredipper/operon/blob/main/examples/93_priming_view.py) — multi-channel PrimingView
+- [`examples/94_heartbeat_daemon.py`](https://github.com/coredipper/operon/blob/main/examples/94_heartbeat_daemon.py) — idle-time consolidation
+- [`examples/95_async_thinking.py`](https://github.com/coredipper/operon/blob/main/examples/95_async_thinking.py) — Fork/Join sub-queries
+- [`examples/96_codesign_composition.py`](https://github.com/coredipper/operon/blob/main/examples/96_codesign_composition.py) — co-design adapter composition

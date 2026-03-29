@@ -10,6 +10,7 @@ This documentation tree is the source for the `/operon` site on `banu.be`. The g
 - [Pattern-First API](pattern-first-api.md)
 - [Skill Organisms](skill-organisms.md)
 - [Bi-Temporal Memory](bitemporal-memory.md)
+- [Convergence](convergence.md)
 - [Examples](examples.md)
 
 ## Deeper Material

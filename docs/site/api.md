@@ -59,3 +59,20 @@ This is a lightweight map of the current library surface.
 - `operon_ai.healing`
 
 For concrete usage, start from the examples rather than reading the namespaces in isolation.
+
+## Convergence
+
+- `operon_ai.convergence`
+  - adapters: `parse_swarm_topology`, `parse_animaworks_org`, `parse_deerflow_session`
+  - analysis: `analyze_external_topology`, `topology_to_template`
+  - types: `ExternalTopology`, `AdapterResult`, `RuntimeConfig`
+  - catalog: `seed_library_from_swarms`, `seed_library_from_deerflow`, `seed_library_from_acg_survey`
+  - skill bridge: `skill_to_template`, `template_to_skill`
+  - hybrid: `hybrid_skill_organism`, `default_template_generator`
+  - async thinking: `AsyncOrganizer`, `AsyncThinkResult`, `async_stage_handler`
+  - memory bridge: `bridge_animaworks_memory`, `bridge_deerflow_memory`
+  - co-design: `DesignProblem`, `compose_series`, `compose_parallel`, `feedback_fixed_point`
+
+- `operon_ai.patterns`
+  - `PrimingView` — multi-channel SubstrateView subclass
+  - `HeartbeatDaemon` — WatcherComponent with idle-time consolidation

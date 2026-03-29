@@ -154,6 +154,29 @@ print(mem.history("Review account acct:1"))  # full append-only audit trail
 
 See the [Bi-Temporal Memory docs](https://banu.be/operon/bitemporal-memory/), [examples 69–71](examples/), and the [interactive explorer](https://huggingface.co/spaces/coredipper/operon-bitemporal).
 
+### Convergence: Structural Analysis for External Frameworks
+
+The `operon_ai.convergence` package analyzes and integrates external agent orchestration systems (Swarms, DeerFlow, AnimaWorks) through typed adapters. No external dependencies — adapters operate on plain dicts.
+
+```python
+from operon_ai.convergence import (
+    parse_swarm_topology, analyze_external_topology,
+    seed_library_from_swarms, get_builtin_swarms_patterns,
+    hybrid_skill_organism,
+)
+
+# Analyze a Swarms workflow with Operon's epistemic theorems
+topology = parse_swarm_topology("HierarchicalSwarm", agents, edges)
+result = analyze_external_topology(topology)
+print(result.risk_score, result.warnings)
+
+# Seed a PatternLibrary from Swarms' built-in patterns
+library = PatternLibrary()
+seed_library_from_swarms(library, get_builtin_swarms_patterns())
+```
+
+See [examples 86–96](examples/) and the [Convergence docs](https://banu.be/operon/convergence/).
+
 ## Learn More
 
 Public docs now live at [banu.be/operon](https://banu.be/operon/). The tracked source for that docs shell lives in the repo under [`docs/site/`](https://github.com/coredipper/operon/tree/main/docs/site).
@@ -162,6 +185,7 @@ Public docs now live at [banu.be/operon](https://banu.be/operon/). The tracked s
 - [Pattern-First API](https://banu.be/operon/pattern-first-api/)
 - [Skill Organisms](https://banu.be/operon/skill-organisms/)
 - [Bi-Temporal Memory](https://banu.be/operon/bitemporal-memory/)
+- [Convergence](https://banu.be/operon/convergence/)
 - [Examples](https://banu.be/operon/examples/)
 - [Concepts and Architecture](https://banu.be/operon/concepts/)
 - [Theory and Papers](https://banu.be/operon/theory/)
@@ -171,7 +195,7 @@ Public docs now live at [banu.be/operon](https://banu.be/operon/). The tracked s
 
 Direct links:
 
-- [Examples index](https://github.com/coredipper/operon/blob/main/examples/README.md) (85 runnable examples)
+- [Examples index](https://github.com/coredipper/operon/blob/main/examples/README.md) (96 runnable examples)
 - [Wiring diagrams](https://github.com/coredipper/operon/blob/main/examples/wiring_diagrams.md) (61 architecture diagrams)
 - [Main whitepaper](https://github.com/coredipper/operon/blob/main/article/main.pdf)
 - [Epistemic topology paper](https://github.com/coredipper/operon/blob/main/article/paper1/main.pdf)

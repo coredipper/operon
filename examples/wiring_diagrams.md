@@ -129,6 +129,20 @@ Each arrow implies a typed connection with integrity constraints.
 - [Example 84: CLI Organism](wiring_diagrams/example84_cli_organism.md)
 - [Example 85: Claude Code Pipeline](wiring_diagrams/example85_claude_code_pipeline.md)
 
+### Convergence (v0.24.0)
+
+- [Example 86: Swarms Topology Analysis](wiring_diagrams/example86_swarms_topology_analysis.md)
+- [Example 87: AnimaWorks Role Mapping](wiring_diagrams/example87_animaworks_role_mapping.md)
+- [Example 88: DeerFlow Workflow Analysis](wiring_diagrams/example88_deerflow_workflow_analysis.md)
+- [Example 89: Seeded Pattern Library](wiring_diagrams/example89_seeded_library.md)
+- [Example 90: Hybrid Assembly](wiring_diagrams/example90_hybrid_assembly.md)
+- [Example 91: DeerFlow Skill Bridge](wiring_diagrams/example91_deerflow_skill_bridge.md)
+- [Example 92: Memory Bridge](wiring_diagrams/example92_memory_bridge.md)
+- [Example 93: PrimingView](wiring_diagrams/example93_priming_view.md)
+- [Example 94: HeartbeatDaemon](wiring_diagrams/example94_heartbeat_daemon.md)
+- [Example 95: AsyncThink Fork/Join](wiring_diagrams/example95_async_thinking.md)
+- [Example 96: Co-Design Adapter Composition](wiring_diagrams/example96_codesign_composition.md)
+
 ## Example 17: Typed Wiring (Integrity + Capabilities)
 
 ```
