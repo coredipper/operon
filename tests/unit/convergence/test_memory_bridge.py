@@ -173,10 +173,13 @@ class TestBridgeDeerflowMemory:
     ) -> None:
         facts = bridge_deerflow_memory(deerflow_session, [], btm)
         subjects = [f.subject for f in facts]
-        # Subjects include timestamp hash + index for cross-session uniqueness.
+        # Subjects use content hash for stable cross-session uniqueness.
         assert all(s.startswith("deerflow:session:") for s in subjects)
-        assert subjects[0].endswith("_0")
-        assert subjects[1].endswith("_1")
+        assert len(subjects) == len(set(subjects))  # no duplicates
+        # Re-importing same data produces same subjects (stable).
+        btm2 = BiTemporalMemory()
+        facts2 = bridge_deerflow_memory(deerflow_session, [], btm2)
+        assert [f.subject for f in facts2] == subjects
 
     def test_bridge_deerflow_vector_subjects(
         self, btm: BiTemporalMemory, deerflow_vectors: list[dict],

@@ -22,11 +22,11 @@ class PrimingView(SubstrateView):
     priming model. Backward-compatible: isinstance(view, SubstrateView) passes.
     """
 
-    recent_outputs: tuple[dict[str, Any], ...] = ()
+    recent_outputs: tuple[MappingProxyType, ...] = ()
     telemetry: tuple[Any, ...] = ()
     experience: tuple[Any, ...] = ()
     developmental_status: Any = None  # DevelopmentStatus | None
-    trust_context: dict[str, float] = field(default_factory=dict)
+    trust_context: MappingProxyType = field(default_factory=lambda: MappingProxyType({}))
 
 
 def build_priming_view(
@@ -43,10 +43,9 @@ def build_priming_view(
     Snapshots mutable inputs (trust_context, recent_outputs) to prevent
     post-construction mutation of the "read-only" context envelope.
     """
-    # Snapshot trust_context to prevent caller mutation leaking in.
-    frozen_trust = dict(trust_context) if trust_context is not None else {}
-    # Snapshot recent_outputs dicts.
-    frozen_outputs = tuple(dict(d) for d in recent_outputs)
+    # Freeze mutable inputs into immutable containers.
+    frozen_trust = MappingProxyType(dict(trust_context)) if trust_context is not None else MappingProxyType({})
+    frozen_outputs = tuple(MappingProxyType(dict(d)) for d in recent_outputs)
     return PrimingView(
         facts=substrate_view.facts,
         query=substrate_view.query,

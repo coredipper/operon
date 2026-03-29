@@ -8,9 +8,16 @@ modifying the source data.
 
 from __future__ import annotations
 
+import hashlib
 from datetime import datetime, timezone
+from typing import Any
 
 from ..memory.bitemporal import BiTemporalFact, BiTemporalMemory
+
+
+def _content_hash(data: Any) -> str:
+    """Stable 8-char hash from content for unique subject keys."""
+    return hashlib.sha256(str(data).encode()).hexdigest()[:8]
 
 
 # ---------------------------------------------------------------------------
@@ -94,10 +101,10 @@ def bridge_deerflow_memory(
 
     for idx, msg in enumerate(session_memory):
         ts = _parse_timestamp(msg.get("timestamp"))
-        # Use timestamp + index for stable subject that avoids cross-session collisions.
-        ts_hash = ts.isoformat()[:19].replace(":", "").replace("-", "")
+        # Stable subject from content hash — survives re-imports and missing timestamps.
+        msg_hash = _content_hash((msg.get("role", ""), msg.get("content", ""), idx))
         fact = target.record_fact(
-            subject=f"{subject_prefix}:session:{ts_hash}_{idx}",
+            subject=f"{subject_prefix}:session:{msg_hash}",
             predicate=msg["role"],
             value=msg["content"],
             valid_from=ts,
