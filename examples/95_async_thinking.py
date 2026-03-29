@@ -57,7 +57,7 @@ print(f"  η: {output['async_think']['concurrency_ratio']:.2f}")
 
 # --test
 assert len(result.outputs) == 3
-assert result.concurrency_ratio == 0.75  # 3/4
+assert result.concurrency_ratio == 0.25  # 1/4 in sequential mode
 assert cpl == 4.0  # linear chain of 4
 assert output["async_think"]["fork_count"] == 3
 print("\n--- all assertions passed ---")

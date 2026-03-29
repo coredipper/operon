@@ -94,8 +94,10 @@ def bridge_deerflow_memory(
 
     for idx, msg in enumerate(session_memory):
         ts = _parse_timestamp(msg.get("timestamp"))
+        # Use timestamp + index for stable subject that avoids cross-session collisions.
+        ts_hash = ts.isoformat()[:19].replace(":", "").replace("-", "")
         fact = target.record_fact(
-            subject=f"{subject_prefix}:session:{idx}",
+            subject=f"{subject_prefix}:session:{ts_hash}_{idx}",
             predicate=msg["role"],
             value=msg["content"],
             valid_from=ts,

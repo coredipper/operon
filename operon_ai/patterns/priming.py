@@ -8,6 +8,7 @@ signatures that expect a SubstrateView.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import Any
 
 from .types import SubstrateView
@@ -37,14 +38,22 @@ def build_priming_view(
     developmental_status: Any = None,
     trust_context: dict[str, float] | None = None,
 ) -> PrimingView:
-    """Promote a SubstrateView to a PrimingView with additional channels."""
+    """Promote a SubstrateView to a PrimingView with additional channels.
+
+    Snapshots mutable inputs (trust_context, recent_outputs) to prevent
+    post-construction mutation of the "read-only" context envelope.
+    """
+    # Snapshot trust_context to prevent caller mutation leaking in.
+    frozen_trust = dict(trust_context) if trust_context is not None else {}
+    # Snapshot recent_outputs dicts.
+    frozen_outputs = tuple(dict(d) for d in recent_outputs)
     return PrimingView(
         facts=substrate_view.facts,
         query=substrate_view.query,
         record_time=substrate_view.record_time,
-        recent_outputs=recent_outputs,
+        recent_outputs=frozen_outputs,
         telemetry=telemetry,
         experience=experience,
         developmental_status=developmental_status,
-        trust_context=trust_context if trust_context is not None else {},
+        trust_context=frozen_trust,
     )

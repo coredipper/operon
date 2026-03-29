@@ -38,14 +38,14 @@ class TestAsyncOrganizerFork:
         assert result.fork_count == 3
 
     def test_async_organizer_concurrency_ratio(self):
-        """capacity=4, 2 queries -> eta = 2/4 = 0.5."""
+        """capacity=4, sequential execution -> eta = 1/4 = 0.25."""
         org = AsyncOrganizer(capacity=4)
         result = org.fork(
             task="parent",
             sub_queries=["x", "y"],
             handler=_echo_handler,
         )
-        assert result.concurrency_ratio == pytest.approx(0.5)
+        assert result.concurrency_ratio == pytest.approx(0.25)  # 1/4 in sequential mode
         assert result.fork_count == 2
 
     def test_async_organizer_empty_queries(self):
@@ -122,7 +122,7 @@ class TestAsyncStageHandler:
         assert "async_think" in result
         assert result["output"] == ("HELLO", "WORLD")
         assert result["async_think"]["fork_count"] == 2
-        assert result["async_think"]["concurrency_ratio"] == pytest.approx(0.5)
+        assert result["async_think"]["concurrency_ratio"] == pytest.approx(0.25)
 
     def test_async_stage_handler_with_join(self):
         """Custom join function combines outputs."""

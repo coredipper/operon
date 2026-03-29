@@ -56,10 +56,10 @@ class AsyncOrganizer:
 
         total_ms = sum(latencies_ms)
         critical_path = max(latencies_ms) if latencies_ms else 0.0
-        # η = simulated concurrency: in sequential mode, ratio is 1/capacity
-        # In true parallel mode, this would be actual concurrent workers / capacity
-        active = min(len(sub_queries), self.capacity)
-        eta = active / self.capacity if self.capacity > 0 else 0.0
+        # η (concurrency ratio): in this sequential reference implementation,
+        # only 1 worker is ever active at a time.
+        # In a production async deployment, this would be actual concurrent workers / capacity.
+        eta = 1.0 / self.capacity if self.capacity > 0 and sub_queries else 0.0
 
         return AsyncThinkResult(
             outputs=tuple(outputs),

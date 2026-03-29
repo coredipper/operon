@@ -173,7 +173,10 @@ class TestBridgeDeerflowMemory:
     ) -> None:
         facts = bridge_deerflow_memory(deerflow_session, [], btm)
         subjects = [f.subject for f in facts]
-        assert subjects == ["deerflow:session:0", "deerflow:session:1"]
+        # Subjects include timestamp hash + index for cross-session uniqueness.
+        assert all(s.startswith("deerflow:session:") for s in subjects)
+        assert subjects[0].endswith("_0")
+        assert subjects[1].endswith("_1")
 
     def test_bridge_deerflow_vector_subjects(
         self, btm: BiTemporalMemory, deerflow_vectors: list[dict],
