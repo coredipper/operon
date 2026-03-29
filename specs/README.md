@@ -9,17 +9,20 @@ can be verified with the TLC model checker.
 ### TemplateExchangeProtocol.tla
 
 Models cross-organism template sharing with trust-weighted adoption (epistemic
-vigilance). Organisms export templates, peers adopt them subject to trust and
-developmental stage guards, and outcomes feed back into EMA-based trust scores.
+vigilance). Organisms export templates, peers adopt them subject to trust,
+peer-reported success rate, and developmental stage guards, and outcomes feed
+back into EMA-based trust scores. The `adoptedFrom` state tracks which peer
+supplied each template so that `RecordOutcome` updates the correct peer's trust.
 
 Source: `operon_ai/coordination/social_learning.py`
 
 ### DevelopmentalGating.tla
 
 Models lifecycle progression through developmental stages (EMBRYONIC, JUVENILE,
-ADOLESCENT, MATURE) driven by telomere consumption. Critical periods close
-permanently as the organism matures, and tools can only be acquired when the
-organism's stage meets the minimum requirement.
+ADOLESCENT, MATURE) driven by telomere consumption. Critical periods start
+"pending", become "open" when the organism reaches the period's `opensAt` stage,
+and close permanently at the `closesAt` stage. Tools can only be acquired when
+the organism's stage meets the minimum requirement.
 
 Source: `operon_ai/state/development.py`
 
@@ -27,7 +30,7 @@ Source: `operon_ai/state/development.py`
 
 Models intervention-rate convergence detection. Organisms execute stages and may
 receive interventions (RETRY, ESCALATE, HALT). When the intervention-to-stage
-ratio exceeds a threshold for enough consecutive checks, the organism is halted.
+ratio exceeds the threshold, the organism is halted immediately.
 
 Source: `operon_ai/patterns/watcher.py`
 
@@ -60,15 +63,16 @@ These parameters keep state spaces tractable for model checking.
 
 ### TemplateExchangeProtocol
 
-| Constant       | Value                              |
-|----------------|------------------------------------|
-| Orgs           | `{o1, o2, o3}`                     |
-| Templates      | `{t1, t2, t3}`                     |
-| MinStage       | `t1 :> "EMBRYONIC", t2 :> "JUVENILE", t3 :> "ADOLESCENT"` |
-| MIN_TRUST      | `0.2`                              |
-| DECAY_ALPHA    | `0.3`                              |
-| DEFAULT_TRUST  | `0.5`                              |
-| MAX_OUTCOMES   | `3`                                |
+| Constant           | Value                              |
+|--------------------|------------------------------------|
+| Orgs               | `{o1, o2, o3}`                     |
+| Templates          | `{t1, t2, t3}`                     |
+| MinStage           | `[t1 |-> "EMBRYONIC", t2 |-> "JUVENILE", t3 |-> "ADOLESCENT"]` |
+| MIN_TRUST          | `0.2`                              |
+| ADOPTION_THRESHOLD | `0.3`                              |
+| DECAY_ALPHA        | `0.3`                              |
+| DEFAULT_TRUST      | `0.5`                              |
+| MAX_OUTCOMES       | `3`                                |
 
 Invariants to check: `TypeOK`, `TemplateAdoptionSafety`, `TrustMonotonicity`
 Properties to check: `QualifyingTemplateEventuallyAdopted`, `TrustConverges` (under `FairSpec`)
@@ -80,15 +84,18 @@ Properties to check: `QualifyingTemplateEventuallyAdopted`, `TrustConverges` (un
 | Orgs               | `{o1, o2}`                         |
 | Tools              | `{tool1, tool2, tool3}`            |
 | Periods            | `{lang_acq, imprinting}`           |
-| ToolMinStage       | `tool1 :> "EMBRYONIC", tool2 :> "JUVENILE", tool3 :> "MATURE"` |
-| PeriodClosesAt     | `lang_acq :> "ADOLESCENT", imprinting :> "JUVENILE"` |
+| ToolMinStage       | `[tool1 |-> "EMBRYONIC", tool2 |-> "JUVENILE", tool3 |-> "MATURE"]` |
+| PeriodOpensAt      | `[lang_acq |-> "EMBRYONIC", imprinting |-> "EMBRYONIC"]` |
+| PeriodClosesAt     | `[lang_acq |-> "ADOLESCENT", imprinting |-> "JUVENILE"]` |
 | MAX_TELOMERE       | `10`                               |
 | JUVENILE_THRESH    | `2`                                |
 | ADOLESCENT_THRESH  | `5`                                |
 | MATURE_THRESH      | `8`                                |
 
-Invariants to check: `TypeOK`, `CapabilityGating`, `CriticalPeriodIrreversibility`, `StageMonotonicity`, `DevelopmentalProgress`
-Properties to check: `EventualMaturity` (under `FairSpec`)
+Invariants to check: `TypeOK`, `CapabilityGating`
+Properties to check: `CriticalPeriodIrreversibility`, `StageMonotonicity`, `DevelopmentalProgress`, `EventualMaturity` (under `FairSpec`)
+
+> **Note:** `CriticalPeriodIrreversibility`, `StageMonotonicity`, and `DevelopmentalProgress` are temporal formulas (they use `[][...]_vars`). In TLC, these must be entered under **Properties**, not **Invariants**. Only state predicates (like `TypeOK` and `CapabilityGating`) go under Invariants.
 
 ### ConvergenceDetection
 
@@ -97,10 +104,11 @@ Properties to check: `EventualMaturity` (under `FairSpec`)
 | Orgs           | `{o1, o2, o3}`                     |
 | MAX_RATE       | `0.5`                              |
 | TOTAL_STAGES   | `5`                                |
-| BOUND          | `3`                                |
 
-Invariants to check: `TypeOK`, `BoundedNonConvergence`, `HaltIsTerminal`
-Properties to check: `ConvergentOrganismCompletes` (under `FairSpec`)
+Invariants to check: `TypeOK`
+Properties to check: `HaltIsTerminal`, `BoundedNonConvergence`, `ConvergentOrganismCompletes` (under `FairSpec`)
+
+> **Note:** `HaltIsTerminal` is a temporal formula (uses `[][...]_vars`) and `BoundedNonConvergence` uses leads-to (`~>`). In TLC, both must be entered under **Properties**, not **Invariants**.
 
 ## Expected Verification Results
 

@@ -17,6 +17,7 @@ CONSTANTS
     Tools,              \* Set of tool IDs
     Periods,            \* Set of critical period names
     ToolMinStage,       \* Function: tool -> minimum stage required
+    PeriodOpensAt,      \* Function: period -> stage at which it opens
     PeriodClosesAt,     \* Function: period -> stage at which it closes
     MAX_TELOMERE,       \* Initial telomere capacity (natural number)
     JUVENILE_THRESH,    \* Telomere units consumed to reach JUVENILE
@@ -42,7 +43,7 @@ StageGEQ(a, b) == StageOrd(a) >= StageOrd(b)
 VARIABLES
     telomere,   \* telomere[org]  : Nat, remaining capacity
     stage,      \* stage[org]     : element of StageSet
-    periods,    \* periods[org]   : function period -> {"open", "closed"}
+    periods,    \* periods[org]   : function period -> {"pending", "open", "closed"}
     tools       \* tools[org]     : set of acquired tool IDs
 
 vars == <<telomere, stage, periods, tools>>
@@ -58,6 +59,9 @@ StageFor(consumed) ==
     ELSE IF consumed >= JUVENILE_THRESH   THEN "JUVENILE"
     ELSE "EMBRYONIC"
 
+(* Whether a period should be open at a given stage *)
+PeriodShouldBeOpen(period, s) == StageGEQ(s, PeriodOpensAt[period])
+
 (* Whether a period should be closed at a given stage *)
 PeriodShouldBeClosed(period, s) == StageGEQ(s, PeriodClosesAt[period])
 
@@ -67,7 +71,7 @@ PeriodShouldBeClosed(period, s) == StageGEQ(s, PeriodClosesAt[period])
 TypeOK ==
     /\ \A org \in Orgs : telomere[org] \in 0..MAX_TELOMERE
     /\ \A org \in Orgs : stage[org] \in StageSet
-    /\ \A org \in Orgs : \A p \in Periods : periods[org][p] \in {"open", "closed"}
+    /\ \A org \in Orgs : \A p \in Periods : periods[org][p] \in {"pending", "open", "closed"}
     /\ \A org \in Orgs : tools[org] \subseteq Tools
 
 -----------------------------------------------------------------------------
@@ -76,7 +80,10 @@ TypeOK ==
 Init ==
     /\ telomere = [org \in Orgs |-> MAX_TELOMERE]
     /\ stage    = [org \in Orgs |-> "EMBRYONIC"]
-    /\ periods  = [org \in Orgs |-> [p \in Periods |-> "open"]]
+    /\ periods  = [org \in Orgs |-> [p \in Periods |->
+                    IF PeriodShouldBeClosed(p, "EMBRYONIC") THEN "closed"
+                    ELSE IF PeriodShouldBeOpen(p, "EMBRYONIC") THEN "open"
+                    ELSE "pending"]]
     /\ tools    = [org \in Orgs |-> {}]
 
 -----------------------------------------------------------------------------
@@ -94,6 +101,8 @@ Tick(org) ==
                 [p \in Periods |->
                     IF PeriodShouldBeClosed(p, newStage)
                     THEN "closed"
+                    ELSE IF periods[org][p] = "pending" /\ PeriodShouldBeOpen(p, newStage)
+                    THEN "open"
                     ELSE periods[org][p]
                 ]]
     /\ UNCHANGED tools
@@ -104,6 +113,13 @@ AcquireTool(org, tool) ==
     /\ StageGEQ(stage[org], ToolMinStage[tool])
     /\ tools' = [tools EXCEPT ![org] = tools[org] \union {tool}]
     /\ UNCHANGED <<telomere, stage, periods>>
+
+(* OpenPeriod: transition a pending critical period to open when stage >= opensAt *)
+OpenPeriod(org, period) ==
+    /\ periods[org][period] = "pending"
+    /\ PeriodShouldBeOpen(period, stage[org])
+    /\ periods' = [periods EXCEPT ![org][period] = "open"]
+    /\ UNCHANGED <<telomere, stage, tools>>
 
 (* ClosePeriod: explicitly close a critical period (idempotent) *)
 ClosePeriod(org, period) ==
@@ -129,6 +145,7 @@ Scaffold(teacher, learner) ==
 Next ==
     \/ \E org \in Orgs : Tick(org)
     \/ \E org \in Orgs : \E tool \in Tools : AcquireTool(org, tool)
+    \/ \E org \in Orgs : \E p \in Periods : OpenPeriod(org, p)
     \/ \E org \in Orgs : \E p \in Periods : ClosePeriod(org, p)
     \/ \E t \in Orgs : \E l \in Orgs : Scaffold(t, l)
 
@@ -144,11 +161,13 @@ CapabilityGating ==
     \A org \in Orgs : \A tool \in tools[org] :
         StageGEQ(stage[org], ToolMinStage[tool])
 
-(* S2: Once a critical period is closed, it never reopens *)
+(* S2: Once a critical period is closed, it never reopens.
+   Also, periods only advance: pending -> open -> closed, never backwards. *)
 CriticalPeriodIrreversibility ==
     [][
         \A org \in Orgs : \A p \in Periods :
-            periods[org][p] = "closed" => periods'[org][p] = "closed"
+            /\ (periods[org][p] = "closed" => periods'[org][p] = "closed")
+            /\ (periods[org][p] = "open"   => periods'[org][p] \in {"open", "closed"})
     ]_vars
 
 (* S3: Stages only advance, never regress *)

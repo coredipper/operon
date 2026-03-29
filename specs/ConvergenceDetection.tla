@@ -15,22 +15,19 @@ EXTENDS Naturals, Reals, TLC
 CONSTANTS
     Orgs,           \* Set of organism IDs
     MAX_RATE,       \* Maximum tolerable intervention rate (real, e.g. 0.5)
-    TOTAL_STAGES,   \* Total stages each organism must complete
-    BOUND           \* Max consecutive high-rate steps before forced halt
+    TOTAL_STAGES    \* Total stages each organism must complete
 
 ASSUME MAX_RATE \in Real /\ MAX_RATE > 0.0 /\ MAX_RATE <= 1.0
 ASSUME TOTAL_STAGES \in Nat /\ TOTAL_STAGES > 0
-ASSUME BOUND \in Nat /\ BOUND > 0
 
 InterventionKind == {"RETRY", "ESCALATE", "HALT"}
 
 VARIABLES
     interventions,      \* interventions[org]      : Nat, count of interventions
     stages,             \* stages[org]             : Nat, count of stages observed
-    halted,             \* halted[org]             : BOOLEAN
-    highRateStreak      \* highRateStreak[org]     : Nat, consecutive high-rate checks
+    halted              \* halted[org]             : BOOLEAN
 
-vars == <<interventions, stages, halted, highRateStreak>>
+vars == <<interventions, stages, halted>>
 
 -----------------------------------------------------------------------------
 (* Helpers *)
@@ -46,7 +43,6 @@ TypeOK ==
     /\ \A org \in Orgs : interventions[org] \in Nat
     /\ \A org \in Orgs : stages[org] \in 0..TOTAL_STAGES
     /\ \A org \in Orgs : halted[org] \in BOOLEAN
-    /\ \A org \in Orgs : highRateStreak[org] \in 0..BOUND
 
 -----------------------------------------------------------------------------
 (* Initial state *)
@@ -55,7 +51,6 @@ Init ==
     /\ interventions  = [org \in Orgs |-> 0]
     /\ stages         = [org \in Orgs |-> 0]
     /\ halted         = [org \in Orgs |-> FALSE]
-    /\ highRateStreak = [org \in Orgs |-> 0]
 
 -----------------------------------------------------------------------------
 (* Actions *)
@@ -65,7 +60,7 @@ StageResult(org) ==
     /\ ~halted[org]
     /\ stages[org] < TOTAL_STAGES
     /\ stages' = [stages EXCEPT ![org] = stages[org] + 1]
-    /\ UNCHANGED <<interventions, halted, highRateStreak>>
+    /\ UNCHANGED <<interventions, halted>>
 
 (* Intervene: record an intervention of the given kind *)
 Intervene(org, kind) ==
@@ -74,22 +69,17 @@ Intervene(org, kind) ==
     /\ IF kind = "HALT"
        THEN /\ halted' = [halted EXCEPT ![org] = TRUE]
             /\ interventions' = [interventions EXCEPT ![org] = interventions[org] + 1]
-            /\ UNCHANGED <<stages, highRateStreak>>
+            /\ UNCHANGED stages
        ELSE /\ interventions' = [interventions EXCEPT ![org] = interventions[org] + 1]
-            /\ UNCHANGED <<stages, halted, highRateStreak>>
+            /\ UNCHANGED <<stages, halted>>
 
-(* CheckConvergence: evaluate the intervention rate; halt if over threshold *)
+(* CheckConvergence: evaluate the intervention rate; halt immediately if over threshold.
+   Matches watcher.py: immediate halt when intervention_rate > max_rate. *)
 CheckConvergence(org) ==
     /\ ~halted[org]
     /\ stages[org] > 0
-    /\ IF InterventionRate(org) > MAX_RATE
-       THEN /\ highRateStreak' = [highRateStreak EXCEPT
-                ![org] = highRateStreak[org] + 1]
-            /\ IF highRateStreak[org] + 1 >= BOUND
-               THEN halted' = [halted EXCEPT ![org] = TRUE]
-               ELSE UNCHANGED halted
-       ELSE /\ highRateStreak' = [highRateStreak EXCEPT ![org] = 0]
-            /\ UNCHANGED halted
+    /\ InterventionRate(org) > MAX_RATE
+    /\ halted' = [halted EXCEPT ![org] = TRUE]
     /\ UNCHANGED <<interventions, stages>>
 
 -----------------------------------------------------------------------------
@@ -109,13 +99,7 @@ FairSpec == Spec
 -----------------------------------------------------------------------------
 (* Safety invariants *)
 
-(* S1: If the intervention rate exceeds MAX_RATE for BOUND consecutive checks,
-        the organism must be halted. *)
-BoundedNonConvergence ==
-    \A org \in Orgs :
-        highRateStreak[org] >= BOUND => halted[org] = TRUE
-
-(* S2: Once halted, no more stages or interventions occur *)
+(* S1: Once halted, no more stages or interventions occur *)
 HaltIsTerminal ==
     [][
         \A org \in Orgs :
@@ -124,6 +108,16 @@ HaltIsTerminal ==
                 /\ interventions'[org] = interventions[org]
                 /\ halted'[org] = TRUE
     ]_vars
+
+(* S2: If the intervention rate exceeds MAX_RATE and stages > 0 and
+        CheckConvergence has been evaluated (i.e. after any step where
+        the watcher ran), the organism must be halted.
+        Expressed as a temporal property: once rate exceeds threshold,
+        the organism is eventually halted. Under WF this is immediate. *)
+BoundedNonConvergence ==
+    \A org \in Orgs :
+        (stages[org] > 0 /\ InterventionRate(org) > MAX_RATE /\ ~halted[org])
+            ~> halted[org] = TRUE
 
 -----------------------------------------------------------------------------
 (* Liveness (requires FairSpec) *)
