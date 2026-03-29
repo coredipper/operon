@@ -40,12 +40,13 @@ VARIABLES
     library,     \* library[org]            : set of template IDs held by org
     trust,       \* trust[org][peer]        : real in [0,1], trust org has in peer
     stage,       \* stage[org]              : element of StageSet
-    records,     \* records[org]            : set of <<template_id, success>> pairs
+    successes,   \* successes[org][tmpl]    : Nat, count of successful runs
+    totals,      \* totals[org][tmpl]       : Nat, total run count
     exported,    \* exported[org]           : set of template IDs currently offered
     outcomeCount,\* outcomeCount[org]       : Nat, bounds exploration for TLC
     adoptedFrom  \* adoptedFrom[org][tmpl]  : peer that supplied this template (or "none")
 
-vars == <<library, trust, stage, records, exported, outcomeCount, adoptedFrom>>
+vars == <<library, trust, stage, successes, totals, exported, outcomeCount, adoptedFrom>>
 
 \* Derived: check if a peer's template meets the adoption threshold.
 \* Matches social_learning.py: effective_score = peer_sr * trust >= ADOPTION_THRESHOLD.
@@ -53,12 +54,11 @@ vars == <<library, trust, stage, records, exported, outcomeCount, adoptedFrom>>
 \* Rearranged to avoid division: successes * trust * 10 >= ADOPTION_THRESHOLD * 10 * total.
 \* Trust is real [0,1]; ADOPTION_THRESHOLD is 0.3.
 MeetsAdoptionThreshold(peer, tmpl, trustVal) ==
-    LET relevant  == {r \in records[peer] : r[1] = tmpl}
-        total     == Cardinality(relevant)
-        successes == Cardinality({r \in relevant : r[2] = TRUE})
+    LET total == totals[peer][tmpl]
+        succ  == successes[peer][tmpl]
     IN  IF total = 0
         THEN trustVal * 0.5 >= ADOPTION_THRESHOLD  \* default 0.5 success rate
-        ELSE successes * trustVal >= ADOPTION_THRESHOLD * total
+        ELSE succ * trustVal >= ADOPTION_THRESHOLD * total
 
 -----------------------------------------------------------------------------
 (* Type invariant *)
@@ -68,9 +68,10 @@ TypeOK ==
     /\ \A org \in Orgs : \A peer \in Orgs :
          trust[org][peer] \in Real /\ trust[org][peer] >= 0.0 /\ trust[org][peer] <= 1.0
     /\ \A org \in Orgs : stage[org] \in StageSet
-    /\ \A org \in Orgs : \A r \in records[org] :
-         /\ r[1] \in Templates
-         /\ r[2] \in BOOLEAN
+    /\ \A org \in Orgs : \A tmpl \in Templates :
+         /\ successes[org][tmpl] \in Nat
+         /\ totals[org][tmpl] \in Nat
+         /\ successes[org][tmpl] <= totals[org][tmpl]
     /\ \A org \in Orgs : exported[org] \subseteq Templates
     /\ \A org \in Orgs : outcomeCount[org] \in Nat
     /\ \A org \in Orgs : \A tmpl \in Templates :
@@ -83,7 +84,8 @@ Init ==
     /\ library      = [org \in Orgs |-> {}]
     /\ trust        = [org \in Orgs |-> [peer \in Orgs |-> DEFAULT_TRUST]]
     /\ stage        = [org \in Orgs |-> "EMBRYONIC"]
-    /\ records      = [org \in Orgs |-> {}]
+    /\ successes    = [org \in Orgs |-> [tmpl \in Templates |-> 0]]
+    /\ totals       = [org \in Orgs |-> [tmpl \in Templates |-> 0]]
     /\ exported     = [org \in Orgs |-> {}]
     /\ outcomeCount = [org \in Orgs |-> 0]
     /\ adoptedFrom  = [org \in Orgs |-> [tmpl \in Templates |-> "none"]]
@@ -94,7 +96,7 @@ Init ==
 (* Export: organism makes its current library available to peers *)
 Export(org) ==
     /\ exported' = [exported EXCEPT ![org] = library[org]]
-    /\ UNCHANGED <<library, trust, stage, records, outcomeCount, adoptedFrom>>
+    /\ UNCHANGED <<library, trust, stage, successes, totals, outcomeCount, adoptedFrom>>
 
 (* Import: organism considers adopting a peer's exported templates.
    Matches social_learning.py: effective_score = peer_success_rate * trust
@@ -109,7 +111,7 @@ Import(org, peer) ==
          /\ MeetsAdoptionThreshold(peer, tmpl, trust[org][peer]) \* Derived from peer's records
          /\ library'     = [library EXCEPT ![org] = library[org] \union {tmpl}]
          /\ adoptedFrom' = [adoptedFrom EXCEPT ![org][tmpl] = peer]
-    /\ UNCHANGED <<trust, stage, records, exported, outcomeCount>>
+    /\ UNCHANGED <<trust, stage, successes, totals, exported, outcomeCount>>
 
 (* RecordOutcome: record whether an adopted template succeeded, update trust via EMA.
    Only updates trust for the specific peer that supplied the template (via adoptedFrom).
@@ -123,7 +125,9 @@ RecordOutcome(org, tmpl, success) ==
            val      == IF success THEN 1.0 ELSE 0.0
            newTrust == DECAY_ALPHA * val + (1.0 - DECAY_ALPHA) * oldTrust
        IN  trust' = [trust EXCEPT ![org][peer] = newTrust]
-    /\ records' = [records EXCEPT ![org] = records[org] \union {<<tmpl, success>>}]
+    /\ totals' = [totals EXCEPT ![org][tmpl] = totals[org][tmpl] + 1]
+    /\ successes' = [successes EXCEPT ![org][tmpl] =
+         IF success THEN successes[org][tmpl] + 1 ELSE successes[org][tmpl]]
     /\ outcomeCount' = [outcomeCount EXCEPT ![org] = outcomeCount[org] + 1]
     /\ UNCHANGED <<library, stage, exported, adoptedFrom>>
 
@@ -134,7 +138,7 @@ StageAdvance(org) ==
                    []   stage[org] = "JUVENILE"   -> "ADOLESCENT"
                    []   stage[org] = "ADOLESCENT" -> "MATURE"
        IN  stage' = [stage EXCEPT ![org] = next]
-    /\ UNCHANGED <<library, trust, records, exported, outcomeCount, adoptedFrom>>
+    /\ UNCHANGED <<library, trust, successes, totals, exported, outcomeCount, adoptedFrom>>
 
 -----------------------------------------------------------------------------
 (* Next-state relation *)

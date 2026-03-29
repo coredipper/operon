@@ -55,26 +55,28 @@ Init ==
 -----------------------------------------------------------------------------
 (* Actions *)
 
-(* StageResult: observe a stage, optionally record an intervention, then check convergence.
-   Matches watcher.py: on_stage_result processes the stage, decides on an intervention
-   (RETRY/ESCALATE/none), and checks convergence — all in the same atomic step.
-   If the rate exceeds MAX_RATE, HALT is issued and recorded. *)
+(* StageResult: observe a stage, check convergence, then optionally intervene.
+   Matches watcher.py: on_stage_result increments _total_stages, checks convergence
+   against pre-intervention count, then decides on at most one intervention. *)
 StageResult(org) ==
     /\ ~halted[org]
     /\ stages[org] < TOTAL_STAGES
-    /\ \E intervene \in BOOLEAN :  \* Nondeterministic: stage may or may not trigger intervention
-       LET newStages       == stages[org] + 1
-           newInterventions == IF intervene
-                               THEN interventions[org] + 1
-                               ELSE interventions[org]
-           rate             == IF newStages = 0 THEN 0.0
-                               ELSE (newInterventions * 1.0) / (newStages * 1.0)
-           convergenceHalt  == rate > MAX_RATE
-       IN  /\ stages'        = [stages EXCEPT ![org] = newStages]
-           /\ interventions' = [interventions EXCEPT ![org] =
-                IF convergenceHalt THEN newInterventions + 1  \* +1 for HALT itself
-                ELSE newInterventions]
-           /\ halted'        = [halted EXCEPT ![org] = convergenceHalt]
+    /\ LET newStages == stages[org] + 1
+           \* Convergence check uses pre-intervention count (matching watcher.py).
+           preRate   == IF newStages = 0 THEN 0.0
+                        ELSE (interventions[org] * 1.0) / (newStages * 1.0)
+           mustHalt  == preRate > MAX_RATE
+       IN  /\ stages' = [stages EXCEPT ![org] = newStages]
+           /\ IF mustHalt
+              \* Convergence HALT: record one HALT intervention and stop.
+              THEN /\ halted'        = [halted EXCEPT ![org] = TRUE]
+                   /\ interventions' = [interventions EXCEPT ![org] = interventions[org] + 1]
+              ELSE \* Normal stage: nondeterministically decide on one intervention or none.
+                   \E intervene \in BOOLEAN :
+                   /\ halted' = halted
+                   /\ interventions' = [interventions EXCEPT ![org] =
+                        IF intervene THEN interventions[org] + 1
+                        ELSE interventions[org]]
 
 -----------------------------------------------------------------------------
 (* Next-state relation *)
