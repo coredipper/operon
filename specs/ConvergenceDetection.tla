@@ -55,12 +55,21 @@ Init ==
 -----------------------------------------------------------------------------
 (* Actions *)
 
-(* StageResult: observe a stage result, increment stages count *)
+(* StageResult: observe a stage result, increment stages count, then check convergence.
+   Matches watcher.py: on_stage_result increments total_stages and immediately checks
+   the intervention rate in the same atomic step.  If the rate exceeds MAX_RATE the
+   organism is halted and the HALT intervention is recorded (Fix 2 + Fix 3). *)
 StageResult(org) ==
     /\ ~halted[org]
     /\ stages[org] < TOTAL_STAGES
-    /\ stages' = [stages EXCEPT ![org] = stages[org] + 1]
-    /\ UNCHANGED <<interventions, halted>>
+    /\ LET newStages == stages[org] + 1
+           rate      == IF newStages = 0 THEN 0.0
+                        ELSE (interventions[org] * 1.0) / (newStages * 1.0)
+       IN  /\ stages' = [stages EXCEPT ![org] = newStages]
+           /\ IF rate > MAX_RATE
+              THEN /\ halted'        = [halted EXCEPT ![org] = TRUE]
+                   /\ interventions' = [interventions EXCEPT ![org] = interventions[org] + 1]
+              ELSE UNCHANGED <<halted, interventions>>
 
 (* Intervene: record an intervention of the given kind *)
 Intervene(org, kind) ==
@@ -73,28 +82,17 @@ Intervene(org, kind) ==
        ELSE /\ interventions' = [interventions EXCEPT ![org] = interventions[org] + 1]
             /\ UNCHANGED <<stages, halted>>
 
-(* CheckConvergence: evaluate the intervention rate; halt immediately if over threshold.
-   Matches watcher.py: immediate halt when intervention_rate > max_rate. *)
-CheckConvergence(org) ==
-    /\ ~halted[org]
-    /\ stages[org] > 0
-    /\ InterventionRate(org) > MAX_RATE
-    /\ halted' = [halted EXCEPT ![org] = TRUE]
-    /\ UNCHANGED <<interventions, stages>>
-
 -----------------------------------------------------------------------------
 (* Next-state relation *)
 
 Next ==
     \/ \E org \in Orgs : StageResult(org)
     \/ \E org \in Orgs : \E kind \in InterventionKind : Intervene(org, kind)
-    \/ \E org \in Orgs : CheckConvergence(org)
 
 Spec == Init /\ [][Next]_vars
 
 FairSpec == Spec
     /\ WF_vars(\E org \in Orgs : StageResult(org))
-    /\ WF_vars(\E org \in Orgs : CheckConvergence(org))
 
 -----------------------------------------------------------------------------
 (* Safety invariants *)
@@ -109,11 +107,12 @@ HaltIsTerminal ==
                 /\ halted'[org] = TRUE
     ]_vars
 
-(* S2: If the intervention rate exceeds MAX_RATE and stages > 0 and
-        CheckConvergence has been evaluated (i.e. after any step where
-        the watcher ran), the organism must be halted.
-        Expressed as a temporal property: once rate exceeds threshold,
-        the organism is eventually halted. Under WF this is immediate. *)
+(* S2: If the intervention rate exceeds MAX_RATE at the moment a stage
+        completes, the organism is halted in the same atomic step.
+        Expressed as a safety invariant: any non-halted organism with
+        stages > 0 whose rate exceeds MAX_RATE cannot persist — the
+        next StageResult that pushed the rate over will have already set
+        halted.  We keep the liveness form for backward compatibility. *)
 BoundedNonConvergence ==
     \A org \in Orgs :
         (stages[org] > 0 /\ InterventionRate(org) > MAX_RATE /\ ~halted[org])

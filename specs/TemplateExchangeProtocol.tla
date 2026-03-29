@@ -104,7 +104,8 @@ Import(org, peer) ==
     /\ UNCHANGED <<trust, stage, records, exported, outcomeCount, successRate>>
 
 (* RecordOutcome: record whether an adopted template succeeded, update trust via EMA.
-   Only updates trust for the specific peer that supplied the template (via adoptedFrom). *)
+   Only updates trust for the specific peer that supplied the template (via adoptedFrom).
+   Also updates successRate for the template using the same EMA smoothing. *)
 RecordOutcome(org, tmpl, success) ==
     /\ tmpl \in library[org]                                \* Must hold the template
     /\ outcomeCount[org] < MAX_OUTCOMES                     \* TLC bound
@@ -113,10 +114,13 @@ RecordOutcome(org, tmpl, success) ==
            oldTrust == trust[org][peer]
            val      == IF success THEN 1.0 ELSE 0.0
            newTrust == DECAY_ALPHA * val + (1.0 - DECAY_ALPHA) * oldTrust
-       IN  trust' = [trust EXCEPT ![org][peer] = newTrust]
+           oldRate  == successRate[org][tmpl]
+           newRate  == DECAY_ALPHA * val + (1.0 - DECAY_ALPHA) * oldRate
+       IN  /\ trust' = [trust EXCEPT ![org][peer] = newTrust]
+           /\ successRate' = [successRate EXCEPT ![org][tmpl] = newRate]
     /\ records' = [records EXCEPT ![org] = records[org] \union {<<tmpl, success>>}]
     /\ outcomeCount' = [outcomeCount EXCEPT ![org] = outcomeCount[org] + 1]
-    /\ UNCHANGED <<library, stage, exported, successRate, adoptedFrom>>
+    /\ UNCHANGED <<library, stage, exported, adoptedFrom>>
 
 (* StageAdvance: external advancement of developmental stage (driven by environment) *)
 StageAdvance(org) ==
