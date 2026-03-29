@@ -55,39 +55,31 @@ Init ==
 -----------------------------------------------------------------------------
 (* Actions *)
 
-(* StageResult: observe a stage result, increment stages count, then check convergence.
-   Matches watcher.py: on_stage_result increments total_stages and immediately checks
-   the intervention rate in the same atomic step.  If the rate exceeds MAX_RATE the
-   organism is halted and the HALT intervention is recorded (Fix 2 + Fix 3). *)
+(* StageResult: observe a stage, optionally record an intervention, then check convergence.
+   Matches watcher.py: on_stage_result processes the stage, decides on an intervention
+   (RETRY/ESCALATE/none), and checks convergence — all in the same atomic step.
+   If the rate exceeds MAX_RATE, HALT is issued and recorded. *)
 StageResult(org) ==
     /\ ~halted[org]
     /\ stages[org] < TOTAL_STAGES
-    /\ LET newStages == stages[org] + 1
-           rate      == IF newStages = 0 THEN 0.0
-                        ELSE (interventions[org] * 1.0) / (newStages * 1.0)
-       IN  /\ stages' = [stages EXCEPT ![org] = newStages]
-           /\ IF rate > MAX_RATE
-              THEN /\ halted'        = [halted EXCEPT ![org] = TRUE]
-                   /\ interventions' = [interventions EXCEPT ![org] = interventions[org] + 1]
-              ELSE UNCHANGED <<halted, interventions>>
-
-(* Intervene: record an intervention of the given kind *)
-Intervene(org, kind) ==
-    /\ ~halted[org]
-    /\ kind \in InterventionKind
-    /\ IF kind = "HALT"
-       THEN /\ halted' = [halted EXCEPT ![org] = TRUE]
-            /\ interventions' = [interventions EXCEPT ![org] = interventions[org] + 1]
-            /\ UNCHANGED stages
-       ELSE /\ interventions' = [interventions EXCEPT ![org] = interventions[org] + 1]
-            /\ UNCHANGED <<stages, halted>>
+    /\ \E intervene \in BOOLEAN :  \* Nondeterministic: stage may or may not trigger intervention
+       LET newStages       == stages[org] + 1
+           newInterventions == IF intervene
+                               THEN interventions[org] + 1
+                               ELSE interventions[org]
+           rate             == IF newStages = 0 THEN 0.0
+                               ELSE (newInterventions * 1.0) / (newStages * 1.0)
+           convergenceHalt  == rate > MAX_RATE
+       IN  /\ stages'        = [stages EXCEPT ![org] = newStages]
+           /\ interventions' = [interventions EXCEPT ![org] =
+                IF convergenceHalt THEN newInterventions + 1  \* +1 for HALT itself
+                ELSE newInterventions]
+           /\ halted'        = [halted EXCEPT ![org] = convergenceHalt]
 
 -----------------------------------------------------------------------------
 (* Next-state relation *)
 
-Next ==
-    \/ \E org \in Orgs : StageResult(org)
-    \/ \E org \in Orgs : \E kind \in InterventionKind : Intervene(org, kind)
+Next == \E org \in Orgs : StageResult(org)
 
 Spec == Init /\ [][Next]_vars
 
