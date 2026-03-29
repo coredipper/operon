@@ -151,27 +151,27 @@ class TestBridgeDeerflowMemory:
         deerflow_session: list[dict],
         deerflow_vectors: list[dict],
     ) -> None:
-        facts = bridge_deerflow_memory(deerflow_session, deerflow_vectors, btm)
+        facts = bridge_deerflow_memory(deerflow_session, deerflow_vectors, btm, session_id="test")
         assert len(facts) == 4  # 2 session + 2 vector
 
     def test_bridge_deerflow_session_only(
         self, btm: BiTemporalMemory, deerflow_session: list[dict],
     ) -> None:
-        facts = bridge_deerflow_memory(deerflow_session, [], btm)
+        facts = bridge_deerflow_memory(deerflow_session, [], btm, session_id="test")
         assert len(facts) == 2
         assert all("session" in f.subject for f in facts)
 
     def test_bridge_deerflow_vector_only(
         self, btm: BiTemporalMemory, deerflow_vectors: list[dict],
     ) -> None:
-        facts = bridge_deerflow_memory([], deerflow_vectors, btm)
+        facts = bridge_deerflow_memory([], deerflow_vectors, btm, session_id="test")
         assert len(facts) == 2
         assert all(f.predicate == "vector_entry" for f in facts)
 
     def test_bridge_deerflow_session_subjects_indexed(
         self, btm: BiTemporalMemory, deerflow_session: list[dict],
     ) -> None:
-        facts = bridge_deerflow_memory(deerflow_session, [], btm)
+        facts = bridge_deerflow_memory(deerflow_session, [], btm, session_id="test")
         subjects = [f.subject for f in facts]
         # Subjects use session_id + content hash for uniqueness.
         assert all(s.startswith("deerflow:session:") for s in subjects)
@@ -190,7 +190,7 @@ class TestBridgeDeerflowMemory:
     def test_bridge_deerflow_vector_subjects(
         self, btm: BiTemporalMemory, deerflow_vectors: list[dict],
     ) -> None:
-        facts = bridge_deerflow_memory([], deerflow_vectors, btm)
+        facts = bridge_deerflow_memory([], deerflow_vectors, btm, session_id="test")
         subjects = {f.subject for f in facts}
         assert subjects == {"deerflow:vector:vec_001", "deerflow:vector:vec_002"}
 
@@ -198,7 +198,7 @@ class TestBridgeDeerflowMemory:
         self, btm: BiTemporalMemory, deerflow_session: list[dict],
     ) -> None:
         facts = bridge_deerflow_memory(
-            deerflow_session, [], btm, subject_prefix="df",
+            deerflow_session, [], btm, subject_prefix="df", session_id="test",
         )
         assert all(f.subject.startswith("df:") for f in facts)
 

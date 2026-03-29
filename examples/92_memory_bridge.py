@@ -30,7 +30,7 @@ session = [
 vectors = [
     {"id": "vec_001", "content": "Scaling laws for neural LMs", "metadata": {"source": "arxiv"}, "inserted_at": "2026-03-01T12:02:00"},
 ]
-df_facts = bridge_deerflow_memory(session, vectors, mem)
+df_facts = bridge_deerflow_memory(session, vectors, mem, session_id="demo_session_1")
 print(f"Bridged {len(df_facts)} DeerFlow facts")
 
 # Query the unified store
