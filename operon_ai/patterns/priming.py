@@ -29,18 +29,27 @@ class PrimingView(SubstrateView):
     trust_context: MappingProxyType = field(default_factory=lambda: MappingProxyType({}))
 
     def __post_init__(self) -> None:
-        """Freeze all mutable mapping inputs on construction."""
-        def _freeze_tuple(t: tuple) -> tuple:
-            return tuple(
-                MappingProxyType(dict(d)) if isinstance(d, dict) and not isinstance(d, MappingProxyType) else d
-                for d in t
-            )
-        if isinstance(self.trust_context, dict) and not isinstance(self.trust_context, MappingProxyType):
-            object.__setattr__(self, "trust_context", MappingProxyType(dict(self.trust_context)))
+        """Normalize and freeze all mutable inputs on construction."""
+        import collections.abc
+
+        def _freeze_item(item: Any) -> Any:
+            if isinstance(item, MappingProxyType):
+                return item
+            if isinstance(item, collections.abc.Mapping):
+                return MappingProxyType(dict(item))
+            return item
+
+        # Freeze trust_context.
+        if not isinstance(self.trust_context, MappingProxyType):
+            object.__setattr__(self, "trust_context", MappingProxyType(
+                dict(self.trust_context) if isinstance(self.trust_context, collections.abc.Mapping) else {}
+            ))
+        # Normalize tuple channels: ensure tuple type and freeze mapping items.
         for field_name in ("recent_outputs", "telemetry", "experience"):
             val = getattr(self, field_name)
-            if val and any(isinstance(d, dict) and not isinstance(d, MappingProxyType) for d in val):
-                object.__setattr__(self, field_name, _freeze_tuple(val))
+            normalized = tuple(_freeze_item(item) for item in val)
+            if normalized is not val:
+                object.__setattr__(self, field_name, normalized)
 
 
 def build_priming_view(

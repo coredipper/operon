@@ -82,7 +82,7 @@ def bridge_deerflow_memory(
     vector_entries: list[dict],
     target: BiTemporalMemory,
     subject_prefix: str = "deerflow",
-    session_id: str | None = None,
+    session_id: str = "",
 ) -> list[BiTemporalFact]:
     """Bridge DeerFlow session messages and vector-store entries into facts.
 
@@ -100,11 +100,11 @@ def bridge_deerflow_memory(
     """
     created: list[BiTemporalFact] = []
 
-    # Auto-derive session_id from full session content if not provided.
-    if session_id is None:
-        session_id = _content_hash(tuple(
-            (m.get("role", ""), m.get("content", "")) for m in session_memory
-        ))
+    # Generate a unique session_id if not provided — uses uuid to guarantee
+    # cross-session uniqueness even for identical message content.
+    if not session_id:
+        from uuid import uuid4
+        session_id = uuid4().hex[:12]
 
     for idx, msg in enumerate(session_memory):
         ts = _parse_timestamp(msg.get("timestamp"))

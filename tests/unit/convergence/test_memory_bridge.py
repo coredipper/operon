@@ -173,13 +173,19 @@ class TestBridgeDeerflowMemory:
     ) -> None:
         facts = bridge_deerflow_memory(deerflow_session, [], btm)
         subjects = [f.subject for f in facts]
-        # Subjects use content hash for stable cross-session uniqueness.
+        # Subjects use session_id + content hash for uniqueness.
         assert all(s.startswith("deerflow:session:") for s in subjects)
-        assert len(subjects) == len(set(subjects))  # no duplicates
-        # Re-importing same data produces same subjects (stable).
+        assert len(subjects) == len(set(subjects))  # no duplicates within session
+        # With explicit session_id, re-import is stable.
         btm2 = BiTemporalMemory()
-        facts2 = bridge_deerflow_memory(deerflow_session, [], btm2)
-        assert [f.subject for f in facts2] == subjects
+        facts2 = bridge_deerflow_memory(deerflow_session, [], btm2, session_id="sess_A")
+        btm3 = BiTemporalMemory()
+        facts3 = bridge_deerflow_memory(deerflow_session, [], btm3, session_id="sess_A")
+        assert [f.subject for f in facts2] == [f.subject for f in facts3]
+        # Different session_ids produce different subjects.
+        btm4 = BiTemporalMemory()
+        facts4 = bridge_deerflow_memory(deerflow_session, [], btm4, session_id="sess_B")
+        assert [f.subject for f in facts2] != [f.subject for f in facts4]
 
     def test_bridge_deerflow_vector_subjects(
         self, btm: BiTemporalMemory, deerflow_vectors: list[dict],
