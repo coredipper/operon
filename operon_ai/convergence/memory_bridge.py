@@ -100,10 +100,13 @@ def bridge_deerflow_memory(
     """
     created: list[BiTemporalFact] = []
 
-    # Validate and normalize session_id.
-    sid = str(session_id).strip() if session_id is not None else ""
-    if session_memory and not sid:
-        raise ValueError("session_id is required when bridging session messages")
+    # Validate session_id: must be a non-empty string when session messages are present.
+    if session_memory:
+        if not isinstance(session_id, str) or not session_id.strip():
+            raise ValueError(
+                "session_id must be a non-empty string when bridging session messages"
+            )
+    sid = session_id.strip() if isinstance(session_id, str) else ""
 
     for idx, msg in enumerate(session_memory):
         ts = _parse_timestamp(msg.get("timestamp"))

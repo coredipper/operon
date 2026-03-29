@@ -233,7 +233,7 @@ class TestDeerflowSessionIdValidation:
 
     def test_blank_session_id_raises(self) -> None:
         btm = BiTemporalMemory()
-        with pytest.raises(ValueError, match="session_id is required"):
+        with pytest.raises(ValueError, match="non-empty string"):
             bridge_deerflow_memory(
                 [{"role": "user", "content": "hi", "timestamp": "2026-01-01T00:00:00"}],
                 [], btm, session_id="",
@@ -241,7 +241,7 @@ class TestDeerflowSessionIdValidation:
 
     def test_whitespace_session_id_raises(self) -> None:
         btm = BiTemporalMemory()
-        with pytest.raises(ValueError, match="session_id is required"):
+        with pytest.raises(ValueError, match="non-empty string"):
             bridge_deerflow_memory(
                 [{"role": "user", "content": "hi", "timestamp": "2026-01-01T00:00:00"}],
                 [], btm, session_id="   ",
@@ -249,10 +249,26 @@ class TestDeerflowSessionIdValidation:
 
     def test_none_session_id_raises(self) -> None:
         btm = BiTemporalMemory()
-        with pytest.raises(ValueError, match="session_id is required"):
+        with pytest.raises(ValueError, match="non-empty string"):
             bridge_deerflow_memory(
                 [{"role": "user", "content": "hi", "timestamp": "2026-01-01T00:00:00"}],
                 [], btm, session_id=None,
+            )
+
+    def test_integer_session_id_raises(self) -> None:
+        btm = BiTemporalMemory()
+        with pytest.raises(ValueError, match="non-empty string"):
+            bridge_deerflow_memory(
+                [{"role": "user", "content": "hi", "timestamp": "2026-01-01T00:00:00"}],
+                [], btm, session_id=42,
+            )
+
+    def test_object_session_id_raises(self) -> None:
+        btm = BiTemporalMemory()
+        with pytest.raises(ValueError, match="non-empty string"):
+            bridge_deerflow_memory(
+                [{"role": "user", "content": "hi", "timestamp": "2026-01-01T00:00:00"}],
+                [], btm, session_id=object(),
             )
 
     def test_whitespace_stripped_from_subject(self) -> None:
