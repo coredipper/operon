@@ -82,8 +82,7 @@ def bridge_deerflow_memory(
     vector_entries: list[dict],
     target: BiTemporalMemory,
     subject_prefix: str = "deerflow",
-    *,
-    session_id: str,
+    session_id: str = "",
 ) -> list[BiTemporalFact]:
     """Bridge DeerFlow session messages and vector-store entries into facts.
 
@@ -101,11 +100,13 @@ def bridge_deerflow_memory(
     """
     created: list[BiTemporalFact] = []
 
+    if session_memory and not session_id.strip():
+        raise ValueError("session_id is required when bridging session messages")
+
     for idx, msg in enumerate(session_memory):
         ts = _parse_timestamp(msg.get("timestamp"))
-        # Subject embeds session_id + index directly — deterministic and collision-free.
         fact = target.record_fact(
-            subject=f"{subject_prefix}:session:{session_id}:{idx}",
+            subject=f"{subject_prefix}:session:{session_id.strip()}:{idx}",
             predicate=msg["role"],
             value=msg["content"],
             valid_from=ts,

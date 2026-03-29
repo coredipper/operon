@@ -164,7 +164,8 @@ class TestBridgeDeerflowMemory:
     def test_bridge_deerflow_vector_only(
         self, btm: BiTemporalMemory, deerflow_vectors: list[dict],
     ) -> None:
-        facts = bridge_deerflow_memory([], deerflow_vectors, btm, session_id="test")
+        # Vector-only import works without session_id.
+        facts = bridge_deerflow_memory([], deerflow_vectors, btm)
         assert len(facts) == 2
         assert all(f.predicate == "vector_entry" for f in facts)
 
@@ -190,7 +191,7 @@ class TestBridgeDeerflowMemory:
     def test_bridge_deerflow_vector_subjects(
         self, btm: BiTemporalMemory, deerflow_vectors: list[dict],
     ) -> None:
-        facts = bridge_deerflow_memory([], deerflow_vectors, btm, session_id="test")
+        facts = bridge_deerflow_memory([], deerflow_vectors, btm)
         subjects = {f.subject for f in facts}
         assert subjects == {"deerflow:vector:vec_001", "deerflow:vector:vec_002"}
 
