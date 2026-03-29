@@ -1,6 +1,6 @@
 # Operon Examples
 
-This directory contains 91 runnable numbered examples demonstrating the
+This directory contains 95 runnable numbered examples demonstrating the
 `operon_ai` library, progressing from basic concepts to complete
 LLM-powered cell simulations.
 
@@ -71,6 +71,14 @@ reconstructing past belief states:
   hybrid assembly with library-first + LLM generator fallback
 - [`91_deerflow_skill_bridge.py`](91_deerflow_skill_bridge.py) —
   bidirectional DeerFlow Markdown skill to PatternTemplate conversion
+- [`92_memory_bridge.py`](92_memory_bridge.py) —
+  bridge AnimaWorks and DeerFlow memory into bi-temporal facts
+- [`93_priming_view.py`](93_priming_view.py) —
+  multi-channel PrimingView extending SubstrateView
+- [`94_heartbeat_daemon.py`](94_heartbeat_daemon.py) —
+  idle-time consolidation via HeartbeatDaemon
+- [`95_async_thinking.py`](95_async_thinking.py) —
+  Fork/Join sub-queries within a single stage
 
 ## Import Style Guide
 

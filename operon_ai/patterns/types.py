@@ -106,6 +106,8 @@ class SkillStage:
     fact_tags: tuple[str, ...] = ()
     # --- Cognitive mode (Phase 5: System A/B) ---
     cognitive_mode: CognitiveMode | None = None
+    # --- Prompt optimization hook (Phase C3: interface only) ---
+    prompt_optimizer: Callable[..., Any] | None = None
 
 
 def resolve_cognitive_mode(stage: SkillStage) -> CognitiveMode:
