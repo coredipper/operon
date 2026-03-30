@@ -61,7 +61,7 @@ Seed Operon's PatternLibrary from external catalogs:
 ## Production Runtime (Phase C5)
 
 - 4 compilers (`organism_to_swarms`, `organism_to_deerflow`, `organism_to_ralph`, `organism_to_scion`) producing serializable dicts for each deployment target
-- `DistributedWatcher` with transport abstraction (`InMemoryTransport` for testing, `HttpTransport` for production) enabling convergence detection across distributed nodes
+- `DistributedWatcher` with transport abstraction (`InMemoryTransport` for single-process, `HttpTransport` as a webhook payload stub — callers send the queued requests via their own HTTP client)
 - `operon_watcher_node()` — LangGraph-compatible node for DeerFlow integration, with `create_watcher_config()` helper
 - [Scion](https://github.com/GoogleCloudPlatform/scion) compiler supports container isolation via `runtime="docker"` parameter
 
@@ -72,4 +72,4 @@ Seed Operon's PatternLibrary from external catalogs:
 - [92–95](https://github.com/coredipper/operon/blob/main/examples/): Memory, PrimingView, heartbeat, async
 - [96](https://github.com/coredipper/operon/blob/main/examples/96_codesign_composition.py): Co-design composition
 - [97–98](https://github.com/coredipper/operon/blob/main/examples/): Ralph hat analysis, A-Evolve workspace analysis
-- [99–103](https://github.com/coredipper/operon/blob/main/examples/): Production runtime — compilers, distributed watcher, LangGraph node
+- [99–103](https://github.com/coredipper/operon/blob/main/examples/): Production runtime — 4 compilers and distributed watcher
