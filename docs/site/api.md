@@ -79,3 +79,17 @@ For concrete usage, start from the examples rather than reading the namespaces i
 
 - `operon_ai.patterns.heartbeat`
   - `HeartbeatDaemon` — WatcherComponent with idle-time consolidation
+
+## Ralph Adapter
+
+- `operon_ai.convergence.ralph`
+  - `parse_ralph_config` — convert Ralph YAML hat config to ExternalTopology
+  - `ralph_hats_to_stages` — map Ralph hats to Operon StageSpec list
+  - `seed_library_from_ralph` — seed PatternLibrary from Ralph hat patterns
+
+## A-Evolve Adapter
+
+- `operon_ai.convergence.aevolve`
+  - `parse_aevolve_workspace` — convert A-Evolve workspace manifest to ExternalTopology
+  - `aevolve_skills_to_stages` — map evolved skills to Operon StageSpec list
+  - `seed_library_from_aevolve` — seed PatternLibrary from A-Evolve workspace patterns

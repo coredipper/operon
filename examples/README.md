@@ -1,6 +1,6 @@
 # Operon Examples
 
-This directory contains 96 runnable numbered examples demonstrating the
+This directory contains 98 runnable numbered examples demonstrating the
 `operon_ai` library, progressing from basic concepts to complete
 LLM-powered cell simulations.
 
@@ -81,6 +81,10 @@ reconstructing past belief states:
   Fork/Join sub-queries within a single stage
 - [`96_codesign_composition.py`](96_codesign_composition.py) —
   Zardini co-design adapter composition with fixed-point convergence
+- [`97_ralph_hat_analysis.py`](97_ralph_hat_analysis.py) —
+  parse Ralph hat configs and analyze event-driven topology with hat-to-stage mapping
+- [`98_aevolve_workspace_analysis.py`](98_aevolve_workspace_analysis.py) —
+  parse A-Evolve workspace manifests, analyze single-agent topology, skills-to-stages
 
 ## Import Style Guide
 

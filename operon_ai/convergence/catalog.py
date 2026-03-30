@@ -20,6 +20,7 @@ from uuid import uuid4
 
 from ..patterns.repository import PatternLibrary, PatternTemplate, TaskFingerprint
 from .deerflow_adapter import deerflow_to_template, parse_deerflow_session
+from .ralph_adapter import parse_ralph_config, ralph_to_template
 from .swarms_adapter import (
     analyze_external_topology,
     parse_swarm_topology,
@@ -95,6 +96,41 @@ def seed_library_from_deerflow(
         result = analyze_external_topology(topology)
 
         template = result.suggested_template if result.suggested_template is not None else deerflow_to_template(session)
+        library.register_template(template)
+        count += 1
+
+    return count
+
+
+# ---------------------------------------------------------------------------
+# Ralph seeder
+# ---------------------------------------------------------------------------
+
+
+def seed_library_from_ralph(
+    library: PatternLibrary,
+    configs: list[dict[str, Any]],
+) -> int:
+    """Seed *library* with Ralph hat-based workflow patterns.
+
+    Parameters
+    ----------
+    library:
+        Target :class:`PatternLibrary` to populate.
+    configs:
+        Each dict matches the shape expected by :func:`parse_ralph_config`.
+
+    Returns
+    -------
+    int
+        Number of templates successfully registered.
+    """
+    count = 0
+    for config in configs:
+        topology = parse_ralph_config(config)
+        result = analyze_external_topology(topology)
+
+        template = result.suggested_template if result.suggested_template is not None else ralph_to_template(config)
         library.register_template(template)
         count += 1
 

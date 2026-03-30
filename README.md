@@ -156,7 +156,7 @@ See the [Bi-Temporal Memory docs](https://banu.be/operon/bitemporal-memory/), [e
 
 ### Convergence: Structural Analysis for External Frameworks
 
-The `operon_ai.convergence` package analyzes and integrates external agent orchestration systems ([Swarms](https://github.com/kyegomez/swarms), [DeerFlow](https://github.com/bytedance/deer-flow), [AnimaWorks](https://github.com/AnimaWorks/AnimaWorks)) through typed adapters. No external dependencies — adapters operate on plain dicts.
+The `operon_ai.convergence` package analyzes and integrates 5 external agent frameworks ([Swarms](https://github.com/kyegomez/swarms), [DeerFlow](https://github.com/bytedance/deer-flow), [AnimaWorks](https://github.com/AnimaWorks/AnimaWorks), [Ralph](https://github.com/mikeyobrien/ralph-orchestrator), [A-Evolve](https://github.com/A-EVO-Lab/a-evolve)) through typed adapters. No external dependencies — adapters operate on plain dicts.
 
 ```python
 from operon_ai import PatternLibrary
@@ -183,7 +183,7 @@ library = PatternLibrary()
 seed_library_from_swarms(library, get_builtin_swarms_patterns())
 ```
 
-See [examples 86–96](examples/) and the [Convergence docs](https://banu.be/operon/convergence/).
+See [examples 86–98](examples/) and the [Convergence docs](https://banu.be/operon/convergence/).
 
 ## Learn More
 
@@ -203,8 +203,8 @@ Public docs now live at [banu.be/operon](https://banu.be/operon/). The tracked s
 
 Direct links:
 
-- [Examples index](https://github.com/coredipper/operon/blob/main/examples/README.md) (96 runnable examples)
-- [Wiring diagrams](https://github.com/coredipper/operon/blob/main/examples/wiring_diagrams.md) (61 architecture diagrams)
+- [Examples index](https://github.com/coredipper/operon/blob/main/examples/README.md) (98 runnable examples)
+- [Wiring diagrams](https://github.com/coredipper/operon/blob/main/examples/wiring_diagrams.md) (63 architecture diagrams)
 - [Main whitepaper](https://github.com/coredipper/operon/blob/main/article/main.pdf)
 - [Epistemic topology paper](https://github.com/coredipper/operon/blob/main/article/paper1/main.pdf)
 - [PyPI package](https://pypi.org/project/operon-ai/)

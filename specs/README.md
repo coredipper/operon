@@ -1,6 +1,6 @@
 # Operon TLA+ Specifications
 
-Formal TLA+ specifications for three convergence protocols in the Operon project.
+Formal TLA+ specifications for four convergence protocols in the Operon project.
 These specs define state machines, safety invariants, and liveness properties that
 can be verified with the TLC model checker.
 
@@ -33,6 +33,15 @@ receive interventions (RETRY, ESCALATE, HALT). When the intervention-to-stage
 ratio exceeds the threshold, the organism is halted immediately.
 
 Source: `operon_ai/patterns/watcher.py`
+
+### EvolutionGating.tla
+
+Models the A-Evolve Solve->Observe->Evolve->Gate->Reload loop. Organisms
+maintain a workspace version and a benchmark score. Mutations are generated
+nondeterministically; a gate action accepts the mutation only when the new
+score meets or exceeds the current score. Rejected mutations are rolled back.
+
+Source: [A-Evolve](https://github.com/A-EVO-Lab/a-evolve)
 
 ## Installing the TLA+ Toolbox
 
@@ -109,6 +118,19 @@ Invariants to check: `TypeOK`
 Properties to check: `HaltIsTerminal`, `BoundedNonConvergence`, `ConvergentOrganismCompletes` (under `FairSpec`)
 
 > **Note:** `HaltIsTerminal` is a temporal formula (uses `[][...]_vars`) and `BoundedNonConvergence` uses leads-to (`~>`). In TLC, both must be entered under **Properties**, not **Invariants**.
+
+### EvolutionGating
+
+| Constant           | Value                              |
+|--------------------|------------------------------------|
+| Orgs               | `{o1, o2}`                         |
+| MAX_VERSIONS       | `5`                                |
+| MIN_IMPROVEMENT    | `0.01`                             |
+
+Invariants to check: `TypeOK`, `VersionBound`
+Properties to check: `MonotonicScore`, `GateBeforeDeploy`, `EventualImprovement` (under `FairSpec`)
+
+> **Note:** `MonotonicScore` and `GateBeforeDeploy` are temporal formulas (they use `[][...]_vars`). In TLC, these must be entered under **Properties**, not **Invariants**. Only state predicates (like `TypeOK` and `VersionBound`) go under Invariants.
 
 ## Expected Verification Results
 

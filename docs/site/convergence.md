@@ -1,16 +1,18 @@
 # Convergence
 
-Operon's convergence package bridges external agent orchestration systems into Operon's structural analysis layer. Currently supports [Swarms](https://github.com/kyegomez/swarms), [DeerFlow](https://github.com/bytedance/deer-flow), and [AnimaWorks](https://github.com/AnimaWorks/AnimaWorks).
+Operon's convergence package bridges external agent orchestration systems into Operon's structural analysis layer. Currently supports [Swarms](https://github.com/kyegomez/swarms), [DeerFlow](https://github.com/bytedance/deer-flow), [AnimaWorks](https://github.com/AnimaWorks/AnimaWorks), [Ralph](https://github.com/mikeyobrien/ralph-orchestrator), and [A-Evolve](https://github.com/A-EVO-Lab/a-evolve).
 
-## Four-Layer Architecture
+## Five-Layer Architecture
 
 ```
 ┌─────────────────────────────────────────────┐
+│  A-Evolve (evolution layer)                 │
+├─────────────────────────────────────────────┤
 │  AnimaWorks (cognitive layer)               │
 ├─────────────────────────────────────────────┤
 │  AsyncThink (thinking layer)                │
 ├─────────────────────────────────────────────┤
-│  DeerFlow / Swarms (orchestration layer)    │
+│  Ralph / DeerFlow / Swarms (orchestration)  │
 ├─────────────────────────────────────────────┤
 │  Operon (structural layer)                  │
 └─────────────────────────────────────────────┘
@@ -18,11 +20,18 @@ Operon's convergence package bridges external agent orchestration systems into O
 
 ## Adapters (Phase C1)
 
-Type-level bridges to [Swarms](https://github.com/kyegomez/swarms), [DeerFlow](https://github.com/bytedance/deer-flow), and [AnimaWorks](https://github.com/AnimaWorks/AnimaWorks). All adapters produce `ExternalTopology`, which `analyze_external_topology()` consumes to apply Operon's four epistemic theorems as a structural linter.
+Type-level bridges to [Swarms](https://github.com/kyegomez/swarms), [DeerFlow](https://github.com/bytedance/deer-flow), [AnimaWorks](https://github.com/AnimaWorks/AnimaWorks), [Ralph](https://github.com/mikeyobrien/ralph-orchestrator), and [A-Evolve](https://github.com/A-EVO-Lab/a-evolve). All adapters produce `ExternalTopology`, which `analyze_external_topology()` consumes to apply Operon's four epistemic theorems as a structural linter.
 
 - `parse_swarm_topology()` — Swarms workflow patterns
 - `parse_animaworks_org()` — AnimaWorks org hierarchies
 - `parse_deerflow_session()` — DeerFlow session configs
+
+### Phase C1 (Extended) — Ralph + A-Evolve Adapters
+
+- `parse_ralph_config()` — [Ralph](https://github.com/mikeyobrien/ralph-orchestrator) hat definitions to ExternalTopology
+- `ralph_hats_to_stages()` — maps Ralph hats to Operon StageSpec list
+- `parse_aevolve_workspace()` — [A-Evolve](https://github.com/A-EVO-Lab/a-evolve) workspace manifests to ExternalTopology
+- `aevolve_skills_to_stages()` — maps evolved skills to Operon StageSpec list
 
 ## Template Exchange (Phase C2)
 
@@ -31,6 +40,8 @@ Seed Operon's PatternLibrary from external catalogs:
 - `seed_library_from_swarms()` — 10 built-in Swarms patterns
 - `seed_library_from_deerflow()` — DeerFlow sessions
 - `seed_library_from_acg_survey()` — 8 ACG survey method categories
+- `seed_library_from_ralph()` — Ralph hat-based patterns
+- `seed_library_from_aevolve()` — A-Evolve evolved workspace patterns
 - `skill_to_template()` / `template_to_skill()` — bidirectional DeerFlow bridge
 - `hybrid_skill_organism()` — library-first + generator fallback
 
@@ -43,7 +54,8 @@ Seed Operon's PatternLibrary from external catalogs:
 
 ## Formal Verification (Phase C4)
 
-- 3 TLA+ specs: TemplateExchangeProtocol, DevelopmentalGating, ConvergenceDetection
+- 4 TLA+ specs: TemplateExchangeProtocol, DevelopmentalGating, ConvergenceDetection, EvolutionGating
+- `EvolutionGating.tla` — models the A-Evolve Solve->Observe->Evolve->Gate->Reload loop with monotonic score safety
 - `DesignProblem` + `compose_series/parallel` + `feedback_fixed_point` — Zardini co-design
 
 ## Examples
@@ -52,3 +64,4 @@ Seed Operon's PatternLibrary from external catalogs:
 - [89–91](https://github.com/coredipper/operon/blob/main/examples/): Template exchange
 - [92–95](https://github.com/coredipper/operon/blob/main/examples/): Memory, PrimingView, heartbeat, async
 - [96](https://github.com/coredipper/operon/blob/main/examples/96_codesign_composition.py): Co-design composition
+- [97–98](https://github.com/coredipper/operon/blob/main/examples/): Ralph hat analysis, A-Evolve workspace analysis

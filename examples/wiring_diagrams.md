@@ -143,6 +143,11 @@ Each arrow implies a typed connection with integrity constraints.
 - [Example 95: AsyncThink Fork/Join](wiring_diagrams/example95_async_thinking.md)
 - [Example 96: Co-Design Adapter Composition](wiring_diagrams/example96_codesign_composition.md)
 
+### Evolution + Event-Driven (v0.24.0)
+
+- [Example 97: Ralph Hat Analysis](wiring_diagrams/example97_ralph_hat_analysis.md)
+- [Example 98: A-Evolve Workspace Analysis](wiring_diagrams/example98_aevolve_workspace_analysis.md)
+
 ## Example 17: Typed Wiring (Integrity + Capabilities)
 
 ```

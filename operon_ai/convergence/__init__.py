@@ -19,16 +19,31 @@ from .async_thinking import (
     AsyncThinkResult,
     async_stage_handler,
 )
+from .aevolve_adapter import (
+    aevolve_skills_to_stages,
+    aevolve_to_template,
+    parse_aevolve_workspace,
+)
+from .aevolve_skills import (
+    import_aevolve_skills,
+    seed_library_from_aevolve,
+)
 from .catalog import (
     get_builtin_swarms_patterns,
     seed_library_from_acg_survey,
     seed_library_from_deerflow,
+    seed_library_from_ralph,
     seed_library_from_swarms,
 )
 from .deerflow_adapter import (
     deerflow_skills_to_stages,
     deerflow_to_template,
     parse_deerflow_session,
+)
+from .ralph_adapter import (
+    parse_ralph_config,
+    ralph_hats_to_stages,
+    ralph_to_template,
 )
 from .deerflow_skills import (
     extract_workflow_steps,
@@ -78,11 +93,23 @@ __all__ = [
     "parse_deerflow_session",
     "deerflow_skills_to_stages",
     "deerflow_to_template",
+    # Ralph (C1)
+    "parse_ralph_config",
+    "ralph_hats_to_stages",
+    "ralph_to_template",
+    # A-Evolve (C1)
+    "parse_aevolve_workspace",
+    "aevolve_skills_to_stages",
+    "aevolve_to_template",
     # Catalog (C2)
     "seed_library_from_swarms",
     "seed_library_from_deerflow",
+    "seed_library_from_ralph",
     "seed_library_from_acg_survey",
     "get_builtin_swarms_patterns",
+    # A-Evolve skill bridge (C2)
+    "import_aevolve_skills",
+    "seed_library_from_aevolve",
     # DeerFlow skill bridge (C2)
     "skill_to_template",
     "template_to_skill",

@@ -9,6 +9,14 @@
   Biological analogy: horizontal gene transfer in bacteria with epistemic vigilance
   determining whether foreign genetic material is incorporated or rejected.
 *)
+\* Source diversity: organisms may import templates from various external
+\* systems. The protocol is source-agnostic; common sources include:
+\*   - Swarms (graph-based workflows)
+\*   - DeerFlow (LangGraph sessions)
+\*   - AnimaWorks (supervisor hierarchies)
+\*   - Ralph (event-driven hat orchestration)
+\*   - A-Evolve (evolved workspace snapshots)
+
 EXTENDS Naturals, Reals, FiniteSets, Sequences, TLC
 
 CONSTANTS

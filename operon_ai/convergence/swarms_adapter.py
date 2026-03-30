@@ -381,6 +381,16 @@ def topology_to_template(topology: ExternalTopology) -> PatternTemplate:
         session_config = topology.metadata.get("_session_config")
         if session_config is not None:
             return deerflow_to_template(session_config)
+    elif topology.source == "ralph":
+        from .ralph_adapter import ralph_to_template
+        ralph_config = topology.metadata.get("_ralph_config")
+        if ralph_config is not None:
+            return ralph_to_template(ralph_config)
+    elif topology.source == "aevolve":
+        from .aevolve_adapter import aevolve_to_template
+        aevolve_manifest = topology.metadata.get("_aevolve_manifest")
+        if aevolve_manifest is not None:
+            return aevolve_to_template(aevolve_manifest)
 
     # Generic fallback for Swarms and unknown sources.
     task_shape = _classify_task_shape(topology)

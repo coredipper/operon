@@ -25,7 +25,11 @@ New:
 - `DesignProblem`, `compose_series/parallel`, `feedback_fixed_point` — Zardini co-design
 - 3 TLA+ specifications (TemplateExchange, DevelopmentalGating, ConvergenceDetection)
 - `prompt_optimizer` hook on SkillStage (interface for future DSPy integration)
-- Examples 86–96
+- `parse_ralph_config()`, `ralph_hats_to_stages()` — Ralph adapter
+- `parse_aevolve_workspace()`, `aevolve_skills_to_stages()` — A-Evolve adapter
+- `seed_library_from_ralph/aevolve` — catalog seeding
+- `EvolutionGating.tla` — TLA+ spec for evolution loop
+- Examples 86–98
 
 ## v0.23.3
 
