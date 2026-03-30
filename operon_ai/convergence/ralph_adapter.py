@@ -178,27 +178,20 @@ def ralph_to_template(config: dict) -> PatternTemplate:
     # Derive roles.
     roles = tuple(sorted({s["role"] for s in stage_specs})) if stage_specs else ()
 
-    # Determine topology from event structure.
-    n_hats = len(hats)
-    n_events = len(events)
-    if n_hats <= 1:
+    # Determine topology from event structure using structural analysis.
+    # Parse into ExternalTopology first, then use the shared classifier.
+    ext_topo = parse_ralph_config(config)
+    from .swarms_adapter import _classify_task_shape, _shape_to_topology
+    task_shape = _classify_task_shape(ext_topo)
+    topology = _shape_to_topology(task_shape, len(stage_specs))
+    if len(stage_specs) <= 1:
         topology = "single_worker"
         task_shape = "sequential"
-    elif n_events == 0:
-        topology = "specialist_swarm"
-        task_shape = "parallel"
-    elif n_events == n_hats - 1:
-        # Linear chain of events -> skill organism.
-        topology = "skill_organism"
-        task_shape = "sequential"
-    else:
-        topology = "specialist_swarm"
-        task_shape = "mixed"
 
     fingerprint = TaskFingerprint(
         task_shape=task_shape,
         tool_count=len(backpressure),
-        subtask_count=n_hats,
+        subtask_count=len(stage_specs),
         required_roles=roles,
         tags=("ralph",),
     )

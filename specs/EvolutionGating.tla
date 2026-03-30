@@ -121,11 +121,15 @@ VersionBound ==
 -----------------------------------------------------------------------------
 (* Liveness (requires FairSpec) *)
 
-(* L1: An organism that keeps evolving eventually accepts a mutation.
-   Under fair scheduling, nondeterministic score generation will eventually
-   produce a value that passes the gate. *)
-EventualImprovement ==
+(* L1: Once a qualifying mutation reaches the gate (pending score > current),
+   it is accepted in the next Gate step. This is a conditional liveness
+   property — it does NOT guarantee that Evolve will ever generate an
+   improving score, only that qualifying mutations are never stuck.
+   The unconditional "eventually improves" claim requires an external
+   assumption that the score generator is eventually productive. *)
+QualifyingMutationAccepted ==
     \A org \in Orgs :
-        <>(accepted[org] > 0)
+        (pending[org] # "none" /\ pending[org] > score[org])
+            ~> (accepted[org] > 0)
 
 =============================================================================

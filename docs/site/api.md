@@ -82,14 +82,21 @@ For concrete usage, start from the examples rather than reading the namespaces i
 
 ## Ralph Adapter
 
-- `operon_ai.convergence.ralph`
-  - `parse_ralph_config` — convert Ralph YAML hat config to ExternalTopology
-  - `ralph_hats_to_stages` — map Ralph hats to Operon StageSpec list
+- `operon_ai.convergence.ralph_adapter`
+  - `parse_ralph_config` — convert Ralph hat config to ExternalTopology
+  - `ralph_hats_to_stages` — map Ralph hats to SkillStages with CognitiveMode
+
+- `operon_ai.convergence.catalog`
   - `seed_library_from_ralph` — seed PatternLibrary from Ralph hat patterns
 
 ## A-Evolve Adapter
 
-- `operon_ai.convergence.aevolve`
+- `operon_ai.convergence.aevolve_adapter`
   - `parse_aevolve_workspace` — convert A-Evolve workspace manifest to ExternalTopology
-  - `aevolve_skills_to_stages` — map evolved skills to Operon StageSpec list
-  - `seed_library_from_aevolve` — seed PatternLibrary from A-Evolve workspace patterns
+  - `aevolve_skills_to_stages` — map evolved skills to SkillStages
+
+- `operon_ai.convergence.aevolve_skills`
+  - `import_aevolve_skills` — import SKILL.md strings into PatternLibrary
+  - `seed_library_from_aevolve` — seed from workspace manifests
+
+All functions are also re-exported from `operon_ai.convergence` directly.
