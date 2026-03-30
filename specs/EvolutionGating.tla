@@ -93,7 +93,10 @@ Spec == Init /\ [][Next]_vars
 FairSpec == Spec /\ WF_vars(Next)
 
 -----------------------------------------------------------------------------
-(* Safety invariants *)
+(* Safety properties *)
+(* TypeOK and VersionBound are state invariants (checked under Invariants in TLC).
+   MonotonicScore and GateBeforeDeploy are temporal safety properties
+   (checked under Properties in TLC). *)
 
 (* S1: Score never decreases after an accepted mutation.
    Encoded as a temporal property: in every step, if workspace advances,
@@ -128,7 +131,8 @@ VersionBound ==
      - Rollback may always discard qualifying mutations.
    Evolution liveness ("organism eventually improves") requires external
    assumptions about the score generator and rollback policy that are outside
-   the scope of this structural model. The safety invariants (MonotonicScore,
-   GateBeforeDeploy, VersionBound) are the verifiable guarantees. *)
+   the scope of this structural model. The safety properties (MonotonicScore,
+   GateBeforeDeploy) and invariants (TypeOK, VersionBound) are the
+   verifiable guarantees. *)
 
 =============================================================================
