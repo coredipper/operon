@@ -27,7 +27,8 @@ CONSTANTS
     ADOPTION_THRESHOLD, \* peer_success_rate * trust must meet this (default 0.3)
     DECAY_ALPHA,        \* EMA smoothing factor (default 0.3)
     DEFAULT_TRUST,      \* Initial trust for unknown peers (default 0.5)
-    MAX_OUTCOMES        \* Bound on outcomes for model checking
+    MAX_OUTCOMES,       \* Bound on outcomes for model checking
+    InitLibrary         \* Function: org -> set of initial templates (must be stage-compatible)
 
 ASSUME MIN_TRUST \in Real /\ MIN_TRUST >= 0.0 /\ MIN_TRUST <= 1.0
 ASSUME ADOPTION_THRESHOLD \in Real /\ ADOPTION_THRESHOLD >= 0.0 /\ ADOPTION_THRESHOLD <= 1.0
@@ -89,14 +90,15 @@ TypeOK ==
 (* Initial state *)
 
 Init ==
-    \* Each org starts with one template (CHOOSE assigns deterministically).
-    \* This enables Import/RecordOutcome/Export to be reachable from Init.
-    /\ library      = [org \in Orgs |-> {CHOOSE t \in Templates : TRUE}]
+    \* Each org starts with a distinct template set (InitLibrary) so that
+    \* Import is reachable (peers offer templates the org doesn't already hold).
+    \* InitLibrary must assign only stage-compatible templates (MinStage <= EMBRYONIC).
+    /\ library      = InitLibrary
     /\ trust        = [org \in Orgs |-> [peer \in Orgs |-> DEFAULT_TRUST]]
     /\ stage        = [org \in Orgs |-> "EMBRYONIC"]
     /\ successes    = [org \in Orgs |-> [tmpl \in Templates |-> 0]]
     /\ totals       = [org \in Orgs |-> [tmpl \in Templates |-> 0]]
-    /\ exported     = [org \in Orgs |-> {CHOOSE t \in Templates : TRUE}]
+    /\ exported     = InitLibrary
     /\ outcomeCount = [org \in Orgs |-> 0]
     /\ adoptedFrom  = [org \in Orgs |-> [tmpl \in Templates |-> "none"]]
 

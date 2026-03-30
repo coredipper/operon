@@ -163,6 +163,8 @@ the values in the `.cfg` files.
 | DECAY_ALPHA        | `0.3`                              |
 | DEFAULT_TRUST      | `0.5`                              |
 | MAX_OUTCOMES       | `3`                                |
+| InitLibrary        | `[o1 \|-> {t1}, o2 \|-> {t2}]`    |
+| MinStage           | `[t1 \|-> "EMBRYONIC", t2 \|-> "EMBRYONIC"]` |
 
 ### DevelopmentalGating
 
@@ -193,7 +195,8 @@ the values in the `.cfg` files.
 |--------------------|------------------------------------|
 | Orgs               | `{o1, o2}`                         |
 | MAX_VERSIONS       | `5`                                |
-| MIN_IMPROVEMENT    | `0.01`                             |
+| MIN_IMPROVEMENT    | `0`                                |
+| ScoreSet           | `{0, 1, 2, 3}`                    |
 
 ## Property Classification Guide
 
