@@ -24,10 +24,11 @@ Every adapter produces an \texttt{ExternalTopology}---a framework-agnostic
 intermediate representation carrying a source tag, a pattern name, agent
 specifications, directed communication edges, and arbitrary metadata. The
 analysis pipeline is source-agnostic: \texttt{analyze\_external\_topology()}
-consumes any \texttt{ExternalTopology} and applies the four epistemic theorems
-(Theorems~\ref{thm:error-amplification}--\ref{thm:tool-density}) to produce
-topology advice, a suggested \texttt{PatternTemplate}, structural warnings, and
-a composite risk score. Adding a new orchestration target therefore requires
+consumes any \texttt{ExternalTopology} and applies three of the four epistemic
+bounds---error amplification, sequential penalty, and tool density---plus a
+topology-mismatch flag to produce topology advice, structural warnings, and
+a composite risk score. (Parallel acceleration is computed by the epistemic
+layer but not included in the adapter risk score.) Adding a new orchestration target therefore requires
 writing a single parse function---no changes to the analysis code.
 
 Four TLA+ specifications verify safety invariants that are difficult to test

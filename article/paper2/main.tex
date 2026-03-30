@@ -47,7 +47,7 @@ We present a structured adapter architecture centred on a single
 intermediate representation, \texttt{ExternalTopology}, that lets Operon's
 structural analysis layer analyze the static structural skeleton of
 external agent configurations without importing the target framework.  Five adapters parse framework-specific configurations into this
-common representation; four epistemic theorems serve as a structural linter;
+common representation; four epistemic bounds serve as a structural linter;
 four TLA+ specifications verify safety invariants; and a co-design
 fixed-point proof (following Zardini) establishes that the adaptive assembly
 loop converges within $\varepsilon$.  The architecture is implemented in 14
@@ -97,7 +97,7 @@ structural analysis from runtime execution:
   \item \textbf{ExternalTopology} as a framework-agnostic intermediate
     representation: five adapters parse five frameworks into a single
     frozen dataclass; all downstream analysis is source-agnostic.
-  \item \textbf{Epistemic theorems as structural linter}: error
+  \item \textbf{Epistemic bounds as structural linter}: error
     amplification, sequential penalty, parallel acceleration, and tool
     density bounds are applied uniformly to every imported topology.
   \item \textbf{TLA+ verified safety invariants}: four specifications
@@ -195,7 +195,7 @@ class AdapterResult:
 \end{lstlisting}
 
 The pipeline constructs a wiring diagram from agents and edges, applies the
-four epistemic theorems, generates structural warnings, and optionally
+four epistemic bounds, generates structural warnings, and optionally
 produces a \texttt{PatternTemplate} for the pattern library.
 
 \subsection{Design Principles}
@@ -633,7 +633,7 @@ We have presented a structured adapter architecture for integrating Operon's
 structural analysis layer with five external agent orchestration
 systems---Swarms, DeerFlow, AnimaWorks, Ralph, and A-Evolve---through a
 single intermediate type, \texttt{ExternalTopology}.  The architecture
-contributes four epistemic theorems that serve as a structural linter, four
+contributes four epistemic bounds that serve as a structural linter, four
 TLA+-verified safety invariants, and a co-design convergence proof showing
 that the adaptive assembly loop stabilizes within $\varepsilon$.  By
 operating on serializable dicts with zero external imports, the adapter
