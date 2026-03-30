@@ -232,7 +232,7 @@ over pondering" philosophy makes this the most honest test of the framework.
 
 | Deliverable | Description |
 |-------------|-------------|
-| Eval harness | BFCL + AgentDojo across Operon, Swarms, DeerFlow, AnimaWorks |
+| Eval harness | BFCL + AgentDojo across all 7 configurations (Operon, Swarms, DeerFlow, AnimaWorks, Ralph, Scion unguided, Scion + Operon) |
 | Structural variation | ACG gap: measure graph topology variation across inputs |
 | Credit assignment | ACG gap: per-stage attribution of success/failure |
 | Convergence paper | Six-layer architecture with evaluation results |
