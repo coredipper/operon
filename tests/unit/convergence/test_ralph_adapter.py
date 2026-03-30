@@ -186,3 +186,54 @@ class TestRalphToTemplate:
     def test_template_id_is_nonempty(self) -> None:
         result = ralph_to_template(_RALPH_CONFIG)
         assert len(result.template_id) == 8
+
+    def test_branched_events_not_skill_organism(self) -> None:
+        """Fan-out (one hat → two targets) should not classify as skill_organism."""
+        cfg = {
+            "backend": "claude",
+            "hats": [
+                {"name": "manager", "pattern": "code-assist"},
+                {"name": "worker_a", "pattern": "code-assist"},
+                {"name": "worker_b", "pattern": "code-assist"},
+            ],
+            "events": [
+                {"from": "manager", "event": "dispatch", "to": "worker_a"},
+                {"from": "manager", "event": "dispatch", "to": "worker_b"},
+            ],
+        }
+        result = ralph_to_template(cfg)
+        assert result.topology != "skill_organism"
+
+    def test_cyclic_events_not_skill_organism(self) -> None:
+        """Cycle (A→B→A) should not classify as sequential skill_organism."""
+        cfg = {
+            "backend": "claude",
+            "hats": [
+                {"name": "coder", "pattern": "code-assist"},
+                {"name": "reviewer", "pattern": "review"},
+            ],
+            "events": [
+                {"from": "coder", "event": "code.done", "to": "reviewer"},
+                {"from": "reviewer", "event": "needs_fix", "to": "coder"},
+            ],
+        }
+        result = ralph_to_template(cfg)
+        assert result.topology != "skill_organism"
+
+    def test_disconnected_events_not_skill_organism(self) -> None:
+        """Disconnected (A→B, C→D) should not classify as skill_organism."""
+        cfg = {
+            "backend": "claude",
+            "hats": [
+                {"name": "a", "pattern": "code-assist"},
+                {"name": "b", "pattern": "debug"},
+                {"name": "c", "pattern": "research"},
+                {"name": "d", "pattern": "review"},
+            ],
+            "events": [
+                {"from": "a", "event": "done", "to": "b"},
+                {"from": "c", "event": "done", "to": "d"},
+            ],
+        }
+        result = ralph_to_template(cfg)
+        assert result.topology != "skill_organism"

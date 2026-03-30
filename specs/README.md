@@ -128,7 +128,7 @@ Properties to check: `HaltIsTerminal`, `BoundedNonConvergence`, `ConvergentOrgan
 | MIN_IMPROVEMENT    | `0.01`                             |
 
 Invariants to check: `TypeOK`, `VersionBound`
-Properties to check: `MonotonicScore`, `GateBeforeDeploy`, `QualifyingMutationAccepted` (under `FairSpec`). Note: `QualifyingMutationAccepted` is conditional — it proves qualifying mutations are accepted, not that they are ever generated.
+Properties to check: `MonotonicScore`, `GateBeforeDeploy` (under `FairSpec`). No liveness property is provided — evolution liveness requires external assumptions about score generation that are outside the model's scope. See the comment in the spec for details.
 
 > **Note:** `MonotonicScore` and `GateBeforeDeploy` are temporal formulas (they use `[][...]_vars`). In TLC, these must be entered under **Properties**, not **Invariants**. Only state predicates (like `TypeOK` and `VersionBound`) go under Invariants.
 

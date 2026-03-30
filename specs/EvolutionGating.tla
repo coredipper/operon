@@ -119,17 +119,16 @@ VersionBound ==
     \A org \in Orgs : workspace[org] <= MAX_VERSIONS
 
 -----------------------------------------------------------------------------
-(* Liveness (requires FairSpec) *)
+(* Liveness discussion *)
 
-(* L1: Once a qualifying mutation reaches the gate (pending score > current),
-   it is accepted in the next Gate step. This is a conditional liveness
-   property — it does NOT guarantee that Evolve will ever generate an
-   improving score, only that qualifying mutations are never stuck.
-   The unconditional "eventually improves" claim requires an external
-   assumption that the score generator is eventually productive. *)
-QualifyingMutationAccepted ==
-    \A org \in Orgs :
-        (pending[org] # "none" /\ pending[org] > score[org])
-            ~> (accepted[org] > 0)
+(* This spec intentionally provides NO liveness property. The nondeterministic
+   score generation in Evolve and the choice between Gate/Rollback mean that
+   weak fairness on Next does not guarantee eventual acceptance:
+     - Evolve may never generate an improving score.
+     - Rollback may always discard qualifying mutations.
+   Evolution liveness ("organism eventually improves") requires external
+   assumptions about the score generator and rollback policy that are outside
+   the scope of this structural model. The safety invariants (MonotonicScore,
+   GateBeforeDeploy, VersionBound) are the verifiable guarantees. *)
 
 =============================================================================
