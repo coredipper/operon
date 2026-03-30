@@ -26,7 +26,7 @@
 }
 
 \title{\textbf{Convergence by Composition}\\
-\large A Typed Adapter Architecture for Multi-Agent System Integration\\[0.5em]
+\large A Structured Adapter Architecture for Multi-Agent System Integration\\[0.5em]
 \normalsize Preprint -- Feedback Welcome}
 \author{Bogdan Banu\\\texttt{bogdan@banu.be}}
 \date{\today}
@@ -43,10 +43,10 @@ A-Evolve---make fundamentally different architectural choices (graph-based,
 event-driven, hierarchical, evolutionary) yet share structural concerns:
 error amplification across handoffs, coordination overhead from tool
 proliferation, and the absence of convergence guarantees for adaptive loops.
-We present a typed adapter architecture centred on a single intermediate
-type, \texttt{ExternalTopology}, that lets Operon's structural analysis layer
-analyze \emph{any} external agent topology without importing the target
-framework.  Five adapters parse framework-specific configurations into this
+We present a structured adapter architecture centred on a single
+intermediate representation, \texttt{ExternalTopology}, that lets Operon's
+structural analysis layer analyze \emph{any} external agent topology
+without importing the target framework.  Five adapters parse framework-specific configurations into this
 common representation; four epistemic theorems serve as a structural linter;
 four TLA+ specifications verify safety invariants; and a co-design
 fixed-point proof (following Zardini) establishes that the adaptive assembly
@@ -90,13 +90,13 @@ convergence proofs.  Kim et al.~\cite{kim2025scaling} identify scaling
 laws for agent systems whose functional form is consistent with the
 epistemic bounds derived in the present work.
 
-Our contribution is a \emph{typed adapter architecture} that decouples
+Our contribution is a \emph{structured adapter architecture} that decouples
 structural analysis from runtime execution:
 
 \begin{enumerate}[leftmargin=*,itemsep=2pt]
-  \item \textbf{ExternalTopology} as a universal intermediate type:
-    five adapters parse five frameworks into a single frozen dataclass;
-    all downstream analysis is source-agnostic.
+  \item \textbf{ExternalTopology} as a framework-agnostic intermediate
+    representation: five adapters parse five frameworks into a single
+    frozen dataclass; all downstream analysis is source-agnostic.
   \item \textbf{Epistemic theorems as structural linter}: error
     amplification, sequential penalty, parallel acceleration, and tool
     density bounds are applied uniformly to any topology.
@@ -153,7 +153,7 @@ providing structural analysis to every layer above.  Arrows flow upward
 \label{fig:stack}
 \end{figure}
 
-\subsection{ExternalTopology as Universal Intermediate Type}
+\subsection{ExternalTopology as Framework-Agnostic Intermediate Representation}
 
 The key abstraction is a single frozen dataclass that every adapter
 produces and every analysis function consumes:
@@ -168,6 +168,9 @@ class ExternalTopology:
     metadata: dict[str, Any] = field(default_factory=dict)
 \end{lstlisting}
 
+The agent specs use \texttt{dict[str, Any]} to accommodate heterogeneous
+framework configurations; type safety is enforced at the dataclass
+boundary, not within individual agent specifications.
 The \texttt{source} field is a tag, not a type discriminant---all
 downstream code treats every \texttt{ExternalTopology} identically.
 Agents are plain dicts with at least \texttt{name} and \texttt{role}
@@ -256,6 +259,13 @@ The linter reports the achievable speedup and flags topologies where
 $S < 1.2$ (parallel structure exists but provides negligible benefit).
 \end{definition}
 
+\noindent
+Parallel acceleration informs the topology recommendation via
+\texttt{recommend\_topology()} but is not included in the composite risk
+score, which focuses on the three primary failure modes (error
+amplification, sequential overhead, tool density) plus a
+topology-mismatch flag.
+
 \begin{definition}[Tool Density]
 For a topology with $T$ distinct tools across $N$ agents, the tool density
 is $\delta = T / N$.  High density ($\delta > 3$) suggests coordination
@@ -263,13 +273,20 @@ overhead: each agent must manage many tool interfaces.  Low density
 ($\delta < 0.5$) suggests under-utilization.
 \end{definition}
 
-The composite risk score is a weighted sum:
+The composite risk score is a weighted sum of four components:
 \[
-  r \;=\; w_1 P_{\mathrm{error}}(n) \;+\; w_2 \rho_{\mathrm{seq}}
-    \;+\; w_3 (1 - S^{-1}) \;+\; w_4 \min(\delta / 5, 1)
+  r \;=\; 0.4\, \hat{P}_{\mathrm{error}}
+    \;+\; 0.3\, \rho_{\mathrm{seq}}
+    \;+\; 0.2\, \delta_{\mathrm{density}}
+    \;+\; 0.1\, M_{\mathrm{topo}}
 \]
-with default weights $w_1 = 0.4$, $w_2 = 0.25$, $w_3 = 0.15$,
-$w_4 = 0.2$.
+where $\hat{P}_{\mathrm{error}}$ is the normalized centralized error
+bound, $\rho_{\mathrm{seq}}$ is the effective sequential overhead,
+$\delta_{\mathrm{density}}$ is the normalized planning-cost ratio
+(tool density), and $M_{\mathrm{topo}} \in \{0,1\}$ is a binary
+topology-mismatch flag raised when the detected topology class diverges
+from the recommended class.  The weights are $w_1 = 0.4$, $w_2 = 0.3$,
+$w_3 = 0.2$, $w_4 = 0.1$.
 
 These bounds are consistent with the scaling laws reported by Kim et
 al.~\cite{kim2025scaling}: their empirical observation that error rates
@@ -281,7 +298,7 @@ bounds respectively.
 
 Four TLA+ specifications model critical protocols in the convergence
 architecture.  Each is verified by the TLC model checker with small-model
-parameters (2--3 organisms, 2--3 templates/tools, bounded iteration
+parameters (2--3 agents, 2--3 templates/tools, bounded iteration
 counts).  Table~\ref{tab:tla} summarizes the specifications and their key
 invariants.
 
@@ -330,10 +347,9 @@ EvolutionGating
 \end{table}
 
 \paragraph{TemplateExchangeProtocol.}
-Models cross-organism template sharing with trust-weighted adoption,
-inspired by horizontal gene transfer with epistemic vigilance.  An organism
-imports a peer's template only when three guards are satisfied: (i) the
-organism's developmental stage meets the template's minimum stage,
+Models cross-agent template sharing with trust-weighted adoption.
+An agent imports a peer's template only when three guards are satisfied:
+(i) the agent's developmental stage meets the template's minimum stage,
 (ii) trust in the peer exceeds \texttt{MIN\_TRUST}, and (iii) the
 effective score $\text{peer\_success\_rate} \times \text{trust} \geq
 \text{ADOPTION\_THRESHOLD}$.  Trust updates use exponential moving
@@ -343,34 +359,34 @@ the invariant.
 
 \paragraph{DevelopmentalGating.}
 Models lifecycle progression with critical periods and capability gating.
-Organisms consume telomere capacity, advancing through four stages
+Agents progress through lifecycle stages, advancing through four stages
 (Embryonic $\to$ Juvenile $\to$ Adolescent $\to$ Mature).  The key
 safety property is \emph{critical period irreversibility}: once a period
-transitions from ``open'' to ``closed,'' it can never reopen.  This
-models neurodevelopmental critical periods where specific circuits are
-maximally plastic only during a bounded window.
+transitions from ``open'' to ``closed,'' it can never reopen.  This models time-limited configuration windows that close permanently.
 
 \paragraph{ConvergenceDetection.}
-Models the watcher's convergence protocol.  As organisms execute stages,
+Models the watcher's convergence protocol.  As agents execute stages,
 the watcher tracks the ratio of interventions (RETRY, ESCALATE, HALT) to
 completed stages.  When this ratio exceeds \texttt{MAX\_RATE}, the
-organism is halted in the same atomic step---a safety property expressing
+agent is halted in the same atomic step---a safety property expressing
 that non-convergent execution is always detected and terminated.
 
 \paragraph{EvolutionGating.}
 Models the A-Evolve mutation loop.  The \texttt{Gate} action accepts a
 pending mutation only when its benchmark score meets or exceeds the current
 score plus \texttt{MIN\_IMPROVEMENT}.  This ensures monotonic score
-progression: the organism never regresses.  The specification intentionally
+progression: the agent system never regresses.  The specification intentionally
 provides no liveness guarantee, since evolution liveness depends on the
 score generator---an external assumption outside the structural model.
 
 \subsection{Co-Design Convergence}\label{sec:codesign}
 
-Following Zardini's co-design theory~\cite{zardini2023codesign}, we model
-each adapter as a \emph{design problem} (DP)---a monotone map from a
-resource poset to a functionality poset.  Monotonicity means that more
-resources yield at least as many functionalities.
+We apply a simplified version of Zardini's co-design
+framework~\cite{zardini2023codesign}, using ordinary function composition
+rather than the full categorical apparatus.  We model each adapter as a
+\emph{design problem} (DP)---a monotone map from a resource poset to a
+functionality poset.  Monotonicity means that more resources yield at
+least as many functionalities.
 
 \begin{definition}[Design Problem]
 A design problem is a pair $(f, g)$ where $f: \mathcal{R} \to \mathcal{F}$
@@ -480,7 +496,7 @@ The \texttt{hybrid\_skill\_organism} function implements a two-phase
 assembly strategy.  In the first phase, it queries the pattern library for
 templates matching the task fingerprint; if a template with a sufficiently
 high success score exists, it is used directly.  In the second phase
-(fallback), an LLM generator produces a one-shot organism, which is
+(fallback), an LLM generator produces a one-shot agent configuration, which is
 registered in the library for scoring refinement over subsequent runs.
 This library-first, generator-fallback design ensures that the system
 improves with experience while maintaining availability for novel tasks.
@@ -533,7 +549,7 @@ as open problems.
 Evans et al.~\cite{evans2026plural} argue that the next advance in AI
 will be combinatorial societies of specialized agents rather than
 monolithic models, drawing on primate social scaling and cultural ratchet
-effects.  Our work provides the formal infrastructure---typed composition,
+effects.  Our work provides the formal infrastructure---structured composition,
 verified safety invariants, convergence proofs---for the ``plural
 intelligence'' vision they articulate.
 
@@ -569,7 +585,7 @@ adaptive assembly loop converges to a fixed point.
 The current adapter architecture analyzes structure but does not generate
 executable workflows.  The natural next step is \emph{compilers}: functions
 like \texttt{organism\_to\_swarms} and \texttt{organism\_to\_deerflow} that
-compile Operon organisms into Swarms workflow configurations or DeerFlow
+compile Operon agent systems into Swarms workflow configurations or DeerFlow
 LangGraph sessions.  For DeerFlow, the deepest integration is a native
 LangGraph watcher node (\texttt{operon\_watcher\_node}) that provides
 real-time structural monitoring inside DeerFlow's execution loop.
@@ -608,7 +624,7 @@ distribution shift in the task stream.
 %% ============================================================================
 \section{Conclusion}\label{sec:conclusion}
 
-We have presented a typed adapter architecture for integrating Operon's
+We have presented a structured adapter architecture for integrating Operon's
 structural analysis layer with five external agent orchestration
 systems---Swarms, DeerFlow, AnimaWorks, Ralph, and A-Evolve---through a
 single intermediate type, \texttt{ExternalTopology}.  The architecture
@@ -616,8 +632,8 @@ contributes four epistemic theorems that serve as a structural linter, four
 TLA+-verified safety invariants, and a co-design convergence proof showing
 that the adaptive assembly loop stabilizes within $\varepsilon$.  By
 operating on serializable dicts with zero external imports, the adapter
-architecture achieves framework-agnostic analysis while preserving full
-type safety.  The 14 convergence modules, 216 convergence tests, 4 TLA+
+architecture achieves framework-agnostic analysis while preserving a
+structured interchange format with frozen immutability guarantees.  The 14 convergence modules, 216 convergence tests, 4 TLA+
 specifications, and 98 worked examples provide a concrete, verifiable
 foundation for multi-agent system integration.
 
