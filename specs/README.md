@@ -137,7 +137,10 @@ Properties to check: `MonotonicScore`, `GateBeforeDeploy` (under `FairSpec`). No
 With the small-model parameters above, TLC should report:
 
 - **All safety invariants pass** (no counterexamples found).
-- **Liveness properties pass** under `FairSpec` (fair scheduling).
+- **Liveness properties pass** under `FairSpec` (fair scheduling) for specs
+  that define them (TemplateExchangeProtocol, DevelopmentalGating,
+  ConvergenceDetection). EvolutionGating defines no liveness property —
+  only safety invariants are checked.
 - State space for each spec is on the order of thousands to tens of thousands
   of states, completing in seconds to a few minutes.
 
