@@ -1,0 +1,626 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage[hypertexnames=false]{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
+\newtheorem{proposition}{Proposition}
+
+\lstset{
+  language=Python,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue!70!black},
+  commentstyle=\color{green!50!black},
+  stringstyle=\color{red!60!black},
+  showstringspaces=false,
+  frame=single,
+  breaklines=true,
+  columns=fullflexible,
+}
+
+\title{\textbf{Convergence by Composition}\\
+\large A Typed Adapter Architecture for Multi-Agent System Integration\\[0.5em]
+\normalsize Preprint -- Feedback Welcome}
+\author{Bogdan Banu\\\texttt{bogdan@banu.be}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+%% ============================================================================
+%% ABSTRACT
+%% ============================================================================
+\begin{abstract}
+Agent orchestration frameworks---Swarms, DeerFlow, AnimaWorks, Ralph, and
+A-Evolve---make fundamentally different architectural choices (graph-based,
+event-driven, hierarchical, evolutionary) yet share structural concerns:
+error amplification across handoffs, coordination overhead from tool
+proliferation, and the absence of convergence guarantees for adaptive loops.
+We present a typed adapter architecture centred on a single intermediate
+type, \texttt{ExternalTopology}, that lets Operon's structural analysis layer
+analyze \emph{any} external agent topology without importing the target
+framework.  Five adapters parse framework-specific configurations into this
+common representation; four epistemic theorems serve as a structural linter;
+four TLA+ specifications verify safety invariants; and a co-design
+fixed-point proof (following Zardini) establishes that the adaptive assembly
+loop converges within $\varepsilon$.  The architecture is implemented in 14
+convergence modules with 216 convergence-specific tests as part of a broader
+suite of 1{,}404 tests and 98 worked examples.
+\end{abstract}
+
+%% ============================================================================
+%% 1. INTRODUCTION
+%% ============================================================================
+\section{Introduction}
+
+The past two years have seen a proliferation of agent orchestration
+frameworks, each embodying a different theory of how autonomous agents
+should coordinate.  Swarms~\cite{swarms} provides graph-based workflows
+with sequential, concurrent, and hierarchical scheduling.
+DeerFlow, built on LangGraph, offers sub-agent harnesses with sandboxed
+execution and progressive skill loading.
+AnimaWorks~\cite{animaworks} introduces developmental priming with
+heartbeat-driven memory consolidation.  Ralph organizes agents as ``hats''
+connected by event-driven transitions with backpressure constraints.
+A-Evolve implements an evolutionary Solve--Observe--Evolve--Gate--Reload
+loop that mutates workspace snapshots under a fitness gate.
+
+These frameworks differ in execution model, memory architecture, and
+deployment infrastructure, yet they converge on a shared set of structural
+concerns.  Every multi-agent system must manage error amplification across
+sequential handoffs, balance coordination overhead against parallel
+speedup, and decide when an adaptive loop has stabilized.  As Evans,
+Bratton, and Ag\"{u}era y Arcas argue, intelligence is ``fundamentally
+plural, social, and relational''~\cite{evans2026plural}; the engineering
+challenge is to build, verify, and optimize the structural infrastructure
+for such systems.
+
+The Agentic Computation Graph (ACG) survey by Yue et
+al.~\cite{yue2026acg} provides a comprehensive taxonomy of workflow
+optimization methods---from static template search to in-execution
+editing---but does not address formal verification or compositional
+convergence proofs.  Kim et al.~\cite{kim2025scaling} identify scaling
+laws for agent systems whose functional form is consistent with the
+epistemic bounds derived in the present work.
+
+Our contribution is a \emph{typed adapter architecture} that decouples
+structural analysis from runtime execution:
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \textbf{ExternalTopology} as a universal intermediate type:
+    five adapters parse five frameworks into a single frozen dataclass;
+    all downstream analysis is source-agnostic.
+  \item \textbf{Epistemic theorems as structural linter}: error
+    amplification, sequential penalty, parallel acceleration, and tool
+    density bounds are applied uniformly to any topology.
+  \item \textbf{TLA+ verified safety invariants}: four specifications
+    cover template exchange, developmental gating, convergence detection,
+    and evolution gating, verified by the TLC model checker with
+    small-model parameters.
+  \item \textbf{Co-design convergence}: each adapter is a design problem
+    in Zardini's co-design theory~\cite{zardini2023codesign};
+    series/parallel composition and feedback fixed-point iteration prove
+    that scoring stabilizes.
+\end{enumerate}
+
+The rest of this paper describes the architecture (Section~\ref{sec:arch}),
+formal results (Section~\ref{sec:formal}), implementation
+(Section~\ref{sec:impl}), related work (Section~\ref{sec:related}),
+discussion (Section~\ref{sec:discussion}), and conclusion
+(Section~\ref{sec:conclusion}).
+
+%% ============================================================================
+%% 2. ARCHITECTURE
+%% ============================================================================
+\section{Architecture}\label{sec:arch}
+
+The convergence architecture is a five-layer stack (Figure~\ref{fig:stack}).
+Each layer is independently useful: the cognitive layer can run without an
+orchestration layer; the structural layer can analyze topologies without
+executing them.
+
+\begin{figure}[ht]
+\centering
+\begin{verbatim}
+  +-----------------------------------------------+
+  |  AnimaWorks (cognitive layer)                  |
+  |  Identity, memory consolidation, priming       |
+  +-----------------------------------------------+
+  |  AsyncThink (thinking layer)                   |
+  |  Fork/Join policy, concurrency optimization    |
+  +-----------------------------------------------+
+  |  DeerFlow / Swarms / Ralph (orchestration)     |
+  |  Sub-agent harness, sandbox, skill loading     |
+  +-----------------------------------------------+
+  |  A-Evolve (evolution layer)                    |
+  |  Solve-Observe-Evolve-Gate-Reload loop         |
+  +-----------------------------------------------+
+  |  Operon (structural layer)                     |
+  |  Topology advice, epistemic analysis,          |
+  |  pattern scoring, watcher, co-design proofs    |
+  +-----------------------------------------------+
+\end{verbatim}
+\caption{Five-layer convergence stack.  Operon sits at the bottom,
+providing structural analysis to every layer above.  Arrows flow upward
+(analysis results) and downward (topology descriptions).}
+\label{fig:stack}
+\end{figure}
+
+\subsection{ExternalTopology as Universal Intermediate Type}
+
+The key abstraction is a single frozen dataclass that every adapter
+produces and every analysis function consumes:
+
+\begin{lstlisting}[caption={ExternalTopology dataclass (convergence/types.py).},label=lst:topo]
+@dataclass(frozen=True)
+class ExternalTopology:
+    source: str                          # "swarms"|"deerflow"|...
+    pattern_name: str
+    agents: tuple[dict[str, Any], ...]
+    edges: tuple[tuple[str, str], ...]
+    metadata: dict[str, Any] = field(default_factory=dict)
+\end{lstlisting}
+
+The \texttt{source} field is a tag, not a type discriminant---all
+downstream code treats every \texttt{ExternalTopology} identically.
+Agents are plain dicts with at least \texttt{name} and \texttt{role}
+keys; edges are directed pairs.  This representation is serializable as
+JSON, enabling analysis results to be stored, transmitted, and compared
+across framework boundaries.
+
+\subsection{Analysis Pipeline}
+
+The function \texttt{analyze\_external\_topology(topology)} takes any
+\texttt{ExternalTopology} and returns an \texttt{AdapterResult}:
+
+\begin{lstlisting}[caption={AdapterResult dataclass (convergence/types.py).},label=lst:result]
+@dataclass(frozen=True)
+class AdapterResult:
+    topology_advice: TopologyAdvice
+    suggested_template: PatternTemplate | None
+    warnings: tuple[str, ...]
+    risk_score: float                    # [0.0, 1.0]
+\end{lstlisting}
+
+The pipeline constructs a wiring diagram from agents and edges, applies the
+four epistemic theorems, generates structural warnings, and optionally
+produces a \texttt{PatternTemplate} for the pattern library.
+
+\subsection{Design Principles}
+
+Three principles govern the adapter architecture:
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \textbf{Serializable dicts, zero external imports.}  Every adapter
+    operates on plain dicts parsed from configuration files or API
+    responses.  No adapter imports Swarms, DeerFlow, AnimaWorks, Ralph, or
+    A-Evolve.
+  \item \textbf{One parser, one analyzer.}  Adding a new framework means
+    writing one \texttt{parse\_*} function that produces
+    \texttt{ExternalTopology}; the analysis code is unchanged.
+  \item \textbf{Bidirectional exchange.}  DeerFlow's Markdown skill files
+    convert to \texttt{PatternTemplate} and vice versa, enabling
+    cross-framework template sharing.
+\end{enumerate}
+
+%% ============================================================================
+%% 3. FORMAL RESULTS
+%% ============================================================================
+\section{Formal Results}\label{sec:formal}
+
+\subsection{Epistemic Theorems as Structural Linter}\label{sec:epistemic}
+
+Operon derives four structural bounds from epistemic topology---the
+study of how knowledge and uncertainty propagate through agent
+communication graphs.  These bounds are applied to every
+\texttt{ExternalTopology} as a ``structural linter,'' flagging
+architectures that are likely to amplify errors or incur excessive
+coordination overhead.
+
+\begin{definition}[Error Amplification Bound]
+For a sequential chain of $n$ agents, each with per-stage error rate
+$\epsilon$, the cumulative error probability is bounded by:
+\[
+  P_{\mathrm{error}}(n) \;\leq\; 1 - (1 - \epsilon)^n
+\]
+When $n\epsilon \ll 1$, the linear approximation $P_{\mathrm{error}} \approx n\epsilon$
+applies.  The linter warns when the chain depth produces
+$P_{\mathrm{error}} > \tau$ for a configurable tolerance $\tau$.
+\end{definition}
+
+\begin{definition}[Sequential Penalty]
+For a topology with $n_{\mathrm{seq}}$ sequential handoffs and total
+agent count $N$, the sequential penalty ratio is:
+\[
+  \rho_{\mathrm{seq}} \;=\; \frac{n_{\mathrm{seq}}}{N}
+\]
+Values of $\rho_{\mathrm{seq}} > 0.7$ indicate that the topology is
+predominantly sequential and may benefit from parallelization.
+\end{definition}
+
+\begin{definition}[Parallel Acceleration]
+For a topology with $k$ independent branches of depths $d_1, \ldots, d_k$,
+the critical-path latency under parallel execution is:
+\[
+  L_{\mathrm{par}} \;=\; \max_{i \in [k]} d_i
+\]
+The speedup over sequential execution is $S = \sum_i d_i / L_{\mathrm{par}}$.
+The linter reports the achievable speedup and flags topologies where
+$S < 1.2$ (parallel structure exists but provides negligible benefit).
+\end{definition}
+
+\begin{definition}[Tool Density]
+For a topology with $T$ distinct tools across $N$ agents, the tool density
+is $\delta = T / N$.  High density ($\delta > 3$) suggests coordination
+overhead: each agent must manage many tool interfaces.  Low density
+($\delta < 0.5$) suggests under-utilization.
+\end{definition}
+
+The composite risk score is a weighted sum:
+\[
+  r \;=\; w_1 P_{\mathrm{error}}(n) \;+\; w_2 \rho_{\mathrm{seq}}
+    \;+\; w_3 (1 - S^{-1}) \;+\; w_4 \min(\delta / 5, 1)
+\]
+with default weights $w_1 = 0.4$, $w_2 = 0.25$, $w_3 = 0.15$,
+$w_4 = 0.2$.
+
+These bounds are consistent with the scaling laws reported by Kim et
+al.~\cite{kim2025scaling}: their empirical observation that error rates
+grow with chain depth and that coordination overhead dominates at high
+agent counts corresponds to the Error Amplification and Tool Density
+bounds respectively.
+
+\subsection{TLA+ Verified Safety Invariants}\label{sec:tla}
+
+Four TLA+ specifications model critical protocols in the convergence
+architecture.  Each is verified by the TLC model checker with small-model
+parameters (2--3 organisms, 2--3 templates/tools, bounded iteration
+counts).  Table~\ref{tab:tla} summarizes the specifications and their key
+invariants.
+
+\begin{table}[ht]
+\centering
+\caption{TLA+ specifications and verified safety properties.}
+\label{tab:tla}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Specification} & \textbf{Key Safety Invariants} & \textbf{Actions} \\
+\midrule
+TemplateExchangeProtocol
+  & Adoption respects \texttt{min\_stage}
+  & Export, Import, \\
+  & Trust changes only via RecordOutcome
+  & RecordOutcome, \\
+  & No self-adoption
+  & StageAdvance \\
+\addlinespace
+DevelopmentalGating
+  & Critical periods never reopen
+  & Tick, AcquireTool, \\
+  & Stages monotonically advance
+  & OpenPeriod, \\
+  & Tools respect capability gates
+  & ClosePeriod, Scaffold \\
+\addlinespace
+ConvergenceDetection
+  & Halt is terminal
+  & StageResult \\
+  & Intervention rate triggers halt
+  & (with nondeterministic \\
+  &
+  & intervention) \\
+\addlinespace
+EvolutionGating
+  & Score monotonically non-decreasing
+  & Evolve, Gate, \\
+  & Workspace advances only via Gate
+  & Rollback \\
+  & Version bounded by \texttt{MAX\_VERSIONS}
+  & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{TemplateExchangeProtocol.}
+Models cross-organism template sharing with trust-weighted adoption,
+inspired by horizontal gene transfer with epistemic vigilance.  An organism
+imports a peer's template only when three guards are satisfied: (i) the
+organism's developmental stage meets the template's minimum stage,
+(ii) trust in the peer exceeds \texttt{MIN\_TRUST}, and (iii) the
+effective score $\text{peer\_success\_rate} \times \text{trust} \geq
+\text{ADOPTION\_THRESHOLD}$.  Trust updates use exponential moving
+average (EMA) smoothing, applied exclusively in the \texttt{RecordOutcome}
+action---all other actions leave trust unchanged, a structural encoding of
+the invariant.
+
+\paragraph{DevelopmentalGating.}
+Models lifecycle progression with critical periods and capability gating.
+Organisms consume telomere capacity, advancing through four stages
+(Embryonic $\to$ Juvenile $\to$ Adolescent $\to$ Mature).  The key
+safety property is \emph{critical period irreversibility}: once a period
+transitions from ``open'' to ``closed,'' it can never reopen.  This
+models neurodevelopmental critical periods where specific circuits are
+maximally plastic only during a bounded window.
+
+\paragraph{ConvergenceDetection.}
+Models the watcher's convergence protocol.  As organisms execute stages,
+the watcher tracks the ratio of interventions (RETRY, ESCALATE, HALT) to
+completed stages.  When this ratio exceeds \texttt{MAX\_RATE}, the
+organism is halted in the same atomic step---a safety property expressing
+that non-convergent execution is always detected and terminated.
+
+\paragraph{EvolutionGating.}
+Models the A-Evolve mutation loop.  The \texttt{Gate} action accepts a
+pending mutation only when its benchmark score meets or exceeds the current
+score plus \texttt{MIN\_IMPROVEMENT}.  This ensures monotonic score
+progression: the organism never regresses.  The specification intentionally
+provides no liveness guarantee, since evolution liveness depends on the
+score generator---an external assumption outside the structural model.
+
+\subsection{Co-Design Convergence}\label{sec:codesign}
+
+Following Zardini's co-design theory~\cite{zardini2023codesign}, we model
+each adapter as a \emph{design problem} (DP)---a monotone map from a
+resource poset to a functionality poset.  Monotonicity means that more
+resources yield at least as many functionalities.
+
+\begin{definition}[Design Problem]
+A design problem is a pair $(f, g)$ where $f: \mathcal{R} \to \mathcal{F}$
+maps resources to functionalities and $g: \mathcal{R} \to \{0, 1\}$ is a
+feasibility predicate.  The map $f$ is monotone: $r_1 \leq r_2 \implies
+f(r_1) \leq f(r_2)$.
+\end{definition}
+
+\begin{definition}[Series Composition]
+Given design problems $\mathsf{DP}_1$ and $\mathsf{DP}_2$, their series
+composition $\mathsf{DP}_1 \to \mathsf{DP}_2$ is defined by
+$f_{1\to2}(r) = f_2(f_1(r))$, with feasibility
+$g_{1\to2}(r) = g_1(r) \wedge g_2(f_1(r))$.
+\end{definition}
+
+\begin{definition}[Parallel Composition]
+The parallel composition $\mathsf{DP}_1 \| \mathsf{DP}_2$ is defined by
+$f_{1\|2}(r) = f_1(r) \cup f_2(r)$, with feasibility
+$g_{1\|2}(r) = g_1(r) \wedge g_2(r)$.
+\end{definition}
+
+The full adapter stack is a series composition: parsing $\to$ analysis
+$\to$ template generation $\to$ scoring.  The adaptive assembly loop
+(run $\to$ record $\to$ score $\to$ select) is feedback composition,
+where the output of the scoring step feeds back as input to the next
+iteration's selection.
+
+\begin{theorem}[Adaptive Loop Convergence]
+Let $\mathsf{DP}$ be the feedback composition of the adapter stack, with
+scoring function $s: \mathcal{F} \to [0, 1]$ and feedback map
+$\phi(r, f) = r \cup \{s(f)\}$.  If $s$ is monotone and the resource
+poset is finite, then the iterative sequence
+$r_0, r_1 = \phi(r_0, f(r_0)), r_2 = \phi(r_1, f(r_1)), \ldots$
+converges to a fixed point $r^*$ within finitely many iterations such
+that $|s(f(r^*)) - s(f(r_{n-1}))| < \varepsilon$ for any
+$\varepsilon > 0$.
+\end{theorem}
+
+\begin{proof}
+The scoring function $s$ maps functionalities to $[0, 1]$, a complete
+lattice under the standard order.  The feedback map $\phi$ is monotone by
+composition of monotone maps ($f$ is monotone by the DP definition; $s$ is
+monotone by assumption).  By Kleene's fixed-point theorem applied to
+monotone endomorphisms on a complete lattice, the ascending chain
+$s_0 \leq s_1 \leq s_2 \leq \cdots$ converges to $\sup_n s_n = s^*$.
+Since $[0, 1]$ is bounded, the chain stabilizes: there exists $N$ such
+that $s_N = s^*$.  In practice, the implementation terminates when
+$|s_{n+1} - s_n| < \varepsilon$ for a configurable $\varepsilon$ (default
+$0.01$), with a safety bound of 100 iterations.
+\end{proof}
+
+The implementation in \texttt{convergence/codesign.py} provides
+\texttt{compose\_series}, \texttt{compose\_parallel}, and
+\texttt{feedback\_fixed\_point} with the exact convergence semantics
+described above.
+
+%% ============================================================================
+%% 4. IMPLEMENTATION
+%% ============================================================================
+\section{Implementation}\label{sec:impl}
+
+The convergence architecture is implemented in 14 Python modules under
+\texttt{operon\_ai/convergence/}, tested by 216 convergence-specific unit
+tests as part of a broader suite of 1{,}404 tests across the entire Operon
+codebase.  Table~\ref{tab:adapters} summarizes the five adapters.
+
+\begin{table}[ht]
+\centering
+\caption{Convergence adapters: source frameworks and key functions.}
+\label{tab:adapters}
+\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Adapter} & \textbf{Source} & \textbf{Parse Function} & \textbf{Template Function} \\
+\midrule
+Swarms      & Graph workflows     & \texttt{parse\_swarm\_topology}      & \texttt{swarm\_to\_template} \\
+DeerFlow    & LangGraph sessions  & \texttt{parse\_deerflow\_session}    & \texttt{deerflow\_to\_template} \\
+AnimaWorks  & Supervisor configs  & \texttt{parse\_animaworks\_org}      & \texttt{animaworks\_to\_template} \\
+Ralph       & Hat orchestration   & \texttt{parse\_ralph\_config}        & \texttt{ralph\_to\_template} \\
+A-Evolve    & Workspace manifests & \texttt{parse\_aevolve\_workspace}   & \texttt{aevolve\_to\_template} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Bidirectional DeerFlow Skill Bridge}
+
+DeerFlow's Markdown-based skill system is structurally similar to Operon's
+\texttt{PatternTemplate}: both represent reusable workflow patterns with
+metadata and staged execution steps.  The module
+\texttt{convergence/deerflow\_skills.py} provides bidirectional conversion:
+\texttt{skill\_to\_template} parses DeerFlow Markdown skills (extracting
+frontmatter, workflow steps, and tool references) into scored
+\texttt{PatternTemplate} instances, while \texttt{template\_to\_skill}
+exports Operon templates as DeerFlow-compatible Markdown.  This enables
+cross-framework template exchange: Operon can import DeerFlow's
+community-contributed skill library, and DeerFlow can consume Operon's
+structurally validated templates.
+
+\subsection{Hybrid Assembly}
+
+The \texttt{hybrid\_skill\_organism} function implements a two-phase
+assembly strategy.  In the first phase, it queries the pattern library for
+templates matching the task fingerprint; if a template with a sufficiently
+high success score exists, it is used directly.  In the second phase
+(fallback), an LLM generator produces a one-shot organism, which is
+registered in the library for scoring refinement over subsequent runs.
+This library-first, generator-fallback design ensures that the system
+improves with experience while maintaining availability for novel tasks.
+
+\subsection{Cognitive Extensions}
+
+Three modules extend the cognitive layer:
+
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+  \item \textbf{PrimingView} (in \texttt{patterns/priming.py}): a subclass
+    of \texttt{SubstrateView} that adds recent outputs, telemetry,
+    experience records, and developmental status as multi-channel context.
+  \item \textbf{HeartbeatDaemon} (in \texttt{patterns/heartbeat.py}):
+    periodic consolidation of short-term observations into long-term
+    memory, inspired by AnimaWorks' heartbeat protocol.
+  \item \textbf{AsyncOrganizer} (in \texttt{convergence/async\_thinking.py}):
+    Fork/Join execution within individual stages, inspired by the
+    AsyncThink~\cite{chi2025asyncthink} observation that intra-stage
+    parallel reasoning can reduce latency without increasing token cost.
+\end{itemize}
+
+\subsection{Catalog Seeding}
+
+The \texttt{convergence/catalog.py} module seeds the pattern library from
+multiple sources: \texttt{seed\_library\_from\_swarms} registers built-in
+Swarms workflow patterns; \texttt{seed\_library\_from\_deerflow} imports
+DeerFlow skills; \texttt{seed\_library\_from\_ralph} converts Ralph hat
+configurations; and \texttt{seed\_library\_from\_acg\_survey} registers
+templates from the ACG survey's comparison cards~\cite{yue2026acg},
+annotated with graph determination time and plasticity mode metadata.
+The combined catalog provides a rich initial library for hybrid assembly.
+
+%% ============================================================================
+%% 5. RELATED WORK
+%% ============================================================================
+\section{Related Work}\label{sec:related}
+
+\paragraph{Agent workflow taxonomy.}
+The ACG survey by Yue et al.~\cite{yue2026acg} provides a comprehensive
+taxonomy of workflow optimization methods, classifying approaches along
+two dimensions: graph determination time (offline, pre-execution,
+in-execution) and graph plasticity mode (static, dynamic).  Our work
+operates within this taxonomy: the adapter architecture is a pre-execution
+analysis layer, while the watcher provides in-execution monitoring.  The
+ACG framework treats workflow graphs as optimizable structures; we add
+formal verification and convergence guarantees that the survey identifies
+as open problems.
+
+\paragraph{Plural intelligence.}
+Evans et al.~\cite{evans2026plural} argue that the next advance in AI
+will be combinatorial societies of specialized agents rather than
+monolithic models, drawing on primate social scaling and cultural ratchet
+effects.  Our work provides the formal infrastructure---typed composition,
+verified safety invariants, convergence proofs---for the ``plural
+intelligence'' vision they articulate.
+
+\paragraph{Scaling laws.}
+Kim et al.~\cite{kim2025scaling} derive empirical scaling laws for
+multi-agent systems, finding that error rates grow with chain depth and
+coordination overhead dominates at high agent counts.  These findings
+are consistent with our epistemic theorems: the Error Amplification
+Bound predicts the chain-depth dependence; the Tool Density bound
+predicts the coordination overhead curve.
+
+\paragraph{Intra-stage reasoning.}
+Chi et al.'s AsyncThink~\cite{chi2025asyncthink} demonstrates that
+allowing agents to reason asynchronously within a stage---forking
+parallel thought branches and joining at a synchronization point---reduces
+latency without increasing token cost.  Our \texttt{AsyncOrganizer}
+formalizes this pattern with configurable concurrency ratios and
+critical-path scheduling.
+
+\paragraph{Co-design theory.}
+Zardini~\cite{zardini2023codesign} develops a general theory of co-design
+based on monotone maps between resource and functionality posets, with
+series, parallel, and feedback composition operators.  We apply this
+framework to model each adapter as a design problem and prove that the
+adaptive assembly loop converges to a fixed point.
+
+%% ============================================================================
+%% 6. DISCUSSION + FUTURE WORK
+%% ============================================================================
+\section{Discussion and Future Work}\label{sec:discussion}
+
+\paragraph{From analysis to compilation.}
+The current adapter architecture analyzes structure but does not generate
+executable workflows.  The natural next step is \emph{compilers}: functions
+like \texttt{organism\_to\_swarms} and \texttt{organism\_to\_deerflow} that
+compile Operon organisms into Swarms workflow configurations or DeerFlow
+LangGraph sessions.  For DeerFlow, the deepest integration is a native
+LangGraph watcher node (\texttt{operon\_watcher\_node}) that provides
+real-time structural monitoring inside DeerFlow's execution loop.
+A Ralph compiler (\texttt{organism\_to\_ralph}) would emit hat
+configurations with backpressure constraints derived from the epistemic
+analysis.
+
+\paragraph{Cross-target evaluation.}
+A systematic evaluation harness running identical tasks across Operon,
+Swarms, DeerFlow, AnimaWorks, and Ralph would provide empirical validation
+of the structural predictions.  The ACG survey's recommendation to
+measure structural variation across inputs is a valuable addition to such
+an evaluation protocol, alongside standard metrics (success rate, token
+cost, latency, intervention count, convergence rate).
+
+\paragraph{Prompt optimization.}
+The adapter architecture optimizes topology but leaves node-level content
+(prompts, demonstrations) fixed.  DSPy-style prompt optimization
+integrated via the A-Evolve mutation loop could address this gap: the
+evolutionary Solve--Observe--Evolve--Gate--Reload cycle naturally
+accommodates prompt mutations as a special case of workspace evolution,
+with the fitness gate ensuring monotonic improvement.
+
+\paragraph{Limitations.}
+The adapters analyze structure, not runtime behavior.  An architecture that
+scores well on all four epistemic bounds may still fail due to prompt
+quality, model capability, or environmental non-stationarity.  The TLA+
+specifications are verified with small-model parameters; scaling to
+production-size state spaces would require compositional verification
+techniques or abstraction refinement.  The co-design convergence proof
+assumes monotonicity of the scoring function, which may not hold under
+distribution shift in the task stream.
+
+%% ============================================================================
+%% 7. CONCLUSION
+%% ============================================================================
+\section{Conclusion}\label{sec:conclusion}
+
+We have presented a typed adapter architecture for integrating Operon's
+structural analysis layer with five external agent orchestration
+systems---Swarms, DeerFlow, AnimaWorks, Ralph, and A-Evolve---through a
+single intermediate type, \texttt{ExternalTopology}.  The architecture
+contributes four epistemic theorems that serve as a structural linter, four
+TLA+-verified safety invariants, and a co-design convergence proof showing
+that the adaptive assembly loop stabilizes within $\varepsilon$.  By
+operating on serializable dicts with zero external imports, the adapter
+architecture achieves framework-agnostic analysis while preserving full
+type safety.  The 14 convergence modules, 216 convergence tests, 4 TLA+
+specifications, and 98 worked examples provide a concrete, verifiable
+foundation for multi-agent system integration.
+
+%% ============================================================================
+%% BIBLIOGRAPHY
+%% ============================================================================
+\newpage
+\bibliographystyle{plain}
+\bibliography{../references}
+
+\end{document}

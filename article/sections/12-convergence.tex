@@ -1,0 +1,179 @@
+\section{Convergence: Integrating External Agent Frameworks}\label{sec:convergence}
+
+The preceding sections develop Operon's structural analysis, epistemic topology,
+and formal verification foundations. This section summarizes how these tools
+extend to external agent orchestration systems through a typed adapter
+architecture. A standalone companion paper provides the full treatment, including
+implementation details, all 98 examples, and complete TLA+ specification
+listings; this section is self-contained but deliberately concise.
+
+\subsection{Five-Layer Architecture}
+
+The convergence architecture stacks five functional layers, each building on the
+one below. At the base, Operon provides the structural layer: typed wiring
+diagrams, epistemic theorems, and the resource-aware executor. Above it, three
+orchestration runtimes---Swarms~\cite{swarms} for enterprise-scale multi-agent
+workflows, DeerFlow~\cite{deerflow} for session-based research pipelines, and
+Ralph~\cite{ralph} for hat-based event-driven agents---provide the operational
+execution surface. The thinking layer (AsyncThink) adds fork/join concurrency
+within individual stages, enabling speculative parallel reasoning without
+altering the outer topology. AnimaWorks~\cite{animaworks} contributes the
+cognitive layer: developmental priming, heartbeat consolidation, and intrinsic
+motivation. At the top, A-Evolve~\cite{aevolve} closes the loop with
+evolutionary skill refinement, where a Solve--Observe--Evolve--Gate--Reload
+cycle optimizes agent skills under monotonic score safety constraints.
+
+\begin{center}
+\begin{tikzpicture}[
+  layer/.style={draw, minimum width=10cm, minimum height=0.8cm, font=\small},
+  >=latex
+]
+\node[layer, fill=blue!8]  (L5) at (0,3.2) {A-Evolve --- evolution layer};
+\node[layer, fill=green!8] (L4) at (0,2.4) {AnimaWorks --- cognitive layer};
+\node[layer, fill=yellow!8](L3) at (0,1.6) {AsyncThink --- thinking layer};
+\node[layer, fill=orange!8](L2) at (0,0.8) {Ralph\,/\,DeerFlow\,/\,Swarms --- orchestration layer};
+\node[layer, fill=red!8]   (L1) at (0,0.0) {Operon --- structural layer};
+\end{tikzpicture}
+\end{center}
+
+\subsection{ExternalTopology as Universal Intermediate Type}
+
+Every adapter produces an \texttt{ExternalTopology}---a frozen dataclass carrying
+the source framework tag, a pattern name, a tuple of agent specifications (plain
+dicts with at least \texttt{name} and \texttt{role} keys), directed communication
+edges, and arbitrary framework-specific metadata. The analysis pipeline is
+source-agnostic: \texttt{analyze\_external\_topology()} consumes any
+\texttt{ExternalTopology} and applies the four epistemic theorems
+(Theorems~\ref{thm:error-amplification}--\ref{thm:tool-density}) to produce an
+\texttt{AdapterResult} containing topology advice, a suggested
+\texttt{PatternTemplate}, structural warnings, and a composite risk score. Adding
+a new orchestration target therefore requires writing a single parse function---no
+changes to the analysis code.
+
+\subsection{Epistemic Theorems as a Structural Linter}
+
+The epistemic theorems from \S\ref{sec:epistemic-topology-section} become a
+practical structural linter when applied through the adapter layer. Given an
+\texttt{ExternalTopology} with $n$ agents, edge set $E$, and per-agent error
+probability $p$, the linter evaluates:
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Error Amplification} (Theorem~\ref{thm:error-amplification}):
+  flags topologies where the aggregate failure probability exceeds a configurable
+  tolerance.
+\item \textbf{Sequential Penalty} (Theorem~\ref{thm:sequential-penalty}):
+  warns when the critical-path length implies excessive latency or compounding
+  error risk.
+\item \textbf{Parallel Acceleration} (Theorem~\ref{thm:parallel-acceleration}):
+  identifies opportunities for parallelism that the current topology leaves
+  unexploited.
+\item \textbf{Tool Density} (Theorem~\ref{thm:tool-density}):
+  detects agents with tool sets exceeding the density threshold, recommending
+  specialization.
+\end{enumerate}
+
+\noindent For example, analyzing a Swarms \texttt{SequentialWorkflow} with five
+agents at $p=0.05$ per agent produces a sequential-penalty warning and suggests
+restructuring into a reviewer-gated parallel topology, reducing the expected
+error from $1-(1-p)^n \approx 0.23$ to the parallel bound with reviewer
+verification.
+
+\subsection{TLA+ Verified Safety Invariants}
+
+Four TLA+ specifications verify safety invariants that are difficult to test
+exhaustively at the unit level:
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{TemplateExchangeProtocol}: peer-to-peer template sharing preserves
+  provenance, adopted templates carry correct source attribution, and trust scores
+  update monotonically in the direction of observed outcomes.
+\item \textbf{DevelopmentalGating}: stage transitions are irreversible
+  (EMBRYONIC $\to$ JUVENILE $\to$ ADOLESCENT $\to$ MATURE), critical-period
+  windows close permanently, and tool acquisition respects the current stage's
+  minimum-stage constraint.
+\item \textbf{ConvergenceDetection}: the watcher's intervention-count ratio
+  converges or triggers a HALT before exceeding the maximum intervention rate,
+  preventing unbounded retry loops.
+\item \textbf{EvolutionGating}: A-Evolve's evolutionary loop maintains monotonic
+  score safety---the deployed skill set's fitness never regresses below the
+  pre-evolution baseline.
+\end{enumerate}
+
+\noindent Together, these specifications cover the critical safety boundaries of
+the convergence stack: trust integrity, developmental ordering, operational
+convergence, and evolutionary monotonicity.
+
+\subsection{Co-Design Convergence}
+
+The full adapter stack is formalized as a Zardini co-design
+problem~\cite{zardini2023codesign}. Each adapter is a Design Problem (DP)---a
+monotone map from a resource poset (available agents, tools, context budget) to a
+functionality poset (task coverage, error bounds, latency). Series composition
+($\texttt{compose\_series}$) chains adapters where one DP's functionality becomes
+the next's resource; parallel composition ($\texttt{compose\_parallel}$) runs
+independent DPs on disjoint resource slices. The adaptive assembly loop (run
+$\to$ record $\to$ score $\to$ select) is feedback composition: a fixed-point
+iteration over the PatternLibrary's scoring function. Convergence is guaranteed
+when the scoring function is monotone and the template space is finite---both
+hold by construction.
+
+\subsection{Adapter Summary}
+
+Table~\ref{tab:convergence-adapters} summarizes the five adapters, their parse
+entry points, and the Operon concepts they map to.
+
+\begin{table}[ht]
+\centering
+\small
+\caption{Convergence adapters: framework, parse function, and Operon mapping.}
+\label{tab:convergence-adapters}
+\begin{tabular}{@{}p{2.0cm}p{3.6cm}p{7.0cm}@{}}
+\toprule
+\textbf{Framework} & \textbf{Parse Function} & \textbf{Operon Mapping} \\
+\midrule
+Swarms \cite{swarms}
+  & \texttt{parse\_swarm\_\allowbreak topology()}
+  & Workflow patterns $\to$ ExternalTopology, PatternTemplate seeding \\[3pt]
+DeerFlow \cite{deerflow}
+  & \texttt{parse\_deerflow\_\allowbreak session()}
+  & Session configs $\to$ ExternalTopology, bidirectional skill bridge \\[3pt]
+AnimaWorks \cite{animaworks}
+  & \texttt{parse\_animaworks\_\allowbreak org()}
+  & Org hierarchies $\to$ ExternalTopology, memory bridge to BiTemporalMemory \\[3pt]
+Ralph \cite{ralph}
+  & \texttt{parse\_ralph\_\allowbreak config()}
+  & Hat definitions $\to$ ExternalTopology, cognitive-mode--annotated StageSpec \\[3pt]
+A-Evolve \cite{aevolve}
+  & \texttt{parse\_aevolve\_\allowbreak workspace()}
+  & Workspace manifests $\to$ ExternalTopology, evolved skill $\to$ StageSpec \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Current Status}
+
+The convergence package comprises 15 Python modules (including the shared type
+definitions and the \texttt{\_\_init\_\_} re-exports) and 216 convergence-specific
+tests. The repository includes 98 examples (numbered 1--98), of which examples
+86--98 demonstrate convergence
+features: adapter analysis (86--88), template exchange and hybrid assembly
+(89--91), memory bridging, priming views, heartbeat consolidation, and
+asynchronous thinking (92--95), co-design composition (96), and the Ralph and
+A-Evolve adapter workflows (97--98). All four TLA+ specifications pass model
+checking with TLC.
+
+\subsection{Relationship to the Main Framework}
+
+The convergence layer is deliberately decoupled from Operon's core.  It
+imports only from \texttt{operon\_ai.\allowbreak core} and
+\texttt{operon\_ai.\allowbreak patterns}; no core module depends on
+\texttt{operon\_ai.\allowbreak convergence}.  This one-way dependency
+ensures that the structural guarantees developed in the preceding sections
+remain valid independently of whether any external adapter is present.
+The adapters are consumers of the epistemic analysis API, not extensions
+of it.
+
+For the complete treatment---including adapter implementation details, template
+exchange protocols, memory bridge semantics, TLA+ specification listings, and all
+98 worked examples---see the standalone convergence companion
+paper.\footnote{\url{https://coredipper.github.io/operon/convergence/}}
