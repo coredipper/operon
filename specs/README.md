@@ -159,9 +159,9 @@ the values in the `.cfg` files.
 | Templates          | `{t1, t2}`                         |
 | MinStage           | `[t1 \|-> "EMBRYONIC", t2 \|-> "EMBRYONIC"]` |
 | MIN_TRUST          | `0.2`                              |
-| ADOPTION_THRESHOLD | `0.2`                              |
+| ADOPTION_THRESHOLD | `0.3`                              |
 | DECAY_ALPHA        | `0.3`                              |
-| DEFAULT_TRUST      | `0.5`                              |
+| DEFAULT_TRUST      | `0.8`                              |
 | MAX_OUTCOMES       | `3`                                |
 | InitLibrary        | `[o1 \|-> {t1}, o2 \|-> {t2}]`    |
 

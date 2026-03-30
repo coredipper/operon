@@ -164,7 +164,12 @@ Next ==
 
 Spec == Init /\ [][Next]_vars
 
-FairSpec == Spec /\ WF_vars(Next)
+FairSpec == Spec
+    /\ \A org \in Orgs : WF_vars(Export(org))
+    /\ \A org \in Orgs : \A peer \in Orgs : WF_vars(Import(org, peer))
+    /\ \A org \in Orgs : \A tmpl \in Templates : \A s \in BOOLEAN :
+         WF_vars(RecordOutcome(org, tmpl, s))
+    /\ \A org \in Orgs : WF_vars(StageAdvance(org))
 
 -----------------------------------------------------------------------------
 (* Safety invariants *)
