@@ -209,11 +209,27 @@ into the distributed watcher's signal taxonomy.
 - Watcher as a dedicated monitoring agent consuming OTEL telemetry
 - Kubernetes runtime config for production deployment
 
+**Scion philosophical tension:** Scion's design philosophy ("Less is More",
+"Isolation Over Constraints", "Agent Lifecycles are Dynamic") argues that
+as frontier models improve, explicit structural complexity matters less than
+flexible collaboration substrates. This is in direct tension with Operon's
+thesis that topology-level guarantees prevent failure modes that better
+models alone cannot fix. The integration is productive precisely because of
+this tension: Scion provides the runtime substrate where Operon's structural
+analysis is either validated or invalidated by real agent behavior. If
+Scion's agents self-organize effectively without structural guidance, that
+is evidence against Operon's thesis. If error amplification and sequential
+overhead are real in practice, that is evidence for it. Phase C6 evaluation
+should explicitly test this question.
+
 ---
 
 ## Phase C6 — Evaluation + Publication (v0.26.x)
 
 **Goal:** Benchmark across all projects, structural credit assignment, convergence paper.
+The central evaluation question: **does Operon's structural analysis actually
+help, or do agents self-organize effectively without it?** Scion's "action
+over pondering" philosophy makes this the most honest test of the framework.
 
 | Deliverable | Description |
 |-------------|-------------|
