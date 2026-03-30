@@ -165,7 +165,15 @@ $C_{\mathrm{multi}}=3\cdot100+2\cdot(25+20)=390$.
 
 \subsection{Parallel Acceleration Under Task Decomposability}
 
-\begin{theorem}[Parallel Acceleration under Epistemic Independence]
+\medskip
+\noindent
+The following two results rely on informal notions of epistemic independence
+and worst-case planner models rather than sharply specified execution
+semantics.  We present them as architecture heuristics that formalize useful
+design intuitions, not as theorem-level predictive theory.
+\medskip
+
+\begin{definition}[Parallel Acceleration under Epistemic Independence]
 \label{thm:parallel-acceleration}
 A task decomposes into $m$ subtasks. Define two subtasks as \emph{epistemically independent} iff
 neither solution requires knowledge of the other's result.
@@ -181,7 +189,7 @@ Theorem~\ref{thm:error-amplification} therefore comes with little extra communic
 \item[(c)] If subtasks are only partially independent, parallel execution sacrifices quality in proportion
 to the unresolved mutual information between subtask solutions.
 \end{enumerate}
-\end{theorem}
+\end{definition}
 
 \paragraph{Assumptions.}
 Subtasks can be assigned independently, coordinator assignment and aggregation are additive overhead
@@ -193,7 +201,7 @@ This is the positive case for multi-agent systems: if subtasks can be solved fro
 alone, specialization plus a coordinator can reduce wall-clock cost and often improve quality. If
 subtasks share unresolved dependencies, parallelism turns into premature decomposition.
 
-\begin{proof}[Proof sketch]
+\begin{proof}[Argument]
 Under epistemic independence, all $m$ subtasks can run concurrently and wall-clock cost is determined by
 the slowest subtask plus coordinator overhead, giving Eq.~\eqref{eq:parallel-speedup}. Because the
 coordinator must receive all worker outputs to aggregate them, it also obtains pooled-output visibility as
@@ -214,7 +222,7 @@ comes with little extra communication cost.
 
 \subsection{Tool Density and the Coordination Tax}
 
-\begin{theorem}[Tool Density Scaling]
+\begin{definition}[Tool Density Scaling]
 \label{thm:tool-density}
 Consider $t$ tools distributed across $n$ agents, with $|T_i| = t/n$ tools per agent under an
 approximately balanced partition.
@@ -238,7 +246,7 @@ C_{\mathrm{plan}} = O(tn),
 which is a multiplicative $n$-factor over the single-agent baseline and becomes bilinear when both $t$
 and $n$ grow.
 \end{enumerate}
-\end{theorem}
+\end{definition}
 
 \paragraph{Assumptions.}
 Tools are partitioned approximately evenly across agents, remote tool use requires explicit discovery and
@@ -250,7 +258,7 @@ Splitting a toolset across agents changes one local decision into three coordina
 has the tool, delegate execution, then interpret the returned result without the executor's full context.
 That is why tool-heavy tasks often punish over-distribution.
 
-\begin{proof}[Proof sketch]
+\begin{proof}[Argument]
 A single agent scans one tool inventory, so planning cost is linear in $t$. Under partition, a worker
 sees only its local tool subset. Remote-tool use therefore introduces discovery, delegation, and result
 reconstruction costs, producing the coordination term in Eq.~\eqref{eq:tool-coord-overhead}. Planning

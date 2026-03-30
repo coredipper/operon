@@ -45,8 +45,8 @@ error amplification across handoffs, coordination overhead from tool
 proliferation, and the absence of convergence guarantees for adaptive loops.
 We present a structured adapter architecture centred on a single
 intermediate representation, \texttt{ExternalTopology}, that lets Operon's
-structural analysis layer analyze \emph{any} external agent topology
-without importing the target framework.  Five adapters parse framework-specific configurations into this
+structural analysis layer analyze the static structural skeleton of
+external agent configurations without importing the target framework.  Five adapters parse framework-specific configurations into this
 common representation; four epistemic theorems serve as a structural linter;
 four TLA+ specifications verify safety invariants; and a co-design
 fixed-point proof (following Zardini) establishes that the adaptive assembly
@@ -99,7 +99,7 @@ structural analysis from runtime execution:
     frozen dataclass; all downstream analysis is source-agnostic.
   \item \textbf{Epistemic theorems as structural linter}: error
     amplification, sequential penalty, parallel acceleration, and tool
-    density bounds are applied uniformly to any topology.
+    density bounds are applied uniformly to every imported topology.
   \item \textbf{TLA+ verified safety invariants}: four specifications
     cover template exchange, developmental gating, convergence detection,
     and evolution gating, verified by the TLC model checker with
@@ -262,11 +262,11 @@ $S < 1.2$ (parallel structure exists but provides negligible benefit).
 \end{definition}
 
 \noindent
-Parallel acceleration is computed and reported separately by the
-epistemic analysis layer but is not consumed by the current topology
-recommender or the composite risk score.  The risk score focuses on the
-three primary failure modes (error amplification, sequential overhead,
-tool density) plus a topology-mismatch flag.
+The full epistemic analysis layer computes all four metrics.  The
+\texttt{analyze\_external\_topology()} function exposes three of these (error
+amplification, sequential penalty, tool density) plus a topology-mismatch
+flag in the composite risk score.  Parallel acceleration is computed and
+reported separately but not included in the risk score.
 
 \begin{definition}[Tool Density]
 For a topology with $T$ distinct tools across $N$ agents, the tool density
@@ -301,7 +301,10 @@ bounds respectively.
 Four TLA+ specifications model critical protocols in the convergence
 architecture.  Each is verified by the TLC model checker with small-model
 parameters (2--3 agents, 2--3 templates/tools, bounded iteration
-counts).  Table~\ref{tab:tla} summarizes the specifications and their key
+counts).  TLC model configurations (\texttt{.cfg} files) with small-model
+parameters and a step-by-step reproduction guide are provided in the
+\texttt{specs/} directory alongside the specifications.
+Table~\ref{tab:tla} summarizes the specifications and their key
 invariants.
 
 \begin{table}[ht]
