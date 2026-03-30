@@ -414,10 +414,16 @@ map $\phi$ is monotone by composition of monotone maps.  Therefore the
 sequence $s_0 \leq s_1 \leq s_2 \leq \cdots$ is monotone nondecreasing
 and bounded above by~$1$, so it converges to $\sup_n s_n = s^*$ by the
 monotone convergence theorem.  The implementation's
-\texttt{feedback\_fixed\_point()} terminates when
-$|s_{n+1} - s_n| < \varepsilon$ (default $0.01$), providing
-$\varepsilon$-approximate convergence, with a safety bound of 100
-iterations to handle non-stabilizing sequences.
+\texttt{feedback\_fixed\_point()} has two termination modes:
+(1)~when $|s_{n+1} - s_n| < \varepsilon$ (default $0.01$), the result is
+an $\varepsilon$-approximate fixed point with \texttt{converged=True};
+(2)~when the iteration count reaches the safety bound (default 100)
+without satisfying the $\varepsilon$ criterion, the algorithm halts with
+\texttt{converged=False} and returns the last computed state.  The
+mathematical guarantee (monotone convergence) ensures the sequence
+approaches $s^*$; the implementation provides a practical decision
+procedure that reports whether that convergence was achieved within
+the allocated budget.
 \end{proof}
 
 The implementation in \texttt{convergence/codesign.py} provides
