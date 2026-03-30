@@ -62,6 +62,31 @@ from .codesign import (
     feasibility_check,
     feedback_fixed_point,
 )
+from .deerflow_compiler import (
+    managed_to_deerflow,
+    organism_to_deerflow,
+)
+from .distributed_watcher import (
+    DistributedWatcher,
+    HttpTransport,
+    InMemoryTransport,
+)
+from .langgraph_watcher import (
+    create_watcher_config,
+    operon_watcher_node,
+)
+from .ralph_compiler import (
+    managed_to_ralph,
+    organism_to_ralph,
+)
+from .scion_compiler import (
+    managed_to_scion,
+    organism_to_scion,
+)
+from .swarms_compiler import (
+    managed_to_swarms,
+    organism_to_swarms,
+)
 from .memory_bridge import (
     bridge_animaworks_memory,
     bridge_deerflow_memory,
@@ -131,4 +156,20 @@ __all__ = [
     # Memory bridge (C3)
     "bridge_animaworks_memory",
     "bridge_deerflow_memory",
+    # Compilers (C5)
+    "organism_to_swarms",
+    "managed_to_swarms",
+    "organism_to_deerflow",
+    "managed_to_deerflow",
+    "organism_to_ralph",
+    "managed_to_ralph",
+    "organism_to_scion",
+    "managed_to_scion",
+    # Distributed watcher (C5)
+    "DistributedWatcher",
+    "InMemoryTransport",
+    "HttpTransport",
+    # LangGraph watcher (C5)
+    "operon_watcher_node",
+    "create_watcher_config",
 ]

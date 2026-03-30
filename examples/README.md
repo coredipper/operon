@@ -1,6 +1,6 @@
 # Operon Examples
 
-This directory contains 98 runnable numbered examples demonstrating the
+This directory contains 103 runnable numbered examples demonstrating the
 `operon_ai` library, progressing from basic concepts to complete
 LLM-powered cell simulations.
 
@@ -85,6 +85,16 @@ reconstructing past belief states:
   parse Ralph hat configs and analyze event-driven topology with hat-to-stage mapping
 - [`98_aevolve_workspace_analysis.py`](98_aevolve_workspace_analysis.py) —
   parse A-Evolve workspace manifests, analyze single-agent topology, skills-to-stages
+- [`99_swarms_deployment.py`](99_swarms_deployment.py) —
+  compile organism to Swarms SequentialWorkflow config
+- [`100_deerflow_deployment.py`](100_deerflow_deployment.py) —
+  compile organism to DeerFlow session config
+- [`101_ralph_deployment.py`](101_ralph_deployment.py) —
+  compile organism to Ralph hat/event config
+- [`102_scion_deployment.py`](102_scion_deployment.py) —
+  compile organism to Scion grove with containerized agents
+- [`103_distributed_watcher.py`](103_distributed_watcher.py) —
+  transport-agnostic watcher signal distribution
 
 ## Import Style Guide
 
