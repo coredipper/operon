@@ -152,7 +152,7 @@ A-Evolve \cite{aevolve}
 
 \subsection{Current Status}
 
-The convergence package comprises 15 Python modules (including the shared type
+The convergence package comprises 14 Python modules (including the shared type
 definitions and the \texttt{\_\_init\_\_} re-exports) and 216 convergence-specific
 tests. The repository includes 98 examples (numbered 1--98), of which examples
 86--98 demonstrate convergence
@@ -164,12 +164,12 @@ checking with TLC.
 
 \subsection{Relationship to the Main Framework}
 
-The convergence layer is deliberately decoupled from Operon's core.  It
-imports only from \texttt{operon\_ai.\allowbreak core} and
-\texttt{operon\_ai.\allowbreak patterns}; no core module depends on
-\texttt{operon\_ai.\allowbreak convergence}.  This one-way dependency
-ensures that the structural guarantees developed in the preceding sections
-remain valid independently of whether any external adapter is present.
+The convergence layer depends on Operon's internal packages
+(\texttt{core}, \texttt{patterns}, \texttt{memory}, \texttt{organelles})
+but no core module depends on \texttt{operon\_ai.\allowbreak convergence}.
+This one-way dependency ensures that the structural guarantees developed in
+the preceding sections remain valid independently of whether any external
+adapter is present.
 The adapters are consumers of the epistemic analysis API, not extensions
 of it.
 

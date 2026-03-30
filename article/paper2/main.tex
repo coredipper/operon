@@ -398,28 +398,26 @@ $\to$ template generation $\to$ scoring.  The adaptive assembly loop
 where the output of the scoring step feeds back as input to the next
 iteration's selection.
 
-\begin{theorem}[Adaptive Loop Convergence]
+\begin{theorem}[Adaptive Loop Approximate Convergence]
 Let $\mathsf{DP}$ be the feedback composition of the adapter stack, with
 scoring function $s: \mathcal{F} \to [0, 1]$ and feedback map
-$\phi(r, f) = r \cup \{s(f)\}$.  If $s$ is monotone and the resource
-poset is finite, then the iterative sequence
-$r_0, r_1 = \phi(r_0, f(r_0)), r_2 = \phi(r_1, f(r_1)), \ldots$
-converges to a fixed point $r^*$ within finitely many iterations such
-that $|s(f(r^*)) - s(f(r_{n-1}))| < \varepsilon$ for any
-$\varepsilon > 0$.
+$\phi(r, f) = r \cup \{s(f)\}$.  If $s$ is monotone, then the sequence
+$s_0, s_1, s_2, \ldots$ is monotone nondecreasing and bounded above by~$1$.
+For any $\varepsilon > 0$, the implementation terminates when
+$|s_{n+1} - s_n| < \varepsilon$ or after a configurable maximum number
+of iterations.
 \end{theorem}
 
 \begin{proof}
-The scoring function $s$ maps functionalities to $[0, 1]$, a complete
-lattice under the standard order.  The feedback map $\phi$ is monotone by
-composition of monotone maps ($f$ is monotone by the DP definition; $s$ is
-monotone by assumption).  By Kleene's fixed-point theorem applied to
-monotone endomorphisms on a complete lattice, the ascending chain
-$s_0 \leq s_1 \leq s_2 \leq \cdots$ converges to $\sup_n s_n = s^*$.
-Since $[0, 1]$ is bounded, the chain stabilizes: there exists $N$ such
-that $s_N = s^*$.  In practice, the implementation terminates when
-$|s_{n+1} - s_n| < \varepsilon$ for a configurable $\varepsilon$ (default
-$0.01$), with a safety bound of 100 iterations.
+The scoring function $s$ maps functionalities to $[0, 1]$.  The feedback
+map $\phi$ is monotone by composition of monotone maps.  Therefore the
+sequence $s_0 \leq s_1 \leq s_2 \leq \cdots$ is monotone nondecreasing
+and bounded above by~$1$, so it converges to $\sup_n s_n = s^*$ by the
+monotone convergence theorem.  The implementation's
+\texttt{feedback\_fixed\_point()} terminates when
+$|s_{n+1} - s_n| < \varepsilon$ (default $0.01$), providing
+$\varepsilon$-approximate convergence, with a safety bound of 100
+iterations to handle non-stabilizing sequences.
 \end{proof}
 
 The implementation in \texttt{convergence/codesign.py} provides
