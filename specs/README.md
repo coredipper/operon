@@ -24,8 +24,8 @@ Source: `operon_ai/coordination/social_learning.py`
 | `TypeOK` | INVARIANT | Type correctness of all state variables |
 | `TemplateAdoptionSafety` | INVARIANT | Adopted template's min\_stage never exceeds adopter's stage |
 | `TrustMonotonicity` | INVARIANT | Trust values remain in [0, 1] |
-| `QualifyingTemplateEventuallyAdopted` | PROPERTY (liveness) | Qualifying templates are eventually adopted |
-| `TrustConverges` | PROPERTY (liveness) | Outcome counts eventually reach MAX\_OUTCOMES |
+| `QualifyingTemplateEventuallyAdopted` | PROPERTY (liveness) | Qualifying templates are eventually adopted (requires DEFAULT\_TRUST >= 0.6 to be satisfiable; commented out in default .cfg) |
+| `TrustConverges` | PROPERTY (liveness) | Outcome counts eventually reach MAX\_OUTCOMES (same precondition; commented out in default .cfg) |
 
 ### DevelopmentalGating.tla
 
@@ -161,7 +161,7 @@ the values in the `.cfg` files.
 | MIN_TRUST          | `0.2`                              |
 | ADOPTION_THRESHOLD | `0.3`                              |
 | DECAY_ALPHA        | `0.3`                              |
-| DEFAULT_TRUST      | `0.8`                              |
+| DEFAULT_TRUST      | `0.5`                              |
 | MAX_OUTCOMES       | `3`                                |
 | InitLibrary        | `[o1 \|-> {t1}, o2 \|-> {t2}]`    |
 
