@@ -30,16 +30,14 @@ def operon_watcher_node(
     Reads stage results from state, applies convergence detection,
     and writes intervention recommendations back to state.
 
-    Input state keys:
-    - ``stage_results``: list of {stage_name, output, action_type}
-    - ``watcher_signals``: list (accumulated)
-    - ``watcher_interventions``: list (accumulated)
+    Uses a ``_watcher_cursor`` to track processed results and avoid
+    duplicate signals on re-invocation.  Action strings use lowercase
+    (``retry``, ``escalate``, ``halt``) matching Operon's canonical
+    ``InterventionKind`` values.
 
-    Output state keys (merged):
-    - ``watcher_signals``: updated with new signals
-    - ``watcher_interventions``: updated with new intervention (if any)
-    - ``watcher_summary``: current summary dict
-    - ``should_halt``: bool (True if convergence threshold exceeded)
+    Convergence check uses the pre-intervention count (before appending
+    any new intervention from the current stage), mirroring
+    ``WatcherComponent._decide_intervention()``.
     """
     cfg = watcher_config or create_watcher_config()
     max_rate = cfg.get("max_intervention_rate", 0.5)
@@ -48,73 +46,80 @@ def operon_watcher_node(
     stage_results = state.get("stage_results", [])
     signals = list(state.get("watcher_signals", []))
     interventions = list(state.get("watcher_interventions", []))
+    cursor = state.get("_watcher_cursor", 0)
 
-    total_stages = len(stage_results)
-    total_interventions = len(interventions)
+    # Only process new stage results since last invocation.
+    new_results = stage_results[cursor:]
 
-    # Process the latest stage result (if any new ones since last call).
-    new_signals: list[dict[str, Any]] = []
-    new_intervention: dict[str, Any] | None = None
-
-    if stage_results:
-        latest = stage_results[-1]
-        stage_name = latest.get("stage_name", "unknown")
-        action_type = latest.get("action_type", "EXECUTE")
+    for result in new_results:
+        stage_name = result.get("stage_name", "unknown")
+        action_type = result.get("action_type", "EXECUTE")
 
         # Classify signal.
-        signal = {
+        signals.append({
             "stage_name": stage_name,
             "action_type": action_type,
             "category": "epistemic" if action_type == "EXECUTE" else "somatic",
-        }
-        new_signals.append(signal)
+        })
 
-        # Check for failure → intervention.
+        # Convergence check BEFORE appending new intervention (mirrors WatcherComponent).
+        total_stages = cursor + len(new_results)
+        pre_intervention_count = len(interventions)
+        intervention_rate = pre_intervention_count / total_stages if total_stages > 0 else 0.0
+
+        if intervention_rate > max_rate and total_stages > 0:
+            # Only add HALT if not already halted.
+            if not any(i.get("action") == "halt" for i in interventions):
+                interventions.append({
+                    "stage_name": "__convergence__",
+                    "action": "halt",
+                    "reason": f"intervention rate {intervention_rate:.2f} exceeds {max_rate}",
+                })
+            return {
+                "watcher_signals": signals,
+                "watcher_interventions": interventions,
+                "watcher_summary": _summary(total_stages, signals, interventions),
+                "should_halt": True,
+                "_watcher_cursor": len(stage_results),
+            }
+
+        # Check for failure → intervention (using lowercase action strings).
         if action_type == "FAILURE":
-            # Count retries for this stage.
             stage_retries = sum(
                 1 for i in interventions
-                if i.get("stage_name") == stage_name and i.get("action") == "RETRY"
+                if i.get("stage_name") == stage_name and i.get("action") == "retry"
             )
             if stage_retries < max_retries:
-                new_intervention = {
+                interventions.append({
                     "stage_name": stage_name,
-                    "action": "RETRY",
+                    "action": "retry",
                     "reason": f"failure on {stage_name}, retry {stage_retries + 1}/{max_retries}",
-                }
+                })
             else:
-                new_intervention = {
+                interventions.append({
                     "stage_name": stage_name,
-                    "action": "ESCALATE",
+                    "action": "escalate",
                     "reason": f"max retries ({max_retries}) exceeded for {stage_name}",
-                }
+                })
 
-    # Update accumulated state.
-    signals.extend(new_signals)
-    if new_intervention is not None:
-        interventions.append(new_intervention)
-
-    # Convergence check.
-    total_interventions = len(interventions)
-    intervention_rate = total_interventions / total_stages if total_stages > 0 else 0.0
-    should_halt = intervention_rate > max_rate and total_stages > 0
-
-    if should_halt:
-        interventions.append({
-            "stage_name": "__convergence__",
-            "action": "HALT",
-            "reason": f"intervention rate {intervention_rate:.2f} exceeds {max_rate}",
-        })
+    total_stages = len(stage_results)
+    intervention_rate = len(interventions) / total_stages if total_stages > 0 else 0.0
 
     return {
         "watcher_signals": signals,
         "watcher_interventions": interventions,
-        "watcher_summary": {
-            "total_stages": total_stages,
-            "total_signals": len(signals),
-            "total_interventions": len(interventions),
-            "intervention_rate": intervention_rate,
-            "convergent": not should_halt,
-        },
-        "should_halt": should_halt,
+        "watcher_summary": _summary(total_stages, signals, interventions),
+        "should_halt": False,
+        "_watcher_cursor": len(stage_results),
+    }
+
+
+def _summary(total_stages: int, signals: list, interventions: list) -> dict[str, Any]:
+    intervention_rate = len(interventions) / total_stages if total_stages > 0 else 0.0
+    return {
+        "total_stages": total_stages,
+        "total_signals": len(signals),
+        "total_interventions": len(interventions),
+        "intervention_rate": intervention_rate,
+        "convergent": intervention_rate <= 0.5,
     }

@@ -107,31 +107,29 @@ class DistributedWatcher:
     ) -> None:
         """Publish a stage result with its signals and optional intervention."""
         for sig in signals:
-            self.transport.publish_signal({
-                "organism_id": self.organism_id,
-                "stage_name": stage_name,
-                "timestamp": datetime.now(UTC).isoformat(),
-                **sig,
-            })
+            # Caller payload first, framework fields last (authoritative).
+            msg = dict(sig)
+            msg["organism_id"] = self.organism_id
+            msg["stage_name"] = stage_name
+            msg["timestamp"] = datetime.now(UTC).isoformat()
+            self.transport.publish_signal(msg)
             self._signals_published += 1
 
         if intervention is not None:
-            self.transport.publish_intervention({
-                "organism_id": self.organism_id,
-                "stage_name": stage_name,
-                "timestamp": datetime.now(UTC).isoformat(),
-                **intervention,
-            })
+            msg = dict(intervention)
+            msg["organism_id"] = self.organism_id
+            msg["stage_name"] = stage_name
+            msg["timestamp"] = datetime.now(UTC).isoformat()
+            self.transport.publish_intervention(msg)
             self._interventions_published += 1
 
     def publish_heartbeat(self, status: dict[str, Any]) -> None:
         """Publish a heartbeat status check."""
-        self.transport.publish_signal({
-            "organism_id": self.organism_id,
-            "type": "heartbeat",
-            "timestamp": datetime.now(UTC).isoformat(),
-            **status,
-        })
+        msg = dict(status)
+        msg["organism_id"] = self.organism_id
+        msg["type"] = "heartbeat"
+        msg["timestamp"] = datetime.now(UTC).isoformat()
+        self.transport.publish_signal(msg)
         self._signals_published += 1
 
     def summary(self) -> dict[str, Any]:
