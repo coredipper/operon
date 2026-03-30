@@ -139,20 +139,12 @@ ConvergenceDetection), ensure the `SPECIFICATION` line in the `.cfg` file is set
 to `FairSpec` (which includes weak fairness). Without fairness, liveness checks
 may fail spuriously.
 
-### Note on EvolutionGating and Real enumeration
+### Note on EvolutionGating scores
 
-The `Evolve` action in EvolutionGating contains `\E s \in Real : s >= 0.0`,
-which TLC cannot enumerate directly. To model-check this spec you must override
-the `Evolve` action or the `Real` domain so that TLC draws from a finite set of
-candidate scores. One approach:
-
-1. In TLC Toolbox, add a **Definition Override** for the `Evolve` operator that
-   replaces `\E s \in Real` with `\E s \in {0.0, 0.5, 1.0}`.
-2. Or create a helper set `ScoreSet == {0.0, 0.5, 1.0}` and modify the spec
-   to quantify over `ScoreSet` instead of `Real`.
-
-The `.cfg` file is provided as-is and works once the Real enumeration is
-addressed.
+The `Evolve` action quantifies over a finite `ScoreSet` constant (default
+`{0, 1, 2, 3}` in the `.cfg` file). Adjust the set size to trade off
+state-space coverage against model-checking time. Use integer scores to
+avoid TLC's limitations with real-number enumeration.
 
 ## Small-Model Parameters
 

@@ -169,8 +169,10 @@ class ExternalTopology:
 \end{lstlisting}
 
 The agent specs use \texttt{dict[str, Any]} to accommodate heterogeneous
-framework configurations; type safety is enforced at the dataclass
-boundary, not within individual agent specifications.
+framework configurations.  Python type hints annotate the top-level
+fields; the nested dicts carry no schema enforcement at runtime.
+The \texttt{@dataclass(frozen=True)} decorator prevents reassignment
+of top-level fields but does not deep-freeze nested mutable objects.
 The \texttt{source} field is a tag, not a type discriminant---all
 downstream code treats every \texttt{ExternalTopology} identically.
 Agents are plain dicts with at least \texttt{name} and \texttt{role}
@@ -260,11 +262,11 @@ $S < 1.2$ (parallel structure exists but provides negligible benefit).
 \end{definition}
 
 \noindent
-Parallel acceleration informs the topology recommendation via
-\texttt{recommend\_topology()} but is not included in the composite risk
-score, which focuses on the three primary failure modes (error
-amplification, sequential overhead, tool density) plus a
-topology-mismatch flag.
+Parallel acceleration is computed and reported separately by the
+epistemic analysis layer but is not consumed by the current topology
+recommender or the composite risk score.  The risk score focuses on the
+three primary failure modes (error amplification, sequential overhead,
+tool density) plus a topology-mismatch flag.
 
 \begin{definition}[Tool Density]
 For a topology with $T$ distinct tools across $N$ agents, the tool density
@@ -633,7 +635,8 @@ TLA+-verified safety invariants, and a co-design convergence proof showing
 that the adaptive assembly loop stabilizes within $\varepsilon$.  By
 operating on serializable dicts with zero external imports, the adapter
 architecture achieves framework-agnostic analysis while preserving a
-structured interchange format with frozen immutability guarantees.  The 14 convergence modules, 216 convergence tests, 4 TLA+
+structured interchange format with top-level frozen dataclass fields
+(nested dicts remain mutable by Python convention).  The 14 convergence modules, 216 convergence tests, 4 TLA+
 specifications, and 98 worked examples provide a concrete, verifiable
 foundation for multi-agent system integration.
 

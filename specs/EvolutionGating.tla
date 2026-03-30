@@ -17,7 +17,8 @@ EXTENDS Naturals, FiniteSets, Reals, TLC
 CONSTANTS
     Orgs,               \* Set of organism IDs
     MAX_VERSIONS,       \* Upper bound on workspace version number
-    MIN_IMPROVEMENT     \* Minimum score improvement to accept (>= 0, can be 0)
+    MIN_IMPROVEMENT,    \* Minimum score improvement to accept (>= 0, can be 0)
+    ScoreSet            \* Finite set of candidate scores for model checking
 
 ASSUME MAX_VERSIONS \in Nat /\ MAX_VERSIONS > 0
 ASSUME MIN_IMPROVEMENT \in Real /\ MIN_IMPROVEMENT >= 0.0
@@ -57,7 +58,7 @@ Init ==
 Evolve(org) ==
     /\ pending[org] = "none"                          \* No mutation in flight
     /\ workspace[org] < MAX_VERSIONS                  \* Room for another version
-    /\ \E s \in Real :
+    /\ \E s \in ScoreSet :
          /\ s >= 0.0                                  \* Non-negative score
          /\ pending' = [pending EXCEPT ![org] = s]
     /\ UNCHANGED <<workspace, score, accepted>>

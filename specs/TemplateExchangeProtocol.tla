@@ -89,12 +89,14 @@ TypeOK ==
 (* Initial state *)
 
 Init ==
-    /\ library      = [org \in Orgs |-> {}]
+    \* Each org starts with one template (CHOOSE assigns deterministically).
+    \* This enables Import/RecordOutcome/Export to be reachable from Init.
+    /\ library      = [org \in Orgs |-> {CHOOSE t \in Templates : TRUE}]
     /\ trust        = [org \in Orgs |-> [peer \in Orgs |-> DEFAULT_TRUST]]
     /\ stage        = [org \in Orgs |-> "EMBRYONIC"]
     /\ successes    = [org \in Orgs |-> [tmpl \in Templates |-> 0]]
     /\ totals       = [org \in Orgs |-> [tmpl \in Templates |-> 0]]
-    /\ exported     = [org \in Orgs |-> {}]
+    /\ exported     = [org \in Orgs |-> {CHOOSE t \in Templates : TRUE}]
     /\ outcomeCount = [org \in Orgs |-> 0]
     /\ adoptedFrom  = [org \in Orgs |-> [tmpl \in Templates |-> "none"]]
 
