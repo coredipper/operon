@@ -157,14 +157,13 @@ the values in the `.cfg` files.
 |--------------------|------------------------------------|
 | Orgs               | `{o1, o2}`                         |
 | Templates          | `{t1, t2}`                         |
-| MinStage           | `[t1 \|-> "EMBRYONIC", t2 \|-> "JUVENILE"]` |
+| MinStage           | `[t1 \|-> "EMBRYONIC", t2 \|-> "EMBRYONIC"]` |
 | MIN_TRUST          | `0.2`                              |
-| ADOPTION_THRESHOLD | `0.3`                              |
+| ADOPTION_THRESHOLD | `0.2`                              |
 | DECAY_ALPHA        | `0.3`                              |
 | DEFAULT_TRUST      | `0.5`                              |
 | MAX_OUTCOMES       | `3`                                |
 | InitLibrary        | `[o1 \|-> {t1}, o2 \|-> {t2}]`    |
-| MinStage           | `[t1 \|-> "EMBRYONIC", t2 \|-> "EMBRYONIC"]` |
 
 ### DevelopmentalGating
 
