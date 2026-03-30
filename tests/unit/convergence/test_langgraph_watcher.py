@@ -45,20 +45,28 @@ class TestOperonWatcherNode:
         assert len(retry) == 1
 
     def test_max_retries_triggers_escalate(self):
-        """When retries exhausted, escalate instead of retry (with high enough threshold to avoid halt)."""
-        state = {
+        """When retries exhausted, escalate instead of retry."""
+        # Pre-process 3 stages to keep intervention rate low, then add failure.
+        state1 = {
             "stage_results": [
                 {"stage_name": "ok1", "action_type": "EXECUTE"},
                 {"stage_name": "ok2", "action_type": "EXECUTE"},
-                {"stage_name": "code", "output": "", "action_type": "FAILURE"},
-            ],
-            "watcher_interventions": [
-                {"stage_name": "code", "action": "retry"},
+                {"stage_name": "ok3", "action_type": "EXECUTE"},
             ],
         }
-        cfg = create_watcher_config(max_retries_per_stage=1, max_intervention_rate=0.9)
-        result = operon_watcher_node(state, watcher_config=cfg)
-        assert any(i["action"] == "escalate" for i in result["watcher_interventions"])
+        result1 = operon_watcher_node(state1)
+        # Now add a failure with an existing retry.
+        state2 = {
+            "stage_results": state1["stage_results"] + [
+                {"stage_name": "code", "action_type": "FAILURE"},
+            ],
+            "watcher_signals": result1["watcher_signals"],
+            "watcher_interventions": [{"stage_name": "code", "action": "retry"}],
+            "_watcher_cursor": result1["_watcher_cursor"],
+        }
+        cfg = create_watcher_config(max_retries_per_stage=1)
+        result2 = operon_watcher_node(state2, watcher_config=cfg)
+        assert any(i["action"] == "escalate" for i in result2["watcher_interventions"])
 
     def test_convergence_uses_pre_intervention_count(self):
         """First failure should NOT immediately halt — convergence checks pre-intervention count."""
@@ -109,3 +117,51 @@ class TestOperonWatcherNode:
         assert "total_signals" in s
         assert "intervention_rate" in s
         assert "convergent" in s
+
+    def test_summary_convergent_uses_configured_threshold(self):
+        """Summary 'convergent' should use configured max_rate, not hardcoded 0.5."""
+        state = {
+            "stage_results": [{"stage_name": "a", "action_type": "EXECUTE"}],
+            "watcher_interventions": [{"stage_name": "x", "action": "retry"}],
+        }
+        cfg = create_watcher_config(max_intervention_rate=0.3)
+        result = operon_watcher_node(state, watcher_config=cfg)
+        assert result["watcher_summary"]["convergent"] is False
+
+    def test_batch_processing_incremental(self):
+        """Multiple new results processed incrementally with cursor advancing."""
+        state = {"stage_results": [
+            {"stage_name": "s1", "action_type": "EXECUTE"},
+            {"stage_name": "s2", "action_type": "EXECUTE"},
+            {"stage_name": "s3", "action_type": "EXECUTE"},
+        ]}
+        result = operon_watcher_node(state)
+        assert len(result["watcher_signals"]) == 3
+        assert result["_watcher_cursor"] == 3
+        # Add more with existing cursor.
+        state2 = {
+            "stage_results": state["stage_results"] + [
+                {"stage_name": "s4", "action_type": "FAILURE"},
+            ],
+            **{k: v for k, v in result.items() if k != "stage_results"},
+        }
+        result2 = operon_watcher_node(state2)
+        assert len(result2["watcher_signals"]) == 4
+        assert result2["_watcher_cursor"] == 4
+
+    def test_batch_halt_stops_at_correct_cursor(self):
+        """When halt triggers mid-batch, cursor stops at the halting item."""
+        state = {
+            "stage_results": [
+                {"stage_name": "s1", "action_type": "EXECUTE"},
+                {"stage_name": "s2", "action_type": "EXECUTE"},
+            ],
+            "watcher_interventions": [
+                {"stage_name": "x", "action": "retry"},
+                {"stage_name": "y", "action": "retry"},
+            ],
+        }
+        cfg = create_watcher_config(max_intervention_rate=0.5)
+        result = operon_watcher_node(state, watcher_config=cfg)
+        assert result["should_halt"] is True
+        assert result["_watcher_cursor"] == 1  # only first result processed

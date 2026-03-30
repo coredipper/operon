@@ -27,17 +27,10 @@ def operon_watcher_node(
 ) -> dict[str, Any]:
     """LangGraph-compatible node that applies Operon's watcher logic.
 
-    Reads stage results from state, applies convergence detection,
-    and writes intervention recommendations back to state.
-
-    Uses a ``_watcher_cursor`` to track processed results and avoid
-    duplicate signals on re-invocation.  Action strings use lowercase
-    (``retry``, ``escalate``, ``halt``) matching Operon's canonical
-    ``InterventionKind`` values.
-
-    Convergence check uses the pre-intervention count (before appending
-    any new intervention from the current stage), mirroring
-    ``WatcherComponent._decide_intervention()``.
+    Processes stage results incrementally via ``_watcher_cursor``.
+    Convergence check uses pre-intervention count per result, with
+    ``total_stages`` computed incrementally as each result is processed.
+    Actions use lowercase (``retry``, ``escalate``, ``halt``).
     """
     cfg = watcher_config or create_watcher_config()
     max_rate = cfg.get("max_intervention_rate", 0.5)
@@ -48,10 +41,9 @@ def operon_watcher_node(
     interventions = list(state.get("watcher_interventions", []))
     cursor = state.get("_watcher_cursor", 0)
 
-    # Only process new stage results since last invocation.
     new_results = stage_results[cursor:]
 
-    for result in new_results:
+    for offset, result in enumerate(new_results):
         stage_name = result.get("stage_name", "unknown")
         action_type = result.get("action_type", "EXECUTE")
 
@@ -62,28 +54,29 @@ def operon_watcher_node(
             "category": "epistemic" if action_type == "EXECUTE" else "somatic",
         })
 
-        # Convergence check BEFORE appending new intervention (mirrors WatcherComponent).
-        total_stages = cursor + len(new_results)
+        # Incremental total: stages processed so far (including this one).
+        total_stages = cursor + offset + 1
         pre_intervention_count = len(interventions)
         intervention_rate = pre_intervention_count / total_stages if total_stages > 0 else 0.0
 
+        # Convergence check BEFORE appending new intervention.
         if intervention_rate > max_rate and total_stages > 0:
-            # Only add HALT if not already halted.
             if not any(i.get("action") == "halt" for i in interventions):
                 interventions.append({
                     "stage_name": "__convergence__",
                     "action": "halt",
                     "reason": f"intervention rate {intervention_rate:.2f} exceeds {max_rate}",
                 })
+            # Cursor advances only through the last processed item.
             return {
                 "watcher_signals": signals,
                 "watcher_interventions": interventions,
-                "watcher_summary": _summary(total_stages, signals, interventions),
+                "watcher_summary": _summary(total_stages, signals, interventions, max_rate),
                 "should_halt": True,
-                "_watcher_cursor": len(stage_results),
+                "_watcher_cursor": cursor + offset + 1,
             }
 
-        # Check for failure → intervention (using lowercase action strings).
+        # Failure → intervention.
         if action_type == "FAILURE":
             stage_retries = sum(
                 1 for i in interventions
@@ -103,23 +96,26 @@ def operon_watcher_node(
                 })
 
     total_stages = len(stage_results)
-    intervention_rate = len(interventions) / total_stages if total_stages > 0 else 0.0
-
     return {
         "watcher_signals": signals,
         "watcher_interventions": interventions,
-        "watcher_summary": _summary(total_stages, signals, interventions),
+        "watcher_summary": _summary(total_stages, signals, interventions, max_rate),
         "should_halt": False,
         "_watcher_cursor": len(stage_results),
     }
 
 
-def _summary(total_stages: int, signals: list, interventions: list) -> dict[str, Any]:
+def _summary(
+    total_stages: int,
+    signals: list,
+    interventions: list,
+    max_rate: float = 0.5,
+) -> dict[str, Any]:
     intervention_rate = len(interventions) / total_stages if total_stages > 0 else 0.0
     return {
         "total_stages": total_stages,
         "total_signals": len(signals),
         "total_interventions": len(interventions),
         "intervention_rate": intervention_rate,
-        "convergent": intervention_rate <= 0.5,
+        "convergent": intervention_rate <= max_rate,
     }
