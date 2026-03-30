@@ -97,9 +97,11 @@ structural analysis from runtime execution:
   \item \textbf{ExternalTopology} as a framework-agnostic intermediate
     representation: five adapters parse five frameworks into a single
     frozen dataclass; all downstream analysis is source-agnostic.
-  \item \textbf{Epistemic bounds as structural linter}: error
-    amplification, sequential penalty, parallel acceleration, and tool
-    density bounds are applied uniformly to every imported topology.
+  \item \textbf{Epistemic bounds as structural linter}: the adapter
+    risk score combines error amplification, sequential penalty, and tool
+    density bounds with a topology-mismatch flag; parallel acceleration
+    is available from the epistemic layer but not included in the
+    adapter's composite score.
   \item \textbf{TLA+ verified safety invariants}: four specifications
     cover template exchange, developmental gating, convergence detection,
     and evolution gating, verified by the TLC model checker with
@@ -194,8 +196,9 @@ class AdapterResult:
     risk_score: float                    # [0.0, 1.0]
 \end{lstlisting}
 
-The pipeline constructs a wiring diagram from agents and edges, applies the
-four epistemic bounds, generates structural warnings, and optionally
+The pipeline constructs a wiring diagram from agents and edges, applies
+three epistemic bounds (error amplification, sequential penalty, tool
+density) plus a topology-mismatch flag, generates structural warnings, and optionally
 produces a \texttt{PatternTemplate} for the pattern library.
 
 \subsection{Design Principles}
@@ -562,7 +565,7 @@ intelligence'' vision they articulate.
 Kim et al.~\cite{kim2025scaling} derive empirical scaling laws for
 multi-agent systems, finding that error rates grow with chain depth and
 coordination overhead dominates at high agent counts.  These findings
-are consistent with our epistemic theorems: the Error Amplification
+are consistent with our epistemic bounds: the Error Amplification
 Bound predicts the chain-depth dependence; the Tool Density bound
 predicts the coordination overhead curve.
 
