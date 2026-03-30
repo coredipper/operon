@@ -2,6 +2,24 @@
 
 This page tracks the recent direction of the project.
 
+## v0.24.1
+
+Focus:
+
+- production runtime compilers, distributed watcher, LangGraph integration (Phase C5)
+- 6 compilation/deployment targets: Swarms, DeerFlow, AnimaWorks, Ralph, A-Evolve, Scion
+
+New:
+
+- `organism_to_swarms()`, `managed_to_swarms()` — compile organism to Swarms workflow config
+- `organism_to_deerflow()`, `managed_to_deerflow()` — compile organism to DeerFlow session config
+- `organism_to_ralph()`, `managed_to_ralph()` — compile organism to Ralph event-driven hat config
+- `organism_to_scion()`, `managed_to_scion()` — compile organism to Scion containerized grove config
+- `DistributedWatcher` with `InMemoryTransport` and `HttpTransport` — transport-abstracted distributed convergence detection
+- `operon_watcher_node()` — LangGraph-compatible convergence detection node
+- `create_watcher_config()` — helper for LangGraph watcher configuration
+- Examples 99–103
+
 ## v0.24.0
 
 Focus:

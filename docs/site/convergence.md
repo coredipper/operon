@@ -58,6 +58,13 @@ Seed Operon's PatternLibrary from external catalogs:
 - `EvolutionGating.tla` — models the A-Evolve Solve->Observe->Evolve->Gate->Reload loop with monotonic score safety
 - `DesignProblem` + `compose_series/parallel` + `feedback_fixed_point` — Zardini co-design
 
+## Production Runtime (Phase C5)
+
+- 4 compilers (`organism_to_swarms`, `organism_to_deerflow`, `organism_to_ralph`, `organism_to_scion`) producing serializable dicts for each deployment target
+- `DistributedWatcher` with transport abstraction (`InMemoryTransport` for testing, `HttpTransport` for production) enabling convergence detection across distributed nodes
+- `operon_watcher_node()` — LangGraph-compatible node for DeerFlow integration, with `create_watcher_config()` helper
+- [Scion](https://github.com/GoogleCloudPlatform/scion) compiler supports container isolation via `runtime="docker"` parameter
+
 ## Examples
 
 - [86–88](https://github.com/coredipper/operon/blob/main/examples/): Adapter demos
@@ -65,3 +72,4 @@ Seed Operon's PatternLibrary from external catalogs:
 - [92–95](https://github.com/coredipper/operon/blob/main/examples/): Memory, PrimingView, heartbeat, async
 - [96](https://github.com/coredipper/operon/blob/main/examples/96_codesign_composition.py): Co-design composition
 - [97–98](https://github.com/coredipper/operon/blob/main/examples/): Ralph hat analysis, A-Evolve workspace analysis
+- [99–103](https://github.com/coredipper/operon/blob/main/examples/): Production runtime — compilers, distributed watcher, LangGraph node

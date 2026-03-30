@@ -148,6 +148,14 @@ Each arrow implies a typed connection with integrity constraints.
 - [Example 97: Ralph Hat Analysis](wiring_diagrams/example97_ralph_hat_analysis.md)
 - [Example 98: A-Evolve Workspace Analysis](wiring_diagrams/example98_aevolve_workspace_analysis.md)
 
+### Production Runtime (v0.24.1)
+
+- [Example 99: Swarms Deployment](../examples/99_swarms_deployment.py) — compile organism to Swarms workflow config
+- [Example 100: DeerFlow Deployment](../examples/100_deerflow_deployment.py) — compile organism to DeerFlow session
+- [Example 101: Ralph Deployment](../examples/101_ralph_deployment.py) — compile organism to Ralph hat config
+- [Example 102: Scion Deployment](../examples/102_scion_deployment.py) — compile organism to Scion grove
+- [Example 103: Distributed Watcher](../examples/103_distributed_watcher.py) — distributed watcher with transport abstraction
+
 ## Example 17: Typed Wiring (Integrity + Capabilities)
 
 ```

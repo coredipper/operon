@@ -100,3 +100,25 @@ For concrete usage, start from the examples rather than reading the namespaces i
   - `seed_library_from_aevolve` — seed from workspace manifests
 
 All functions are also re-exported from `operon_ai.convergence` directly.
+
+## Compilers (C5)
+
+- `operon_ai.convergence.swarms_compiler`
+  - `organism_to_swarms`, `managed_to_swarms`
+
+- `operon_ai.convergence.deerflow_compiler`
+  - `organism_to_deerflow`, `managed_to_deerflow`
+
+- `operon_ai.convergence.ralph_compiler`
+  - `organism_to_ralph`, `managed_to_ralph`
+
+- `operon_ai.convergence.scion_compiler`
+  - `organism_to_scion`, `managed_to_scion`
+
+## Distributed Watcher
+
+- `operon_ai.convergence.distributed_watcher`
+  - `DistributedWatcher`, `InMemoryTransport`, `HttpTransport`
+
+- `operon_ai.convergence.langgraph_watcher`
+  - `operon_watcher_node`, `create_watcher_config`

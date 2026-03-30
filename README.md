@@ -183,7 +183,15 @@ library = PatternLibrary()
 seed_library_from_swarms(library, get_builtin_swarms_patterns())
 ```
 
-See [examples 86–98](examples/) and the [Convergence docs](https://banu.be/operon/convergence/).
+Compile organisms into deployment configs for [Swarms](https://github.com/kyegomez/swarms), [DeerFlow](https://github.com/bytedance/deer-flow), [Ralph](https://github.com/mikeyobrien/ralph-orchestrator), and [Scion](https://github.com/GoogleCloudPlatform/scion):
+
+```python
+from operon_ai.convergence import organism_to_swarms, organism_to_scion
+swarms_config = organism_to_swarms(organism)
+scion_config = organism_to_scion(organism, runtime="docker")
+```
+
+See [examples 86–103](examples/) and the [Convergence docs](https://banu.be/operon/convergence/).
 
 ## Learn More
 
@@ -203,7 +211,7 @@ Public docs now live at [banu.be/operon](https://banu.be/operon/). The tracked s
 
 Direct links:
 
-- [Examples index](https://github.com/coredipper/operon/blob/main/examples/README.md) (98 runnable examples)
+- [Examples index](https://github.com/coredipper/operon/blob/main/examples/README.md) (103 runnable examples)
 - [Wiring diagrams](https://github.com/coredipper/operon/blob/main/examples/wiring_diagrams.md) (63 architecture diagrams)
 - [Main whitepaper](https://github.com/coredipper/operon/blob/main/article/main.pdf)
 - [Epistemic topology paper](https://github.com/coredipper/operon/blob/main/article/paper1/main.pdf)

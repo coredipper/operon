@@ -36,7 +36,7 @@ Use the repo index for the broader catalog:
 - Healing and surveillance
 - Multicellular composition
 
-## Examples 80–96
+## Examples 80–103
 
 - [`examples/80_developmental_staging.py`](https://github.com/coredipper/operon/blob/main/examples/80_developmental_staging.py) — developmental stages and capability gating
 - [`examples/81_critical_periods.py`](https://github.com/coredipper/operon/blob/main/examples/81_critical_periods.py) — teacher-learner scaffolding
@@ -55,3 +55,10 @@ Use the repo index for the broader catalog:
 - [`examples/94_heartbeat_daemon.py`](https://github.com/coredipper/operon/blob/main/examples/94_heartbeat_daemon.py) — idle-time consolidation
 - [`examples/95_async_thinking.py`](https://github.com/coredipper/operon/blob/main/examples/95_async_thinking.py) — Fork/Join sub-queries
 - [`examples/96_codesign_composition.py`](https://github.com/coredipper/operon/blob/main/examples/96_codesign_composition.py) — co-design adapter composition
+- [`examples/97_ralph_hat_analysis.py`](https://github.com/coredipper/operon/blob/main/examples/97_ralph_hat_analysis.py) — Ralph hat topology analysis
+- [`examples/98_aevolve_workspace_analysis.py`](https://github.com/coredipper/operon/blob/main/examples/98_aevolve_workspace_analysis.py) — A-Evolve workspace analysis
+- [`examples/99_swarms_deployment.py`](https://github.com/coredipper/operon/blob/main/examples/99_swarms_deployment.py) — compile organism to Swarms config
+- [`examples/100_deerflow_deployment.py`](https://github.com/coredipper/operon/blob/main/examples/100_deerflow_deployment.py) — compile to DeerFlow session
+- [`examples/101_ralph_deployment.py`](https://github.com/coredipper/operon/blob/main/examples/101_ralph_deployment.py) — compile to Ralph hat config
+- [`examples/102_scion_deployment.py`](https://github.com/coredipper/operon/blob/main/examples/102_scion_deployment.py) — compile to Scion grove
+- [`examples/103_distributed_watcher.py`](https://github.com/coredipper/operon/blob/main/examples/103_distributed_watcher.py) — distributed watcher transports
