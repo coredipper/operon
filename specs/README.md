@@ -136,11 +136,13 @@ java -jar tla2tools.jar -config EvolutionGating.cfg EvolutionGating.tla
 
 ### Step 3: Interpret results
 
-TLC should report no errors for all safety invariants and temporal properties.
-For specs with liveness properties (TemplateExchangeProtocol, DevelopmentalGating,
-ConvergenceDetection), ensure the `SPECIFICATION` line in the `.cfg` file is set
-to `FairSpec` (which includes weak fairness). Without fairness, liveness checks
-may fail spuriously.
+TLC should report no errors for all safety invariants and temporal safety
+properties in every default `.cfg`. For liveness properties
+(DevelopmentalGating, ConvergenceDetection, and
+TemplateExchangeProtocol-liveness.cfg), ensure `SPECIFICATION` is set to
+`FairSpec`. The default TemplateExchangeProtocol.cfg checks safety only;
+use the `-liveness.cfg` variant for liveness. EvolutionGating has no
+liveness properties.
 
 ### Note on EvolutionGating scores
 
@@ -154,7 +156,11 @@ avoid TLC's limitations with real-number enumeration.
 These parameters keep state spaces tractable for model checking. They match
 the values in the `.cfg` files.
 
-### TemplateExchangeProtocol
+### TemplateExchangeProtocol (safety — default config)
+
+Uses `TemplateExchangeProtocol.cfg`. Checks safety invariants only.
+With `DEFAULT_TRUST=0.5`, Import is unreachable from Init (matching
+runtime behavior where fresh peers need trust building before adoption).
 
 | Constant           | Value                              |
 |--------------------|------------------------------------|
@@ -163,10 +169,21 @@ the values in the `.cfg` files.
 | MinStage           | `[t1 \|-> "EMBRYONIC", t2 \|-> "EMBRYONIC"]` |
 | MIN_TRUST          | `0.2`                              |
 | ADOPTION_THRESHOLD | `0.3`                              |
-| DECAY_ALPHA        | `0.3`                              |
 | DEFAULT_TRUST      | `0.5`                              |
 | MAX_OUTCOMES       | `3`                                |
 | InitLibrary        | `[o1 \|-> {t1}, o2 \|-> {t2}]`    |
+
+### TemplateExchangeProtocol (liveness — elevated trust config)
+
+Uses `TemplateExchangeProtocol-liveness.cfg`. Checks safety AND liveness.
+`DEFAULT_TRUST=0.8` makes Import reachable (`0.8 * 0.5 = 0.4 >= 0.3`).
+This tests the protocol under conditions where peers have sufficient
+initial trust for adoption to occur.
+
+| Constant           | Value (differs from default)       |
+|--------------------|------------------------------------|
+| DEFAULT_TRUST      | `0.8`                              |
+| (all others)       | Same as default config             |
 
 ### DevelopmentalGating
 
