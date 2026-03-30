@@ -237,9 +237,24 @@ over pondering" philosophy makes this the most honest test of the framework.
 | Credit assignment | ACG gap: per-stage attribution of success/failure |
 | Convergence paper | Six-layer architecture with evaluation results |
 
-**Evaluation:** 20 tasks × 5 configurations (Operon adaptive, Swarms auto,
-DeerFlow default, AnimaWorks default, hybrid). Measure success rate, token
+**Evaluation:** 20 tasks × 7 configurations. Measure success rate, token
 cost, latency, intervention count, convergence rate, structural variation.
+
+| # | Configuration | Structural guidance | Runtime |
+|---|---------------|--------------------|---------|
+| 1 | Operon adaptive | Full (epistemic theorems + template scoring) | Local |
+| 2 | Swarms AutoSwarmBuilder | None (one-shot LLM generation) | Local |
+| 3 | DeerFlow default | None (LangGraph default) | Docker |
+| 4 | AnimaWorks default | None (supervisor hierarchy) | Local |
+| 5 | Ralph default | None (event-driven self-organization) | Local |
+| 6 | **Scion unguided** | **None** (agents self-organize via CLI) | Container |
+| 7 | **Scion + Operon** | **Full** (Operon compiles, Scion deploys) | Container |
+
+Configurations 6 vs 7 directly test the Scion philosophical question: does
+Operon's structural analysis improve outcomes when agents have full autonomy
+in isolated containers? If config 7 outperforms config 6, structural
+guidance helps even with capable models. If config 6 matches or exceeds
+config 7, Scion's "less is more" philosophy holds.
 
 **Citation strategy:**
 - Introduction: Evans et al. (plural intelligence motivation)
