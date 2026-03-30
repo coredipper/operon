@@ -118,8 +118,11 @@ curl -L -o tla2tools.jar \
 From the `specs/` directory:
 
 ```bash
-# TemplateExchangeProtocol
+# TemplateExchangeProtocol (safety only — default parameters)
 java -jar tla2tools.jar -config TemplateExchangeProtocol.cfg TemplateExchangeProtocol.tla
+
+# TemplateExchangeProtocol (safety + liveness — elevated trust)
+java -jar tla2tools.jar -config TemplateExchangeProtocol-liveness.cfg TemplateExchangeProtocol.tla
 
 # DevelopmentalGating
 java -jar tla2tools.jar -config DevelopmentalGating.cfg DevelopmentalGating.tla
