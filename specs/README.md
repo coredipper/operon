@@ -169,6 +169,7 @@ runtime behavior where fresh peers need trust building before adoption).
 | MinStage           | `[t1 \|-> "EMBRYONIC", t2 \|-> "EMBRYONIC"]` |
 | MIN_TRUST          | `0.2`                              |
 | ADOPTION_THRESHOLD | `0.3`                              |
+| DECAY_ALPHA        | `0.3`                              |
 | DEFAULT_TRUST      | `0.5`                              |
 | MAX_OUTCOMES       | `3`                                |
 | InitLibrary        | `[o1 \|-> {t1}, o2 \|-> {t2}]`    |
@@ -238,11 +239,10 @@ will produce incorrect results or TLC errors.
 With the small-model parameters above, TLC should report:
 
 - **All safety invariants pass** (no counterexamples found).
-- **Liveness properties pass** under `FairSpec` (fair scheduling) for specs
-  that define them (TemplateExchangeProtocol, DevelopmentalGating,
-  ConvergenceDetection). EvolutionGating defines no liveness property --
-  it checks safety invariants (`TypeOK`, `VersionBound`) and temporal
-  safety properties (`MonotonicScore`, `GateBeforeDeploy`) only.
+- **Liveness properties pass** under `FairSpec` for DevelopmentalGating and
+  ConvergenceDetection. For TemplateExchangeProtocol, use the
+  `-liveness.cfg` config (elevated trust); the default config checks safety
+  only. EvolutionGating has no liveness property.
 - State space for each spec is on the order of thousands to tens of thousands
   of states, completing in seconds to a few minutes.
 
