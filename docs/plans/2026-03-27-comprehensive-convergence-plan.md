@@ -4,24 +4,23 @@
 
 This plan merges five source documents into one authoritative implementation
 roadmap for Operon's convergence architecture — integrating with Swarms,
-DeerFlow, AnimaWorks, and AsyncThink through phased adapter development,
-co-design formalization, and shared evaluation.
+DeerFlow, AnimaWorks, Ralph, A-Evolve, AsyncThink, and Scion through
+phased adapter development, co-design formalization, and shared evaluation.
 
-**Source documents:**
-1. `2026-03-23-operon-animaworks-convergence.md` — Original 9-workstream investigation
-2. `2026-03-24-convergence-roadmap.md` — Six-phase implementation plan (C1-C6)
-3. `2026-03-27-acg-survey-overlap.md` — ACG workflow optimization survey analysis
-4. `2026-03-27-deerflow-integration.md` — DeerFlow 2.0 integration architecture
-5. `2026-03-27-evans-plural-intelligence-overlap.md` — Philosophical alignment analysis
+**Current state (v0.24.1, as of 2026-03-30):**
+- Phases C1-C4 complete: 14 convergence modules, 4 TLA+ specs
+- 5 adapters: Swarms, DeerFlow, AnimaWorks, Ralph, A-Evolve
+- 98 examples (86-98 are convergence), 1404 tests
+- Convergence paper written (`article/paper2/main.tex`)
+- Published to PyPI as `operon-ai==0.24.1`
 
-**Current state:** v0.23.3, 85 examples (82-85 committed), 1168 tests,
-`operon_ai/convergence/` does not exist yet, no TLA+ specs.
+**Remaining:** C5 (compilers for 4 deployment targets), C6 (evaluation), C7 (future)
 
 **Key decisions:**
-- DeerFlow is co-equal with Swarms at the orchestration layer
-- Convergence examples start at 86 (82-85 already committed)
-- Prompt optimization (DSPy) is a seeded interface in C3, full implementation is C7 future work
-- Evans et al. is cited as philosophical motivation, not technical prior work
+- 6-layer architecture: A-Evolve / AnimaWorks / AsyncThink / Ralph+DeerFlow+Swarms / Operon / Scion
+- Scion is the infrastructure layer (below Operon), not an orchestration peer
+- Scion's philosophy ("less structure") is in productive tension with Operon's thesis — C6 evaluates this
+- Prompt optimization (DSPy) seeded in C3, full implementation via A-Evolve in C7
 
 ---
 
@@ -236,7 +235,7 @@ over pondering" philosophy makes this the most honest test of the framework.
 | Eval harness | BFCL + AgentDojo across Operon, Swarms, DeerFlow, AnimaWorks |
 | Structural variation | ACG gap: measure graph topology variation across inputs |
 | Credit assignment | ACG gap: per-stage attribution of success/failure |
-| Convergence paper | Four-layer architecture with evaluation results |
+| Convergence paper | Six-layer architecture with evaluation results |
 
 **Evaluation:** 20 tasks × 5 configurations (Operon adaptive, Swarms auto,
 DeerFlow default, AnimaWorks default, hybrid). Measure success rate, token
@@ -259,15 +258,20 @@ cost, latency, intervention count, convergence rate, structural variation.
 
 ---
 
-## Example Allocation (86-99)
+## Example Allocation (86-103)
 
-| # | Phase | Description |
-|---|-------|-------------|
-| 86-88 | C1 | Swarms/AnimaWorks/DeerFlow topology analysis |
-| 89-91 | C2 | Seeded library, hybrid assembly, skill bridge |
-| 92-95 | C3 | Memory bridge, PrimingView, heartbeat, async thinking |
-| 96 | C4 | Co-design composition |
-| 97-99 | C5 | Swarms/DeerFlow deployment, distributed watcher |
+| # | Phase | Status | Description |
+|---|-------|--------|-------------|
+| 86-88 | C1 | Done | Swarms/AnimaWorks/DeerFlow topology analysis |
+| 89-91 | C2 | Done | Seeded library, hybrid assembly, skill bridge |
+| 92-95 | C3 | Done | Memory bridge, PrimingView, heartbeat, async thinking |
+| 96 | C4 | Done | Co-design composition |
+| 97-98 | C1+ | Done | Ralph hat analysis, A-Evolve workspace analysis |
+| 99 | C5 | Planned | Swarms deployment |
+| 100 | C5 | Planned | DeerFlow deployment |
+| 101 | C5 | Planned | Ralph deployment |
+| 102 | C5 | Planned | Scion deployment |
+| 103 | C5 | Planned | Distributed watcher |
 
 ---
 
@@ -304,7 +308,7 @@ C2 and C3 can proceed in parallel after C1.
 After each phase:
 1. `python -m pytest tests/ -x -q` — all tests pass
 2. `python examples/NN_*.py` — new examples run without error
-3. No new imports of Swarms/DeerFlow/AnimaWorks in operon_ai/
+3. No new imports of Swarms/DeerFlow/AnimaWorks/Ralph/A-Evolve/Scion in operon_ai/
 4. For C4: `tlc specs/*.tla` — model checker verifies invariants
 5. For C5: compiler output is valid JSON/dict (no framework objects)
 6. For C6: eval harness produces comparative metrics table
