@@ -415,8 +415,9 @@ sequence $s_0 \leq s_1 \leq s_2 \leq \cdots$ is monotone nondecreasing
 and bounded above by~$1$, so it converges to $\sup_n s_n = s^*$ by the
 monotone convergence theorem.  The implementation's
 \texttt{feedback\_fixed\_point()} has two termination modes:
-(1)~when $|s_{n+1} - s_n| < \varepsilon$ (default $0.01$), the result is
-an $\varepsilon$-approximate fixed point with \texttt{converged=True};
+(1)~when $|s_{n+1} - s_n| < \varepsilon$ (default $0.01$) for the
+monitored scoring key, the implementation reports \texttt{converged=True},
+indicating the tracked value has stabilized within $\varepsilon$;
 (2)~when the iteration count reaches the safety bound (default 100)
 without satisfying the $\varepsilon$ criterion, the algorithm halts with
 \texttt{converged=False} and returns the last computed state.  The
