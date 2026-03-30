@@ -119,14 +119,31 @@ class TestOperonWatcherNode:
         assert "convergent" in s
 
     def test_summary_convergent_uses_configured_threshold(self):
-        """Summary 'convergent' should use configured max_rate, not hardcoded 0.5."""
-        state = {
-            "stage_results": [{"stage_name": "a", "action_type": "EXECUTE"}],
+        """Summary 'convergent' should use configured max_rate, not hardcoded 0.5.
+
+        1 intervention / 3 stages = 0.33. With max_rate=0.3, convergent should
+        be False even though 0.33 < 0.5 (the old hardcoded threshold).
+        """
+        # Pre-process 3 stages so cursor is past them.
+        state1 = {"stage_results": [
+            {"stage_name": "a", "action_type": "EXECUTE"},
+            {"stage_name": "b", "action_type": "EXECUTE"},
+            {"stage_name": "c", "action_type": "EXECUTE"},
+        ]}
+        result1 = operon_watcher_node(state1)
+        # Inject 1 intervention into the accumulated state (rate = 1/3 = 0.33).
+        state2 = {
+            "stage_results": state1["stage_results"],
+            "watcher_signals": result1["watcher_signals"],
             "watcher_interventions": [{"stage_name": "x", "action": "retry"}],
+            "_watcher_cursor": result1["_watcher_cursor"],
         }
         cfg = create_watcher_config(max_intervention_rate=0.3)
-        result = operon_watcher_node(state, watcher_config=cfg)
-        assert result["watcher_summary"]["convergent"] is False
+        result2 = operon_watcher_node(state2, watcher_config=cfg)
+        # No new results to process, so should_halt=False, but summary
+        # should reflect that 0.33 > 0.3 → not convergent.
+        assert result2["should_halt"] is False
+        assert result2["watcher_summary"]["convergent"] is False
 
     def test_batch_processing_incremental(self):
         """Multiple new results processed incrementally with cursor advancing."""
