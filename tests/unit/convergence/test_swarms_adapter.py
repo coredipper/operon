@@ -239,6 +239,26 @@ class TestSwarmToTemplate:
         template_c = swarm_to_template(_concurrent_topology())
         assert template_c.fingerprint.task_shape == "parallel"
 
+    def test_specialist_swarm_parallel_no_edges(self):
+        """specialist_swarm with no edges classifies as parallel via edge heuristic."""
+        from operon_ai.convergence.swarms_adapter import _classify_task_shape
+        topo = ExternalTopology(
+            source="operon", pattern_name="specialist_swarm",
+            agents=({"name": "a"}, {"name": "b"}, {"name": "c"}),
+            edges=(), metadata={},
+        )
+        assert _classify_task_shape(topo) == "parallel"
+
+    def test_specialist_swarm_hub_spoke_mixed(self):
+        """specialist_swarm with hub-and-spoke edges classifies as mixed."""
+        from operon_ai.convergence.swarms_adapter import _classify_task_shape
+        topo = ExternalTopology(
+            source="operon", pattern_name="specialist_swarm",
+            agents=({"name": "hub"}, {"name": "w1"}, {"name": "w2"}),
+            edges=(("hub", "w1"), ("hub", "w2")), metadata={},
+        )
+        assert _classify_task_shape(topo) == "mixed"
+
     def test_fingerprint_has_roles(self):
         template = swarm_to_template(_sequential_topology())
         assert "researcher" in template.fingerprint.required_roles
