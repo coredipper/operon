@@ -1,6 +1,6 @@
 # Operon Examples
 
-This directory contains 103 runnable numbered examples demonstrating the
+This directory contains 106 runnable numbered examples demonstrating the
 `operon_ai` library, progressing from basic concepts to complete
 LLM-powered cell simulations.
 

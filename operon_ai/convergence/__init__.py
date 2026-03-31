@@ -62,6 +62,18 @@ from .codesign import (
     feasibility_check,
     feedback_fixed_point,
 )
+from .prompt_optimization import (
+    EvolutionaryOptimizer,
+    NoOpOptimizer,
+    PromptOptimizer,
+    attach_optimizer,
+)
+from .workflow_generation import (
+    HeuristicGenerator,
+    ReasoningGenerator,
+    WorkflowGenerator,
+    generate_and_register,
+)
 from .deerflow_compiler import (
     managed_to_deerflow,
     organism_to_deerflow,
@@ -172,4 +184,14 @@ __all__ = [
     # LangGraph watcher (C5)
     "operon_watcher_node",
     "create_watcher_config",
+    # Prompt optimization (C7)
+    "PromptOptimizer",
+    "EvolutionaryOptimizer",
+    "NoOpOptimizer",
+    "attach_optimizer",
+    # Workflow generation (C7)
+    "WorkflowGenerator",
+    "ReasoningGenerator",
+    "HeuristicGenerator",
+    "generate_and_register",
 ]
