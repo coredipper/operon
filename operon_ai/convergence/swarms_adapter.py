@@ -65,7 +65,8 @@ _PATTERN_TO_SHAPE: dict[str, str] = {
     "singleworker": "sequential",
     "singleworkerwithreviewer": "sequential",
     "reviewergate": "sequential",
-    "specialistswarm": "mixed",  # swarm can be parallel OR mixed; default to mixed
+    # specialistswarm intentionally omitted — ambiguous (parallel or mixed).
+    # Let the structural heuristic (edge analysis) classify it.
     "skillorganism": "sequential",
 }
 
