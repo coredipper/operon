@@ -75,13 +75,14 @@ class NoOpOptimizer:
 def attach_optimizer(
     stages: list[SkillStage], optimizer: PromptOptimizer
 ) -> list[SkillStage]:
-    """Return new stages with *optimizer* attached to each stage's prompt_optimizer hook."""
-    return [
-        replace(
-            s,
-            prompt_optimizer=lambda prompt, t=s.name: optimizer.optimize(
-                prompt, "", t
-            ),
-        )
-        for s in stages
-    ]
+    """Return new stages with *optimizer* attached to each stage's prompt_optimizer hook.
+
+    The attached hook forwards prompt, task, stage_name, and optional
+    feedback/kwargs to the optimizer's ``optimize()`` method.
+    """
+    def _make_hook(stage_name: str):
+        def hook(prompt: str, task: str = "", **kwargs):
+            return optimizer.optimize(prompt, task, stage_name, feedback=kwargs.get("feedback"))
+        return hook
+
+    return [replace(s, prompt_optimizer=_make_hook(s.name)) for s in stages]

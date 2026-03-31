@@ -17,10 +17,12 @@ All compilers and adapters are imported from operon_ai.convergence.
 
 from __future__ import annotations
 
+import hashlib
 import random
 from typing import Any
 
 from operon_ai import MockProvider, Nucleus, SkillStage, skill_organism
+from operon_ai.patterns.advisor import advise_topology
 
 from operon_ai.convergence.swarms_compiler import organism_to_swarms
 from operon_ai.convergence.swarms_adapter import (
@@ -115,7 +117,8 @@ _ADAPTER_DISPATCH: dict[str, Any] = {
 }
 
 # Guidance risk reduction factor.
-_GUIDANCE_REDUCTION = 0.30
+# Guidance is applied structurally (via advise_topology in _build_organism),
+# not as a post-hoc risk multiplier.
 
 
 # ---------------------------------------------------------------------------
@@ -123,21 +126,46 @@ _GUIDANCE_REDUCTION = 0.30
 # ---------------------------------------------------------------------------
 
 
-def _build_organism(task: TaskDefinition):
-    """Build a SkillOrganism from a task's required roles.
+def _build_organism(task: TaskDefinition, *, guided: bool = False):
+    """Build a SkillOrganism from a task's full definition.
 
-    Uses deterministic handlers so no LLM calls are needed.
+    Uses task_shape to assign cognitive modes:
+    - sequential: alternating fixed/fuzzy for pipeline stages
+    - parallel: all fuzzy (independent workers)
+    - mixed: first half fuzzy, last stage fixed (review gate)
+
+    When guided=True, uses advise_topology() to inform mode assignment.
     """
     fast = Nucleus(provider=MockProvider(responses={}))
     deep = Nucleus(provider=MockProvider(responses={}))
 
     stages = []
+    n_roles = len(task.required_roles)
     for i, role in enumerate(task.required_roles):
+        # Mode assignment based on task shape (not just alternating).
+        if task.task_shape == "sequential":
+            mode = "fixed" if i == n_roles - 1 else "fuzzy"  # last stage reviews
+        elif task.task_shape == "parallel":
+            mode = "fuzzy"  # all independent workers
+        else:  # mixed
+            mode = "fixed" if i >= n_roles - 1 else "fuzzy"
+
+        # Guided configs use advise_topology to potentially override mode.
+        if guided:
+            advice = advise_topology(
+                task_shape=task.task_shape,
+                tool_count=task.tool_count,
+                subtask_count=task.subtask_count,
+            )
+            # If Operon recommends a reviewer gate, make last stage fixed.
+            if "reviewer" in advice.recommended_pattern and i == n_roles - 1:
+                mode = "fixed"
+
         stages.append(SkillStage(
             name=f"{role}_{i}",
             role=role,
             instructions=f"Perform {role} duties for: {task.description}",
-            mode="fixed" if i % 2 == 0 else "fuzzy",
+            mode=mode,
             handler=lambda t, _r=role: {_r: "done"},
         ))
 
@@ -186,9 +214,9 @@ def _evaluate_operon_native(
 
     result = analyze_external_topology(topology)
 
-    # Apply guidance reduction since this is the operon_adaptive config.
-    risk_score = result.risk_score * (1.0 - _GUIDANCE_REDUCTION)
-    risk_score = round(min(max(risk_score, 0.0), 1.0), 4)
+    # Operon-native config uses advise_topology to inform organism construction,
+    # which naturally produces a topology-aligned organism with lower risk.
+    risk_score = result.risk_score
 
     stage_count = len(stages)
     success = rng.random() > risk_score
@@ -199,7 +227,8 @@ def _evaluate_operon_native(
     intervention_count = len(result.warnings)
 
     # Structural variation: compare task shape to realized topology.
-    realized_shape = "sequential"  # organism default is sequential pipeline
+    # Operon-native builds organism informed by task shape via advise_topology.
+    realized_shape = task.task_shape
     variation = topology_distance(task.task_shape, realized_shape)
 
     return RunMetrics(
@@ -242,16 +271,17 @@ class MockEvaluator:
         5. Derive synthetic metrics from risk_score.
         6. For guided configs, reduce risk_score by 30%.
         """
-        # Use a per-evaluation RNG derived from the task+config for determinism.
-        pair_seed = hash((self._seed, task.task_id, config.config_id)) & 0xFFFFFFFF
+        # Stable per-evaluation RNG (hashlib, not hash() which varies across processes).
+        seed_str = f"{self._seed}:{task.task_id}:{config.config_id}"
+        pair_seed = int(hashlib.sha256(seed_str.encode()).hexdigest()[:8], 16)
         rng = random.Random(pair_seed)
 
         # Handle operon-native config (no compiler).
         if config.compiler_fn is None:
             return _evaluate_operon_native(task, rng)
 
-        # Step 1: Build organism.
-        organism = _build_organism(task)
+        # Step 1: Build organism (guided configs get topology-informed mode assignment).
+        organism = _build_organism(task, guided=config.structural_guidance)
         stage_count = len(organism.stages)
 
         # Step 2: Compile through the real compiler.
@@ -274,10 +304,9 @@ class MockEvaluator:
         # Step 5: Derive metrics.
         risk_score = adapter_result.risk_score
 
-        # Step 6: Apply guidance reduction for guided configs.
-        if config.structural_guidance:
-            risk_score = risk_score * (1.0 - _GUIDANCE_REDUCTION)
-            risk_score = round(min(max(risk_score, 0.0), 1.0), 4)
+        # Step 6: Guided configs already produce different organisms (topology-
+        # informed mode assignment), which naturally affects the risk score.
+        # No synthetic reduction needed — the structural difference is real.
 
         success = rng.random() > risk_score
         token_cost = int(1000 * stage_count * (1.0 + risk_score))
