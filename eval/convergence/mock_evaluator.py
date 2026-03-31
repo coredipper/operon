@@ -140,20 +140,30 @@ def _build_organism(task: TaskDefinition, *, guided: bool = False):
 
     advice = None
     if guided:
+        # Guided configs use stricter error_tolerance (0.01) which triggers
+        # reviewer-gate recommendations for sequential tasks, producing
+        # materially different organisms from unguided baselines.
         advice = advise_topology(
             task_shape=task.task_shape,
             tool_count=task.tool_count,
             subtask_count=task.subtask_count,
+            error_tolerance=0.01,
         )
 
     stages = []
     n_roles = len(task.required_roles)
     for i, role in enumerate(task.required_roles):
         if guided and advice:
-            # Guided: use Operon's recommendation to set modes.
-            if "reviewer" in advice.recommended_pattern:
+            # Guided: map Operon's recommendation to stage modes.
+            rec = advice.recommended_pattern
+            if "reviewer" in rec or "gate" in rec:
+                # Reviewer gate: last stage is observational (fixed).
                 mode = "fixed" if i == n_roles - 1 else "fuzzy"
-            elif "single" in advice.recommended_pattern:
+            elif "swarm" in rec or "specialist" in rec:
+                # Specialist swarm: all stages are independent (fuzzy).
+                mode = "fuzzy"
+            elif "single" in rec:
+                # Single worker: one stage does everything.
                 mode = "fuzzy"
             else:
                 mode = "fuzzy"
@@ -194,16 +204,27 @@ def _evaluate_operon_native(
     organism, _advice = _build_organism(task, guided=True)
     stages = organism.stages
 
-    # Build a synthetic ExternalTopology from the organism's stage structure.
+    # Build ExternalTopology with edge structure matching the task shape
+    # (not always a linear chain). Operon-native uses advised topology.
     agent_specs = []
     for s in stages:
         agent_specs.append({
             "name": s.name,
             "role": s.role,
         })
-    edges = []
-    for i in range(len(stages) - 1):
-        edges.append((stages[i].name, stages[i + 1].name))
+    # Edge structure from task shape (guided by advise_topology).
+    if task.task_shape == "parallel":
+        # Parallel: no edges (independent agents).
+        edges = []
+    elif task.task_shape == "mixed":
+        # Mixed: first stage fans out to all others (hub-and-spoke).
+        if len(stages) > 1:
+            edges = [(stages[0].name, stages[i].name) for i in range(1, len(stages))]
+        else:
+            edges = []
+    else:
+        # Sequential: linear chain.
+        edges = [(stages[i].name, stages[i + 1].name) for i in range(len(stages) - 1)]
 
     topology = ExternalTopology(
         source="operon",
