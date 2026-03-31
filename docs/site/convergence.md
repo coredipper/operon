@@ -74,9 +74,9 @@ Seed Operon's PatternLibrary from external catalogs:
 
 ## Prompt Optimization + Workflow Generation (Phase C7)
 
-- `PromptOptimizer` protocol with `EvolutionaryOptimizer` and `NoOpOptimizer` implementations
+- `PromptOptimizer` protocol with `NoOpOptimizer` reference implementation; `EvolutionaryOptimizer` extended protocol
 - `attach_optimizer` — attach optimizer to any SkillStage for prompt-level tuning
-- `WorkflowGenerator` protocol with `ReasoningGenerator` and `HeuristicGenerator` implementations
+- `WorkflowGenerator` protocol with `HeuristicGenerator` reference implementation; `ReasoningGenerator` extended protocol
 - `generate_and_register` — generate workflow topology and register it in PatternLibrary
 
 ## Examples
@@ -88,5 +88,5 @@ Seed Operon's PatternLibrary from external catalogs:
 - [97–98](https://github.com/coredipper/operon/blob/main/examples/): Ralph hat analysis, A-Evolve workspace analysis
 - [99–103](https://github.com/coredipper/operon/blob/main/examples/): Production runtime — 4 compilers and distributed watcher
 - [104](https://github.com/coredipper/operon/blob/main/examples/104_evaluation_harness.py): Evaluation harness with MockEvaluator
-- [105](https://github.com/coredipper/operon/blob/main/examples/105_prompt_optimization.py): Prompt optimization protocols
-- [106](https://github.com/coredipper/operon/blob/main/examples/106_workflow_generation.py): Workflow generation and registration
+- [105](https://github.com/coredipper/operon/blob/main/examples/105_prompt_optimization_interface.py): Prompt optimization protocols
+- [106](https://github.com/coredipper/operon/blob/main/examples/106_workflow_generation_interface.py): Workflow generation and registration

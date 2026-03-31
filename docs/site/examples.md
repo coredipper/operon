@@ -63,5 +63,5 @@ Use the repo index for the broader catalog:
 - [`examples/102_scion_deployment.py`](https://github.com/coredipper/operon/blob/main/examples/102_scion_deployment.py) — compile to Scion grove
 - [`examples/103_distributed_watcher.py`](https://github.com/coredipper/operon/blob/main/examples/103_distributed_watcher.py) — distributed watcher transports
 - [`examples/104_evaluation_harness.py`](https://github.com/coredipper/operon/blob/main/examples/104_evaluation_harness.py) — evaluation harness with MockEvaluator
-- [`examples/105_prompt_optimization.py`](https://github.com/coredipper/operon/blob/main/examples/105_prompt_optimization.py) — prompt optimization protocols
-- [`examples/106_workflow_generation.py`](https://github.com/coredipper/operon/blob/main/examples/106_workflow_generation.py) — workflow generation and registration
+- [`examples/105_prompt_optimization_interface.py`](https://github.com/coredipper/operon/blob/main/examples/105_prompt_optimization_interface.py) — prompt optimization protocols
+- [`examples/106_workflow_generation_interface.py`](https://github.com/coredipper/operon/blob/main/examples/106_workflow_generation_interface.py) — workflow generation and registration
