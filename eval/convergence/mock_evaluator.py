@@ -1,16 +1,22 @@
 """Mock evaluator for the C6 convergence evaluation harness.
 
-This is the critical evaluation component.  For each task x configuration
-pair it:
+For each task x configuration pair:
 
-1. Builds a real SkillOrganism from the task's required_roles.
+1. Builds a SkillOrganism from the task's required_roles.
 2. Compiles through the config's real compiler (Swarms/DeerFlow/Ralph/Scion).
-3. Parses the compiled dict back through the config's adapter into an
-   ExternalTopology.
-4. Runs analyze_external_topology() to get a real AdapterResult with risk_score.
-5. Derives synthetic success, token, latency, and intervention metrics from
-   the real analysis outputs.
-6. For guided configs, applies a 30% risk reduction.
+3. Parses compiled dict back through adapter -> ExternalTopology.
+4. Runs analyze_external_topology() -> real AdapterResult with risk_score.
+5. Derives synthetic metrics from the real analysis outputs.
+
+The Operon-native path builds topology edges matching the task shape
+(parallel=none, mixed=hub-spoke, sequential=chain) using advise_topology().
+
+**Limitation:** Guided external configs (swarms_operon, scion_operon) change
+stage modes but not the compiled topology structure, because SkillOrganism
+is inherently a sequential pipeline. Genuine topology differences between
+guided and unguided require live evaluation with the actual frameworks (C6b).
+The mock evaluator demonstrates the *analysis pipeline* and *metric
+collection*, not real guidance effects on external frameworks.
 
 All compilers and adapters are imported from operon_ai.convergence.
 """
@@ -201,7 +207,7 @@ def _evaluate_operon_native(
     Builds the organism and directly analyzes its structure as if it were
     an external topology (sequential chain of stages).
     """
-    organism, _advice = _build_organism(task, guided=True)
+    organism, advice = _build_organism(task, guided=True)
     stages = organism.stages
 
     # Build ExternalTopology with edge structure matching the task shape
@@ -226,9 +232,11 @@ def _evaluate_operon_native(
         # Sequential: linear chain.
         edges = [(stages[i].name, stages[i + 1].name) for i in range(len(stages) - 1)]
 
+    # Use advised pattern name (from advise_topology) for the native path.
+    pattern_name = advice.recommended_pattern if advice else "SkillOrganism"
     topology = ExternalTopology(
         source="operon",
-        pattern_name="SkillOrganism",
+        pattern_name=pattern_name,
         agents=tuple(agent_specs),
         edges=tuple(edges),
         metadata={},
