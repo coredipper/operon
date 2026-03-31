@@ -129,37 +129,37 @@ _ADAPTER_DISPATCH: dict[str, Any] = {
 def _build_organism(task: TaskDefinition, *, guided: bool = False):
     """Build a SkillOrganism from a task's full definition.
 
-    Uses task_shape to assign cognitive modes:
-    - sequential: alternating fixed/fuzzy for pipeline stages
-    - parallel: all fuzzy (independent workers)
-    - mixed: first half fuzzy, last stage fixed (review gate)
+    When guided=True, uses advise_topology() to inform the stage structure:
+    - If Operon recommends a reviewer gate, the last stage gets mode="fixed"
+    - The advice object is returned alongside the organism for topology alignment
 
-    When guided=True, uses advise_topology() to inform mode assignment.
+    Unguided configs always use mode="fuzzy" for all stages (generic pipeline).
     """
     fast = Nucleus(provider=MockProvider(responses={}))
     deep = Nucleus(provider=MockProvider(responses={}))
 
+    advice = None
+    if guided:
+        advice = advise_topology(
+            task_shape=task.task_shape,
+            tool_count=task.tool_count,
+            subtask_count=task.subtask_count,
+        )
+
     stages = []
     n_roles = len(task.required_roles)
     for i, role in enumerate(task.required_roles):
-        # Mode assignment based on task shape (not just alternating).
-        if task.task_shape == "sequential":
-            mode = "fixed" if i == n_roles - 1 else "fuzzy"  # last stage reviews
-        elif task.task_shape == "parallel":
-            mode = "fuzzy"  # all independent workers
-        else:  # mixed
-            mode = "fixed" if i >= n_roles - 1 else "fuzzy"
-
-        # Guided configs use advise_topology to potentially override mode.
-        if guided:
-            advice = advise_topology(
-                task_shape=task.task_shape,
-                tool_count=task.tool_count,
-                subtask_count=task.subtask_count,
-            )
-            # If Operon recommends a reviewer gate, make last stage fixed.
-            if "reviewer" in advice.recommended_pattern and i == n_roles - 1:
-                mode = "fixed"
+        if guided and advice:
+            # Guided: use Operon's recommendation to set modes.
+            if "reviewer" in advice.recommended_pattern:
+                mode = "fixed" if i == n_roles - 1 else "fuzzy"
+            elif "single" in advice.recommended_pattern:
+                mode = "fuzzy"
+            else:
+                mode = "fuzzy"
+        else:
+            # Unguided: all stages are generic fuzzy (no structural insight).
+            mode = "fuzzy"
 
         stages.append(SkillStage(
             name=f"{role}_{i}",
@@ -169,11 +169,12 @@ def _build_organism(task: TaskDefinition, *, guided: bool = False):
             handler=lambda t, _r=role: {_r: "done"},
         ))
 
-    return skill_organism(
+    organism = skill_organism(
         stages=stages,
         fast_nucleus=fast,
         deep_nucleus=deep,
     )
+    return organism, advice
 
 
 # ---------------------------------------------------------------------------
@@ -190,7 +191,7 @@ def _evaluate_operon_native(
     Builds the organism and directly analyzes its structure as if it were
     an external topology (sequential chain of stages).
     """
-    organism = _build_organism(task)
+    organism, _advice = _build_organism(task, guided=True)
     stages = organism.stages
 
     # Build a synthetic ExternalTopology from the organism's stage structure.
@@ -227,8 +228,9 @@ def _evaluate_operon_native(
     intervention_count = len(result.warnings)
 
     # Structural variation: compare task shape to realized topology.
-    # Operon-native builds organism informed by task shape via advise_topology.
-    realized_shape = task.task_shape
+    # Compute realized shape from the actual topology structure.
+    from operon_ai.convergence.swarms_adapter import _classify_task_shape
+    realized_shape = _classify_task_shape(topology)
     variation = topology_distance(task.task_shape, realized_shape)
 
     return RunMetrics(
@@ -281,7 +283,7 @@ class MockEvaluator:
             return _evaluate_operon_native(task, rng)
 
         # Step 1: Build organism (guided configs get topology-informed mode assignment).
-        organism = _build_organism(task, guided=config.structural_guidance)
+        organism, _advice = _build_organism(task, guided=config.structural_guidance)
         stage_count = len(organism.stages)
 
         # Step 2: Compile through the real compiler.
