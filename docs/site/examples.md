@@ -36,7 +36,7 @@ Use the repo index for the broader catalog:
 - Healing and surveillance
 - Multicellular composition
 
-## Examples 80–103
+## Examples 80–106
 
 - [`examples/80_developmental_staging.py`](https://github.com/coredipper/operon/blob/main/examples/80_developmental_staging.py) — developmental stages and capability gating
 - [`examples/81_critical_periods.py`](https://github.com/coredipper/operon/blob/main/examples/81_critical_periods.py) — teacher-learner scaffolding
@@ -62,3 +62,6 @@ Use the repo index for the broader catalog:
 - [`examples/101_ralph_deployment.py`](https://github.com/coredipper/operon/blob/main/examples/101_ralph_deployment.py) — compile to Ralph hat config
 - [`examples/102_scion_deployment.py`](https://github.com/coredipper/operon/blob/main/examples/102_scion_deployment.py) — compile to Scion grove
 - [`examples/103_distributed_watcher.py`](https://github.com/coredipper/operon/blob/main/examples/103_distributed_watcher.py) — distributed watcher transports
+- [`examples/104_evaluation_harness.py`](https://github.com/coredipper/operon/blob/main/examples/104_evaluation_harness.py) — evaluation harness with MockEvaluator
+- [`examples/105_prompt_optimization.py`](https://github.com/coredipper/operon/blob/main/examples/105_prompt_optimization.py) — prompt optimization protocols
+- [`examples/106_workflow_generation.py`](https://github.com/coredipper/operon/blob/main/examples/106_workflow_generation.py) — workflow generation and registration

@@ -2,6 +2,25 @@
 
 This page tracks the recent direction of the project.
 
+## v0.25.0
+
+Focus:
+
+- evaluation harness, prompt optimization protocols, workflow generation (Phases C6+C7)
+- 20 benchmark tasks x 7 configurations with MockEvaluator using real structural analysis
+- PromptOptimizer and WorkflowGenerator protocol families
+
+New:
+
+- `MockEvaluator` — evaluation harness with structural variation and credit assignment
+- `PromptOptimizer`, `EvolutionaryOptimizer`, `NoOpOptimizer` — prompt optimization protocols
+- `attach_optimizer` — attach optimizer to SkillStage
+- `WorkflowGenerator`, `ReasoningGenerator`, `HeuristicGenerator` — workflow generation protocols
+- `generate_and_register` — generate workflow and register in PatternLibrary
+- 20 benchmark tasks across 7 configurations (single, pipeline, fan-out, fan-in, diamond, full, stress)
+- Structural variation analysis and credit assignment in evaluation
+- Examples 104–106
+
 ## v0.24.1
 
 Focus:

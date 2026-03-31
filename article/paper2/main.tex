@@ -50,9 +50,9 @@ external agent configurations without importing the target framework.  Five adap
 common representation; four epistemic bounds serve as a structural linter;
 four TLA+ specifications verify safety invariants; and a co-design
 fixed-point proof (following Zardini) establishes that the adaptive assembly
-loop converges within $\varepsilon$.  The architecture is implemented in 14
-convergence modules with 216 convergence-specific tests as part of a broader
-suite of 1{,}404 tests and 98 worked examples.
+loop converges within $\varepsilon$.  The architecture is implemented in 22
+convergence modules with 300 convergence-specific tests as part of a broader
+suite of 1{,}510 tests and 106 worked examples.
 \end{abstract}
 
 %% ============================================================================
@@ -461,9 +461,9 @@ described above.
 %% ============================================================================
 \section{Implementation}\label{sec:impl}
 
-The convergence architecture is implemented in 14 Python modules under
-\texttt{operon\_ai/convergence/}, tested by 216 convergence-specific unit
-tests as part of a broader suite of 1{,}404 tests across the entire Operon
+The convergence architecture is implemented in 22 Python modules under
+\texttt{operon\_ai/convergence/}, tested by 300 convergence-specific unit
+tests as part of a broader suite of 1{,}510 tests across the entire Operon
 codebase.  Table~\ref{tab:adapters} summarizes the five adapters.
 
 \begin{table}[ht]
@@ -642,8 +642,8 @@ that the adaptive assembly loop stabilizes within $\varepsilon$.  By
 operating on serializable dicts with zero external imports, the adapter
 architecture achieves framework-agnostic analysis while preserving a
 structured interchange format with top-level frozen dataclass fields
-(nested dicts remain mutable by Python convention).  The 14 convergence modules, 216 convergence tests, 4 TLA+
-specifications, and 98 worked examples provide a concrete, verifiable
+(nested dicts remain mutable by Python convention).  The 22 convergence modules, 300 convergence tests, 4 TLA+
+specifications, and 106 worked examples provide a concrete, verifiable
 foundation for multi-agent system integration.
 
 %% ============================================================================

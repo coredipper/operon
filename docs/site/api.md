@@ -122,3 +122,19 @@ All functions are also re-exported from `operon_ai.convergence` directly.
 
 - `operon_ai.convergence.langgraph_watcher`
   - `operon_watcher_node`, `create_watcher_config`
+
+## Prompt Optimization (C7)
+
+- `operon_ai.convergence.prompt_optimization`
+  - `PromptOptimizer` — protocol for prompt-level optimization
+  - `EvolutionaryOptimizer` — evolutionary prompt mutation with fitness gating
+  - `NoOpOptimizer` — pass-through optimizer for baselines
+  - `attach_optimizer` — attach an optimizer instance to a SkillStage
+
+## Workflow Generation (C7)
+
+- `operon_ai.convergence.workflow_generation`
+  - `WorkflowGenerator` — protocol for workflow topology generation
+  - `ReasoningGenerator` — reasoning-based workflow construction
+  - `HeuristicGenerator` — heuristic-based workflow construction
+  - `generate_and_register` — generate a workflow and register it in PatternLibrary

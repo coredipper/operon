@@ -65,6 +65,20 @@ Seed Operon's PatternLibrary from external catalogs:
 - `operon_watcher_node()` — LangGraph-compatible node for DeerFlow integration, with `create_watcher_config()` helper
 - [Scion](https://github.com/GoogleCloudPlatform/scion) compiler supports container isolation via `runtime="docker"` parameter
 
+## Evaluation Harness (Phase C6)
+
+- 20 benchmark tasks across 7 configurations (single, pipeline, fan-out, fan-in, diamond, full, stress)
+- `MockEvaluator` using real structural analysis (topology advice, epistemic bounds, pattern scoring)
+- Structural variation analysis: measures how topology metrics change across task configurations
+- Credit assignment: attributes evaluation outcomes to individual stage contributions
+
+## Prompt Optimization + Workflow Generation (Phase C7)
+
+- `PromptOptimizer` protocol with `EvolutionaryOptimizer` and `NoOpOptimizer` implementations
+- `attach_optimizer` — attach optimizer to any SkillStage for prompt-level tuning
+- `WorkflowGenerator` protocol with `ReasoningGenerator` and `HeuristicGenerator` implementations
+- `generate_and_register` — generate workflow topology and register it in PatternLibrary
+
 ## Examples
 
 - [86–88](https://github.com/coredipper/operon/blob/main/examples/): Adapter demos
@@ -73,3 +87,6 @@ Seed Operon's PatternLibrary from external catalogs:
 - [96](https://github.com/coredipper/operon/blob/main/examples/96_codesign_composition.py): Co-design composition
 - [97–98](https://github.com/coredipper/operon/blob/main/examples/): Ralph hat analysis, A-Evolve workspace analysis
 - [99–103](https://github.com/coredipper/operon/blob/main/examples/): Production runtime — 4 compilers and distributed watcher
+- [104](https://github.com/coredipper/operon/blob/main/examples/104_evaluation_harness.py): Evaluation harness with MockEvaluator
+- [105](https://github.com/coredipper/operon/blob/main/examples/105_prompt_optimization.py): Prompt optimization protocols
+- [106](https://github.com/coredipper/operon/blob/main/examples/106_workflow_generation.py): Workflow generation and registration
