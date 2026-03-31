@@ -53,24 +53,20 @@ _W_DENSITY = 0.20
 _W_TOPOLOGY_MISMATCH = 0.10
 
 # Map pattern names to broad task shapes.
-# Includes Swarms workflow names AND Operon-native pattern names.
+# Keys are normalized (lowercase, no underscores/hyphens) since
+# _classify_task_shape strips those before lookup.
 _PATTERN_TO_SHAPE: dict[str, str] = {
     # Swarms
     "sequentialworkflow": "sequential",
     "hierarchicalswarm": "mixed",
     "concurrentworkflow": "parallel",
     "graphworkflow": "mixed",
-    # Operon-native (from advise_topology)
+    # Operon-native (from advise_topology) — normalized keys only
     "singleworker": "sequential",
     "singleworkerwithreviewer": "sequential",
     "reviewergate": "sequential",
-    "specialistswarm": "parallel",
+    "specialistswarm": "mixed",  # swarm can be parallel OR mixed; default to mixed
     "skillorganism": "sequential",
-    "single_worker": "sequential",
-    "single_worker_with_reviewer": "sequential",
-    "reviewer_gate": "sequential",
-    "specialist_swarm": "parallel",
-    "skill_organism": "sequential",
 }
 
 # Map task shapes to PatternTemplate topology labels.
