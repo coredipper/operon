@@ -93,12 +93,18 @@ def candidate_to_genome(config: CandidateConfig) -> Genome:
     """
     genes: list[Gene] = []
 
-    # Metadata gene: number of stages (needed for reconstruction)
+    # Metadata genes (needed for reconstruction)
     genes.append(Gene(
         name="_n_stages",
         value=len(config.stage_configs),
         gene_type=GeneType.HOUSEKEEPING,
         description="Number of stages in the organism",
+    ))
+    genes.append(Gene(
+        name="_topology",
+        value=config.topology,
+        gene_type=GeneType.HOUSEKEEPING,
+        description="Topology hint (Phase B)",
     ))
 
     # Stage config genes
@@ -152,12 +158,15 @@ def genome_to_candidate(
         if key.startswith("policy_"):
             policy[key[len("policy_"):]] = value
 
+    topology = expressed.get("_topology")
+
     return CandidateConfig(
         candidate_id=candidate_id,
         parent_id=parent_id,
         iteration=iteration,
         stage_configs=tuple(stage_configs),
         intervention_policy=policy,
+        topology=topology,
         proposer=proposer,
         reason=reason,
     )

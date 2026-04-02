@@ -32,9 +32,6 @@ from .meta_types import (
     candidate_to_genome,
 )
 
-# Judge quality scorer (reuse from live evaluator)
-from eval.convergence.live_evaluator import _judge_quality
-
 
 @dataclass
 class EvolutionConfig:
@@ -306,7 +303,8 @@ class EvolutionLoop:
             total_tokens = sum(sr.tokens_used for sr in run_result.stage_results)
             final_output = str(run_result.final_output or "")
 
-            # Judge quality
+            # Judge quality (lazy import — eval is not in the wheel)
+            from eval.convergence.live_evaluator import _judge_quality
             provider = self._get_judge_provider()
             judge_result = _judge_quality(str(prompt), final_output, provider)
             score = judge_result[0]
@@ -418,8 +416,13 @@ class EvolutionLoop:
         )
 
     def _resolve_providers(self, config: CandidateConfig) -> tuple[Any, Any]:
-        """Pick fast/deep providers based on stage model overrides or defaults."""
-        # Find explicit model overrides from stage configs
+        """Pick fast/deep providers based on stage model overrides or defaults.
+
+        NOTE: SkillOrganism uses one fast nucleus and one deep nucleus for
+        the whole organism.  Per-stage model overrides are collapsed to one
+        model per tier (last seen wins).  True per-stage model routing
+        requires per-stage nucleus aliases, planned for Phase B.
+        """
         fast_model = None
         deep_model = None
         for sc in config.stage_configs:
