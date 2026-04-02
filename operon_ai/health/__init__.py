@@ -6,6 +6,7 @@ measuring an agent's "epistemic health" through Bayesian Surprise.
 """
 
 from .epiplexity import (
+    DistanceProvider,
     EpiplexityMonitor,
     EpiplexityState,
     EpiplexityResult,
@@ -15,6 +16,7 @@ from .epiplexity import (
 )
 
 __all__ = [
+    "DistanceProvider",
     "EpiplexityMonitor",
     "EpiplexityState",
     "EpiplexityResult",

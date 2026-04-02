@@ -1,7 +1,8 @@
 """Convergence adapters for external agent orchestration systems.
 
 This package provides type-level bridges between Operon's structural analysis
-and external orchestration runtimes (Swarms, DeerFlow, AnimaWorks). All
+and external orchestration runtimes (Swarms, DeerFlow, AnimaWorks, Ralph,
+A-Evolve, Scion). All
 adapters operate on serializable dict/JSON representations — they never import
 external frameworks, keeping Operon dependency-free.
 
@@ -19,16 +20,31 @@ from .async_thinking import (
     AsyncThinkResult,
     async_stage_handler,
 )
+from .aevolve_adapter import (
+    aevolve_skills_to_stages,
+    aevolve_to_template,
+    parse_aevolve_workspace,
+)
+from .aevolve_skills import (
+    import_aevolve_skills,
+    seed_library_from_aevolve,
+)
 from .catalog import (
     get_builtin_swarms_patterns,
     seed_library_from_acg_survey,
     seed_library_from_deerflow,
+    seed_library_from_ralph,
     seed_library_from_swarms,
 )
 from .deerflow_adapter import (
     deerflow_skills_to_stages,
     deerflow_to_template,
     parse_deerflow_session,
+)
+from .ralph_adapter import (
+    parse_ralph_config,
+    ralph_hats_to_stages,
+    ralph_to_template,
 )
 from .deerflow_skills import (
     extract_workflow_steps,
@@ -47,6 +63,48 @@ from .codesign import (
     feasibility_check,
     feedback_fixed_point,
 )
+from .prompt_optimization import (
+    EvolutionaryOptimizer,
+    NoOpOptimizer,
+    PromptOptimizer,
+    attach_optimizer,
+)
+from .workflow_generation import (
+    HeuristicGenerator,
+    ReasoningGenerator,
+    WorkflowGenerator,
+    generate_and_register,
+)
+from .deerflow_compiler import (
+    managed_to_deerflow,
+    organism_to_deerflow,
+)
+from .distributed_watcher import (
+    DistributedWatcher,
+    HttpTransport,
+    InMemoryTransport,
+)
+from .langgraph_watcher import (
+    create_watcher_config,
+    operon_watcher_node,
+)
+from .ralph_compiler import (
+    managed_to_ralph,
+    organism_to_ralph,
+)
+from .scion_adapter import (
+    parse_scion_grove,
+    scion_agents_to_stages,
+    scion_to_template,
+)
+from .scion_compiler import (
+    managed_to_scion,
+    organism_to_scion,
+)
+from .swarms_compiler import (
+    managed_to_swarms,
+    organism_to_swarms,
+)
 from .memory_bridge import (
     bridge_animaworks_memory,
     bridge_deerflow_memory,
@@ -58,6 +116,19 @@ from .swarms_adapter import (
     topology_to_template,
 )
 from .types import AdapterResult, ExternalTopology, RuntimeConfig
+# Meta-harness / FilesystemOptimizer (C8)
+from .meta_types import (
+    AssessmentRecord,
+    CandidateConfig,
+    ConfigHammingDistance,
+    StageConfig as MetaStageConfig,
+    candidate_to_genome,
+    genome_to_candidate,
+)
+from .meta_protocol import FilesystemOptimizer
+from .meta_proposers import LLMProposer, Proposer, TournamentMutator
+from .meta_store import EvolutionStore
+from .evolution_loop import EvolutionConfig, EvolutionLoop
 
 __all__ = [
     # Types
@@ -78,11 +149,27 @@ __all__ = [
     "parse_deerflow_session",
     "deerflow_skills_to_stages",
     "deerflow_to_template",
+    # Ralph (C1)
+    "parse_ralph_config",
+    "ralph_hats_to_stages",
+    "ralph_to_template",
+    # A-Evolve (C1)
+    "parse_aevolve_workspace",
+    "aevolve_skills_to_stages",
+    "aevolve_to_template",
+    # Scion (C1)
+    "parse_scion_grove",
+    "scion_agents_to_stages",
+    "scion_to_template",
     # Catalog (C2)
     "seed_library_from_swarms",
     "seed_library_from_deerflow",
+    "seed_library_from_ralph",
     "seed_library_from_acg_survey",
     "get_builtin_swarms_patterns",
+    # A-Evolve skill bridge (C2)
+    "import_aevolve_skills",
+    "seed_library_from_aevolve",
     # DeerFlow skill bridge (C2)
     "skill_to_template",
     "template_to_skill",
@@ -104,4 +191,44 @@ __all__ = [
     # Memory bridge (C3)
     "bridge_animaworks_memory",
     "bridge_deerflow_memory",
+    # Compilers (C5)
+    "organism_to_swarms",
+    "managed_to_swarms",
+    "organism_to_deerflow",
+    "managed_to_deerflow",
+    "organism_to_ralph",
+    "managed_to_ralph",
+    "organism_to_scion",
+    "managed_to_scion",
+    # Distributed watcher (C5)
+    "DistributedWatcher",
+    "InMemoryTransport",
+    "HttpTransport",
+    # LangGraph watcher (C5)
+    "operon_watcher_node",
+    "create_watcher_config",
+    # Prompt optimization (C7)
+    "PromptOptimizer",
+    "EvolutionaryOptimizer",
+    "NoOpOptimizer",
+    "attach_optimizer",
+    # Workflow generation (C7)
+    "WorkflowGenerator",
+    "ReasoningGenerator",
+    "HeuristicGenerator",
+    "generate_and_register",
+    # Meta-harness / FilesystemOptimizer (C8)
+    "CandidateConfig",
+    "MetaStageConfig",
+    "AssessmentRecord",
+    "ConfigHammingDistance",
+    "candidate_to_genome",
+    "genome_to_candidate",
+    "FilesystemOptimizer",
+    "Proposer",
+    "TournamentMutator",
+    "LLMProposer",
+    "EvolutionStore",
+    "EvolutionConfig",
+    "EvolutionLoop",
 ]

@@ -19,7 +19,7 @@ class OpenAIProvider(OpenAIBaseProvider):
     Requires either OPENAI_API_KEY environment variable or explicit api_key.
     """
     api_key: str | None = None
-    model: str = "gpt-4o-mini"
+    model: str = "gpt-5.4-mini"
 
     def __post_init__(self):
         self._api_key = self.api_key or os.environ.get("OPENAI_API_KEY")

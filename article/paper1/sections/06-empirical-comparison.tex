@@ -17,7 +17,7 @@ decomposable tasks, but still does not directly estimate the speedup variable $S
 Workbench domain, $T=16$ tools with typical $n=3$ agent configurations implies substantial remote-tool
 use, and the reported negative efficiency--tool interaction
 ($\hat{\beta}_{E_c \times T} = -0.267$, $p < 0.001$) is consistent with the coordination tax from
-Theorem~\ref{thm:tool-density}.
+the tool-density bound (Definition~\ref{thm:tool-density}).
 
 Taken together, these results support the topology-level ordering rather than a numerical fit: reviewer
 or hub structures help when multiple workers can independently introduce costly errors, strictly
@@ -45,3 +45,7 @@ percentages and error-amplification factors are empirical aggregates, not litera
 simplified theorem parameters.}
 \label{tab:epistemic-predictions}
 \end{table}
+
+This comparison is limited to a single external study~\cite{kim2025scaling}.
+Broader empirical validation across multiple benchmarks and framework
+configurations remains future work.

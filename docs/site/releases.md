@@ -2,6 +2,89 @@
 
 This page tracks the recent direction of the project.
 
+## v0.25.1
+
+Focus:
+
+- live evaluation with real LLM providers (Gemini API, Claude CLI, Codex CLI)
+- C8 roadmap: Meta-Harness integration planning
+- documentation and version sync fixes
+
+New:
+
+- `LiveEvaluator` — runs real LLM calls through SkillOrganism pipelines
+- CLI provider evaluation via `cli_handler()` (Claude Code, Codex)
+- LLM-as-judge quality scoring across providers
+- Live evaluation finding: +6.2% quality for guided multi-stage pipelines
+- C8 roadmap: `FilesystemOptimizer`, `HarnessSearchDP`, Pareto convergence, causal diagnosis
+- Example 107: live evaluation harness
+
+## v0.25.0
+
+Focus:
+
+- evaluation harness, prompt optimization protocols, workflow generation (Phases C6+C7)
+- 20 benchmark tasks x 7 configurations with MockEvaluator using real structural analysis
+- PromptOptimizer and WorkflowGenerator protocol families
+
+New:
+
+- `MockEvaluator` — evaluation harness with structural variation and credit assignment
+- `PromptOptimizer`, `EvolutionaryOptimizer`, `NoOpOptimizer` — prompt optimization protocols
+- `attach_optimizer` — attach optimizer to SkillStage
+- `WorkflowGenerator`, `ReasoningGenerator`, `HeuristicGenerator` — workflow generation protocols
+- `generate_and_register` — generate workflow and register in PatternLibrary
+- 20 benchmark tasks across 7 configurations (single, pipeline, fan-out, fan-in, diamond, full, stress)
+- Structural variation analysis and credit assignment in evaluation
+- Examples 104–106
+
+## v0.24.1
+
+Focus:
+
+- production runtime compilers, distributed watcher, LangGraph integration (Phase C5)
+- 4 deployment compilers (Swarms, DeerFlow, Ralph, Scion) plus 6 external adapter integrations
+
+New:
+
+- `organism_to_swarms()`, `managed_to_swarms()` — compile organism to Swarms workflow config
+- `organism_to_deerflow()`, `managed_to_deerflow()` — compile organism to DeerFlow session config
+- `organism_to_ralph()`, `managed_to_ralph()` — compile organism to Ralph event-driven hat config
+- `organism_to_scion()`, `managed_to_scion()` — compile organism to Scion containerized grove config
+- `DistributedWatcher` with `InMemoryTransport` and `HttpTransport` (webhook payload stub) — transport-abstracted convergence detection
+- `operon_watcher_node()` — LangGraph-compatible convergence detection node
+- `create_watcher_config()` — helper for LangGraph watcher configuration
+- Examples 99–103
+
+## v0.24.0
+
+Focus:
+
+- convergence adapters for [Swarms](https://github.com/kyegomez/swarms), [DeerFlow](https://github.com/bytedance/deer-flow), and [AnimaWorks](https://github.com/AnimaWorks/AnimaWorks)
+- template exchange, [DeerFlow](https://github.com/bytedance/deer-flow) skill bridge, hybrid assembly
+- PrimingView multi-channel context, memory bridge, HeartbeatDaemon
+- AsyncThink Fork/Join execution, TLA+ formal verification, co-design theory
+
+New:
+
+- `operon_ai.convergence` package with 12 modules
+- `ExternalTopology`, `AdapterResult` — shared adapter types
+- `analyze_external_topology()` — epistemic theorems as structural linter
+- `seed_library_from_swarms/deerflow/acg_survey` — catalog seeding
+- `skill_to_template()`, `template_to_skill()` — bidirectional DeerFlow skill bridge
+- `hybrid_skill_organism()` — library-first + LLM generator fallback
+- `PrimingView` — multi-channel SubstrateView subclass (immutable via MappingProxyType)
+- `HeartbeatDaemon` — idle-time consolidation via WatcherComponent extension
+- `AsyncOrganizer`, `async_stage_handler()` — Fork/Join within stages
+- `DesignProblem`, `compose_series/parallel`, `feedback_fixed_point` — Zardini co-design
+- 3 TLA+ specifications (TemplateExchange, DevelopmentalGating, ConvergenceDetection)
+- `prompt_optimizer` hook on SkillStage (interface for future DSPy integration)
+- `parse_ralph_config()`, `ralph_hats_to_stages()` — Ralph adapter
+- `parse_aevolve_workspace()`, `aevolve_skills_to_stages()` — A-Evolve adapter
+- `seed_library_from_ralph/aevolve` — catalog seeding
+- `EvolutionGating.tla` — TLA+ spec for evolution loop
+- Examples 86–98
+
 ## v0.23.3
 
 Focus:

@@ -66,13 +66,16 @@ class OpenAIBaseProvider:
                 messages.append({"role": "system", "content": config.system_prompt})
             messages.append({"role": "user", "content": prompt})
 
-            response = client.chat.completions.create(
+            kwargs: dict = dict(
                 model=self.model,
                 messages=messages,
                 temperature=config.temperature,
                 max_tokens=config.max_tokens,
                 timeout=config.timeout_seconds,
             )
+            if config.response_format:
+                kwargs["response_format"] = config.response_format
+            response = client.chat.completions.create(**kwargs)
 
             elapsed_ms = (time.perf_counter() - start) * 1000
 

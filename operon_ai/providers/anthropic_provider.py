@@ -26,7 +26,7 @@ class AnthropicProvider:
     Requires either ANTHROPIC_API_KEY environment variable or explicit api_key.
     """
     api_key: str | None = None
-    model: str = "claude-sonnet-4-20250514"
+    model: str = "claude-sonnet-4-6-20260301"
     _client: object = field(init=False, repr=False, default=None)
 
     def __post_init__(self):
@@ -68,11 +68,17 @@ class AnthropicProvider:
         start = time.perf_counter()
 
         try:
+            messages = [{"role": "user", "content": prompt}]
+            # Anthropic has no JSON mode — use prefilled assistant to coerce JSON output
+            json_prefill = bool(config.response_format)
+            if json_prefill:
+                messages.append({"role": "assistant", "content": "{"})
+
             response = client.messages.create(
                 model=self.model,
                 max_tokens=config.max_tokens,
                 system=config.system_prompt or "You are a helpful assistant.",
-                messages=[{"role": "user", "content": prompt}],
+                messages=messages,
                 temperature=config.temperature,
                 timeout=config.timeout_seconds,
             )
@@ -84,6 +90,8 @@ class AnthropicProvider:
             for block in response.content:
                 if hasattr(block, "text"):
                     content += block.text
+            if json_prefill:
+                content = "{" + content
 
             tokens_used = (
                 response.usage.input_tokens + response.usage.output_tokens

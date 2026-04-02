@@ -26,7 +26,7 @@ class GeminiProvider:
         pip install google-genai
         GEMINI_API_KEY environment variable
     """
-    model: str = "gemini-flash-latest"
+    model: str = "gemini-2.5-flash"
     _client: object | None = None
 
     def __post_init__(self):
@@ -69,6 +69,8 @@ class GeminiProvider:
                 temperature=config.temperature,
                 max_output_tokens=config.max_tokens,
             )
+            if config.response_format and config.response_format.get("type") == "json_object":
+                gen_config.response_mime_type = "application/json"
             if config.system_prompt:
                 gen_config.system_instruction = config.system_prompt
 

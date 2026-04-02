@@ -1,0 +1,293 @@
+"""C8 Meta-Harness proposers: tournament mutation + LLM exploration.
+
+Hybrid proposer strategy (C): programmatic mutations for exploitation,
+LLM proposer for exploration when progress stalls.
+
+Scientific hypothesis: exogenous signals (LLM reading filesystem history)
+break the dominance of programmatic search (Ao et al. 2603.26993).
+"""
+
+from __future__ import annotations
+
+import json
+import random as _random
+from typing import Any, Protocol, runtime_checkable
+
+from ..providers.base import ProviderConfig
+from ..providers.openai_compatible_provider import OpenAICompatibleProvider
+from .meta_store import EvolutionStore
+from .meta_types import (
+    CandidateConfig,
+    StageConfig,
+    candidate_to_genome,
+    genome_to_candidate,
+)
+
+
+@runtime_checkable
+class Proposer(Protocol):
+    """Protocol for candidate proposal strategies."""
+
+    def propose(
+        self,
+        population: list[CandidateConfig],
+        scores: dict[str, list[float]],
+        iteration: int,
+    ) -> CandidateConfig: ...
+
+
+# ---------------------------------------------------------------------------
+# Mutation vocabulary for discrete StageConfig fields
+# ---------------------------------------------------------------------------
+
+_COGNITIVE_OPTIONS = (None, "observational", "action_oriented")
+_BOOL_FIELDS = ("include_stage_outputs", "include_shared_state")
+
+
+def _is_localhost(url: str) -> bool:
+    """Check if a URL points to a local server."""
+    from urllib.parse import urlparse
+    hostname = urlparse(url).hostname or ""
+    return hostname in ("localhost", "127.0.0.1")
+
+
+def _extract_json(text: str) -> dict:
+    """Extract the first JSON object from LLM output.
+
+    Handles: raw JSON, markdown fenced blocks (```json ... ```),
+    and prose-wrapped JSON ("Here is the JSON: {...}").
+    """
+    import re
+    text = text.strip()
+    # 1. Try raw JSON
+    try:
+        return json.loads(text)
+    except (json.JSONDecodeError, ValueError):
+        pass
+    # 2. Try fenced code block
+    fence = re.search(r"```(?:json)?\s*\n?(.*?)```", text, re.DOTALL)
+    if fence:
+        try:
+            return json.loads(fence.group(1).strip())
+        except (json.JSONDecodeError, ValueError):
+            pass
+    # 3. Extract first JSON object via raw_decode
+    decoder = json.JSONDecoder()
+    for i, ch in enumerate(text):
+        if ch == "{":
+            try:
+                obj, _ = decoder.raw_decode(text, i)
+                if isinstance(obj, dict):
+                    return obj
+            except json.JSONDecodeError:
+                continue
+    raise ValueError(f"No JSON found in LLM response: {text[:200]}")
+_DISCRETE_FIELDS = ("mode", "model", "include_stage_outputs",
+                     "include_shared_state", "cognitive_mode")
+
+# Default model options (can be overridden via constructor)
+_DEFAULT_MODELS: tuple[str | None, ...] = (
+    None, "gemini-2.5-flash", "gemini-2.5-pro",
+    "gpt-5.4-mini", "gpt-5.4",
+    "claude-haiku-4-5-20251001", "claude-sonnet-4-6-20260301",
+)
+
+
+# ---------------------------------------------------------------------------
+# Programmatic proposer
+# ---------------------------------------------------------------------------
+
+
+class TournamentMutator:
+    """Tournament-select top-K, mutate one random discrete field.
+
+    Uses Genome.mutate() internally — the key test of whether the gene
+    abstraction handles discrete configuration mutation naturally.
+    """
+
+    def __init__(
+        self,
+        k: int = 3,
+        seed: int | None = None,
+        model_options: tuple[str | None, ...] = _DEFAULT_MODELS,
+    ) -> None:
+        self._k = k
+        self._rng = _random.Random(seed)
+        self._model_options = model_options
+
+    def propose(
+        self,
+        population: list[CandidateConfig],
+        scores: dict[str, list[float]],
+        iteration: int,
+    ) -> CandidateConfig:
+        # Tournament selection: pick k random, select best by mean score
+        k = min(self._k, len(population))
+        contenders = self._rng.sample(population, k)
+        winner = max(
+            contenders,
+            key=lambda c: (
+                sum(scores.get(c.candidate_id, [0.0]))
+                / max(len(scores.get(c.candidate_id, [0.0])), 1)
+            ),
+        )
+
+        # Convert to Genome, mutate one field, convert back
+        genome = candidate_to_genome(winner)
+
+        # Pick a random stage and field to mutate
+        n_stages = len(winner.stage_configs)
+        stage_idx = self._rng.randrange(n_stages)
+        field_name = self._rng.choice(list(_DISCRETE_FIELDS))
+        gene_name = f"stage_{stage_idx}_{field_name}"
+
+        old_value = genome.get_value(gene_name)
+        new_value = self._mutate_value(field_name, old_value)
+
+        genome.mutate(gene_name, new_value, f"tournament_mutate_iter_{iteration}")
+
+        candidate_id = f"c_{iteration:03d}_{self._rng.randint(0, 999):03d}"
+        return genome_to_candidate(
+            genome,
+            candidate_id=candidate_id,
+            parent_id=winner.candidate_id,
+            iteration=iteration,
+            proposer="tournament_mutate",
+            reason=f"mutated {gene_name}: {old_value!r} -> {new_value!r}",
+        )
+
+    def _mutate_value(self, field_name: str, old_value: Any) -> Any:
+        if field_name == "mode":
+            return "fixed" if old_value == "fuzzy" else "fuzzy"
+        if field_name == "model":
+            options = [m for m in self._model_options if m != old_value]
+            return self._rng.choice(options) if options else old_value
+        if field_name in _BOOL_FIELDS:
+            return not old_value
+        if field_name == "cognitive_mode":
+            options = [c for c in _COGNITIVE_OPTIONS if c != old_value]
+            return self._rng.choice(options) if options else old_value
+        return old_value
+
+
+# ---------------------------------------------------------------------------
+# LLM proposer
+# ---------------------------------------------------------------------------
+
+_LLM_PROMPT_TEMPLATE = """\
+You are an evolutionary optimizer for AI multi-agent systems.
+
+Below is the evolution history of organism configurations. Each candidate
+has stage configs (role, mode, model, etc.) and a quality score (0-1).
+
+HISTORY (most recent last):
+{history}
+
+CURRENT BEST CONFIG:
+{best_config}
+
+Based on the trajectory, propose ONE new configuration that you believe
+will score higher. Consider:
+- Which stage modes (fixed/fuzzy) worked best?
+- Which models performed well in which roles?
+- Should any stage visibility (include_stage_outputs/include_shared_state) change?
+
+Return ONLY a JSON object with this exact schema:
+{{
+  "stage_configs": [
+    {{"role": "<str>", "mode": "<fixed|fuzzy>", "model": "<str|null>",
+      "include_stage_outputs": <bool>, "include_shared_state": <bool>,
+      "cognitive_mode": "<str|null>"}}
+  ],
+  "intervention_policy": {{}},
+  "reason": "<why you chose this config>"
+}}
+"""
+
+
+class LLMProposer:
+    """LLM-backed proposer: reads evolution history, proposes a new config.
+
+    This is the "exogenous signal" — the LLM sees patterns in the full
+    evolution trajectory that programmatic mutation cannot discover.
+    Falls back to TournamentMutator on parse failure.
+    """
+
+    def __init__(
+        self,
+        provider: Any,
+        store: EvolutionStore,
+        fallback_seed: int | None = None,
+    ) -> None:
+        self._provider = provider
+        self._store = store
+        self._fallback = TournamentMutator(seed=fallback_seed)
+
+    def propose(
+        self,
+        population: list[CandidateConfig],
+        scores: dict[str, list[float]],
+        iteration: int,
+    ) -> CandidateConfig:
+        # Build context from filesystem history
+        index = self._store.load_index()
+        history_lines = []
+        for r in index[-30:]:  # Last 30 assessments
+            history_lines.append(
+                f"  candidate={r.candidate_id} task={r.task_id} "
+                f"score={r.score:.2f} tokens={r.tokens} proposer={r.proposer}"
+            )
+        history_str = "\n".join(history_lines) if history_lines else "(no history yet)"
+
+        # Find current best
+        best = max(
+            population,
+            key=lambda c: (
+                sum(scores.get(c.candidate_id, [0.0]))
+                / max(len(scores.get(c.candidate_id, [0.0])), 1)
+            ),
+        )
+        best_str = json.dumps({
+            "stage_configs": [
+                {"role": s.role, "mode": s.mode, "model": s.model,
+                 "include_stage_outputs": s.include_stage_outputs,
+                 "include_shared_state": s.include_shared_state,
+                 "cognitive_mode": s.cognitive_mode}
+                for s in best.stage_configs
+            ],
+            "intervention_policy": best.intervention_policy,
+        }, indent=2)
+
+        prompt = _LLM_PROMPT_TEMPLATE.format(
+            history=history_str,
+            best_config=best_str,
+        )
+
+        try:
+            # Local reasoning models (deepseek-r1, qwen) need /no_think
+            is_local = isinstance(self._provider, OpenAICompatibleProvider) and _is_localhost(
+                getattr(self._provider, "base_url", ""),
+            )
+            final_prompt = prompt + "\n/no_think" if is_local else prompt
+
+            resp = self._provider.complete(
+                final_prompt,
+                config=ProviderConfig(temperature=0.7, max_tokens=2000),
+            )
+            data = _extract_json(resp.content)
+            stage_configs = tuple(
+                StageConfig(**sc) for sc in data["stage_configs"]
+            )
+            candidate_id = f"c_{iteration:03d}_llm"
+            return CandidateConfig(
+                candidate_id=candidate_id,
+                parent_id=best.candidate_id,
+                iteration=iteration,
+                stage_configs=stage_configs,
+                intervention_policy=data.get("intervention_policy", {}),
+                proposer="llm_explore",
+                reason=data.get("reason", "LLM-proposed"),
+            )
+        except Exception:
+            # Fallback to programmatic mutation on any parse failure
+            return self._fallback.propose(population, scores, iteration)

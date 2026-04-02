@@ -42,6 +42,7 @@ class ProviderConfig:
     max_tokens: int = 1024
     timeout_seconds: float = 30.0
     system_prompt: str | None = None
+    response_format: dict | None = None
 
 
 @dataclass

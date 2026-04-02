@@ -25,4 +25,4 @@ def test_gemini_provider_default_model():
     with patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"}):
         from operon_ai.providers.gemini_provider import GeminiProvider
         provider = GeminiProvider()
-        assert provider.model == "gemini-flash-latest"
+        assert provider.model == "gemini-2.5-flash"

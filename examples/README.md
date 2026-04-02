@@ -1,6 +1,6 @@
 # Operon Examples
 
-This directory contains 96 runnable numbered examples demonstrating the
+This directory contains 107 runnable numbered examples demonstrating the
 `operon_ai` library, progressing from basic concepts to complete
 LLM-powered cell simulations.
 
@@ -81,6 +81,28 @@ reconstructing past belief states:
   Fork/Join sub-queries within a single stage
 - [`96_codesign_composition.py`](96_codesign_composition.py) —
   Zardini co-design adapter composition with fixed-point convergence
+- [`97_ralph_hat_analysis.py`](97_ralph_hat_analysis.py) —
+  parse Ralph hat configs and analyze event-driven topology with hat-to-stage mapping
+- [`98_aevolve_workspace_analysis.py`](98_aevolve_workspace_analysis.py) —
+  parse A-Evolve workspace manifests, analyze single-agent topology, skills-to-stages
+- [`99_swarms_deployment.py`](99_swarms_deployment.py) —
+  compile organism to Swarms SequentialWorkflow config
+- [`100_deerflow_deployment.py`](100_deerflow_deployment.py) —
+  compile organism to DeerFlow session config
+- [`101_ralph_deployment.py`](101_ralph_deployment.py) —
+  compile organism to Ralph hat/event config
+- [`102_scion_deployment.py`](102_scion_deployment.py) —
+  compile organism to Scion grove with containerized agents
+- [`103_distributed_watcher.py`](103_distributed_watcher.py) —
+  transport-agnostic watcher signal distribution
+- [`104_evaluation_harness.py`](104_evaluation_harness.py) —
+  evaluation harness: 20 tasks × 7 configurations with MockEvaluator
+- [`105_prompt_optimization_interface.py`](105_prompt_optimization_interface.py) —
+  PromptOptimizer and EvolutionaryOptimizer protocol interfaces
+- [`106_workflow_generation_interface.py`](106_workflow_generation_interface.py) —
+  WorkflowGenerator and HeuristicGenerator with PatternLibrary registration
+- [`107_live_evaluation.py`](107_live_evaluation.py) —
+  live evaluation with real LLM providers (Gemini API, Claude CLI, Codex CLI)
 
 ## Import Style Guide
 

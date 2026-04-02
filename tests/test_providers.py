@@ -28,6 +28,7 @@ class TestLLMProviderProtocol:
         assert config.temperature == 0.7
         assert config.max_tokens == 1024
         assert config.timeout_seconds == 30.0
+        assert config.response_format is None
 
 
 class TestMockProvider:
@@ -143,7 +144,7 @@ class TestAnthropicProvider:
         assert provider.is_available() is True
 
     def test_anthropic_provider_default_model(self):
-        """AnthropicProvider should use claude-sonnet-4-20250514 as default model."""
+        """AnthropicProvider should use claude-sonnet-4-6-20260301 as default model."""
         from operon_ai.providers import AnthropicProvider
         provider = AnthropicProvider(api_key="test-key")
-        assert provider.model == "claude-sonnet-4-20250514"
+        assert provider.model == "claude-sonnet-4-6-20260301"

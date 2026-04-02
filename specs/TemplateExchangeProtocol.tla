@@ -9,6 +9,14 @@
   Biological analogy: horizontal gene transfer in bacteria with epistemic vigilance
   determining whether foreign genetic material is incorporated or rejected.
 *)
+\* Source diversity: organisms may import templates from various external
+\* systems. The protocol is source-agnostic; common sources include:
+\*   - Swarms (graph-based workflows)
+\*   - DeerFlow (LangGraph sessions)
+\*   - AnimaWorks (supervisor hierarchies)
+\*   - Ralph (event-driven hat orchestration)
+\*   - A-Evolve (evolved workspace snapshots)
+
 EXTENDS Naturals, Reals, FiniteSets, Sequences, TLC
 
 CONSTANTS
@@ -19,7 +27,8 @@ CONSTANTS
     ADOPTION_THRESHOLD, \* peer_success_rate * trust must meet this (default 0.3)
     DECAY_ALPHA,        \* EMA smoothing factor (default 0.3)
     DEFAULT_TRUST,      \* Initial trust for unknown peers (default 0.5)
-    MAX_OUTCOMES        \* Bound on outcomes for model checking
+    MAX_OUTCOMES,       \* Bound on outcomes for model checking
+    InitLibrary         \* Function: org -> set of initial templates (must be stage-compatible)
 
 ASSUME MIN_TRUST \in Real /\ MIN_TRUST >= 0.0 /\ MIN_TRUST <= 1.0
 ASSUME ADOPTION_THRESHOLD \in Real /\ ADOPTION_THRESHOLD >= 0.0 /\ ADOPTION_THRESHOLD <= 1.0
@@ -81,12 +90,15 @@ TypeOK ==
 (* Initial state *)
 
 Init ==
-    /\ library      = [org \in Orgs |-> {}]
+    \* Each org starts with a distinct template set (InitLibrary) so that
+    \* Import is reachable (peers offer templates the org doesn't already hold).
+    \* InitLibrary must assign only stage-compatible templates (MinStage <= EMBRYONIC).
+    /\ library      = InitLibrary
     /\ trust        = [org \in Orgs |-> [peer \in Orgs |-> DEFAULT_TRUST]]
     /\ stage        = [org \in Orgs |-> "EMBRYONIC"]
     /\ successes    = [org \in Orgs |-> [tmpl \in Templates |-> 0]]
     /\ totals       = [org \in Orgs |-> [tmpl \in Templates |-> 0]]
-    /\ exported     = [org \in Orgs |-> {}]
+    /\ exported     = InitLibrary
     /\ outcomeCount = [org \in Orgs |-> 0]
     /\ adoptedFrom  = [org \in Orgs |-> [tmpl \in Templates |-> "none"]]
 
@@ -152,7 +164,12 @@ Next ==
 
 Spec == Init /\ [][Next]_vars
 
-FairSpec == Spec /\ WF_vars(Next)
+FairSpec == Spec
+    /\ \A org \in Orgs : WF_vars(Export(org))
+    /\ \A org \in Orgs : \A peer \in Orgs : WF_vars(Import(org, peer))
+    /\ \A org \in Orgs : \A tmpl \in Templates : \A s \in BOOLEAN :
+         WF_vars(RecordOutcome(org, tmpl, s))
+    /\ \A org \in Orgs : WF_vars(StageAdvance(org))
 
 -----------------------------------------------------------------------------
 (* Safety invariants *)

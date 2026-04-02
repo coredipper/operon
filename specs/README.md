@@ -1,8 +1,9 @@
 # Operon TLA+ Specifications
 
-Formal TLA+ specifications for three convergence protocols in the Operon project.
+Formal TLA+ specifications for four convergence protocols in the Operon project.
 These specs define state machines, safety invariants, and liveness properties that
-can be verified with the TLC model checker.
+can be verified with the TLC model checker. Each spec ships with a `.cfg` file
+containing small-model parameters ready for TLC.
 
 ## Specifications
 
@@ -16,6 +17,16 @@ supplied each template so that `RecordOutcome` updates the correct peer's trust.
 
 Source: `operon_ai/coordination/social_learning.py`
 
+**Checked properties:**
+
+| Name | Kind | Description |
+|------|------|-------------|
+| `TypeOK` | INVARIANT | Type correctness of all state variables |
+| `TemplateAdoptionSafety` | INVARIANT | Adopted template's min\_stage never exceeds adopter's stage |
+| `TrustMonotonicity` | INVARIANT | Trust values remain in [0, 1] |
+| `QualifyingTemplateEventuallyAdopted` | PROPERTY (liveness) | Qualifying templates are eventually adopted (requires DEFAULT\_TRUST >= 0.6 to be satisfiable; commented out in default .cfg) |
+| `TrustConverges` | PROPERTY (liveness) | Outcome counts eventually reach MAX\_OUTCOMES (same precondition; commented out in default .cfg) |
+
 ### DevelopmentalGating.tla
 
 Models lifecycle progression through developmental stages (EMBRYONIC, JUVENILE,
@@ -26,6 +37,17 @@ the organism's stage meets the minimum requirement.
 
 Source: `operon_ai/state/development.py`
 
+**Checked properties:**
+
+| Name | Kind | Description |
+|------|------|-------------|
+| `TypeOK` | INVARIANT | Type correctness of all state variables |
+| `CapabilityGating` | INVARIANT | Tool's min\_stage never exceeds holder's stage |
+| `CriticalPeriodIrreversibility` | PROPERTY (temporal safety) | Closed periods never reopen; transitions only advance |
+| `StageMonotonicity` | PROPERTY (temporal safety) | Stages only advance, never regress |
+| `DevelopmentalProgress` | PROPERTY (temporal safety) | Telomere never increases |
+| `EventualMaturity` | PROPERTY (liveness) | Every organism eventually reaches MATURE |
+
 ### ConvergenceDetection.tla
 
 Models intervention-rate convergence detection. Organisms execute stages and may
@@ -33,6 +55,37 @@ receive interventions (RETRY, ESCALATE, HALT). When the intervention-to-stage
 ratio exceeds the threshold, the organism is halted immediately.
 
 Source: `operon_ai/patterns/watcher.py`
+
+**Checked properties:**
+
+| Name | Kind | Description |
+|------|------|-------------|
+| `TypeOK` | INVARIANT | Type correctness of all state variables |
+| `HaltIsTerminal` | PROPERTY (temporal safety) | Once halted, no further state changes occur |
+| `BoundedNonConvergence` | PROPERTY (temporal safety) | Rate exceeding MAX\_RATE leads to halt |
+| `ConvergentOrganismCompletes` | PROPERTY (liveness) | Non-halted organisms eventually complete all stages |
+
+### EvolutionGating.tla
+
+Models the A-Evolve Solve->Observe->Evolve->Gate->Reload loop. Organisms
+maintain a workspace version and a benchmark score. Mutations are generated
+nondeterministically; a gate action accepts the mutation only when the new
+score meets or exceeds the current score. Rejected mutations are rolled back.
+
+Source: [A-Evolve](https://github.com/A-EVO-Lab/a-evolve)
+
+**Checked properties:**
+
+| Name | Kind | Description |
+|------|------|-------------|
+| `TypeOK` | INVARIANT | Type correctness of all state variables |
+| `VersionBound` | INVARIANT | Workspace version never exceeds MAX\_VERSIONS |
+| `MonotonicScore` | PROPERTY (temporal safety) | Score never decreases after an accepted mutation |
+| `GateBeforeDeploy` | PROPERTY (temporal safety) | Workspace only increments by exactly 1 through Gate |
+
+> **No liveness property.** Evolution liveness ("organism eventually improves")
+> requires external assumptions about the score generator and rollback policy
+> that are outside the model's scope. See the comment in the spec for details.
 
 ## Installing the TLA+ Toolbox
 
@@ -43,79 +96,153 @@ https://lamport.azurewebsites.net/tla/toolbox.html
 Alternatively, install the VS Code extension `alygin.vscode-tlaplus` for
 lightweight editing and model checking.
 
-## Running the TLC Model Checker
+To run TLC from the command line, download `tla2tools.jar` from:
 
-1. Open a `.tla` file in the TLA+ Toolbox.
-2. Create a new model via **TLC Model Checker > New Model**.
-3. Set the constants (see recommended small-model parameters below).
-4. Add the safety invariants and liveness properties to check.
-5. Click **Run TLC**.
+https://github.com/tlaplus/tlaplus/releases
 
-From the command line (requires `tla2tools.jar`):
+## Reproducing Verification
 
+Each spec has a matching `.cfg` file with small-model parameters. To verify
+a spec from the command line:
+
+### Step 1: Download tla2tools.jar
+
+```bash
+# Download the latest release (one-time setup)
+curl -L -o tla2tools.jar \
+  https://github.com/tlaplus/tlaplus/releases/latest/download/tla2tools.jar
 ```
-java -jar tla2tools.jar -config SpecName.cfg SpecName.tla
+
+### Step 2: Run TLC on each spec
+
+From the `specs/` directory:
+
+```bash
+# TemplateExchangeProtocol (safety only — default parameters)
+java -jar tla2tools.jar -config TemplateExchangeProtocol.cfg TemplateExchangeProtocol.tla
+
+# TemplateExchangeProtocol (safety + liveness — elevated trust)
+java -jar tla2tools.jar -config TemplateExchangeProtocol-liveness.cfg TemplateExchangeProtocol.tla
+
+# DevelopmentalGating
+java -jar tla2tools.jar -config DevelopmentalGating.cfg DevelopmentalGating.tla
+
+# ConvergenceDetection
+java -jar tla2tools.jar -config ConvergenceDetection.cfg ConvergenceDetection.tla
+
+# EvolutionGating (see note below)
+java -jar tla2tools.jar -config EvolutionGating.cfg EvolutionGating.tla
 ```
+
+### Step 3: Interpret results
+
+TLC should report no errors for all safety invariants and temporal safety
+properties in every default `.cfg`. For liveness properties
+(DevelopmentalGating, ConvergenceDetection, and
+TemplateExchangeProtocol-liveness.cfg), ensure `SPECIFICATION` is set to
+`FairSpec`. The default TemplateExchangeProtocol.cfg checks safety only;
+use the `-liveness.cfg` variant for liveness. EvolutionGating has no
+liveness properties.
+
+### Note on EvolutionGating scores
+
+The `Evolve` action quantifies over a finite `ScoreSet` constant (default
+`{0, 1, 2, 3}` in the `.cfg` file). Adjust the set size to trade off
+state-space coverage against model-checking time. Use integer scores to
+avoid TLC's limitations with real-number enumeration.
 
 ## Small-Model Parameters
 
-These parameters keep state spaces tractable for model checking.
+These parameters keep state spaces tractable for model checking. They match
+the values in the `.cfg` files.
 
-### TemplateExchangeProtocol
+### TemplateExchangeProtocol (safety — default config)
+
+Uses `TemplateExchangeProtocol.cfg`. Checks safety invariants only.
+With `DEFAULT_TRUST=0.5`, Import is unreachable from Init (matching
+runtime behavior where fresh peers need trust building before adoption).
 
 | Constant           | Value                              |
 |--------------------|------------------------------------|
-| Orgs               | `{o1, o2, o3}`                     |
-| Templates          | `{t1, t2, t3}`                     |
-| MinStage           | `[t1 |-> "EMBRYONIC", t2 |-> "JUVENILE", t3 |-> "ADOLESCENT"]` |
+| Orgs               | `{o1, o2}`                         |
+| Templates          | `{t1, t2}`                         |
+| MinStage           | `[t1 \|-> "EMBRYONIC", t2 \|-> "EMBRYONIC"]` |
 | MIN_TRUST          | `0.2`                              |
 | ADOPTION_THRESHOLD | `0.3`                              |
 | DECAY_ALPHA        | `0.3`                              |
 | DEFAULT_TRUST      | `0.5`                              |
 | MAX_OUTCOMES       | `3`                                |
+| InitLibrary        | `[o1 \|-> {t1}, o2 \|-> {t2}]`    |
 
-Invariants to check: `TypeOK`, `TemplateAdoptionSafety`, `TrustMonotonicity`
-Properties to check: `QualifyingTemplateEventuallyAdopted`, `TrustConverges` (under `FairSpec`)
+### TemplateExchangeProtocol (liveness — elevated trust config)
+
+Uses `TemplateExchangeProtocol-liveness.cfg`. Checks safety AND liveness.
+`DEFAULT_TRUST=0.8` makes Import reachable (`0.8 * 0.5 = 0.4 >= 0.3`).
+This tests the protocol under conditions where peers have sufficient
+initial trust for adoption to occur.
+
+| Constant           | Value (differs from default)       |
+|--------------------|------------------------------------|
+| DEFAULT_TRUST      | `0.8`                              |
+| (all others)       | Same as default config             |
 
 ### DevelopmentalGating
 
 | Constant           | Value                              |
 |--------------------|------------------------------------|
 | Orgs               | `{o1, o2}`                         |
-| Tools              | `{tool1, tool2, tool3}`            |
+| Tools              | `{tool1, tool2}`                   |
 | Periods            | `{lang_acq, imprinting}`           |
-| ToolMinStage       | `[tool1 |-> "EMBRYONIC", tool2 |-> "JUVENILE", tool3 |-> "MATURE"]` |
-| PeriodOpensAt      | `[lang_acq |-> "EMBRYONIC", imprinting |-> "EMBRYONIC"]` |
-| PeriodClosesAt     | `[lang_acq |-> "ADOLESCENT", imprinting |-> "JUVENILE"]` |
+| ToolMinStage       | `[tool1 \|-> "EMBRYONIC", tool2 \|-> "JUVENILE"]` |
+| PeriodOpensAt      | `[lang_acq \|-> "EMBRYONIC", imprinting \|-> "EMBRYONIC"]` |
+| PeriodClosesAt     | `[lang_acq \|-> "ADOLESCENT", imprinting \|-> "JUVENILE"]` |
 | MAX_TELOMERE       | `10`                               |
 | JUVENILE_THRESH    | `2`                                |
 | ADOLESCENT_THRESH  | `5`                                |
 | MATURE_THRESH      | `8`                                |
 
-Invariants to check: `TypeOK`, `CapabilityGating`
-Properties to check: `CriticalPeriodIrreversibility`, `StageMonotonicity`, `DevelopmentalProgress`, `EventualMaturity` (under `FairSpec`)
-
-> **Note:** `CriticalPeriodIrreversibility`, `StageMonotonicity`, and `DevelopmentalProgress` are temporal formulas (they use `[][...]_vars`). In TLC, these must be entered under **Properties**, not **Invariants**. Only state predicates (like `TypeOK` and `CapabilityGating`) go under Invariants.
-
 ### ConvergenceDetection
 
 | Constant       | Value                              |
 |----------------|------------------------------------|
-| Orgs           | `{o1, o2, o3}`                     |
+| Orgs           | `{o1, o2}`                         |
 | MAX_RATE       | `0.5`                              |
 | TOTAL_STAGES   | `5`                                |
 
-Invariants to check: `TypeOK`
-Properties to check: `HaltIsTerminal`, `BoundedNonConvergence`, `ConvergentOrganismCompletes` (under `FairSpec`)
+### EvolutionGating
 
-> **Note:** `HaltIsTerminal` is a temporal formula (uses `[][...]_vars`) and `BoundedNonConvergence` uses leads-to (`~>`). In TLC, both must be entered under **Properties**, not **Invariants**.
+| Constant           | Value                              |
+|--------------------|------------------------------------|
+| Orgs               | `{o1, o2}`                         |
+| MAX_VERSIONS       | `5`                                |
+| MIN_IMPROVEMENT    | `0`                                |
+| ScoreSet           | `{0, 1, 2, 3}`                    |
+
+## Property Classification Guide
+
+TLC distinguishes between two kinds of checked formulas:
+
+- **INVARIANT**: A state predicate evaluated at every reachable state. Examples:
+  `TypeOK`, `CapabilityGating`, `TemplateAdoptionSafety`, `TrustMonotonicity`,
+  `VersionBound`.
+
+- **PROPERTY**: A temporal formula evaluated over complete behaviors. This
+  includes both temporal safety formulas (using `[][...]_vars`) and liveness
+  formulas (using `<>` or `~>`). Examples: `MonotonicScore`, `HaltIsTerminal`,
+  `EventualMaturity`, `QualifyingTemplateEventuallyAdopted`.
+
+Placing a temporal formula under INVARIANT (or a state predicate under PROPERTY)
+will produce incorrect results or TLC errors.
 
 ## Expected Verification Results
 
 With the small-model parameters above, TLC should report:
 
 - **All safety invariants pass** (no counterexamples found).
-- **Liveness properties pass** under `FairSpec` (fair scheduling).
+- **Liveness properties pass** under `FairSpec` for DevelopmentalGating and
+  ConvergenceDetection. For TemplateExchangeProtocol, use the
+  `-liveness.cfg` config (elevated trust); the default config checks safety
+  only. EvolutionGating has no liveness property.
 - State space for each spec is on the order of thousands to tens of thousands
   of states, completing in seconds to a few minutes.
 

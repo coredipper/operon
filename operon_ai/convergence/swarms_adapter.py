@@ -52,12 +52,22 @@ _W_SEQUENTIAL = 0.30
 _W_DENSITY = 0.20
 _W_TOPOLOGY_MISMATCH = 0.10
 
-# Map Swarms pattern names to broad task shapes.
+# Map pattern names to broad task shapes.
+# Keys are normalized (lowercase, no underscores/hyphens) since
+# _classify_task_shape strips those before lookup.
 _PATTERN_TO_SHAPE: dict[str, str] = {
+    # Swarms
     "sequentialworkflow": "sequential",
     "hierarchicalswarm": "mixed",
     "concurrentworkflow": "parallel",
     "graphworkflow": "mixed",
+    # Operon-native (from advise_topology) — normalized keys only
+    "singleworker": "sequential",
+    "singleworkerwithreviewer": "sequential",
+    "reviewergate": "sequential",
+    # specialistswarm intentionally omitted — ambiguous (parallel or mixed).
+    # Let the structural heuristic (edge analysis) classify it.
+    "skillorganism": "sequential",
 }
 
 # Map task shapes to PatternTemplate topology labels.
@@ -381,6 +391,16 @@ def topology_to_template(topology: ExternalTopology) -> PatternTemplate:
         session_config = topology.metadata.get("_session_config")
         if session_config is not None:
             return deerflow_to_template(session_config)
+    elif topology.source == "ralph":
+        from .ralph_adapter import ralph_to_template
+        ralph_config = topology.metadata.get("_ralph_config")
+        if ralph_config is not None:
+            return ralph_to_template(ralph_config)
+    elif topology.source == "aevolve":
+        from .aevolve_adapter import aevolve_to_template
+        aevolve_manifest = topology.metadata.get("_aevolve_manifest")
+        if aevolve_manifest is not None:
+            return aevolve_to_template(aevolve_manifest)
 
     # Generic fallback for Swarms and unknown sources.
     task_shape = _classify_task_shape(topology)

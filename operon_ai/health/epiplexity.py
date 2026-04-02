@@ -23,7 +23,7 @@ References:
 - Article Section 5.1: Oncology - Infinite Loops as Epistemic Starvation
 """
 from dataclasses import dataclass, field
-from typing import Protocol, Sequence
+from typing import Any, Protocol, Sequence, runtime_checkable
 from enum import Enum
 from collections import deque
 import math
@@ -75,11 +75,28 @@ class EpiplexityState:
     # History for windowed analysis
     epiplexity_history: deque[float] = field(default_factory=lambda: deque(maxlen=100))
 
+    # Distance-based tracking (for DistanceProvider path)
+    previous_item: Any | None = None
+
     # Statistics
     total_measurements: int = 0
     stagnant_episodes: int = 0
     max_consecutive_stagnant: int = 0
     current_consecutive_stagnant: int = 0
+
+
+@runtime_checkable
+class DistanceProvider(Protocol):
+    """Protocol for distance-based novelty measurement (non-embedding).
+
+    Enables EpiplexityMonitor to operate on arbitrary objects (e.g.,
+    CandidateConfig) rather than requiring text embeddings.  Tests whether
+    epistemic health monitoring generalizes across abstraction scales.
+    """
+
+    def distance(self, a: Any, b: Any) -> float:
+        """Return distance in [0, 1] between two objects."""
+        ...
 
 
 class EmbeddingProvider(Protocol):
@@ -163,11 +180,14 @@ class EpiplexityMonitor:
         >>> result.status  # Will eventually become STAGNANT
     """
 
-    embedding_provider: EmbeddingProvider
+    embedding_provider: EmbeddingProvider | None = None
     alpha: float = 0.5  # Mixing parameter (0 = perplexity only, 1 = embedding only)
     window_size: int = 10  # Window for integral calculation
     threshold: float = 0.2  # δ threshold: E_w < δ indicates stagnation
     critical_duration: int = 5  # Consecutive stagnant measurements before CRITICAL
+
+    # Distance-based novelty (alternative to embedding path)
+    distance_provider: DistanceProvider | None = None
 
     # Internal state
     state: EpiplexityState = field(default_factory=EpiplexityState)
@@ -177,21 +197,75 @@ class EpiplexityMonitor:
 
     def measure(
         self,
-        message: str,
+        message: str = "",
         perplexity: float | None = None,
+        *,
+        item: Any | None = None,
     ) -> EpiplexityResult:
         """
-        Measure epiplexity for a new message.
+        Measure epiplexity for a new message or item.
+
+        When ``distance_provider`` is set and ``item`` is provided, novelty
+        is computed via the distance provider instead of embedding cosine
+        similarity.  This enables monitoring of non-text objects (e.g.,
+        CandidateConfig) for epistemic health.
 
         Args:
-            message: The agent's output message
+            message: The agent's output message (embedding path)
             perplexity: Optional measured perplexity. If not provided,
                        approximated from embedding stability.
+            item: Object to measure distance-based novelty for (distance path)
 
         Returns:
             EpiplexityResult with current health status
         """
-        # Get embedding
+        # --- Distance-provider path (non-embedding) ---
+        if self.distance_provider is not None and item is not None:
+            if self.state.previous_item is not None:
+                embedding_novelty = self.distance_provider.distance(
+                    self.state.previous_item, item,
+                )
+            else:
+                embedding_novelty = 1.0  # First item — maximum novelty
+
+            # Without real perplexity, approximate from novelty trend
+            normalized_perplexity = self._approximate_perplexity_from_novelty(
+                embedding_novelty,
+            )
+
+            epiplexity = (
+                self.alpha * embedding_novelty
+                + (1 - self.alpha) * normalized_perplexity
+            )
+
+            self.state.previous_item = item
+            self.state.epiplexity_history.append(epiplexity)
+            self.state.total_measurements += 1
+
+            window = list(self.state.epiplexity_history)[-self.window_size:]
+            epiplexic_integral = sum(window) / len(window) if window else 0.0
+
+            status = self._determine_status(
+                embedding_novelty, normalized_perplexity, epiplexic_integral,
+            )
+            self._track_stagnation(status)
+
+            return EpiplexityResult(
+                embedding_novelty=embedding_novelty,
+                normalized_perplexity=normalized_perplexity,
+                epiplexity=epiplexity,
+                epiplexic_integral=epiplexic_integral,
+                status=status,
+                window_size=len(window),
+                threshold=self.threshold,
+            )
+
+        # --- Embedding path (original behavior) ---
+        if self.embedding_provider is None:
+            raise ValueError(
+                "EpiplexityMonitor requires either embedding_provider or "
+                "distance_provider (with item=) to be set"
+            )
         embedding = self.embedding_provider.embed(message)
 
         # Calculate embedding novelty: 1 - cos(e_t, e_{t-1})
@@ -236,15 +310,7 @@ class EpiplexityMonitor:
             epiplexic_integral,
         )
 
-        # Track stagnation episodes
-        if status in (HealthStatus.STAGNANT, HealthStatus.CRITICAL):
-            self.state.current_consecutive_stagnant += 1
-            if self.state.current_consecutive_stagnant > self.state.max_consecutive_stagnant:
-                self.state.max_consecutive_stagnant = self.state.current_consecutive_stagnant
-        else:
-            if self.state.current_consecutive_stagnant > 0:
-                self.state.stagnant_episodes += 1
-            self.state.current_consecutive_stagnant = 0
+        self._track_stagnation(status)
 
         return EpiplexityResult(
             embedding_novelty=embedding_novelty,
@@ -308,6 +374,35 @@ class EpiplexityMonitor:
             return min(1.0, 0.5 + trend * 2 + magnitude_drift * 0.5)
 
         return 0.3 + novelty * 0.4 + magnitude_drift * 0.2
+
+    def _approximate_perplexity_from_novelty(self, novelty: float) -> float:
+        """Approximate perplexity from novelty alone (distance-provider path).
+
+        Without embeddings, we use the novelty trend as a proxy for
+        model uncertainty.  Low novelty with a declining trend suggests
+        stagnation; high novelty suggests exploration.
+        """
+        history = list(self.state.epiplexity_history)
+        if len(history) < 2:
+            return 0.5
+
+        recent = history[-3:]
+        trend = (recent[-1] - recent[0]) / len(recent) if len(recent) > 1 else 0
+
+        if novelty < 0.3 and trend <= 0:
+            return min(1.0, 0.6 + abs(trend) * 2)
+        return 0.3 + novelty * 0.4
+
+    def _track_stagnation(self, status: HealthStatus) -> None:
+        """Update stagnation episode counters."""
+        if status in (HealthStatus.STAGNANT, HealthStatus.CRITICAL):
+            self.state.current_consecutive_stagnant += 1
+            if self.state.current_consecutive_stagnant > self.state.max_consecutive_stagnant:
+                self.state.max_consecutive_stagnant = self.state.current_consecutive_stagnant
+        else:
+            if self.state.current_consecutive_stagnant > 0:
+                self.state.stagnant_episodes += 1
+            self.state.current_consecutive_stagnant = 0
 
     def _determine_status(
         self,

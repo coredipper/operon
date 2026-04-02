@@ -59,3 +59,91 @@ This is a lightweight map of the current library surface.
 - `operon_ai.healing`
 
 For concrete usage, start from the examples rather than reading the namespaces in isolation.
+
+## Convergence
+
+- `operon_ai.convergence`
+  - adapters: `parse_swarm_topology`, `parse_animaworks_org`, `parse_deerflow_session`
+  - analysis: `analyze_external_topology`, `topology_to_template`
+  - types: `ExternalTopology`, `AdapterResult`, `RuntimeConfig`
+  - catalog: `seed_library_from_swarms`, `seed_library_from_deerflow`, `seed_library_from_acg_survey`
+  - skill bridge: `skill_to_template`, `template_to_skill`
+  - hybrid: `hybrid_skill_organism`, `default_template_generator`
+  - async thinking: `AsyncOrganizer`, `AsyncThinkResult`, `async_stage_handler`
+  - memory bridge: `bridge_animaworks_memory`, `bridge_deerflow_memory`
+  - co-design: `DesignProblem`, `compose_series`, `compose_parallel`, `feedback_fixed_point`
+
+- `operon_ai.patterns.priming`
+  - `PrimingView` — multi-channel SubstrateView subclass
+  - `build_priming_view` — promote SubstrateView to PrimingView
+
+- `operon_ai.patterns.heartbeat`
+  - `HeartbeatDaemon` — WatcherComponent with idle-time consolidation
+
+## Ralph Adapter
+
+- `operon_ai.convergence.ralph_adapter`
+  - `parse_ralph_config` — convert Ralph hat config to ExternalTopology
+  - `ralph_hats_to_stages` — map Ralph hats to SkillStages with CognitiveMode
+
+- `operon_ai.convergence.catalog`
+  - `seed_library_from_ralph` — seed PatternLibrary from Ralph hat patterns
+
+## A-Evolve Adapter
+
+- `operon_ai.convergence.aevolve_adapter`
+  - `parse_aevolve_workspace` — convert A-Evolve workspace manifest to ExternalTopology
+  - `aevolve_skills_to_stages` — map evolved skills to SkillStages
+
+- `operon_ai.convergence.aevolve_skills`
+  - `import_aevolve_skills` — import SKILL.md strings into PatternLibrary
+  - `seed_library_from_aevolve` — seed from workspace manifests
+
+All functions are also re-exported from `operon_ai.convergence` directly.
+
+## Compilers (C5)
+
+- `operon_ai.convergence.swarms_compiler`
+  - `organism_to_swarms`, `managed_to_swarms`
+
+- `operon_ai.convergence.deerflow_compiler`
+  - `organism_to_deerflow`, `managed_to_deerflow`
+
+- `operon_ai.convergence.ralph_compiler`
+  - `organism_to_ralph`, `managed_to_ralph`
+
+- `operon_ai.convergence.scion_compiler`
+  - `organism_to_scion`, `managed_to_scion`
+
+## Distributed Watcher
+
+- `operon_ai.convergence.distributed_watcher`
+  - `DistributedWatcher`, `InMemoryTransport`, `HttpTransport`
+
+- `operon_ai.convergence.langgraph_watcher`
+  - `operon_watcher_node`, `create_watcher_config`
+
+## Prompt Optimization (C7)
+
+- `operon_ai.convergence.prompt_optimization`
+  - `PromptOptimizer` — protocol for prompt-level optimization
+  - `EvolutionaryOptimizer` — evolutionary prompt mutation with fitness gating
+  - `NoOpOptimizer` — pass-through optimizer for baselines
+  - `attach_optimizer` — attach an optimizer instance to a SkillStage
+
+## Workflow Generation (C7)
+
+- `operon_ai.convergence.workflow_generation`
+  - `WorkflowGenerator` — protocol for workflow topology generation
+  - `ReasoningGenerator` — reasoning-based workflow construction
+  - `HeuristicGenerator` — heuristic-based workflow construction
+  - `generate_and_register` — generate a workflow and register it in PatternLibrary
+
+## Live Evaluation (C6b)
+
+- `eval.convergence.live_evaluator`
+  - `LiveEvaluator` — runs real LLM calls through SkillOrganism pipelines
+  - `LiveRunResult` — per-task result with quality score, tokens, latency, risk
+  - CLI provider support: `claude -p` and `codex exec` via `cli_handler()`
+  - LLM-as-judge quality scoring with cross-provider comparison
+  - Guided configs use distinct fast/deep models; unguided use same model for both

@@ -5,7 +5,7 @@
 > *From agent heuristics toward structural guarantees.*
 
 ![Status](https://img.shields.io/badge/status-experimental-orange)
-![Version](https://img.shields.io/badge/pypi-v0.24.0-blue)
+![Version](https://img.shields.io/badge/pypi-v0.25.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![Publish to PyPI](https://github.com/coredipper/operon/actions/workflows/publish.yml/badge.svg)](https://github.com/coredipper/operon/actions/workflows/publish.yml)
 
@@ -154,6 +154,45 @@ print(mem.history("Review account acct:1"))  # full append-only audit trail
 
 See the [Bi-Temporal Memory docs](https://banu.be/operon/bitemporal-memory/), [examples 69–71](examples/), and the [interactive explorer](https://huggingface.co/spaces/coredipper/operon-bitemporal).
 
+### Convergence: Structural Analysis for External Frameworks
+
+The `operon_ai.convergence` package provides typed adapters for 6 external agent frameworks ([Swarms](https://github.com/kyegomez/swarms), [DeerFlow](https://github.com/bytedance/deer-flow), [AnimaWorks](https://github.com/AnimaWorks/AnimaWorks), [Ralph](https://github.com/mikeyobrien/ralph-orchestrator), [A-Evolve](https://github.com/A-EVO-Lab/a-evolve), [Scion](https://github.com/GoogleCloudPlatform/scion)) into Operon's structural analysis layer. No external dependencies — all operate on plain dicts.
+
+```python
+from operon_ai import PatternLibrary
+from operon_ai.convergence import (
+    parse_swarm_topology, analyze_external_topology,
+    seed_library_from_swarms, get_builtin_swarms_patterns,
+)
+
+# Analyze a Swarms workflow with Operon's epistemic theorems
+topology = parse_swarm_topology(
+    "HierarchicalSwarm",
+    agent_specs=[
+        {"name": "manager", "role": "Manager"},
+        {"name": "coder", "role": "Developer"},
+        {"name": "reviewer", "role": "Reviewer"},
+    ],
+    edges=[("manager", "coder"), ("manager", "reviewer")],
+)
+result = analyze_external_topology(topology)
+print(result.risk_score, result.warnings)
+
+# Seed a PatternLibrary from Swarms' built-in patterns
+library = PatternLibrary()
+seed_library_from_swarms(library, get_builtin_swarms_patterns())
+```
+
+Compile organisms into deployment configs for [Swarms](https://github.com/kyegomez/swarms), [DeerFlow](https://github.com/bytedance/deer-flow), [Ralph](https://github.com/mikeyobrien/ralph-orchestrator), and [Scion](https://github.com/GoogleCloudPlatform/scion):
+
+```python
+from operon_ai.convergence import organism_to_swarms, organism_to_scion
+swarms_config = organism_to_swarms(organism)
+scion_config = organism_to_scion(organism, runtime="docker")
+```
+
+See [examples 86–106](examples/) and the [Convergence docs](https://banu.be/operon/convergence/).
+
 ## Learn More
 
 Public docs now live at [banu.be/operon](https://banu.be/operon/). The tracked source for that docs shell lives in the repo under [`docs/site/`](https://github.com/coredipper/operon/tree/main/docs/site).
@@ -162,6 +201,7 @@ Public docs now live at [banu.be/operon](https://banu.be/operon/). The tracked s
 - [Pattern-First API](https://banu.be/operon/pattern-first-api/)
 - [Skill Organisms](https://banu.be/operon/skill-organisms/)
 - [Bi-Temporal Memory](https://banu.be/operon/bitemporal-memory/)
+- [Convergence](https://banu.be/operon/convergence/)
 - [Examples](https://banu.be/operon/examples/)
 - [Concepts and Architecture](https://banu.be/operon/concepts/)
 - [Theory and Papers](https://banu.be/operon/theory/)
@@ -171,8 +211,8 @@ Public docs now live at [banu.be/operon](https://banu.be/operon/). The tracked s
 
 Direct links:
 
-- [Examples index](https://github.com/coredipper/operon/blob/main/examples/README.md) (85 runnable examples)
-- [Wiring diagrams](https://github.com/coredipper/operon/blob/main/examples/wiring_diagrams.md) (61 architecture diagrams)
+- [Examples index](https://github.com/coredipper/operon/blob/main/examples/README.md) (107 runnable examples)
+- [Wiring diagrams](https://github.com/coredipper/operon/blob/main/examples/wiring_diagrams.md) (63 architecture diagrams)
 - [Main whitepaper](https://github.com/coredipper/operon/blob/main/article/main.pdf)
 - [Epistemic topology paper](https://github.com/coredipper/operon/blob/main/article/paper1/main.pdf)
 - [PyPI package](https://pypi.org/project/operon-ai/)
