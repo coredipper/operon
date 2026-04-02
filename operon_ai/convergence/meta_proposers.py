@@ -177,20 +177,22 @@ class TournamentMutator:
 _LLM_PROMPT_TEMPLATE = """\
 You are an evolutionary optimizer for AI multi-agent systems.
 
-Below is the evolution history of organism configurations. Each candidate
-has stage configs (role, mode, model, etc.) and a quality score (0-1).
+Below are the TOP PERFORMING and WORST PERFORMING organism configurations
+from the evolution history, with execution metadata (token counts and
+whether each stage produced output). Use the patterns to understand
+which configs work.
 
-HISTORY (most recent last):
-{history}
+{candidate_details}
 
-CURRENT BEST CONFIG:
-{best_config}
+SCORE SUMMARY (most recent last):
+{score_summary}
 
-Based on the trajectory, propose ONE new configuration that you believe
-will score higher. Consider:
-- Which stage modes (fixed/fuzzy) worked best?
-- Which models performed well in which roles?
-- Should any stage visibility (include_stage_outputs/include_shared_state) change?
+Based on the evidence above, propose ONE new configuration that you
+believe will score higher. Consider:
+- Configs with mode="fixed" on non-matching roles often produce gate behavior — usually bad
+- Configs with mode="fuzzy" produce natural language output — usually good
+- Stages with high token counts and produced_output=True are working well
+- Stages with low tokens or produced_output=False indicate problems
 
 Return ONLY a JSON object with this exact schema:
 {{
@@ -200,7 +202,7 @@ Return ONLY a JSON object with this exact schema:
       "cognitive_mode": "<str|null>"}}
   ],
   "intervention_policy": {{}},
-  "reason": "<why you chose this config>"
+  "reason": "<why you chose this config, citing trace evidence>"
 }}
 """
 
@@ -229,39 +231,82 @@ class LLMProposer:
         scores: dict[str, list[float]],
         iteration: int,
     ) -> CandidateConfig:
-        # Build context from filesystem history
+        # Build rich context from filesystem history
         index = self._store.load_index()
-        history_lines = []
-        for r in index[-30:]:  # Last 30 assessments
-            history_lines.append(
-                f"  candidate={r.candidate_id} task={r.task_id} "
-                f"score={r.score:.2f} tokens={r.tokens} proposer={r.proposer}"
-            )
-        history_str = "\n".join(history_lines) if history_lines else "(no history yet)"
 
-        # Find current best
-        best = max(
+        # Score summary (compressed, for trajectory overview)
+        summary_lines = []
+        for r in index[-20:]:
+            summary_lines.append(
+                f"  {r.candidate_id} task={r.task_id} "
+                f"score={r.score:.2f} proposer={r.proposer}"
+            )
+        score_summary = "\n".join(summary_lines) if summary_lines else "(no history)"
+
+        # Rich candidate details: top 5 + bottom 3 by mean score
+        ranked = sorted(
             population,
             key=lambda c: (
                 sum(scores.get(c.candidate_id, [0.0]))
                 / max(len(scores.get(c.candidate_id, [0.0])), 1)
             ),
+            reverse=True,
         )
-        best_str = json.dumps({
-            "stage_configs": [
-                {"role": s.role, "mode": s.mode, "model": s.model,
-                 "include_stage_outputs": s.include_stage_outputs,
-                 "include_shared_state": s.include_shared_state,
-                 "cognitive_mode": s.cognitive_mode}
-                for s in best.stage_configs
-            ],
-            "intervention_policy": best.intervention_policy,
-        }, indent=2)
+        showcase = ranked[:5] + ranked[-3:] if len(ranked) > 5 else ranked
+        seen = set()
+        candidate_blocks = []
+        for cc in showcase:
+            if cc.candidate_id in seen:
+                continue
+            seen.add(cc.candidate_id)
+            mean_score = (
+                sum(scores.get(cc.candidate_id, [0.0]))
+                / max(len(scores.get(cc.candidate_id, [0.0])), 1)
+            )
+            # Config
+            config_str = json.dumps({
+                "stage_configs": [
+                    {"role": s.role, "mode": s.mode, "model": s.model,
+                     "include_stage_outputs": s.include_stage_outputs,
+                     "include_shared_state": s.include_shared_state,
+                     "cognitive_mode": s.cognitive_mode}
+                    for s in cc.stage_configs
+                ],
+            }, indent=2)
+            # Trace: take the last run's entries (most recent assessment)
+            all_trace = self._store.load_trace(cc.candidate_id)
+            # Last run = entries after the last _error or from the tail
+            trace = all_trace[-6:] if all_trace else []
+            trace_lines = []
+            for t in trace:
+                if t.get("stage") == "_error":
+                    trace_lines.append(f"  ERROR: {t.get('error', '?')}")
+                else:
+                    # Only structured metadata — no raw output text to
+                    # prevent semantic prompt injection from prior stages.
+                    has_output = bool(t.get("output_preview", "").strip())
+                    trace_lines.append(
+                        f"  {t.get('stage','?')}: tokens={t.get('tokens',0)}"
+                        f" produced_output={has_output}"
+                    )
+            trace_str = "\n".join(trace_lines) if trace_lines else "  (no trace)"
+
+            candidate_blocks.append(
+                f"=== {cc.candidate_id} (mean_score={mean_score:.2f}, "
+                f"proposer={cc.proposer}) ===\n"
+                f"Config:\n{config_str}\n"
+                f"Trace:\n{trace_str}"
+            )
+
+        candidate_details = "\n\n".join(candidate_blocks)
 
         prompt = _LLM_PROMPT_TEMPLATE.format(
-            history=history_str,
-            best_config=best_str,
+            candidate_details=candidate_details,
+            score_summary=score_summary,
         )
+
+        # Find best for parent lineage
+        best = ranked[0] if ranked else population[0]
 
         try:
             # Local reasoning models (deepseek-r1, qwen) need /no_think

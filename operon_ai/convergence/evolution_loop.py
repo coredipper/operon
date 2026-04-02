@@ -310,9 +310,16 @@ class EvolutionLoop:
             provider = self._get_judge_provider()
             try:
                 from eval.convergence.live_evaluator import _judge_quality
+            except ModuleNotFoundError as exc:
+                _OPTIONAL = {"eval", "eval.convergence", "eval.convergence.live_evaluator"}
+                if exc.name in _OPTIONAL:
+                    _judge_quality = None
+                else:
+                    raise
+            if _judge_quality is not None:
                 judge_result = _judge_quality(str(prompt), final_output, provider)
                 score = judge_result[0]
-            except ImportError:
+            else:
                 score = 0.5  # no judge available — neutral score
 
             # Record trace

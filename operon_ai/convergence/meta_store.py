@@ -91,6 +91,14 @@ class EvolutionStore:
         with path.open("a") as f:
             f.write(line + "\n")
 
+    def load_trace(self, candidate_id: str) -> list[dict[str, Any]]:
+        """Read all trace entries for a candidate."""
+        path = self._candidates_dir / f"{candidate_id}_trace.jsonl"
+        if not path.exists():
+            return []
+        return [json.loads(line) for line in path.read_text().splitlines()
+                if line.strip()]
+
     # -- Assessment index ----------------------------------------------------
 
     def append_assessment(self, record: AssessmentRecord) -> None:
