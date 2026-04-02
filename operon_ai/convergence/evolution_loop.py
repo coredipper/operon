@@ -291,8 +291,11 @@ class EvolutionLoop:
         task: Any,
     ) -> dict[str, Any]:
         """Build organism from config, run on task, judge quality."""
-        from eval.convergence.live_evaluator import _TASK_PROMPTS
-        prompt = _TASK_PROMPTS.get(task.task_id, task.description)
+        try:
+            from eval.convergence.live_evaluator import _TASK_PROMPTS
+            prompt = _TASK_PROMPTS.get(task.task_id, task.description)
+        except ImportError:
+            prompt = task.description
 
         start = time.time()
         try:
