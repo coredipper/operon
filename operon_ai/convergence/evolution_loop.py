@@ -307,10 +307,13 @@ class EvolutionLoop:
             final_output = str(run_result.final_output or "")
 
             # Judge quality (lazy import — eval is not in the wheel)
-            from eval.convergence.live_evaluator import _judge_quality
             provider = self._get_judge_provider()
-            judge_result = _judge_quality(str(prompt), final_output, provider)
-            score = judge_result[0]
+            try:
+                from eval.convergence.live_evaluator import _judge_quality
+                judge_result = _judge_quality(str(prompt), final_output, provider)
+                score = judge_result[0]
+            except ImportError:
+                score = 0.5  # no judge available — neutral score
 
             # Record trace
             for sr in run_result.stage_results:
