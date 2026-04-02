@@ -79,28 +79,52 @@ Seed Operon's PatternLibrary from external catalogs:
 - `WorkflowGenerator` protocol with `HeuristicGenerator` reference implementation; `ReasoningGenerator` extended protocol
 - `generate_and_register` — generate workflow topology and register it in PatternLibrary
 
-## Harness Search + Live Evaluation (Phase C8) — Planned
+## Meta-Evolution (Phase C8 — Phase A)
 
-Integrates [Meta-Harness](https://arxiv.org/abs/2603.28052) (Lee et al., Stanford/MIT 2026) insights into the convergence stack. Meta-Harness shows that searching over full agent harness code with filesystem access to all prior candidates, traces, and scores dramatically outperforms compressed-feedback optimizers (AlphaEvolve, OPRO, TextGrad).
+Evolves organism configurations (modes, models, thresholds) using biological primitives at the meta-level. Tests whether Operon's abstractions generalize from running organisms to evolving them.
 
-### Harness Search
+### Architecture
 
-- `FilesystemOptimizer` — extends `EvolutionaryOptimizer` protocol with filesystem-backed trace store (full source + execution traces + scores per candidate, not compressed feedback)
-- `HarnessSearchDP` — wraps Meta-Harness outer loop as a Zardini `DesignProblem`, composable with existing adapter DPs via `compose_series/parallel`
-- `seed_library_from_meta_harness()` — decompose discovered harness programs into `PatternTemplate` entries for cross-framework reuse
-- Pareto convergence criterion — extend `ConvergenceDetection.tla` with frontier stabilization check (no new non-dominated candidates for N iterations)
-- Causal diagnosis safety property — extend `EvolutionGating.tla` to require causal attribution before accepting post-regression proposals
+- `FilesystemOptimizer` — new protocol distinct from C7's `EvolutionaryOptimizer`. Operates on `CandidateConfig` (organism configurations), not prompts.
+- `EvolutionLoop` — main glue: proposes candidates, evaluates via `LiveEvaluator`, persists to filesystem store, uses `EpiplexityMonitor` for stall detection
+- `CandidateConfig` maps to/from `Genome` — tests whether the gene abstraction covers configuration space (lossless round-trip confirmed)
+- Candidate-first filesystem layout with append-only `index.jsonl` for efficient querying
+
+### Proposers
+
+Hybrid strategy: `TournamentMutator` (programmatic, fast) + `LLMProposer` (Gemini/local, rich context).
+
+**Dual stall detection** triggers the LLM proposer:
+1. Config novelty stall — `EpiplexityMonitor` with pluggable `DistanceProvider` (tests scale-invariance of epistemic health monitoring)
+2. Score plateau — best score not improved in `threshold * n_tasks` steps
 
 ### Live Evaluation
 
-- `LiveEvaluator` — runs real LLM calls through SkillOrganism pipelines (API providers + CLI agents)
-- CLI provider support: `claude -p` and `codex exec` via `cli_handler()` as single-shot evaluation backends
-- LLM-as-judge quality scoring with cross-provider comparison
-- Guided vs unguided measurement across Gemini API, Claude CLI, Codex CLI
+- `LiveEvaluator` — real LLM calls through SkillOrganism pipelines (Gemini, OpenAI, Anthropic, Ollama, LM Studio, Claude CLI, Codex CLI)
+- LLM-as-judge quality scoring with rubric (correctness 50%, completeness 30%, clarity 20%)
+- Cross-judging support for provider-independent evaluation
 
-### Key Finding from C6 Live Evaluation
+### Key Findings
 
-Structural guidance gives a consistent +6.2% quality improvement for multi-stage pipelines but has no effect on single-agent CLI execution — confirming that guidance helps when there is topology to guide, and the compile→decompile round-trip reveals where structural information gets lost.
+**Biological abstraction generalization:**
+- Genome mapping is clean (~5 lines). Gene abstraction covers full configuration space with lossless round-trip.
+- EpiplexityMonitor generalizes across scales. `ConfigHammingDistance` triggers STAGNANT/EXPLORING just like embedding cosine distance.
+- `DesignProblem` wrapping of evolution steps is natural. Co-design composition works at the meta-level.
+- Boundaries found: `feedback_fixed_point` doesn't fit (evolution isn't convergent iteration), `TrustRegistry` overkill for 2 proposers.
+
+**Ao et al. (arXiv:2603.26993) test — exogenous signals:**
+- Compressed history (index entries only): LLM proposer mean 0.15 — worse than tournament (0.32)
+- Rich filesystem context (configs + trace metadata): LLM proposer mean 0.48 — matches tournament (0.44)
+- Finding: rich context helps 3x, but config-space evolution doesn't strongly benefit from LLM reasoning over blind mutation. Topology evolution (Phase B) is where structural reasoning should provide genuine advantage.
+
+**Related work:** de los Riscos, Corbacho & Arbib ([arXiv:2603.28906](https://arxiv.org/abs/2603.28906)) provide a category-theoretic framework (ArchAgents) that maps tightly to Operon's architecture: objects = organism architectures, morphisms = compilers, agents = configured organisms.
+
+### Phase B (Planned)
+
+- Topology mutations (add/remove stages, vary wiring)
+- Pareto convergence criterion
+- Per-stage model routing (currently one model per tier)
+- TrustRegistry for >2 proposer strategies
 
 ## Examples
 
@@ -114,3 +138,4 @@ Structural guidance gives a consistent +6.2% quality improvement for multi-stage
 - [105](https://github.com/coredipper/operon/blob/main/examples/105_prompt_optimization_interface.py): Prompt optimization protocols
 - [106](https://github.com/coredipper/operon/blob/main/examples/106_workflow_generation_interface.py): Workflow generation and registration
 - [107](https://github.com/coredipper/operon/blob/main/examples/107_live_evaluation.py): Live evaluation with real LLM providers
+- [108](https://github.com/coredipper/operon/blob/main/examples/108_meta_evolution.py): Meta-evolution of organism configurations

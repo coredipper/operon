@@ -2,6 +2,34 @@
 
 This page tracks the recent direction of the project.
 
+## v0.26.0
+
+Focus:
+
+- **C8 Phase A: Meta-evolution of organism configurations** — the core experiment testing whether biological abstractions generalize to the meta-level
+- Rich LLM proposer with filesystem context (Meta-Harness insight)
+- Dual stall detection: config novelty + score plateau
+
+New:
+
+- `FilesystemOptimizer` protocol — distinct from C7's `EvolutionaryOptimizer`
+- `EvolutionLoop` — meta-harness glue (DesignProblem wrapping, EpiplexityMonitor stall detection)
+- `CandidateConfig` / `StageConfig` with lossless Genome round-trip
+- `TournamentMutator` + `LLMProposer` hybrid proposer strategy
+- `EvolutionStore` — candidate-first filesystem persistence with `index.jsonl`
+- `DistanceProvider` protocol for EpiplexityMonitor (scale-invariant epistemic health)
+- `ConfigHammingDistance` for config-space novelty measurement
+- `run_meta_evolution.py` CLI runner with `--llm-proposer gemini` support
+- Example 108: meta-evolution usage
+- 52 C8-specific tests, 20+ roborev review rounds
+
+Findings:
+
+- Gene abstraction covers full configuration space (lossless round-trip)
+- Epistemic health monitoring generalizes across scales (pluggable distance)
+- Rich context LLM proposer: 3x improvement over compressed (0.48 vs 0.15)
+- Config-space evolution: LLM proposer matches but doesn't dominate tournament mutations
+
 ## v0.25.1
 
 Focus:

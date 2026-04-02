@@ -55,5 +55,8 @@ The lower-level layer models modules, ports, wires, and topology explicitly so t
 - `v0.21` added pattern repository, watcher component, adaptive assembly, and experience pool — the adaptive structure layer
 - `v0.22` added cognitive mode annotations (System A/B), sleep consolidation, social learning, and curiosity — the cognitive architecture layer
 - `v0.23` added developmental staging with critical periods and capability gating — the developmental layer; release integration with memory adapters and cross-subsystem tests completed the roadmap
+- `v0.24` added convergence adapters (Swarms, DeerFlow, AnimaWorks, Ralph, A-Evolve, Scion), TLA+ formal verification, co-design composition — the convergence layer (C1–C4)
+- `v0.25` added production compilers, evaluation harness (20 tasks, 7 configs), prompt optimization protocols, live LLM evaluation — phases C5–C7
+- `v0.26` added meta-evolution (C8 Phase A): evolves organism configurations using biological primitives at the meta-level, with dual stall detection and LLM proposer
 
 The current center of gravity is pattern-first workflows with auditable state.

@@ -332,6 +332,75 @@ class TestProposers:
         assert "<|assistant|>" not in prompt
         assert "produced_output=" in prompt  # structured metadata present
 
+    def test_llm_fallback_on_bad_response(self, tmp_path):
+        """LLM parse failure returns llm_fallback with exception details."""
+        from operon_ai.convergence.meta_proposers import LLMProposer
+        from operon_ai.convergence.meta_store import EvolutionStore
+        from operon_ai.providers.base import LLMResponse
+        from datetime import datetime
+
+        store = EvolutionStore(root=tmp_path / "fb_test")
+        cc = _make_candidate("c_fb")
+        genome = candidate_to_genome(cc)
+        store.save_candidate(cc, genome)
+        store.append_assessment(AssessmentRecord(
+            "c_fb", 0, "t1", 0.5, 100, 500.0, True, "seed",
+        ))
+
+        class _BadProv:
+            model = "test"
+            def complete(self, prompt, config=None):
+                return LLMResponse(
+                    content="not valid json at all",
+                    model="test", tokens_used=10, latency_ms=50.0,
+                    timestamp=datetime.now(),
+                )
+
+        proposer = LLMProposer(provider=_BadProv(), store=store)
+        result = proposer.propose([cc], {"c_fb": [0.5]}, iteration=1)
+        assert result.proposer == "llm_fallback"
+        assert "ValueError" in result.reason
+
+    def test_gemini_gets_higher_proposer_tokens(self, tmp_path):
+        """Gemini provider gets 4096 max_tokens, others get 2000."""
+        from operon_ai.convergence.meta_proposers import LLMProposer
+        from operon_ai.convergence.meta_store import EvolutionStore
+        from operon_ai.providers.base import LLMResponse
+        from unittest.mock import patch
+        from datetime import datetime
+
+        store = EvolutionStore(root=tmp_path / "tok_test")
+        cc = _make_candidate("c_tok")
+        genome = candidate_to_genome(cc)
+        store.save_candidate(cc, genome)
+        store.append_assessment(AssessmentRecord(
+            "c_tok", 0, "t1", 0.5, 100, 500.0, True, "seed",
+        ))
+
+        captured = {}
+
+        class _CapProv:
+            model = "gemini-2.5-flash"
+            def complete(self, prompt, config=None):
+                captured["max_tokens"] = config.max_tokens
+                return LLMResponse(
+                    content='{"stage_configs":[],"reason":"test"}',
+                    model="test", tokens_used=10, latency_ms=50.0,
+                    timestamp=datetime.now(),
+                )
+
+        # Gemini model name should get 4096
+        proposer = LLMProposer(provider=_CapProv(), store=store)
+        proposer.propose([cc], {"c_tok": [0.5]}, iteration=1)
+        assert captured["max_tokens"] == 4096
+
+        # Non-Gemini should get 2000
+        class _NonGeminiProv(_CapProv):
+            model = "gpt-4o-mini"
+        proposer2 = LLMProposer(provider=_NonGeminiProv(), store=store)
+        proposer2.propose([cc], {"c_tok": [0.5]}, iteration=1)
+        assert captured["max_tokens"] == 2000
+
     def test_extract_json_with_trailing_braces(self):
         from operon_ai.convergence.meta_proposers import _extract_json
         text = 'Here: {"score": 0.8} and also {invalid'
@@ -812,6 +881,7 @@ class TestEvolutionLoop:
         assert any(d["stage"] == "_error" for d in lines)
         error_line = next(d for d in lines if d["stage"] == "_error")
         assert "bad config" in error_line["error"]
+        assert "run_step" in error_line, "Error trace must include run_step for proposer scoping"
 
     def test_judge_import_fallback_whitelisted(self, tmp_path):
         """Missing eval modules return neutral 0.5; other missing modules raise."""

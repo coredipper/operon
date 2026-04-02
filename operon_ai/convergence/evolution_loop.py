@@ -330,7 +330,9 @@ class EvolutionLoop:
                     "tokens": sr.tokens_used,
                     "latency_ms": sr.latency_ms,
                     "action_type": sr.action_type,
-                    "output_preview": str(sr.output)[:200] if sr.output else "",
+                    "produced_output": sr.output is not None,
+                    "output_preview": "" if sr.output is None else str(sr.output)[:200],
+                    "run_step": self._step_counter,
                 })
 
             return {
@@ -343,6 +345,7 @@ class EvolutionLoop:
             self._store.append_trace(config.candidate_id, "_error", {
                 "error": f"{type(exc).__name__}: {exc}",
                 "latency_ms": elapsed_ms,
+                "run_step": self._step_counter,
             })
             return {"score": 0.0, "tokens": 0, "latency_ms": elapsed_ms}
 

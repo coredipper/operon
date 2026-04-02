@@ -1,6 +1,6 @@
 # Operon Examples
 
-This directory contains 107 runnable numbered examples demonstrating the
+This directory contains 108 runnable numbered examples demonstrating the
 `operon_ai` library, progressing from basic concepts to complete
 LLM-powered cell simulations.
 
@@ -103,6 +103,8 @@ reconstructing past belief states:
   WorkflowGenerator and HeuristicGenerator with PatternLibrary registration
 - [`107_live_evaluation.py`](107_live_evaluation.py) —
   live evaluation with real LLM providers (Gemini API, Claude CLI, Codex CLI)
+- [`108_meta_evolution.py`](108_meta_evolution.py) —
+  meta-evolution of organism configurations with optional LLM proposer
 
 ## Import Style Guide
 

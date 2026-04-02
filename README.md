@@ -191,7 +191,7 @@ swarms_config = organism_to_swarms(organism)
 scion_config = organism_to_scion(organism, runtime="docker")
 ```
 
-See [examples 86–106](examples/) and the [Convergence docs](https://banu.be/operon/convergence/).
+See [examples 86–108](examples/) and the [Convergence docs](https://banu.be/operon/convergence/).
 
 ## Learn More
 
@@ -211,7 +211,7 @@ Public docs now live at [banu.be/operon](https://banu.be/operon/). The tracked s
 
 Direct links:
 
-- [Examples index](https://github.com/coredipper/operon/blob/main/examples/README.md) (107 runnable examples)
+- [Examples index](https://github.com/coredipper/operon/blob/main/examples/README.md) (108 runnable examples)
 - [Wiring diagrams](https://github.com/coredipper/operon/blob/main/examples/wiring_diagrams.md) (63 architecture diagrams)
 - [Main whitepaper](https://github.com/coredipper/operon/blob/main/article/main.pdf)
 - [Epistemic topology paper](https://github.com/coredipper/operon/blob/main/article/paper1/main.pdf)

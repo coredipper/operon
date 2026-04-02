@@ -273,21 +273,24 @@ class LLMProposer:
                     for s in cc.stage_configs
                 ],
             }, indent=2)
-            # Trace: take the last run's entries (most recent assessment)
+            # Trace: isolate the latest run by run_step marker
             all_trace = self._store.load_trace(cc.candidate_id)
-            # Last run = entries after the last _error or from the tail
-            trace = all_trace[-6:] if all_trace else []
+            if all_trace:
+                latest_step = max(t.get("run_step", 0) for t in all_trace)
+                trace = [t for t in all_trace if t.get("run_step") == latest_step]
+                if not trace:
+                    trace = all_trace[-6:]
+            else:
+                trace = []
             trace_lines = []
             for t in trace:
                 if t.get("stage") == "_error":
                     trace_lines.append(f"  ERROR: {t.get('error', '?')}")
                 else:
-                    # Only structured metadata — no raw output text to
-                    # prevent semantic prompt injection from prior stages.
-                    has_output = bool(t.get("output_preview", "").strip())
+                    produced = t.get("produced_output", bool(t.get("output_preview", "").strip()))
                     trace_lines.append(
                         f"  {t.get('stage','?')}: tokens={t.get('tokens',0)}"
-                        f" produced_output={has_output}"
+                        f" produced_output={produced}"
                     )
             trace_str = "\n".join(trace_lines) if trace_lines else "  (no trace)"
 
@@ -315,9 +318,17 @@ class LLMProposer:
             )
             final_prompt = prompt + "\n/no_think" if is_local else prompt
 
+            # Gemini needs more tokens (internal reasoning consumes budget)
+            from ..providers.gemini_provider import GeminiProvider
+            model_name = getattr(self._provider, "model", "") or ""
+            is_gemini = isinstance(self._provider, GeminiProvider) or (
+                isinstance(model_name, str) and model_name.startswith("gemini-")
+            )
+            max_tok = 4096 if is_gemini else 2000
+
             resp = self._provider.complete(
                 final_prompt,
-                config=ProviderConfig(temperature=0.7, max_tokens=2000),
+                config=ProviderConfig(temperature=0.7, max_tokens=max_tok),
             )
             data = _extract_json(resp.content)
             stage_configs = tuple(
@@ -333,6 +344,17 @@ class LLMProposer:
                 proposer="llm_explore",
                 reason=data.get("reason", "LLM-proposed"),
             )
-        except Exception:
-            # Fallback to programmatic mutation on any parse failure
-            return self._fallback.propose(population, scores, iteration)
+        except Exception as exc:
+            # Fallback to programmatic mutation — mark as llm_fallback
+            # so we can distinguish "LLM didn't trigger" from "LLM failed"
+            result = self._fallback.propose(population, scores, iteration)
+            return CandidateConfig(
+                candidate_id=result.candidate_id,
+                parent_id=result.parent_id,
+                iteration=result.iteration,
+                stage_configs=result.stage_configs,
+                intervention_policy=result.intervention_policy,
+                topology=result.topology,
+                proposer="llm_fallback",
+                reason=f"{type(exc).__name__}: {exc}; fell back to: {result.reason}",
+            )
