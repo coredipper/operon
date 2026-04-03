@@ -144,21 +144,21 @@ via \texttt{ThreadPoolExecutor}).
 \centering
 \begin{tabular}{lcc}
 \toprule
-\textbf{Proposer} & \textbf{Mean Score} & \textbf{N} \\
+\textbf{Path} & \textbf{Mean Score} & \textbf{N} \\
 \midrule
-Tournament & 0.44 & 9 \\
-LLM (successful parse) & 0.49 & 24 \\
-LLM (parse failed, tournament fallback) & 0.41 & 7 \\
+Tournament mutation & 0.44 & 9 \\
+LLM proposal (parsed) & 0.49 & 24 \\
+LLM proposal (fallback to tournament) & 0.41 & 7 \\
 \midrule
 \emph{Overall LLM path} & \emph{0.47} & \emph{31} \\
 \bottomrule
 \end{tabular}
-\caption{Phase~A definitive run: config-only evolution with rich
-filesystem context (4 tasks, 10 iterations, 40 assessments). Tournament
-runs first (9 steps before stall threshold), then the LLM proposer
-dominates. In a separate earlier run with compressed context (index
-entries only), the LLM scored $0.15$ (n=2)---a $3\times$ degradation
-from removing filesystem history.}
+\caption{Phase~A: config-only evolution with rich filesystem context
+(4 tasks, 10 iterations, 40 assessments). Tournament runs first (9
+steps before stall threshold), then the LLM proposer dominates. An
+earlier exploratory run with compressed context (index entries only)
+yielded LLM scores of $0.15$ (n=2), suggesting rich context is
+important, though the small sample precludes strong claims.}
 \end{table}
 
 \subsection{Phase~B: Topology Search}
