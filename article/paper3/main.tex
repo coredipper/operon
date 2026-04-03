@@ -1,0 +1,241 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+
+\title{Do Biological Abstractions Generalize to Meta-Level AI Systems Engineering?\\
+\large Evidence from Evolutionary Configuration Search in Operon}
+
+\author{Bogdan Banu}
+
+\date{April 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We test whether biological abstractions designed for running multi-agent
+organisms also generalize to \emph{evolving} their configurations.
+Using Operon's biomimetic framework, we implement an evolution loop that
+maps candidate configurations to Genome objects, detects stagnation via
+an extended EpiplexityMonitor, and compares tournament mutation against
+LLM-backed proposal with rich filesystem context.
+
+Our findings are mixed: biological abstractions generalize cleanly as
+\textbf{code structure} (lossless Genome round-trip in 5~lines,
+scale-invariant epistemic health monitoring) but \textbf{not} as
+optimization algorithms (tournament mutation matches or outperforms LLM
+reasoning across config-space and topology-space search). Rich context
+improves the LLM proposer $3\times$ over compressed history, consistent
+with the Meta-Harness insight, but does not achieve dominance over blind
+mutation. We relate our architecture to the categorical framework of
+de~los~Riscos et~al.\ and argue that the structural guarantee features
+(immune systems, developmental gating, epistemic monitoring) remain the
+core value proposition of biology-inspired agent engineering.
+\end{abstract}
+
+\section{Introduction}
+
+Biology-inspired abstractions have been proposed for structuring AI agent
+systems~\cite{banu2026operon}. Operon implements genes, genomes,
+epiplexity monitoring, immune systems, and developmental gating as
+engineering primitives for multi-agent organisms. Phases C1--C7 validated
+these abstractions at the organism level: adapters bridge six external
+frameworks, four TLA+ specifications verify safety invariants, and
+compilers translate organisms across deployment targets.
+
+Phase~C8 asks a different question: do these abstractions generalize to
+the \emph{meta-level}---evolving organisms, not just running them? This
+is the natural extension of the biological metaphor: if organisms have
+genomes, can we evolve those genomes to discover better configurations?
+
+We test this by implementing a meta-harness that:
+\begin{enumerate}
+\item Maps \texttt{CandidateConfig} objects to \texttt{Genome} via the
+    existing gene abstraction
+\item Uses \texttt{EpiplexityMonitor} with a pluggable
+    \texttt{DistanceProvider} for stall detection
+\item Wraps each evolution step as a Zardini \texttt{DesignProblem}
+\item Compares tournament mutation against an LLM proposer with
+    filesystem-backed context (following the Meta-Harness
+    insight~\cite{lee2026metaharness})
+\end{enumerate}
+
+\section{Related Work}
+
+Ao et~al.~\cite{ao2026delegation} prove that without exogenous signals,
+delegated multi-agent networks are dominated by centralized baselines.
+Lee et~al.~\cite{lee2026metaharness} show that giving proposers
+filesystem access to all prior candidates (${\sim}10$~MTok/iteration)
+dramatically outperforms compressed-feedback optimizers. de~los~Riscos
+et~al.~\cite{delosriscos2026categorical} provide a category-theoretic
+framework (\textsc{ArchAgents}) where architectures are objects,
+translations are morphisms, and agents are monoidal functors---mapping
+tightly to Operon's organism/compiler/adapter ecosystem.
+
+\section{Method}
+
+\subsection{Genome Mapping}
+
+Each \texttt{CandidateConfig} (stage modes, models, thresholds) is
+flattened into \texttt{Gene} objects with \texttt{GeneType.STRUCTURAL}
+for mode/model and \texttt{GeneType.REGULATORY} for visibility flags.
+The round-trip \texttt{candidate\_to\_genome} $\rightarrow$
+\texttt{genome\_to\_candidate} is lossless---5~lines of flattening
+logic, no type coercion. This is the strongest evidence that the gene
+abstraction generalizes beyond its original per-agent configuration
+use case.
+
+\subsection{Epistemic Health Monitoring}
+
+The existing \texttt{EpiplexityMonitor} (Bayesian surprise via embedding
+cosine similarity) is extended with a \texttt{DistanceProvider} protocol.
+For configuration space, \texttt{ConfigHammingDistance} measures
+field-level mismatches. The core formula ($\hat{E}_t = \alpha \cdot
+\text{novelty} + (1-\alpha) \cdot \text{perplexity}$) is unchanged---only
+the novelty source is pluggable. The monitor triggers
+\textsc{Stagnant}/\textsc{Exploring} transitions identically to the
+embedding path, confirming scale-invariance.
+
+\subsection{Dual Stall Detection}
+
+Two independent signals trigger the LLM proposer:
+\begin{enumerate}
+\item \textbf{Config novelty stall} (EpiplexityMonitor): consecutive
+    similar configurations
+\item \textbf{Score plateau}: best score not improved in
+    $\text{threshold} \times |\text{tasks}|$ steps
+\end{enumerate}
+The second signal was necessary because tournament mutations always
+produce novel configs (high novelty) even when scores stagnate---the
+epiplexity-only check never fired.
+
+\subsection{Proposer Strategies}
+
+\textbf{Tournament mutation} (70\%): select top-$k$, mutate one random
+field via \texttt{Genome.mutate()}. The mutation handles discrete values
+naturally---the gap in \texttt{Genome.replicate()} (numeric jitter only)
+does not affect explicit targeted mutations.
+
+\textbf{LLM proposer} (30\%, on stall): reads full candidate configs +
+execution trace metadata from filesystem store. Gemini-2.5-flash with
+4096~token budget (truncation at 2000 was the hidden bug that masked all
+early results).
+
+\subsection{Topology Mutations (Phase~B)}
+
+Extended \texttt{CandidateConfig} with \texttt{edges} (directed wiring
+pairs) and three mutation operators: \texttt{add\_stage},
+\texttt{remove\_stage}, \texttt{rewire}. DAG execution via
+\texttt{WiringDiagram} + \texttt{ResourceAwareExecutor} (parallel groups
+via \texttt{ThreadPoolExecutor}).
+
+\section{Results}
+
+\subsection{Phase~A: Configuration Search}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Proposer} & \textbf{Mean Score} & \textbf{N} \\
+\midrule
+Tournament (compressed context) & 0.32 & 38 \\
+LLM (compressed context) & 0.15 & 2 \\
+Tournament (rich context) & 0.44 & 9 \\
+LLM (rich context) & 0.49 & 24 \\
+\bottomrule
+\end{tabular}
+\caption{Phase~A: config-only evolution. Rich context improves LLM
+$3\times$ but only marginally exceeds tournament.}
+\end{table}
+
+\subsection{Phase~B: Topology Search}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Proposer} & \textbf{Mean Score} & \textbf{N} \\
+\midrule
+Tournament (topology mutations) & 0.60 & 9 \\
+LLM (topology mutations) & 0.36 & 30 \\
+\bottomrule
+\end{tabular}
+\caption{Phase~B: topology + config evolution. Tournament \emph{improves}
+with topology; LLM \emph{degrades}. Blind mutation handles structural
+changes more productively than reasoned proposals.}
+\end{table}
+
+\subsection{Abstraction Quality}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Abstraction} & \textbf{Generalizes?} & \textbf{Evidence} \\
+\midrule
+Genome $\rightarrow$ CandidateConfig & Yes & Lossless round-trip, 5 lines \\
+EpiplexityMonitor + DistanceProvider & Yes & Scale-invariant transitions \\
+DesignProblem wrapping & Yes & Natural composition \\
+\texttt{feedback\_fixed\_point} & No & Evolution $\neq$ convergent iteration \\
+TrustRegistry & No & Overkill for 2 proposers \\
+\bottomrule
+\end{tabular}
+\caption{Biological abstraction generalization results.}
+\end{table}
+
+\section{Discussion}
+
+\subsection{Code Structure vs.\ Optimization}
+
+The central finding: biological abstractions generalize as \emph{code
+structure} but not as \emph{optimization algorithms}. The Genome mapping,
+EpiplexityMonitor extension, and DesignProblem wrapping produce clean,
+composable code. But the evolutionary search itself---mutation, selection,
+population management---does not outperform random tournament mutation.
+
+This is consistent with Ao et~al.: without genuinely new exogenous
+signals, the multi-agent (LLM proposer) approach cannot beat the
+single-agent (tournament) baseline. Rich context helps ($3\times$), but
+the search space (config knobs) is too small for LLM reasoning to
+provide structural advantage over random exploration.
+
+\subsection{Categorical Interpretation}
+
+In the de~los~Riscos framework, Phase~A explores agents within a fixed
+architecture (knowledge-layer changes: $\text{Know}_A$), while Phase~B
+explores architecture morphisms (moving between objects in
+\textsc{ArchAgents}). Our finding that topology mutations improve
+tournament but degrade LLM suggests that the categorical structure
+constrains useful mutations---random morphisms that happen to preserve
+feasibility are more productive than reasoned morphisms that optimize
+inert structure.
+
+\subsection{Implications}
+
+The structural guarantee features---immune systems, epiplexity monitoring,
+developmental gating---remain the core value proposition. C8 confirms
+they should be the focus of empirical validation, not meta-optimization.
+The evolution loop infrastructure is useful as an evaluation tool (moved
+to \texttt{eval/meta/}) but does not belong in the structural guarantee
+library.
+
+\section{Conclusion}
+
+Biological abstractions in AI systems engineering generalize to the
+meta-level as organizing principles, not as optimization advantages. The
+gene abstraction covers configuration space. Epistemic health monitoring
+is scale-invariant. Co-design composition works at the meta-level. But
+evolution does not beat random mutation for the search spaces we tested.
+The right direction for biology-inspired AI engineering is measuring
+structural safety guarantees, not optimizing search.
+
+\bibliographystyle{plainnat}
+\bibliography{../references}
+
+\end{document}

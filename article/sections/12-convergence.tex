@@ -73,8 +73,14 @@ An Ao~et~al.~\cite{ao2026delegation} test of exogenous signals shows that
 rich filesystem context (configs $+$ trace metadata) yields a $3\times$
 improvement over compressed history for the LLM proposer ($0.48$ vs
 $0.15$), but config-space evolution does not strongly benefit from LLM
-reasoning over blind tournament mutation ($0.48$ vs $0.44$). Topology
-evolution (Phase~B) is where structural reasoning should provide a genuine
-advantage. de~los~Riscos~et~al.~\cite{delosriscos2026categorical} provide a
-category-theoretic framework (\textsc{ArchAgents}) that maps tightly to
-Operon's architecture and may formalize the Phase~B search space.
+reasoning over blind tournament mutation ($0.48$ vs $0.44$). Phase~B
+(topology mutations with DAG execution) improved tournament ($0.60$) but
+degraded the LLM proposer ($0.36$), confirming that biological abstractions
+generalize as \emph{code structure} but not as \emph{optimization
+algorithms}. The structural guarantee features---immune systems, epiplexity,
+developmental gating---remain the core value proposition.
+de~los~Riscos~et~al.~\cite{delosriscos2026categorical} provide a
+category-theoretic framework (\textsc{ArchAgents}) that formalizes
+Operon's architecture: objects are organisms, morphisms are compilers,
+agents are configured instances. A detailed treatment of the C8 findings
+appears in the companion meta-evolution paper.

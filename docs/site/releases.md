@@ -29,6 +29,10 @@ Findings:
 - Epistemic health monitoring generalizes across scales (pluggable distance)
 - Rich context LLM proposer: 3x improvement over compressed (0.48 vs 0.15)
 - Config-space evolution: LLM proposer matches but doesn't dominate tournament mutations
+- Phase B topology mutations: tournament improved (0.60), LLM degraded (0.36)
+- **Conclusion**: biological abstractions generalize as code structure, not as optimization algorithms
+
+Note: C8 meta-optimization code moved from `operon_ai/convergence/` to `eval/meta/` — experimental evaluation code, not part of the library. `DistanceProvider` remains in `operon_ai/health/`.
 
 ## v0.25.1
 
