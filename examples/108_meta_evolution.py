@@ -32,12 +32,8 @@ if os.path.exists(_env_path):
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from operon_ai.convergence import (
-    CandidateConfig,
-    EvolutionConfig,
-    EvolutionLoop,
-    MetaStageConfig as StageConfig,
-)
+from eval.meta.evolution_loop import EvolutionConfig, EvolutionLoop
+from eval.meta.meta_types import CandidateConfig, StageConfig
 from eval.convergence.live_evaluator import LiveEvaluator
 from eval.convergence.tasks import get_benchmark_tasks
 

@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Protocol, runtime_checkable
 
-from ..state.genome import Gene, GeneType, Genome
+from operon_ai.state.genome import Gene, GeneType, Genome
 
 
 # ---------------------------------------------------------------------------
@@ -245,5 +245,19 @@ class ConfigHammingDistance:
             total += 1
             if a.intervention_policy.get(key) != b.intervention_policy.get(key):
                 mismatches += 1
+
+        # Compare topology and edges (Phase B)
+        if a.topology != b.topology:
+            total += 1
+            mismatches += 1
+        else:
+            total += 1
+
+        a_edges = set(a.edges)
+        b_edges = set(b.edges)
+        all_edges = a_edges | b_edges
+        if all_edges:
+            total += len(all_edges)
+            mismatches += len(a_edges ^ b_edges)  # symmetric difference
 
         return mismatches / total if total > 0 else 0.0

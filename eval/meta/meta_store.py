@@ -20,7 +20,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-from ..state.genome import Genome
+from operon_ai.state.genome import Genome
 from .meta_types import AssessmentRecord, CandidateConfig, genome_to_candidate
 
 
@@ -137,7 +137,7 @@ def _genome_from_export(data: dict[str, Any]) -> Genome:
     Genome.from_dict() only creates bare Gene objects. We use the full
     export format to preserve GeneType and expression levels.
     """
-    from ..state.genome import ExpressionLevel, ExpressionState, Gene, GeneType
+    from operon_ai.state.genome import ExpressionLevel, ExpressionState, Gene, GeneType
 
     genes = []
     for g in data.get("genes", []):

@@ -46,3 +46,4 @@ docs/*
 !docs/site/**
 .beadhub
 .aw/
+.operon/

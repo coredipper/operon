@@ -16,12 +16,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from ..health.epiplexity import EpiplexityMonitor
-from ..organelles.nucleus import Nucleus
-from ..patterns.organism import skill_organism
-from ..patterns.types import SkillStage
+from operon_ai.health.epiplexity import EpiplexityMonitor
+from operon_ai.organelles.nucleus import Nucleus
+from operon_ai.patterns.organism import skill_organism
+from operon_ai.patterns.types import SkillStage
 
-from .codesign import DesignProblem
+from operon_ai.convergence.codesign import DesignProblem
 from .meta_proposers import LLMProposer, Proposer, TournamentMutator
 from .meta_store import EvolutionStore
 from .meta_types import (
@@ -31,6 +31,19 @@ from .meta_types import (
     StageConfig,
     candidate_to_genome,
 )
+
+
+class _DAGRunner:
+    """Wrapper around ResourceAwareExecutor with sink metadata."""
+
+    def __init__(self, executor, sinks, stage_names):
+        self.executor = executor
+        self.sinks = sinks
+        self.stage_names = stage_names
+        self.optimized = executor.optimized
+
+    def execute(self, **kwargs):
+        return self.executor.execute(**kwargs)
 
 
 @dataclass
@@ -117,10 +130,10 @@ class EvolutionLoop:
             self._store.save_candidate(cc, genome)
             self._scores[cc.candidate_id] = []
 
-        self._population = [cc for cc in initial_configs if cc.stage_configs]
+        self._population = [cc for cc in initial_configs if self._validate_topology(cc)]
         if not self._population:
             raise ValueError(
-                "At least one seed must have non-empty stage_configs"
+                "At least one seed must have valid topology"
             )
 
         self._store.save_meta({
@@ -333,12 +346,65 @@ class EvolutionLoop:
 
         start = time.time()
         try:
-            organism = self._build_organism(config, task)
-            run_result = organism.run(prompt)
-            elapsed_ms = (time.time() - start) * 1000
+            executor_or_organism = self._build_organism(config, task)
 
-            total_tokens = sum(sr.tokens_used for sr in run_result.stage_results)
-            final_output = str(run_result.final_output or "")
+            # DAG path: _DAGRunner wrapping ResourceAwareExecutor
+            if isinstance(executor_or_organism, _DAGRunner):
+                from operon_ai.core.wiring_runtime import TypedValue
+                from operon_ai.core.types import DataType, IntegrityLabel
+                dag = executor_or_organism
+                # Feed task prompt to ALL stages via "task" input port
+                external = {
+                    name: {"task": TypedValue(DataType.TEXT, IntegrityLabel.UNTRUSTED, prompt)}
+                    for name in dag.stage_names
+                }
+                report = dag.execute(external_inputs=external)
+                elapsed_ms = (time.time() - start) * 1000
+
+                # Extract final output from sink stages (deterministic)
+                final_parts = []
+                total_tokens = 0
+                for sink in dag.sinks:
+                    if sink in report.modules:
+                        out = report.modules[sink].outputs.get("result")
+                        if out and out.value:
+                            final_parts.append(str(out.value))
+                final_output = "\n".join(final_parts) if final_parts else ""
+
+                # Record trace for each module
+                for mod_name in report.execution_order:
+                    mod = report.modules.get(mod_name)
+                    if mod:
+                        out = mod.outputs.get("result")
+                        self._store.append_trace(config.candidate_id, mod_name, {
+                            "role": mod_name.rsplit("_", 1)[0],
+                            "model": "dag",
+                            "tokens": 0,  # not tracked per-module in DAG
+                            "latency_ms": 0,
+                            "action_type": "DAG_EXECUTE",
+                            "produced_output": out is not None and out.value,
+                            "output_preview": str(out.value)[:200] if out and out.value else "",
+                            "run_step": self._step_counter,
+                        })
+
+            # Sequential path: SkillOrganism
+            else:
+                run_result = executor_or_organism.run(prompt)
+                elapsed_ms = (time.time() - start) * 1000
+                total_tokens = sum(sr.tokens_used for sr in run_result.stage_results)
+                final_output = str(run_result.final_output or "")
+
+                for sr in run_result.stage_results:
+                    self._store.append_trace(config.candidate_id, sr.stage_name, {
+                        "role": sr.role,
+                        "model": sr.model,
+                        "tokens": sr.tokens_used,
+                        "latency_ms": sr.latency_ms,
+                        "action_type": sr.action_type,
+                        "produced_output": sr.output is not None,
+                        "output_preview": "" if sr.output is None else str(sr.output)[:200],
+                        "run_step": self._step_counter,
+                    })
 
             # Judge quality (lazy import — eval is not in the wheel)
             provider = self._get_judge_provider()
@@ -354,20 +420,7 @@ class EvolutionLoop:
                 judge_result = _judge_quality(str(prompt), final_output, provider)
                 score = judge_result[0]
             else:
-                score = 0.5  # no judge available — neutral score
-
-            # Record trace
-            for sr in run_result.stage_results:
-                self._store.append_trace(config.candidate_id, sr.stage_name, {
-                    "role": sr.role,
-                    "model": sr.model,
-                    "tokens": sr.tokens_used,
-                    "latency_ms": sr.latency_ms,
-                    "action_type": sr.action_type,
-                    "produced_output": sr.output is not None,
-                    "output_preview": "" if sr.output is None else str(sr.output)[:200],
-                    "run_step": self._step_counter,
-                })
+                score = 0.5
 
             return {
                 "score": score,
@@ -391,15 +444,20 @@ class EvolutionLoop:
         - Must have at least one stage
         - All edge endpoints must reference existing stage names
         - No self-loops
+        - No backward edges (src must appear before dst in stage order)
         """
         if not config.stage_configs:
             return False
-        stage_names = {f"{sc.role}_{i}" for i, sc in enumerate(config.stage_configs)}
+        stage_names = [f"{sc.role}_{i}" for i, sc in enumerate(config.stage_configs)]
+        name_set = set(stage_names)
+        name_to_idx = {n: i for i, n in enumerate(stage_names)}
         for src, dst in config.edges:
-            if src not in stage_names or dst not in stage_names:
+            if src not in name_set or dst not in name_set:
                 return False
             if src == dst:
                 return False
+            if name_to_idx[src] >= name_to_idx[dst]:
+                return False  # backward edge — can't work with sequential execution
         return True
 
     @staticmethod
@@ -482,35 +540,121 @@ class EvolutionLoop:
         return tuple(adapted), name_map
 
     def _build_organism(self, config: CandidateConfig, task: Any) -> Any:
-        """Convert CandidateConfig into a runnable SkillOrganism.
+        """Convert CandidateConfig into a runnable execution object.
 
-        Assumes config.stage_configs is already adapted to the task's
-        roles (done in step() before calling _assess_candidate).
+        Without edges: returns a sequential SkillOrganism (Phase A behavior).
+        With edges: returns a DAG executor using WiringDiagram +
+        ResourceAwareExecutor for parallel group execution.
         """
-        stages = []
-        for i, sc in enumerate(config.stage_configs):
-            stages.append(SkillStage(
-                name=f"{sc.role}_{i}",
-                role=sc.role,
-                instructions=(
-                    f"You are a {sc.role}. {task.description}\n"
-                    f"Process the input and produce output relevant to your role."
-                ),
-                mode=sc.mode,
-                include_stage_outputs=sc.include_stage_outputs,
-                include_shared_state=sc.include_shared_state,
-            ))
-
-        # Resolve providers for fast/deep nuclei
         fast_provider, deep_provider = self._resolve_providers(config)
         fast_nucleus = Nucleus(provider=fast_provider)
         deep_nucleus = Nucleus(provider=deep_provider)
 
-        return skill_organism(
-            stages=stages,
-            fast_nucleus=fast_nucleus,
-            deep_nucleus=deep_nucleus,
-        )
+        if not config.edges:
+            # Sequential path — Phase A behavior
+            stages = []
+            for i, sc in enumerate(config.stage_configs):
+                stages.append(SkillStage(
+                    name=f"{sc.role}_{i}",
+                    role=sc.role,
+                    instructions=(
+                        f"You are a {sc.role}. {task.description}\n"
+                        f"Process the input and produce output relevant to your role."
+                    ),
+                    mode=sc.mode,
+                    include_stage_outputs=sc.include_stage_outputs,
+                    include_shared_state=sc.include_shared_state,
+                ))
+            return skill_organism(
+                stages=stages,
+                fast_nucleus=fast_nucleus,
+                deep_nucleus=deep_nucleus,
+            )
+
+        # DAG path — build WiringDiagram + ResourceAwareExecutor
+        from operon_ai.core.types import DataType, IntegrityLabel
+        from operon_ai.core.wagent import ModuleSpec, PortType, WiringDiagram
+        from operon_ai.core.wiring_runtime import ResourceAwareExecutor
+        from operon_ai.core.optimizer import optimize
+        from operon_ai.state.metabolism import ATP_Store
+
+        text_port = PortType(data_type=DataType.TEXT, integrity=IntegrityLabel.UNTRUSTED)
+
+        # Compute per-stage incoming edges for distinct input ports
+        incoming: dict[str, list[str]] = {}  # dst -> [src, ...]
+        outgoing: dict[str, list[str]] = {}  # src -> [dst, ...]
+        for src, dst in config.edges:
+            incoming.setdefault(dst, []).append(src)
+            outgoing.setdefault(src, []).append(dst)
+
+        # Identify sink stages (no outgoing edges) for final output
+        stage_names = [f"{sc.role}_{i}" for i, sc in enumerate(config.stage_configs)]
+        sinks = [n for n in stage_names if n not in outgoing]
+        if not sinks:
+            sinks = [stage_names[-1]]  # fallback to last
+
+        diagram = WiringDiagram()
+        for i, sc in enumerate(config.stage_configs):
+            name = f"{sc.role}_{i}"
+            # Each stage gets: "task" port (global) + one port per predecessor
+            input_ports = {"task": text_port}
+            for pred in incoming.get(name, []):
+                input_ports[f"from_{pred}"] = text_port
+            diagram.add_module(ModuleSpec(
+                name=name,
+                inputs=input_ports,
+                outputs={"result": text_port},
+            ))
+        # Wire predecessor outputs to distinct input ports
+        for src, dst in config.edges:
+            diagram.connect(src, "result", dst, f"from_{src}")
+
+        optimized = optimize(diagram)
+        executor = ResourceAwareExecutor(optimized, atp_store=ATP_Store(budget=100000))
+
+        for i, sc in enumerate(config.stage_configs):
+            name = f"{sc.role}_{i}"
+            nucleus = deep_nucleus if sc.mode in ("fuzzy", "deep", "reasoning") else fast_nucleus
+            executor.register_module(name, self._make_dag_handler(sc, task, nucleus))
+
+        # Return a wrapper with sink info for _run_and_score
+        return _DAGRunner(executor, sinks, stage_names)
+
+    def _make_dag_handler(self, sc: StageConfig, task: Any, nucleus: Any):
+        """Create a ModuleHandler for a stage in DAG execution."""
+        from operon_ai.providers.base import ProviderConfig
+
+        def handler(inputs: dict) -> dict:
+            # Separate task input from predecessor inputs
+            task_val = ""
+            pred_parts = []
+            for port_name, typed_val in sorted(inputs.items()):
+                val = typed_val.value if hasattr(typed_val, "value") else typed_val
+                if port_name == "task" and val:
+                    task_val = str(val)
+                elif val:
+                    pred_parts.append(f"From {port_name}: {str(val)[:500]}")
+            pred_context = "\n".join(pred_parts) if pred_parts else ""
+
+            prompt = (
+                f"You are a {sc.role}. {task.description}\n"
+                f"Process the input and produce output relevant to your role."
+            )
+            if task_val and task_val != task.description:
+                prompt += f"\n\nTask:\n{task_val}"
+            if pred_context:
+                prompt += f"\n\nPredecessor outputs:\n{pred_context}"
+
+            try:
+                resp = nucleus.transcribe(
+                    prompt,
+                    config=ProviderConfig(temperature=0.7, max_tokens=1000),
+                )
+                return {"result": resp.content}
+            except Exception:
+                return {"result": ""}
+
+        return handler
 
     def _resolve_providers(self, config: CandidateConfig) -> tuple[Any, Any]:
         """Pick fast/deep providers based on stage model overrides or defaults.
@@ -531,19 +675,19 @@ class EvolutionLoop:
         # Fall back to evaluator's providers
         ev = self._evaluator
         if self._provider_name == "gemini":
-            from ..providers.gemini_provider import GeminiProvider
+            from operon_ai.providers.gemini_provider import GeminiProvider
             fast = GeminiProvider(model=fast_model or "gemini-2.5-flash")
             deep = GeminiProvider(model=deep_model or "gemini-2.5-pro")
         elif self._provider_name == "anthropic":
-            from ..providers.anthropic_provider import AnthropicProvider
+            from operon_ai.providers.anthropic_provider import AnthropicProvider
             fast = AnthropicProvider(model=fast_model or "claude-haiku-4-5-20251001")
             deep = AnthropicProvider(model=deep_model or "claude-sonnet-4-6-20260301")
         elif self._provider_name == "openai":
-            from ..providers.openai_provider import OpenAIProvider
+            from operon_ai.providers.openai_provider import OpenAIProvider
             fast = OpenAIProvider(model=fast_model or "gpt-5.4-mini")
             deep = OpenAIProvider(model=deep_model or "gpt-5.4")
         elif self._provider_name == "ollama":
-            from ..providers.openai_compatible_provider import OpenAICompatibleProvider
+            from operon_ai.providers.openai_compatible_provider import OpenAICompatibleProvider
             model = getattr(ev, "ollama", None)
             model_name = getattr(model, "model", "deepseek-r1:8b") if model else "deepseek-r1:8b"
             fast = OpenAICompatibleProvider(

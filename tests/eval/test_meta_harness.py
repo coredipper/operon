@@ -14,7 +14,7 @@ from typing import Any
 
 import pytest
 
-from operon_ai.convergence.meta_types import (
+from eval.meta.meta_types import (
     AssessmentRecord,
     CandidateConfig,
     ConfigHammingDistance,
@@ -22,14 +22,14 @@ from operon_ai.convergence.meta_types import (
     candidate_to_genome,
     genome_to_candidate,
 )
-from operon_ai.convergence.meta_store import EvolutionStore
-from operon_ai.convergence.meta_proposers import (
+from eval.meta.meta_store import EvolutionStore
+from eval.meta.meta_proposers import (
     LLMProposer,
     Proposer,
     TournamentMutator,
 )
-from operon_ai.convergence.meta_protocol import FilesystemOptimizer
-from operon_ai.convergence.evolution_loop import EvolutionConfig, EvolutionLoop
+from eval.meta.meta_protocol import FilesystemOptimizer
+from eval.meta.evolution_loop import EvolutionConfig, EvolutionLoop
 from operon_ai.health.epiplexity import (
     DistanceProvider,
     EpiplexityMonitor,
@@ -268,23 +268,23 @@ class TestProposers:
         assert isinstance(TournamentMutator(seed=42), Proposer)
 
     def test_extract_json_raw(self):
-        from operon_ai.convergence.meta_proposers import _extract_json
+        from eval.meta.meta_proposers import _extract_json
         assert _extract_json('{"score": 0.8}') == {"score": 0.8}
 
     def test_extract_json_fenced(self):
-        from operon_ai.convergence.meta_proposers import _extract_json
+        from eval.meta.meta_proposers import _extract_json
         text = 'Here is my suggestion:\n```json\n{"stage_configs": []}\n```'
         assert _extract_json(text) == {"stage_configs": []}
 
     def test_extract_json_prose_wrapped(self):
-        from operon_ai.convergence.meta_proposers import _extract_json
+        from eval.meta.meta_proposers import _extract_json
         text = 'Based on the history, I recommend: {"stage_configs": [], "reason": "test"}'
         result = _extract_json(text)
         assert result["reason"] == "test"
 
     def test_localhost_detection(self):
         """_is_localhost distinguishes true local from remote URLs."""
-        from operon_ai.convergence.meta_proposers import _is_localhost
+        from eval.meta.meta_proposers import _is_localhost
         assert _is_localhost("http://localhost:8080/v1") is True
         assert _is_localhost("http://127.0.0.1:11434/v1") is True
         assert _is_localhost("https://api.example.com/localhost/v1") is False
@@ -293,8 +293,8 @@ class TestProposers:
 
     def test_proposer_prompt_excludes_raw_output(self, tmp_path):
         """LLMProposer prompt must not contain raw output_preview text."""
-        from operon_ai.convergence.meta_proposers import LLMProposer
-        from operon_ai.convergence.meta_store import EvolutionStore
+        from eval.meta.meta_proposers import LLMProposer
+        from eval.meta.meta_store import EvolutionStore
         from operon_ai.providers.base import LLMResponse
         from datetime import datetime
 
@@ -334,8 +334,8 @@ class TestProposers:
 
     def test_llm_fallback_on_bad_response(self, tmp_path):
         """LLM parse failure returns llm_fallback with exception details."""
-        from operon_ai.convergence.meta_proposers import LLMProposer
-        from operon_ai.convergence.meta_store import EvolutionStore
+        from eval.meta.meta_proposers import LLMProposer
+        from eval.meta.meta_store import EvolutionStore
         from operon_ai.providers.base import LLMResponse
         from datetime import datetime
 
@@ -363,8 +363,8 @@ class TestProposers:
 
     def test_gemini_gets_higher_proposer_tokens(self, tmp_path):
         """Gemini provider gets 4096 max_tokens, others get 2000."""
-        from operon_ai.convergence.meta_proposers import LLMProposer
-        from operon_ai.convergence.meta_store import EvolutionStore
+        from eval.meta.meta_proposers import LLMProposer
+        from eval.meta.meta_store import EvolutionStore
         from operon_ai.providers.base import LLMResponse
         from unittest.mock import patch
         from datetime import datetime
@@ -419,7 +419,7 @@ class TestProposers:
         assert captured["max_tokens"] == 2000
 
     def test_extract_json_with_trailing_braces(self):
-        from operon_ai.convergence.meta_proposers import _extract_json
+        from eval.meta.meta_proposers import _extract_json
         text = 'Here: {"score": 0.8} and also {invalid'
         assert _extract_json(text) == {"score": 0.8}
 
@@ -453,7 +453,7 @@ class TestProposers:
 
     def test_topology_add_stage_wires_to_tail(self):
         """add_stage connects new stage from previous tail."""
-        from operon_ai.convergence.meta_proposers import TournamentMutator as TM
+        from eval.meta.meta_proposers import TournamentMutator as TM
 
         cc = _make_candidate()  # 2 stages: researcher_0, reviewer_1
         # Call _topology_mutate directly with controlled rng
@@ -471,7 +471,7 @@ class TestProposers:
 
     def test_topology_remove_stage_renames_edges(self):
         """remove_stage rewrites surviving edges to new indices."""
-        from operon_ai.convergence.meta_proposers import TournamentMutator as TM
+        from eval.meta.meta_proposers import TournamentMutator as TM
 
         # 4 stages with a surviving edge that must be renamed
         stages = (
@@ -584,7 +584,7 @@ class TestEvolutionLoop:
 
     def test_config_stall_switches_proposer(self, tmp_path):
         """Config novelty stall (epiplexity) triggers LLM proposer."""
-        from operon_ai.convergence.meta_proposers import LLMProposer
+        from eval.meta.meta_proposers import LLMProposer
 
         class _FakeProv:
             model = "fake"
@@ -615,7 +615,7 @@ class TestEvolutionLoop:
 
     def test_score_plateau_switches_proposer(self, tmp_path):
         """Score plateau triggers LLM proposer even with varied configs."""
-        from operon_ai.convergence.meta_proposers import LLMProposer
+        from eval.meta.meta_proposers import LLMProposer
 
         class _FakeProv:
             model = "fake"
@@ -673,7 +673,7 @@ class TestEvolutionLoop:
 
     def test_score_plateau_multi_task_threshold(self, tmp_path):
         """Score plateau threshold scales by number of tasks."""
-        from operon_ai.convergence.meta_proposers import LLMProposer
+        from eval.meta.meta_proposers import LLMProposer
 
         class _FakeProv:
             model = "fake"
@@ -740,7 +740,7 @@ class TestEvolutionLoop:
 
     def test_duplicate_role_collapse_preserves_consistency(self, tmp_path):
         """Collapsing duplicate roles keeps config and edges from same occurrence."""
-        from operon_ai.convergence.evolution_loop import EvolutionLoop
+        from eval.meta.evolution_loop import EvolutionLoop
 
         # Two reviewers with different modes + edge between them
         stages = (
@@ -778,7 +778,7 @@ class TestEvolutionLoop:
 
     def test_adapt_stages_matches_task_roles(self, tmp_path):
         """Persisted candidate must have roles matching the task, not the seed."""
-        from operon_ai.convergence.evolution_loop import EvolutionLoop
+        from eval.meta.evolution_loop import EvolutionLoop
 
         # Seed has researcher+reviewer but task needs analyst+writer+checker
         seed_stages = (_make_stage("researcher"), _make_stage("reviewer", "fixed"))
@@ -791,7 +791,7 @@ class TestEvolutionLoop:
 
     def test_adapt_stages_preserves_style_on_match(self, tmp_path):
         """Matched roles inherit all settings including mode."""
-        from operon_ai.convergence.evolution_loop import EvolutionLoop
+        from eval.meta.evolution_loop import EvolutionLoop
 
         seed_stages = (
             StageConfig(role="researcher", mode="fuzzy", include_stage_outputs=False),
@@ -805,7 +805,7 @@ class TestEvolutionLoop:
 
     def test_adapt_stages_new_roles_default_fuzzy(self, tmp_path):
         """New roles (no direct match) default to fuzzy mode, not fallback's mode."""
-        from operon_ai.convergence.evolution_loop import EvolutionLoop
+        from eval.meta.evolution_loop import EvolutionLoop
 
         seed_stages = (
             StageConfig(role="researcher", mode="fixed"),
@@ -822,7 +822,7 @@ class TestEvolutionLoop:
 
     def test_adapt_stages_noop_when_roles_match(self, tmp_path):
         """When candidate roles already match task, stage_configs is returned unchanged."""
-        from operon_ai.convergence.evolution_loop import EvolutionLoop
+        from eval.meta.evolution_loop import EvolutionLoop
 
         stages = (_make_stage("researcher"),)
         task = _MockTaskDef(required_roles=("researcher",))
@@ -830,7 +830,7 @@ class TestEvolutionLoop:
 
     def test_adapt_stages_empty_stays_empty(self, tmp_path):
         """Empty stage_configs must stay empty (infeasible), not synthesize from task roles."""
-        from operon_ai.convergence.evolution_loop import EvolutionLoop
+        from eval.meta.evolution_loop import EvolutionLoop
 
         task = _MockTaskDef(required_roles=("analyst", "writer"))
         result = EvolutionLoop._adapt_stages((), task)
@@ -874,7 +874,7 @@ class TestEvolutionLoop:
         loop = self._make_loop(tmp_path)
         empty1 = CandidateConfig("e1", None, 0, (), {})
         empty2 = CandidateConfig("e2", None, 0, (), {})
-        with pytest.raises(ValueError, match="non-empty stage_configs"):
+        with pytest.raises(ValueError, match="valid topology"):
             loop.seed([empty1, empty2])
         # Seeds persisted for debugging/replay despite the error
         assert (tmp_path / "test_run" / "candidates" / "e1.json").exists()
@@ -945,7 +945,7 @@ class TestEvolutionLoop:
 
     def test_llm_proposer_wired_with_explicit_model(self, tmp_path):
         """EvolutionLoop receives LLM proposer when provider is explicitly given."""
-        from operon_ai.convergence.meta_proposers import LLMProposer
+        from eval.meta.meta_proposers import LLMProposer
 
         class _FakeProvider:
             model = "explicit-model"

@@ -116,19 +116,6 @@ from .swarms_adapter import (
     topology_to_template,
 )
 from .types import AdapterResult, ExternalTopology, RuntimeConfig
-# Meta-harness / FilesystemOptimizer (C8)
-from .meta_types import (
-    AssessmentRecord,
-    CandidateConfig,
-    ConfigHammingDistance,
-    StageConfig as MetaStageConfig,
-    candidate_to_genome,
-    genome_to_candidate,
-)
-from .meta_protocol import FilesystemOptimizer
-from .meta_proposers import LLMProposer, Proposer, TournamentMutator
-from .meta_store import EvolutionStore
-from .evolution_loop import EvolutionConfig, EvolutionLoop
 
 __all__ = [
     # Types
@@ -217,18 +204,4 @@ __all__ = [
     "ReasoningGenerator",
     "HeuristicGenerator",
     "generate_and_register",
-    # Meta-harness / FilesystemOptimizer (C8)
-    "CandidateConfig",
-    "MetaStageConfig",
-    "AssessmentRecord",
-    "ConfigHammingDistance",
-    "candidate_to_genome",
-    "genome_to_candidate",
-    "FilesystemOptimizer",
-    "Proposer",
-    "TournamentMutator",
-    "LLMProposer",
-    "EvolutionStore",
-    "EvolutionConfig",
-    "EvolutionLoop",
 ]

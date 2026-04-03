@@ -14,8 +14,8 @@ from __future__ import annotations
 import argparse
 import sys
 
-from operon_ai.convergence.evolution_loop import EvolutionConfig, EvolutionLoop
-from operon_ai.convergence.meta_types import CandidateConfig, StageConfig
+from eval.meta.evolution_loop import EvolutionConfig, EvolutionLoop
+from eval.meta.meta_types import CandidateConfig, StageConfig
 from eval.convergence.live_evaluator import LiveEvaluator
 from eval.convergence.tasks import get_benchmark_tasks
 

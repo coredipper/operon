@@ -13,8 +13,8 @@ import json
 import random as _random
 from typing import Any, Protocol, runtime_checkable
 
-from ..providers.base import ProviderConfig
-from ..providers.openai_compatible_provider import OpenAICompatibleProvider
+from operon_ai.providers.base import ProviderConfig
+from operon_ai.providers.openai_compatible_provider import OpenAICompatibleProvider
 from .meta_store import EvolutionStore
 from .meta_types import (
     CandidateConfig,
@@ -417,7 +417,7 @@ class LLMProposer:
             final_prompt = prompt + "\n/no_think" if is_local else prompt
 
             # Gemini needs more tokens (internal reasoning consumes budget)
-            from ..providers.gemini_provider import GeminiProvider
+            from operon_ai.providers.gemini_provider import GeminiProvider
             model_name = getattr(self._provider, "model", "") or ""
             # Match gemini-*, google/gemini-*, models/gemini-*
             model_tail = model_name.rsplit("/", 1)[-1].lower() if isinstance(model_name, str) else ""
@@ -463,6 +463,7 @@ class LLMProposer:
                 stage_configs=result.stage_configs,
                 intervention_policy=result.intervention_policy,
                 topology=result.topology,
+                edges=result.edges,
                 proposer="llm_fallback",
                 reason=f"{type(exc).__name__}: {exc}; fell back to: {result.reason}",
             )
