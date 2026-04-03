@@ -114,7 +114,7 @@ Hybrid strategy: `TournamentMutator` (programmatic, fast) + `LLMProposer` (Gemin
 
 **Ao et al. (arXiv:2603.26993) test — exogenous signals:**
 - Compressed history (index entries only): LLM proposer mean 0.15 — worse than tournament (0.32)
-- Rich filesystem context (configs + trace metadata): LLM proposer mean 0.48 — matches tournament (0.44)
+- Rich filesystem context (configs + trace metadata): LLM proposer mean 0.49 — matches tournament (0.44)
 - Finding: rich context helps 3x, but config-space evolution doesn't strongly benefit from LLM reasoning over blind mutation. Topology evolution (Phase B) is where structural reasoning should provide genuine advantage.
 
 **Related work:** de los Riscos, Corbacho & Arbib ([arXiv:2603.28906](https://arxiv.org/abs/2603.28906)) provide a category-theoretic framework (ArchAgents) that maps tightly to Operon's architecture: objects = organism architectures, morphisms = compilers, agents = configured organisms.

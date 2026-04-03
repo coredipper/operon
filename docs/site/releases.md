@@ -27,7 +27,7 @@ Findings:
 
 - Gene abstraction covers full configuration space (lossless round-trip)
 - Epistemic health monitoring generalizes across scales (pluggable distance)
-- Rich context LLM proposer: 3x improvement over compressed (0.48 vs 0.15)
+- Rich context LLM proposer: 3x improvement over compressed (0.49 vs 0.15)
 - Config-space evolution: LLM proposer matches but doesn't dominate tournament mutations
 - Phase B topology mutations: tournament improved (0.60), LLM degraded (0.36)
 - **Conclusion**: biological abstractions generalize as code structure, not as optimization algorithms

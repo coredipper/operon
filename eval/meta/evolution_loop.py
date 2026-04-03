@@ -382,7 +382,7 @@ class EvolutionLoop:
                             "tokens": 0,  # not tracked per-module in DAG
                             "latency_ms": 0,
                             "action_type": "DAG_EXECUTE",
-                            "produced_output": bool(out is not None and out.value),
+                            "produced_output": out is not None and out.value is not None,
                             "output_preview": str(out.value)[:200] if out and out.value else "",
                             "run_step": self._step_counter,
                         })
