@@ -147,15 +147,15 @@ via \texttt{ThreadPoolExecutor}).
 \textbf{Proposer} & \textbf{Context} & \textbf{Mean Score} & \textbf{N} \\
 \midrule
 Tournament & --- & 0.44 & 9 \\
-LLM & compressed (index only) & 0.15 & 2 \\
-LLM & rich (configs + traces) & 0.49 & 24 \\
+LLM (success) & compressed (index only) & 0.15 & 2 \\
+LLM (success) & rich (configs + traces) & 0.49 & 24 \\
+LLM (fallback)\footnote{LLM proposer fired but response parsing failed; tournament mutation used instead.} & rich & 0.41 & 7 \\
 \bottomrule
 \end{tabular}
-\caption{Phase~A: config-only evolution (4 tasks, 10 iterations).
-Tournament runs before stall threshold triggers LLM; remaining
-assessments are LLM-proposed (plus fallbacks not shown). Rich context
-improves the LLM proposer $3\times$ over compressed history but only
-marginally exceeds tournament.}
+\caption{Phase~A: config-only evolution (4 tasks, 10 iterations, 40
+assessments total). Tournament runs before stall threshold triggers LLM.
+Rich context improves successful LLM proposals $3\times$ over compressed
+history. Including fallbacks, the overall LLM path averages $0.46$.}
 \end{table}
 
 \subsection{Phase~B: Topology Search}
