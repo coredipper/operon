@@ -367,7 +367,7 @@ class EvolutionLoop:
                 for sink in dag.sinks:
                     if sink in report.modules:
                         out = report.modules[sink].outputs.get("result")
-                        if out and out.value:
+                        if out is not None and out.value is not None:
                             final_parts.append(str(out.value))
                 final_output = "\n".join(final_parts) if final_parts else ""
 
@@ -383,7 +383,7 @@ class EvolutionLoop:
                             "latency_ms": 0,
                             "action_type": "DAG_EXECUTE",
                             "produced_output": out is not None and out.value is not None,
-                            "output_preview": str(out.value)[:200] if out and out.value else "",
+                            "output_preview": "" if out is None or out.value is None else str(out.value)[:200],
                             "run_step": self._step_counter,
                         })
 
