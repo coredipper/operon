@@ -142,20 +142,23 @@ via \texttt{ThreadPoolExecutor}).
 
 \begin{table}[h]
 \centering
-\begin{tabular}{llcc}
+\begin{tabular}{lcc}
 \toprule
-\textbf{Proposer} & \textbf{Context} & \textbf{Mean Score} & \textbf{N} \\
+\textbf{Proposer} & \textbf{Mean Score} & \textbf{N} \\
 \midrule
-Tournament & --- & 0.44 & 9 \\
-LLM (success) & compressed (index only) & 0.15 & 2 \\
-LLM (success) & rich (configs + traces) & 0.49 & 24 \\
-LLM (fallback)\footnote{LLM proposer fired but response parsing failed; tournament mutation used instead.} & rich & 0.41 & 7 \\
+Tournament & 0.44 & 9 \\
+LLM (successful parse) & 0.49 & 24 \\
+LLM (parse failed, tournament fallback) & 0.41 & 7 \\
+\midrule
+\emph{Overall LLM path} & \emph{0.47} & \emph{31} \\
 \bottomrule
 \end{tabular}
-\caption{Phase~A: config-only evolution (4 tasks, 10 iterations, 40
-assessments total). Tournament runs before stall threshold triggers LLM.
-Rich context improves successful LLM proposals $3\times$ over compressed
-history. Including fallbacks, the overall LLM path averages $0.46$.}
+\caption{Phase~A definitive run: config-only evolution with rich
+filesystem context (4 tasks, 10 iterations, 40 assessments). Tournament
+runs first (9 steps before stall threshold), then the LLM proposer
+dominates. In a separate earlier run with compressed context (index
+entries only), the LLM scored $0.15$ (n=2)---a $3\times$ degradation
+from removing filesystem history.}
 \end{table}
 
 \subsection{Phase~B: Topology Search}
@@ -167,14 +170,13 @@ history. Including fallbacks, the overall LLM path averages $0.46$.}
 \textbf{Proposer} & \textbf{Phase~A} & \textbf{Phase~B} & \textbf{$\Delta$} \\
 \midrule
 Tournament & 0.44 (n=9) & 0.60 (n=9) & +0.16 \\
-LLM & 0.49 (n=24) & 0.36 (n=30) & $-$0.13 \\
+LLM (overall path) & 0.47 (n=31) & 0.36 (n=31) & $-$0.11 \\
 \bottomrule
 \end{tabular}
-\caption{Phase~A (config-only) vs Phase~B (topology + config).
-Tournament N is consistent (first 9 steps before stall in both phases).
-Tournament \emph{improves} with topology mutations; the LLM proposer
-\emph{degrades}. Blind mutation handles structural changes more
-productively than reasoned proposals.}
+\caption{Phase~A (config-only) vs Phase~B (topology + config + DAG
+execution). Tournament N is consistent (first 9 pre-stall steps). LLM
+includes both successful parses and fallbacks. Tournament \emph{improves}
+with topology; the LLM path \emph{degrades}.}
 \end{table}
 
 \subsection{Abstraction Quality}
