@@ -119,9 +119,18 @@ Hybrid strategy: `TournamentMutator` (programmatic, fast) + `LLMProposer` (Gemin
 
 **Related work:** de los Riscos, Corbacho & Arbib ([arXiv:2603.28906](https://arxiv.org/abs/2603.28906)) provide a category-theoretic framework (ArchAgents) that maps tightly to Operon's architecture: objects = organism architectures, morphisms = compilers, agents = configured organisms.
 
-### Phase B (Planned)
+### Phase B — Topology Mutations (Implemented)
 
-- Topology mutations (add/remove stages, vary wiring)
+Topology mutations extend the evolution loop to add/remove stages and rewire edges. `TournamentMutator` applies 70% config / 30% topology mutations. `CandidateConfig.edges` stores wiring pairs with lossless Genome round-trip.
+
+**Key Phase B findings:**
+- Tournament *improved* with topology (0.44 → 0.59): blind mutation handles structural changes productively
+- LLM proposer *degraded* (0.49 → 0.37): reasoning about edges that don't affect sequential execution wastes capacity
+- Finding: topology mutations need execution support (`_build_organism` using edges for non-sequential wiring) before LLM structural reasoning can help. Currently organisms always run sequentially regardless of edges.
+
+### Remaining Work
+
+- Topology-aware organism execution (use edges for non-sequential wiring)
 - Pareto convergence criterion
 - Per-stage model routing (currently one model per tier)
 - TrustRegistry for >2 proposer strategies
