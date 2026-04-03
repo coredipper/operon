@@ -145,24 +145,50 @@ class EvolutionLoop:
         # Select proposer based on epistemic health
         proposer = self._select_proposer()
 
-        # Propose new candidate — then reassign a centrally unique ID
-        # to prevent collisions when multiple proposals share an iteration.
-        raw = proposer.propose(
-            self._population, self._scores, self._iteration,
-        )
-        self._step_counter += 1
-        # Adapt stage configs to the task's required roles so the
-        # persisted candidate matches the organism that actually runs.
-        adapted_stages = self._adapt_stages(raw.stage_configs, task)
+        # Propose + adapt — catch errors to prevent run termination
+        fallback_used = False
+        fallback_reason = ""
+        try:
+            raw = proposer.propose(
+                self._population, self._scores, self._iteration,
+            )
+            self._step_counter += 1
+            adapted_stages, name_map = self._adapt_stages_with_mapping(
+                raw.stage_configs, task,
+            )
+            if name_map:
+                new_set = {f"{sc.role}_{i}" for i, sc in enumerate(adapted_stages)}
+                adapted_edges = tuple(
+                    (name_map[s], name_map[d])
+                    for s, d in raw.edges
+                    if s in name_map and d in name_map
+                    and name_map[s] in new_set and name_map[d] in new_set
+                    and name_map[s] != name_map[d]
+                )
+            else:
+                adapted_edges = raw.edges
+        except Exception as exc:
+            # Fallback: adapt a known-good population member for this task
+            self._step_counter += 1
+            fallback_used = True
+            fallback_reason = f"{type(exc).__name__}: {exc}"
+            source = self._population[0]
+            adapted_stages, _ = self._adapt_stages_with_mapping(
+                source.stage_configs, task,
+            )
+            adapted_edges = ()  # safe: no edges on fallback
+            raw = source  # for intervention_policy/topology
+
         candidate = CandidateConfig(
             candidate_id=f"c_{self._step_counter:04d}",
-            parent_id=raw.parent_id,
-            iteration=raw.iteration,
+            parent_id=raw.candidate_id if fallback_used else raw.parent_id,
+            iteration=self._iteration,
             stage_configs=adapted_stages,
             intervention_policy=raw.intervention_policy,
             topology=raw.topology,
-            proposer=raw.proposer,
-            reason=raw.reason,
+            edges=adapted_edges,
+            proposer="proposal_fallback" if fallback_used else raw.proposer,
+            reason=(fallback_reason if fallback_used else raw.reason),
         )
 
         # Evaluate via DesignProblem wrapping
@@ -230,7 +256,16 @@ class EvolutionLoop:
             for task in self._tasks:
                 if task_idx >= len(task_cycle):
                     break
-                self.step(task.task_id)
+                try:
+                    self.step(task.task_id)
+                except Exception as run_exc:
+                    # Log failure but continue evolution
+                    self._store.append_trace(
+                        f"step_error_{task_idx}", "_error",
+                        {"error": f"{type(run_exc).__name__}: {run_exc}",
+                         "task_id": task.task_id,
+                         "iteration": iteration},
+                    )
                 task_idx += 1
 
         return {
@@ -260,8 +295,7 @@ class EvolutionLoop:
             return self._run_and_score(resources["config"], resources["task"])
 
         def feasibility_fn(resources: dict[str, Any]) -> bool:
-            cfg = resources["config"]
-            return len(cfg.stage_configs) > 0
+            return self._validate_topology(resources["config"])
 
         dp = DesignProblem(
             name=f"assess_{config.candidate_id}_{task.task_id}",
@@ -350,44 +384,91 @@ class EvolutionLoop:
             return {"score": 0.0, "tokens": 0, "latency_ms": elapsed_ms}
 
     @staticmethod
+    def _validate_topology(config: CandidateConfig) -> bool:
+        """Check that a candidate's topology is well-formed.
+
+        Returns True if valid, False if infeasible:
+        - Must have at least one stage
+        - All edge endpoints must reference existing stage names
+        - No self-loops
+        """
+        if not config.stage_configs:
+            return False
+        stage_names = {f"{sc.role}_{i}" for i, sc in enumerate(config.stage_configs)}
+        for src, dst in config.edges:
+            if src not in stage_names or dst not in stage_names:
+                return False
+            if src == dst:
+                return False
+        return True
+
+    @staticmethod
     def _adapt_stages(
         stage_configs: tuple[StageConfig, ...],
         task: Any,
     ) -> tuple[StageConfig, ...]:
         """Adapt stage configs to a task's required roles.
 
-        When the candidate's roles don't match the task, rebuild from the
-        task's roles using the candidate's config as a style template.
-        Returns the (possibly unchanged) stage_configs tuple so the
-        persisted candidate always matches the organism that ran.
+        Returns the (possibly unchanged) stage_configs tuple.
+        For edge remapping, use _adapt_stages_with_mapping instead.
         """
+        adapted, _ = EvolutionLoop._adapt_stages_with_mapping(stage_configs, task)
+        return adapted
+
+    @staticmethod
+    def _adapt_stages_with_mapping(
+        stage_configs: tuple[StageConfig, ...],
+        task: Any,
+    ) -> tuple[tuple[StageConfig, ...], dict[str, str]]:
+        """Adapt stage configs and return (adapted_stages, name_mapping).
+
+        The name_mapping maps old stage names to new stage names,
+        used for consistent edge remapping.
+        """
+        old_names = [f"{sc.role}_{i}" for i, sc in enumerate(stage_configs)]
+
         if not stage_configs:
-            return stage_configs  # preserve empty as infeasible
+            return stage_configs, {}
         task_roles = getattr(task, "required_roles", None)
         if not task_roles:
-            return stage_configs
+            return stage_configs, dict(zip(old_names, old_names))
         if tuple(sc.role for sc in stage_configs) == tuple(task_roles):
-            return stage_configs
+            return stage_configs, dict(zip(old_names, old_names))
 
-        config_by_role = {sc.role: sc for sc in stage_configs}
+        from collections import defaultdict
+        # Group old stages by role (preserving order for nth-occurrence matching)
+        old_configs_by_role: dict[str, list[StageConfig]] = defaultdict(list)
+        old_names_by_role: dict[str, list[str]] = defaultdict(list)
+        for i, sc in enumerate(stage_configs):
+            old_configs_by_role[sc.role].append(sc)
+            old_names_by_role[sc.role].append(f"{sc.role}_{i}")
+        role_used: dict[str, int] = defaultdict(int)
+
         fallback = stage_configs[-1] if stage_configs else None
         adapted = []
-        for role in task_roles:
-            direct_match = config_by_role.get(role)
-            if direct_match:
-                # Exact role match — inherit all settings
+        name_map: dict[str, str] = {}
+        for new_i, role in enumerate(task_roles):
+            new_name = f"{role}_{new_i}"
+            occ = role_used[role]
+            role_used[role] += 1
+
+            # Pick config from the same occurrence used for name mapping
+            old_configs = old_configs_by_role.get(role, [])
+            old_names = old_names_by_role.get(role, [])
+            if occ < len(old_names):
+                name_map[old_names[occ]] = new_name
+
+            source = old_configs[occ] if occ < len(old_configs) else None
+            if source:
                 adapted.append(StageConfig(
                     role=role,
-                    mode=direct_match.mode,
-                    model=direct_match.model,
-                    include_stage_outputs=direct_match.include_stage_outputs,
-                    include_shared_state=direct_match.include_shared_state,
-                    cognitive_mode=direct_match.cognitive_mode,
+                    mode=source.mode,
+                    model=source.model,
+                    include_stage_outputs=source.include_stage_outputs,
+                    include_shared_state=source.include_shared_state,
+                    cognitive_mode=source.cognitive_mode,
                 ))
             elif fallback:
-                # New role — inherit visibility/model from fallback but
-                # default to fuzzy mode to avoid gate/fixed behavior on
-                # roles that weren't explicitly configured.
                 adapted.append(StageConfig(
                     role=role,
                     mode="fuzzy",
@@ -398,7 +479,7 @@ class EvolutionLoop:
                 ))
             else:
                 adapted.append(StageConfig(role=role, mode="fuzzy"))
-        return tuple(adapted)
+        return tuple(adapted), name_map
 
     def _build_organism(self, config: CandidateConfig, task: Any) -> Any:
         """Convert CandidateConfig into a runnable SkillOrganism.

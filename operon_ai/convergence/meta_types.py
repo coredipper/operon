@@ -45,7 +45,8 @@ class CandidateConfig:
     iteration: int
     stage_configs: tuple[StageConfig, ...]
     intervention_policy: dict[str, Any]
-    topology: str | None = None  # Phase B placeholder
+    topology: str | None = None  # "sequential" | "parallel" | "fan_out" | etc
+    edges: tuple[tuple[str, str], ...] = ()  # (src_stage, dst_stage) wiring pairs
     proposer: str = "seed"  # "seed" | "tournament_mutate" | "llm_explore"
     reason: str = ""
 
@@ -119,6 +120,16 @@ def candidate_to_genome(config: CandidateConfig) -> Genome:
                 gene_type=gene_type,
             ))
 
+    # Edge genes (Phase B topology wiring)
+    genes.append(Gene(
+        name="_n_edges",
+        value=len(config.edges),
+        gene_type=GeneType.HOUSEKEEPING,
+    ))
+    for i, (src, dst) in enumerate(config.edges):
+        genes.append(Gene(name=f"edge_{i}_src", value=src, gene_type=GeneType.STRUCTURAL))
+        genes.append(Gene(name=f"edge_{i}_dst", value=dst, gene_type=GeneType.STRUCTURAL))
+
     # Intervention policy genes
     for key, value in sorted(config.intervention_policy.items()):
         genes.append(Gene(
@@ -160,6 +171,15 @@ def genome_to_candidate(
 
     topology = expressed.get("_topology")
 
+    # Restore edges
+    n_edges = expressed.get("_n_edges", 0)
+    edges = []
+    for i in range(n_edges):
+        src = expressed.get(f"edge_{i}_src", "")
+        dst = expressed.get(f"edge_{i}_dst", "")
+        if src and dst:
+            edges.append((src, dst))
+
     return CandidateConfig(
         candidate_id=candidate_id,
         parent_id=parent_id,
@@ -167,6 +187,7 @@ def genome_to_candidate(
         stage_configs=tuple(stage_configs),
         intervention_policy=policy,
         topology=topology,
+        edges=tuple(edges),
         proposer=proposer,
         reason=reason,
     )

@@ -99,10 +99,11 @@ _DEFAULT_MODELS: tuple[str | None, ...] = (
 
 
 class TournamentMutator:
-    """Tournament-select top-K, mutate one random discrete field.
+    """Tournament-select top-K, mutate config or topology.
 
-    Uses Genome.mutate() internally — the key test of whether the gene
-    abstraction handles discrete configuration mutation naturally.
+    Phase A: config mutations only (mode, model, booleans).
+    Phase B: 70% config mutations, 30% topology mutations
+    (add_stage, remove_stage, rewire).
     """
 
     def __init__(
@@ -110,10 +111,12 @@ class TournamentMutator:
         k: int = 3,
         seed: int | None = None,
         model_options: tuple[str | None, ...] = _DEFAULT_MODELS,
+        topology_mutation_rate: float = 0.3,
     ) -> None:
         self._k = k
         self._rng = _random.Random(seed)
         self._model_options = model_options
+        self._topology_rate = topology_mutation_rate
 
     def propose(
         self,
@@ -121,7 +124,7 @@ class TournamentMutator:
         scores: dict[str, list[float]],
         iteration: int,
     ) -> CandidateConfig:
-        # Tournament selection: pick k random, select best by mean score
+        # Tournament selection
         k = min(self._k, len(population))
         contenders = self._rng.sample(population, k)
         winner = max(
@@ -132,10 +135,15 @@ class TournamentMutator:
             ),
         )
 
-        # Convert to Genome, mutate one field, convert back
-        genome = candidate_to_genome(winner)
+        # Choose mutation type
+        if self._rng.random() < self._topology_rate and len(winner.stage_configs) > 0:
+            return self._topology_mutate(winner, iteration)
+        else:
+            return self._config_mutate(winner, iteration)
 
-        # Pick a random stage and field to mutate
+    def _config_mutate(self, winner: CandidateConfig, iteration: int) -> CandidateConfig:
+        """Mutate one config field (Phase A behavior)."""
+        genome = candidate_to_genome(winner)
         n_stages = len(winner.stage_configs)
         stage_idx = self._rng.randrange(n_stages)
         field_name = self._rng.choice(list(_DISCRETE_FIELDS))
@@ -143,8 +151,7 @@ class TournamentMutator:
 
         old_value = genome.get_value(gene_name)
         new_value = self._mutate_value(field_name, old_value)
-
-        genome.mutate(gene_name, new_value, f"tournament_mutate_iter_{iteration}")
+        genome.mutate(gene_name, new_value, f"config_mutate_iter_{iteration}")
 
         candidate_id = f"c_{iteration:03d}_{self._rng.randint(0, 999):03d}"
         return genome_to_candidate(
@@ -154,6 +161,95 @@ class TournamentMutator:
             iteration=iteration,
             proposer="tournament_mutate",
             reason=f"mutated {gene_name}: {old_value!r} -> {new_value!r}",
+        )
+
+    def _topology_mutate(self, winner: CandidateConfig, iteration: int) -> CandidateConfig:
+        """Mutate topology: add stage, remove stage, or rewire.
+
+        All edge names are recomputed from final stage list at the end
+        to prevent stale references from add/remove index shifts.
+        """
+        op = self._rng.choice(["add_stage", "remove_stage", "rewire"])
+        stages = list(winner.stage_configs)
+        edges = list(winner.edges)
+        reason = ""
+        max_stages = 8
+
+        if op == "add_stage" and len(stages) >= max_stages:
+            op = "rewire"
+
+        if op == "add_stage" or (op == "remove_stage" and len(stages) <= 1):
+            roles = [sc.role for sc in stages]
+            new_role = self._rng.choice(roles)
+            # Wire from current last stage to new stage (names computed after append)
+            prev_last_idx = len(stages) - 1
+            stages.append(StageConfig(role=new_role, mode="fuzzy"))
+            new_idx = len(stages) - 1
+            prev_name = f"{stages[prev_last_idx].role}_{prev_last_idx}"
+            new_name = f"{new_role}_{new_idx}"
+            edges.append((prev_name, new_name))
+            reason = f"added stage {new_name} (role={new_role})"
+
+        elif op == "remove_stage" and len(stages) > 1:
+            if len(stages) > 2:
+                idx = self._rng.randint(1, len(stages) - 2)
+            else:
+                idx = self._rng.randint(0, len(stages) - 1)
+            # Build old→new name mapping before removing
+            old_names = [f"{sc.role}_{i}" for i, sc in enumerate(stages)]
+            removed_name = old_names[idx]
+            stages.pop(idx)
+            new_names = [f"{sc.role}_{i}" for i, sc in enumerate(stages)]
+            rename = {}
+            j = 0
+            for k, old in enumerate(old_names):
+                if k == idx:
+                    continue
+                rename[old] = new_names[j]
+                j += 1
+            # Rewrite edges through mapping, prune removed stage
+            edges = [
+                (rename[s], rename[d])
+                for s, d in edges
+                if s in rename and d in rename and s != removed_name and d != removed_name
+            ]
+            reason = f"removed stage {removed_name}"
+
+        elif op == "rewire" and len(stages) >= 2:
+            # Add or remove a random edge
+            if edges and self._rng.random() < 0.5:
+                # Remove random edge
+                edge_idx = self._rng.randrange(len(edges))
+                removed = edges.pop(edge_idx)
+                reason = f"removed edge {removed[0]}->{removed[1]}"
+            else:
+                # Add random edge (no self-loops)
+                new_names = [f"{sc.role}_{i}" for i, sc in enumerate(stages)]
+                src = self._rng.choice(new_names)
+                dst = self._rng.choice([n for n in new_names if n != src])
+                edges.append((src, dst))
+                reason = f"added edge {src}->{dst}"
+        else:
+            reason = "no-op topology mutation"
+
+        # Recompute ALL edge names from final stage list — prevents stale refs
+        final_names = {f"{sc.role}_{i}" for i, sc in enumerate(stages)}
+        edges = [
+            (s, d) for s, d in edges
+            if s in final_names and d in final_names and s != d
+        ]
+
+        candidate_id = f"c_{iteration:03d}_{self._rng.randint(0, 999):03d}"
+        return CandidateConfig(
+            candidate_id=candidate_id,
+            parent_id=winner.candidate_id,
+            iteration=iteration,
+            stage_configs=tuple(stages),
+            intervention_policy=winner.intervention_policy,
+            topology=winner.topology,
+            edges=tuple(edges),
+            proposer="tournament_mutate",
+            reason=reason,
         )
 
     def _mutate_value(self, field_name: str, old_value: Any) -> Any:
@@ -201,6 +297,7 @@ Return ONLY a JSON object with this exact schema:
       "include_stage_outputs": <bool>, "include_shared_state": <bool>,
       "cognitive_mode": "<str|null>"}}
   ],
+  "edges": [["<src_stage_name>", "<dst_stage_name>"]],
   "intervention_policy": {{}},
   "reason": "<why you chose this config, citing trace evidence>"
 }}
@@ -272,6 +369,7 @@ class LLMProposer:
                      "cognitive_mode": s.cognitive_mode}
                     for s in cc.stage_configs
                 ],
+                "edges": [list(e) for e in cc.edges] if cc.edges else "sequential",
             }, indent=2)
             # Trace: isolate the latest run by run_step marker
             all_trace = self._store.load_trace(cc.candidate_id)
@@ -321,8 +419,10 @@ class LLMProposer:
             # Gemini needs more tokens (internal reasoning consumes budget)
             from ..providers.gemini_provider import GeminiProvider
             model_name = getattr(self._provider, "model", "") or ""
+            # Match gemini-*, google/gemini-*, models/gemini-*
+            model_tail = model_name.rsplit("/", 1)[-1].lower() if isinstance(model_name, str) else ""
             is_gemini = isinstance(self._provider, GeminiProvider) or (
-                isinstance(model_name, str) and model_name.startswith("gemini-")
+                model_tail.startswith("gemini-")
             )
             max_tok = 4096 if is_gemini else 2000
 
@@ -334,6 +434,13 @@ class LLMProposer:
             stage_configs = tuple(
                 StageConfig(**sc) for sc in data["stage_configs"]
             )
+            # Parse edges if present
+            raw_edges = data.get("edges", [])
+            if isinstance(raw_edges, list):
+                edges = tuple(tuple(e) for e in raw_edges if isinstance(e, (list, tuple)) and len(e) == 2)
+            else:
+                edges = ()
+
             candidate_id = f"c_{iteration:03d}_llm"
             return CandidateConfig(
                 candidate_id=candidate_id,
@@ -341,6 +448,7 @@ class LLMProposer:
                 iteration=iteration,
                 stage_configs=stage_configs,
                 intervention_policy=data.get("intervention_policy", {}),
+                edges=edges,
                 proposer="llm_explore",
                 reason=data.get("reason", "LLM-proposed"),
             )

@@ -394,11 +394,28 @@ class TestProposers:
         proposer.propose([cc], {"c_tok": [0.5]}, iteration=1)
         assert captured["max_tokens"] == 4096
 
+        # Prefixed Gemini ID should also get 4096
+        captured.clear()
+        class _PrefixedGemini(_CapProv):
+            model = "google/gemini-2.5-pro"
+        proposer_p = LLMProposer(provider=_PrefixedGemini(), store=store)
+        proposer_p.propose([cc], {"c_tok": [0.5]}, iteration=1)
+        assert captured["max_tokens"] == 4096
+
         # Non-Gemini should get 2000
+        captured.clear()
         class _NonGeminiProv(_CapProv):
             model = "gpt-4o-mini"
         proposer2 = LLMProposer(provider=_NonGeminiProv(), store=store)
         proposer2.propose([cc], {"c_tok": [0.5]}, iteration=1)
+        assert captured["max_tokens"] == 2000
+
+        # False positive guard: name containing "gemini" but not a model ID
+        captured.clear()
+        class _NotGemini(_CapProv):
+            model = "my-gemini-killer-model"
+        proposer3 = LLMProposer(provider=_NotGemini(), store=store)
+        proposer3.propose([cc], {"c_tok": [0.5]}, iteration=1)
         assert captured["max_tokens"] == 2000
 
     def test_extract_json_with_trailing_braces(self):
@@ -418,7 +435,7 @@ class TestProposers:
     def test_tournament_changes_one_field(self):
         cc = _make_candidate()
         scores = {"c_000": [0.5]}
-        mutator = TournamentMutator(k=1, seed=42)
+        mutator = TournamentMutator(k=1, seed=42, topology_mutation_rate=0.0)
         child = mutator.propose([cc], scores, iteration=1)
 
         diffs = 0
@@ -433,6 +450,54 @@ class TestProposers:
         cc = _make_candidate()
         child = TournamentMutator(seed=0).propose([cc], {"c_000": [0.5]}, 1)
         assert child.proposer == "tournament_mutate"
+
+    def test_topology_add_stage_wires_to_tail(self):
+        """add_stage connects new stage from previous tail."""
+        from operon_ai.convergence.meta_proposers import TournamentMutator as TM
+
+        cc = _make_candidate()  # 2 stages: researcher_0, reviewer_1
+        # Call _topology_mutate directly with controlled rng
+        mutator = TM(k=1, seed=42, topology_mutation_rate=1.0)
+        mutator._rng = type(mutator._rng)(99)  # fresh seed
+        # Force add_stage
+        mutator._rng.choice = lambda lst: "add_stage" if lst == ["add_stage", "remove_stage", "rewire"] else lst[0]
+        child = mutator._topology_mutate(cc, iteration=1)
+
+        assert len(child.stage_configs) == 3
+        # New stage should be wired from the old tail
+        old_tail = f"{cc.stage_configs[-1].role}_{len(cc.stage_configs)-1}"
+        new_name = f"{child.stage_configs[-1].role}_{len(child.stage_configs)-1}"
+        assert (old_tail, new_name) in child.edges
+
+    def test_topology_remove_stage_renames_edges(self):
+        """remove_stage rewrites surviving edges to new indices."""
+        from operon_ai.convergence.meta_proposers import TournamentMutator as TM
+
+        # 4 stages with a surviving edge that must be renamed
+        stages = (
+            _make_stage("reader"),       # reader_0
+            _make_stage("writer"),       # writer_1  <- will be removed
+            _make_stage("reviewer", "fixed"),  # reviewer_2 → becomes reviewer_1
+            _make_stage("editor"),       # editor_3 → becomes editor_2
+        )
+        cc = CandidateConfig(
+            "c_rm", None, 0, stages, {},
+            edges=(
+                ("reader_0", "writer_1"),    # pruned (writer removed)
+                ("reader_0", "reviewer_2"),  # survives, renamed to reviewer_1
+                ("reviewer_2", "editor_3"),  # survives, renamed to reviewer_1→editor_2
+            ),
+        )
+        mutator = TM(k=1, seed=42, topology_mutation_rate=1.0)
+        mutator._rng.choice = lambda lst: "remove_stage"
+        mutator._rng.randint = lambda a, b: 1  # remove index 1 (writer)
+        child = mutator._topology_mutate(cc, iteration=1)
+
+        assert len(child.stage_configs) == 3
+        # Surviving edges renamed: reviewer_2→reviewer_1, editor_3→editor_2
+        assert ("reader_0", "reviewer_1") in child.edges
+        assert ("reviewer_1", "editor_2") in child.edges
+        assert len(child.edges) == 2
 
 
 # ---------------------------------------------------------------------------
@@ -672,6 +737,44 @@ class TestEvolutionLoop:
         empty_cc = CandidateConfig("empty", None, 0, (), {})
         resources_empty = {"config": empty_cc, "task": _MockTaskDef()}
         assert dp.is_feasible(resources_empty) is False
+
+    def test_duplicate_role_collapse_preserves_consistency(self, tmp_path):
+        """Collapsing duplicate roles keeps config and edges from same occurrence."""
+        from operon_ai.convergence.evolution_loop import EvolutionLoop
+
+        # Two reviewers with different modes + edge between them
+        stages = (
+            StageConfig(role="researcher", mode="fuzzy", model="m1"),
+            StageConfig(role="reviewer", mode="fixed", model="m2"),
+            StageConfig(role="reviewer", mode="fuzzy", model="m3"),
+        )
+        edges = (("researcher_0", "reviewer_1"), ("reviewer_1", "reviewer_2"))
+
+        # Task only needs one reviewer — collapse
+        task = _MockTaskDef(required_roles=("researcher", "reviewer"))
+        adapted, name_map = EvolutionLoop._adapt_stages_with_mapping(stages, task)
+
+        assert len(adapted) == 2
+        assert adapted[0].role == "researcher"
+        assert adapted[1].role == "reviewer"
+        # First reviewer occurrence should be used (mode=fixed, model=m2)
+        assert adapted[1].mode == "fixed"
+        assert adapted[1].model == "m2"
+
+        # Edge reviewer_1->reviewer_2 should be pruned (reviewer_2 unmapped)
+        new_set = {f"{sc.role}_{i}" for i, sc in enumerate(adapted)}
+        remapped = tuple(
+            (name_map[s], name_map[d])
+            for s, d in edges
+            if s in name_map and d in name_map
+            and name_map[s] in new_set and name_map[d] in new_set
+            and name_map[s] != name_map[d]
+        )
+        assert ("researcher_0", "reviewer_1") in remapped
+        # Second reviewer occurrence must NOT be in name_map (collapsed away)
+        assert "reviewer_2" not in name_map
+        # Edge referencing it was pruned
+        assert all("reviewer_2" not in e for e in remapped)
 
     def test_adapt_stages_matches_task_roles(self, tmp_path):
         """Persisted candidate must have roles matching the task, not the seed."""
