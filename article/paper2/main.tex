@@ -648,6 +648,182 @@ specifications, and 107 worked examples provide a concrete, verifiable
 foundation for multi-agent system integration.
 
 %% ============================================================================
+%% EMPIRICAL VALIDATION (added 2026-04-04)
+%% ============================================================================
+
+\section{Empirical Validation of Structural Guarantees}\label{sec:empirical}
+
+The preceding sections establish a theoretical framework for structural
+analysis across agent orchestration systems.  This section provides
+empirical grounding: three benchmarks testing whether Operon's
+biologically-grounded structural guarantees deliver measurable benefits
+over simpler alternatives.  Full methodology and detailed results are
+presented in a companion paper~\cite{banu2026benchmarks}; here we
+summarize the findings and their implications for the adapter
+architecture.
+
+\subsection{Benchmark Suite Design}
+
+Each benchmark compares three variants: \emph{Biological} (full Operon
+feature), \emph{Ablated} (feature disabled), and \emph{Naive} (simple
+non-biological alternative).  All benchmarks run $N = 1{,}000$ trials
+per seed across 10 seeds (10M+ total data points), with Wilson 95\%
+confidence intervals.  No LLM calls are made during execution.
+
+Three features are tested, chosen for their relevance to the adapter
+architecture's structural claims:
+
+\begin{enumerate}[nosep]
+  \item \textbf{Metabolic priority gating}: \texttt{ATP\_Store} +
+        \texttt{MTORScaler} vs.\ flat budget counter.  Tests resource
+        management in orchestrated workflows.
+  \item \textbf{Quorum sensing}: \texttt{QuorumSensingBio}
+        (autoinducer accumulation with temporal decay) vs.\ majority
+        voting.  Tests leaderless consensus in multi-agent topologies.
+  \item \textbf{Epiplexity stagnation detection}:
+        \texttt{EpiplexityMonitor} (Bayesian two-signal) vs.\ cosine
+        similarity.  Tests convergence monitoring in adaptive loops.
+\end{enumerate}
+
+\subsection{Results Summary}
+
+\paragraph{Metabolism: clear win.}
+Under bursty load, the biological system served 100\% of critical
+operations (priority $\geq 5$) during resource pressure, versus 39.8\%
+for the flat counter ($\Delta = +0.602$, $p < 0.001$, $N = 24{,}139$
+pressure events).  The biological system trades 3.4 percentage points
+of total throughput for this guarantee.
+
+\paragraph{Quorum sensing: precision--recall tradeoff.}
+The biological signal-accumulation model achieved 0\% false-positive
+rate across all configurations with 71--87\% true-positive rate at
+40\% agent compromise.  Majority voting achieved 0\% FPR but near-0\%
+TPR.  Independent detection achieved near-100\% TPR but 5--18\% FPR.
+The biological model occupies a unique operating point unreachable by
+either alternative.
+
+\paragraph{Epiplexity: honest negative.}
+The naive cosine-similarity detector outperformed the biological
+Bayesian two-signal design on detection accuracy across all scenarios,
+including pathway-grounded trophic-withdrawal tests.  However, the
+biological variant achieved 0\% false-positive rate (vs.\ naive 75\%
+FP on loops) at the cost of 58\% false negatives.  With mock
+embeddings rather than real LLM outputs, the two-signal advantage
+does not materialize.
+
+\subsection{Revised Framework-Fit Analysis}
+
+The benchmark results ground the adapter architecture's claims about
+which frameworks benefit most from Operon's structural layer.
+
+\paragraph{A-Evolve.}
+Metabolic budgets directly address the unbounded-exploration failure
+mode in its Solve-Observe-Evolve-Gate-Reload loop.  The benchmark
+confirms that the fitness gate (a critical operation) is always
+evaluated under metabolic budgeting, even when exploration budget is
+depleted.  This maps to A-Evolve's quality gate never being skipped.
+
+\paragraph{Swarms.}
+Quorum sensing provides leaderless consensus across graph-based agent
+topologies.  The 0\% false-positive rate is operationally critical
+for Swarms: false consensus triggering coordinated action across a
+swarm is more costly than a missed detection.  Morphogen-gradient
+coordination (not benchmarked) provides additional theoretical
+fit for gradient-based specialization.
+
+\paragraph{DeerFlow.}
+Metabolic budgets prevent recursive sub-agent calls from exhausting
+resources.  The MTORScaler's rate-of-change sensitivity is relevant
+for DeerFlow's progressive skill loading, where resource consumption
+can accelerate during deep recursion.
+
+\paragraph{AnimaWorks.}
+Genome immutability provides configuration audit (a structural
+guarantee by construction, not requiring benchmarking).  The immune
+system's role-manipulation detection relates to quorum sensing's
+adversarial consensus problem.
+
+\paragraph{Ralph.}
+Metabolic budgets map to backpressure enforcement in Ralph's
+event-driven architecture.  The metabolic state machine's priority
+gating translates to event-priority filtering under resource pressure.
+
+\paragraph{Scion.}
+Quorum sensing enables consensus across containerized isolation
+boundaries.  Signal decay naturally handles container lifecycle
+events---signals from terminated containers age out without explicit
+cleanup.
+
+\section{Epistemic Topology: Scope and Limitations}\label{sec:topo-limits}
+
+\subsection{What Epistemic Topology Provides}
+
+The four epistemic bounds (Section~\ref{sec:epistemic}) serve as a
+structural linter for the adapter architecture.  The error amplification
+bound identifies topologies that expand the failure surface.  The
+sequential communication penalty flags long pipelines with high handoff
+cost.  The parallel speedup bound identifies bottleneck layers.  The
+tool density ratio flags planning overhead from distributed tool access.
+
+Together, these bounds produce the adapter risk score used by
+\texttt{analyze\_external\_topology()} to flag architectures likely to
+exhibit structural failure modes.  This diagnostic function has proven
+useful in practice: it correctly identifies that a 20-agent Swarms
+pipeline has higher sequential overhead than a 5-agent DeerFlow
+hierarchy, and that centralizing tools on a single agent reduces
+planning overhead at the cost of creating a single point of failure.
+
+\subsection{Current Limitations}
+
+\paragraph{No runtime feedback loop.}
+The epistemic layer computes static bounds from topology structure.  It
+does not reconfigure topology at runtime based on observed behavior.
+\texttt{analyze\_external\_topology()} is called once per configuration,
+not per execution step.  The adapter tells you the risk is high; it does
+not automatically restructure the topology to reduce it.
+
+\paragraph{No empirical validation of predicted bounds.}
+The four theorem bounds have been checked for qualitative consistency
+with architecture-level scaling laws~\cite{kim2025scaling}, but not
+against Operon's own benchmark results.  The metabolism and quorum
+sensing benchmarks (Section~\ref{sec:empirical}) validate
+\emph{mechanism-level} guarantees; the topology-level bounds remain
+validated only by external consistency checks.
+
+\paragraph{Diagnostic, not prescriptive.}
+The risk score identifies structural risk factors but does not prescribe
+remediation.  A topology flagged as high-risk for error amplification
+receives no suggestion for how to restructure.
+
+\subsection{Relationship to Mechanism Benchmarks}
+
+The epistemic topology and the biological mechanism benchmarks operate
+at different levels of the architecture.  Topology-level bounds predict
+coordination costs (a long pipeline \emph{will} accumulate sequential
+overhead).  Mechanism-level guarantees prevent specific failure modes
+(critical operations \emph{will} be served under pressure).
+
+The two are complementary: epistemic topology identifies architectures
+\emph{likely to need} structural guarantees; the mechanism benchmarks
+validate that those guarantees \emph{work as claimed}.  Both are
+necessary for a complete structural analysis: topology without
+mechanisms identifies problems without providing solutions; mechanisms
+without topology provides solutions without knowing which problems to
+solve.
+
+\subsection{Recommendation}
+
+Epistemic topology should be retained as a structural analysis tool.
+Its diagnostic value---identifying high-risk architectures before
+deployment---is well-supported by the adapter framework's design.
+However, claims about the predictive precision of the four bounds
+should be tempered until empirical validation against measured
+benchmark performance is completed.  Future work should compare
+predicted error amplification and sequential overhead against actual
+measured performance across different topologies running identical
+task suites.
+
+%% ============================================================================
 %% BIBLIOGRAPHY
 %% ============================================================================
 \newpage

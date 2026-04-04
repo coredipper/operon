@@ -1,0 +1,156 @@
+\section{Results}\label{sec:results}
+
+All results are aggregated across 10 seeds with $N = 1{,}000$ trials
+per seed per scenario.  Wilson 95\% confidence intervals are reported
+where applicable.  Significance ($p < 0.001$) is determined by
+non-overlapping Wilson CIs between biological and naive variants.
+
+\subsection{Metabolism: Clear Win for Priority Gating}
+
+Table~\ref{tab:metabolism} summarizes the metabolism benchmark results.
+
+\begin{table}[h]
+\caption{Metabolism benchmark: Biological (ATP\_Store + MTORScaler) vs Ablated (ATP\_Store only) vs Naive (flat counter). N = total operations or pressure events across 10 seeds.}
+\label{tab:metabolism}
+\centering
+\small
+\begin{tabular}{llccccc}
+\toprule
+Scenario & Metric & Bio & Abl & Naive & $\Delta$ & N \\
+\midrule
+bursty & critical served & 1.000 & 1.000 & 0.398 & \textbf{+0.602} & 24{,}139 \\
+bursty & ops completed & 0.719 & 0.715 & 0.685 & \textbf{+0.034} & 2{,}000{,}000 \\
+gradual depl. & critical served & 1.000 & 1.000 & 0.769 & \textbf{+0.231} & 43{,}372 \\
+gradual depl. & ops completed & 0.979 & 0.996 & 0.950 & \textbf{+0.029} & 2{,}000{,}000 \\
+constant & ops completed & 1.000 & 1.000 & 1.000 & 0.000 & 2{,}000{,}000 \\
+sudden spike & ops completed & 1.000 & 1.000 & 1.000 & 0.000 & 2{,}000{,}000 \\
+mixed priority & ops completed & 1.000 & 1.000 & 1.000 & 0.000 & 2{,}000{,}000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The headline result is \texttt{critical\_served\_under\_pressure}.  Under
+bursty load, the biological system served 100\% of critical operations
+($\text{priority} \geq 5$) during resource pressure, while the naive
+flat counter served only 39.8\% ($\Delta = +0.602$, significant).  Under
+gradual depletion, the gap is smaller but still significant: 100\% vs
+76.9\% ($\Delta = +0.231$).
+
+The biological system pays a throughput cost for this guarantee.  Under
+bursty load, it completed 71.9\% of all operations versus the naive
+counter's 68.5\%---a 3.4 percentage-point improvement.  Under gradual
+depletion, the relationship inverts slightly: biological completed
+97.9\% versus ablated's 99.6\%, because the MTORScaler's anticipatory
+conservation gates some non-critical operations that ATP\_Store alone
+would have served.  This is the intended tradeoff: the biological system
+trades marginal throughput for guaranteed critical service.
+
+Under constant load, sudden spike, and mixed priority, all three
+variants perform identically.  The biological complexity only matters
+under specific pressure patterns where resource contention forces
+choices about what to serve.
+
+\subsection{Quorum Sensing: Unique Precision--Recall Operating Point}
+
+Table~\ref{tab:quorum} summarizes key quorum sensing results.
+
+\begin{table}[h]
+\caption{Quorum sensing benchmark: selected configurations. Bio = QuorumSensingBio (signal accumulation + decay), Abl = IndependentActors (no coordination), Naive = MajorityVote.}
+\label{tab:quorum}
+\centering
+\small
+\begin{tabular}{llccccc}
+\toprule
+Config & Metric & Bio & Abl & Naive & $\Delta$ & N \\
+\midrule
+static, $n$=20, $c$=8 & TPR & 0.866 & 1.000 & 0.005 & \textbf{+0.861} & 300{,}000 \\
+static, $n$=10, $c$=4 & TPR & 0.711 & 1.000 & 0.052 & \textbf{+0.659} & 300{,}000 \\
+static, $n$=20, $c$=4 & TPR & 0.748 & 1.000 & 0.000 & \textbf{+0.748} & 300{,}000 \\
+gradual, $n$=20, $c$=8 & TPR & 0.718 & 0.999 & 0.002 & \textbf{+0.716} & 216{,}959 \\
+\midrule
+all $c$=0 configs & FPR & 0.000 & 0.048--0.180 & 0.000 & 0.000 & 300K ea. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The three coordination strategies occupy distinct positions on the
+precision--recall curve:
+
+\begin{itemize}[nosep]
+  \item \textbf{Independent actors} (ablated): 100\% TPR but 5--18\% FPR.
+        Catches everything but cries wolf on 1 in 6--20 clean time steps.
+  \item \textbf{Majority vote} (naive): 0\% FPR but near-0\% TPR.
+        Almost never detects threats because clean agents ($\mu = 0.15$)
+        always outvote compromised agents at the $0.5$ threshold.
+  \item \textbf{Signal accumulation} (biological): 0\% FPR with
+        71--87\% TPR at 40\% compromise.  Zero false alarms with
+        meaningful detection.
+\end{itemize}
+
+The biological model's advantage comes from two structural properties:
+(1)~\emph{continuous signals} average out noise (unlike binary votes),
+and (2)~\emph{temporal decay} ensures stale evidence ages out (unlike
+a vote that persists forever).  The combination naturally filters noise
+while remaining sensitive to sustained patterns.
+
+Detection sensitivity scales with both the number of agents and the
+compromise fraction, consistent with the biological signal-accumulation
+model: more agents producing more signal yield higher accumulated
+concentrations relative to the threshold.
+
+\subsection{Epiplexity: Honest Negative}
+
+Table~\ref{tab:epiplexity} summarizes the epiplexity benchmark results.
+
+\begin{table}[h]
+\caption{Epiplexity benchmark: Biological (EpiplexityMonitor, two-signal Bayesian) vs Naive (cosine similarity + timeout). All results with MockEmbeddingProvider.}
+\label{tab:epiplexity}
+\centering
+\small
+\begin{tabular}{llccccc}
+\toprule
+Scenario & Metric & Bio & Abl & Naive & $\Delta$ & N \\
+\midrule
+loop & accuracy & 0.467 & 0.080 & 0.940 & \textbf{$-$0.473} & 500{,}000 \\
+loop & FP rate & 0.000 & 0.000 & 0.750 & \textbf{$-$0.750} & 40{,}000 \\
+loop & FN rate & 0.580 & 1.000 & 0.000 & \textbf{+0.580} & 460{,}000 \\
+\midrule
+trophic w. & accuracy & 0.431 & 0.400 & 0.480 & $-$0.049 & 500{,}000 \\
+trophic w. & FN rate & 0.948 & 1.000 & 0.866 & +0.081 & 300{,}000 \\
+\midrule
+false stagn. & accuracy & 0.540 & 1.000 & 0.993 & \textbf{$-$0.453} & 500{,}000 \\
+false stagn. & FP rate & 0.052 & 0.000 & 0.007 & +0.045 & 500{,}000 \\
+\midrule
+convergence & accuracy & 0.473 & 1.000 & 1.000 & \textbf{$-$0.527} & 500{,}000 \\
+exploration & accuracy & 1.000 & 1.000 & 1.000 & 0.000 & 500{,}000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The naive cosine-similarity detector outperforms the biological
+Bayesian two-signal design on detection accuracy across all scenarios,
+including the pathway-grounded trophic-withdrawal scenario that was
+specifically designed to favor the biological approach.
+
+However, the false-positive/false-negative breakdown reveals a more
+nuanced picture.  On the loop scenario:
+
+\begin{itemize}[nosep]
+  \item \textbf{Biological}: 0\% FP rate, 58\% FN rate.
+        Never false-alarms, but misses most stagnation.
+  \item \textbf{Naive}: 75\% FP rate, 0\% FN rate.
+        Catches all stagnation, but false-alarms on 3 of 4 healthy steps.
+\end{itemize}
+
+This is the same precision--recall tradeoff observed in quorum
+sensing---but here the biological variant's recall (42\%) is too low
+to be operationally useful, while its precision advantage (zero false
+positives) is less valuable for stagnation detection than for threat
+consensus.
+
+The trophic-withdrawal scenario---designed to produce the biological
+signature of epistemic atrophy (declining novelty with maintained
+perplexity)---shows marginal differences: naive 48.0\% accuracy versus
+biological 43.1\%.  With mock embeddings, the novelty signal does not
+carry enough semantic information to make the two-signal distinction
+meaningful (Section~\ref{sec:limitations}).

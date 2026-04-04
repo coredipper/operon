@@ -1,0 +1,48 @@
+\section{Related Work}\label{sec:related}
+
+\paragraph{Artificial immune systems.}
+Hofmeyr and Forrest~\cite{hofmeyr2000architecture} proposed an
+architecture for distributed intrusion detection modeled on the
+complement cascade and T-cell activation.  Dasgupta~\cite{dasgupta2006advances}
+surveys two decades of AIS research.  These systems demonstrate that
+immune-inspired pattern matching can detect novel threats, but
+comparative benchmarks against non-biological baselines (e.g., rule-based
+detectors) are sparse.  Our quorum sensing benchmark addresses a related
+problem---multi-agent threat consensus---but explicitly compares the
+biological signal-accumulation model against majority voting and
+independent detection.
+
+\paragraph{Swarm intelligence.}
+Bonabeau, Dorigo, and Theraulaz~\cite{bonabeau1999swarm} established
+the foundations of swarm-based optimization (ACO, PSO).  These
+algorithms use biological coordination metaphors (pheromone trails,
+flocking rules) for optimization.  Operon's quorum sensing addresses a
+different problem: \emph{consensus} rather than \emph{optimization}.
+The distinction matters: our benchmark tests whether the biological
+coordination model achieves better precision--recall tradeoffs than
+simpler voting schemes, not whether it finds better optima.
+
+\paragraph{Metabolic computing.}
+Resource-aware agent systems have been explored in economic
+frameworks~\cite{wellman2001auction}, but explicitly metabolic models---with
+multiple energy currencies, state-dependent behavior, and
+regeneration---are less common.  Operon's ATP\_Store draws on AMPK
+signaling pathway structure (KEGG hsa04152), where the AMP:ATP ratio
+and its rate of change drive metabolic state transitions.  Our
+benchmark tests whether this biological structure provides measurable
+benefits over a flat budget counter.
+
+\paragraph{Free energy principle.}
+Friston's free energy principle~\cite{friston2010} provides the
+theoretical foundation for Operon's epiplexity monitor: healthy agents
+minimize surprise while maintaining viability; agents with high
+perplexity and low novelty are in pathological loops.  Our benchmark
+tests whether this theoretical framework translates to practical
+stagnation detection advantages over cosine-similarity thresholds.
+
+\paragraph{Multi-agent benchmarks.}
+Recent work on multi-agent scaling laws~\cite{kim2025scaling} establishes
+architecture-level performance predictors.  Operon's epistemic topology
+(Paper~1) derives similar bounds from wiring diagram structure.  Our
+benchmarks complement this work by testing \emph{mechanism-level}
+guarantees rather than \emph{architecture-level} predictions.

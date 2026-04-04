@@ -1,0 +1,31 @@
+\section{Conclusion}\label{sec:conclusion}
+
+We tested three biologically-grounded agent reliability features
+against naive non-biological alternatives, with 10M+ data points
+across 10 independent seeds.  Two features demonstrated clear
+empirical benefits; one did not.
+
+Metabolic priority gating provides a structural guarantee that
+critical operations are served under resource pressure (100\% vs
+39.8\% for a flat counter under bursty load).  Autoinducer-based
+quorum sensing achieves zero false-positive rate with meaningful
+true-positive rate (71--87\% at 40\% compromise), occupying a
+precision--recall position unreachable by majority voting or
+independent detection.  Bayesian two-signal stagnation detection
+does not outperform cosine-similarity thresholds with mock embeddings,
+though the result may change with real embedding models.
+
+The consistent pattern: biological design earns complexity through
+\emph{mechanism-level structural guarantees}---hard properties enforced
+by design (priority gating, signal decay)---rather than through
+algorithmic sophistication (Bayesian estimation, optimization).
+This finding should guide the adoption of biological motifs in agent
+systems: invest in structural mechanism design; be skeptical of
+biological metaphors that promise better information processing.
+
+\paragraph{Open problems.}
+Real embedding models for the epiplexity benchmark.  Auto-calibration
+of quorum sensing thresholds from population and signal statistics.
+Empirical validation of epistemic topology bounds against measured
+performance.  End-to-end evaluation with actual LLM agents performing
+real tasks.
