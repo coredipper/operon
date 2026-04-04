@@ -170,3 +170,31 @@ class TestQuorumSensingBio:
         qs.produce_signal("a1", suspicion=-0.5, current_time=0.0)
         # Negative suspicion clamped to 0
         assert qs.get_activation_level("AI-1", 0.0) == 0.0
+
+    def test_out_of_order_deposit_preserves_earlier_signals(self):
+        """Backfilled deposit at earlier timestamp must not prune signals
+        that are still valid at the earlier time."""
+        env = SignalEnvironment(decay_half_life=5.0, noise_floor=0.01)
+        # Deposit at t=10
+        env.deposit(AutoinducerSignal("a1", "AI-1", 1.0, 10.0))
+        # Backfill at t=5 — should NOT prune the t=10 signal
+        env.deposit(AutoinducerSignal("a2", "AI-1", 0.5, 5.0))
+        # Both signals should be present
+        assert env.total_signals == 2
+        # Concentration at t=10 should include both
+        c = env.get_concentration("AI-1", 10.0)
+        assert c > 1.0  # t=10 signal (full) + t=5 signal (decayed but present)
+
+    def test_noise_floor_in_read_only_period(self):
+        """Signals that decay below noise_floor should return 0 concentration
+        even without any new deposits (read-only period)."""
+        env = SignalEnvironment(decay_half_life=1.0, noise_floor=0.01)
+        env.deposit(AutoinducerSignal("a1", "AI-1", 0.1, 0.0))
+        # At t=0, concentration is 0.1 (above noise floor)
+        assert env.get_concentration("AI-1", 0.0) > 0
+        # After many half-lives, signal decays below noise_floor
+        # No new deposits — pure read-only
+        c = env.get_concentration("AI-1", 50.0)
+        assert c == 0.0  # Below noise floor, should not contribute
+        # But the signal is still stored (not mutated by read)
+        assert env.total_signals == 1
