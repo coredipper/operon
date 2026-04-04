@@ -66,36 +66,42 @@ class SignalEnvironment:
     )
 
     def deposit(self, signal: AutoinducerSignal) -> None:
-        """Agent deposits a signal into the environment."""
+        """Agent deposits a signal into the environment.
+
+        Prunes decayed signals on write to prevent unbounded growth
+        while keeping get_concentration() side-effect free.
+        """
         if signal.signal_type not in self._signals:
             self._signals[signal.signal_type] = []
-        self._signals[signal.signal_type].append(signal)
+        # Prune stale signals for this type on write (monotonic time guaranteed)
+        surviving = [
+            s for s in self._signals[signal.signal_type]
+            if s.concentration * (2.0 ** (-(signal.timestamp - s.timestamp) / self.decay_half_life))
+            >= self.noise_floor
+            or signal.timestamp < s.timestamp  # keep future signals
+        ]
+        surviving.append(signal)
+        self._signals[signal.signal_type] = surviving
 
     def get_concentration(self, signal_type: str, current_time: float) -> float:
         """Sum all signals of this type, applying exponential decay.
 
         c = Σ s_i.concentration × 2^(-(t - s_i.timestamp) / half_life)
 
-        Auto-prunes decayed signals to prevent unbounded growth.
+        Pure read — does not mutate signal state.
         """
         signals = self._signals.get(signal_type, [])
         if not signals:
             return 0.0
 
         total = 0.0
-        surviving: list[AutoinducerSignal] = []
         for s in signals:
             age = current_time - s.timestamp
             if age < 0:
-                surviving.append(s)
-                continue  # Future signal, keep but don't count
+                continue  # Future signal, don't count
             decay = 2.0 ** (-age / self.decay_half_life)
-            decayed = s.concentration * decay
-            if decayed >= self.noise_floor:
-                total += decayed
-                surviving.append(s)
+            total += s.concentration * decay
 
-        self._signals[signal_type] = surviving
         return total
 
     def prune(self, current_time: float) -> int:
