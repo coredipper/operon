@@ -58,37 +58,48 @@ class SignalEnvironment:
     """
 
     decay_half_life: float = 5.0  # Time units; from typical AHL degradation
-    noise_floor: float = 0.001  # Signals below this are pruned
+    noise_floor: float = 0.001  # Signals below this are ignored/pruned
 
     # signal_type -> list of signals
     _signals: dict[str, list[AutoinducerSignal]] = field(
+        default_factory=dict, repr=False,
+    )
+    # Track last prune time per signal type to enforce monotonic pruning
+    _last_prune_time: dict[str, float] = field(
         default_factory=dict, repr=False,
     )
 
     def deposit(self, signal: AutoinducerSignal) -> None:
         """Agent deposits a signal into the environment.
 
-        Prunes decayed signals on write to prevent unbounded growth
-        while keeping get_concentration() side-effect free.
+        Prunes decayed signals on write when the timestamp advances
+        past the last pruned time, preventing unbounded growth while
+        keeping get_concentration() side-effect free.
         """
-        if signal.signal_type not in self._signals:
-            self._signals[signal.signal_type] = []
-        # Prune stale signals for this type on write (monotonic time guaranteed)
-        surviving = [
-            s for s in self._signals[signal.signal_type]
-            if s.concentration * (2.0 ** (-(signal.timestamp - s.timestamp) / self.decay_half_life))
-            >= self.noise_floor
-            or signal.timestamp < s.timestamp  # keep future signals
-        ]
-        surviving.append(signal)
-        self._signals[signal.signal_type] = surviving
+        st = signal.signal_type
+        if st not in self._signals:
+            self._signals[st] = []
+
+        # Only prune if this deposit advances time (monotonic guard)
+        last = self._last_prune_time.get(st, float("-inf"))
+        if signal.timestamp >= last:
+            surviving = [
+                s for s in self._signals[st]
+                if s.concentration * (2.0 ** (-(signal.timestamp - s.timestamp) / self.decay_half_life))
+                >= self.noise_floor
+            ]
+            self._signals[st] = surviving
+            self._last_prune_time[st] = signal.timestamp
+
+        self._signals[st].append(signal)
 
     def get_concentration(self, signal_type: str, current_time: float) -> float:
         """Sum all signals of this type, applying exponential decay.
 
         c = Σ s_i.concentration × 2^(-(t - s_i.timestamp) / half_life)
 
-        Pure read — does not mutate signal state.
+        Pure read — does not mutate signal state. Skips contributions
+        that have decayed below noise_floor.
         """
         signals = self._signals.get(signal_type, [])
         if not signals:
@@ -100,7 +111,9 @@ class SignalEnvironment:
             if age < 0:
                 continue  # Future signal, don't count
             decay = 2.0 ** (-age / self.decay_half_life)
-            total += s.concentration * decay
+            contribution = s.concentration * decay
+            if contribution >= self.noise_floor:
+                total += contribution
 
         return total
 
@@ -122,6 +135,7 @@ class SignalEnvironment:
     def clear(self) -> None:
         """Remove all signals."""
         self._signals.clear()
+        self._last_prune_time.clear()
 
     @property
     def total_signals(self) -> int:
