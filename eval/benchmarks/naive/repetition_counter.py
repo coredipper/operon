@@ -47,8 +47,7 @@ class RepetitionCounter:
     timeout_steps: int = 20
 
     _embeddings: deque[list[float]] = field(default_factory=lambda: deque(maxlen=100))
-    _steps_since_change: int = field(default=0, repr=False)
-    _last_status: str = field(default="healthy", repr=False)
+    _high_sim_steps: int = field(default=0, repr=False)
     _total: int = field(default=0, repr=False)
 
     def measure(self, message: str) -> NaiveStagnationResult:
@@ -60,32 +59,30 @@ class RepetitionCounter:
         window = list(self._embeddings)[-self.window_size:]
         avg_sim = self._average_pairwise_similarity(window)
 
+        # Track consecutive steps with elevated similarity
+        if avg_sim > self.similarity_threshold * 0.7:
+            self._high_sim_steps += 1
+        else:
+            self._high_sim_steps = 0
+
         # Determine status
         if avg_sim > self.similarity_threshold:
             status = "stagnant"
-        elif self._steps_since_change >= self.timeout_steps:
+        elif self._high_sim_steps >= self.timeout_steps:
             status = "stagnant"
         else:
             status = "healthy"
 
-        # Track status changes
-        if status != self._last_status:
-            self._steps_since_change = 0
-            self._last_status = status
-        else:
-            self._steps_since_change += 1
-
         return NaiveStagnationResult(
             status=status,
             avg_similarity=avg_sim,
-            steps_since_change=self._steps_since_change,
+            steps_since_change=self._high_sim_steps,
             window_size=len(window),
         )
 
     def reset(self) -> None:
         self._embeddings.clear()
-        self._steps_since_change = 0
-        self._last_status = "healthy"
+        self._high_sim_steps = 0
         self._total = 0
 
     @staticmethod

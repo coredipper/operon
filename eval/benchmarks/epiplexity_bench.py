@@ -112,8 +112,10 @@ def run_epiplexity_bench(
 
                 is_alert = bio_status in ("stagnant", "critical")
                 gt_alert = gt in ("stagnant", "critical")
-                bio_false_pos.record(not (is_alert and not gt_alert))  # success = NOT false pos
-                bio_false_neg.record(not (not is_alert and gt_alert))
+                if not gt_alert:
+                    bio_false_pos.record(is_alert)  # FP: alerted when ground truth is healthy
+                if gt_alert:
+                    bio_false_neg.record(not is_alert)  # FN: missed when ground truth is stagnant
 
                 if gt == "converging":
                     bio_converge_disc.record(bio_status in ("converging", "healthy"))
@@ -137,8 +139,10 @@ def run_epiplexity_bench(
                 correct = gt in ("healthy", "exploring", "converging")
                 abl_accuracy.record(correct)
                 gt_alert = gt in ("stagnant", "critical")
-                abl_false_pos.record(True)  # Never alerts, so never false positive
-                abl_false_neg.record(not gt_alert)  # Misses all stagnation
+                if not gt_alert:
+                    abl_false_pos.record(False)  # Never alerts, so never false positive
+                if gt_alert:
+                    abl_false_neg.record(True)  # Always misses stagnation
 
             # --- Naive variant ---
             counter = RepetitionCounter(
@@ -157,8 +161,10 @@ def run_epiplexity_bench(
 
                 is_alert = result.status == "stagnant"
                 gt_alert = gt in ("stagnant", "critical")
-                naive_false_pos.record(not (is_alert and not gt_alert))
-                naive_false_neg.record(not (not is_alert and gt_alert))
+                if not gt_alert:
+                    naive_false_pos.record(is_alert)  # FP: alerted when healthy
+                if gt_alert:
+                    naive_false_neg.record(not is_alert)  # FN: missed stagnation
 
                 if gt == "converging":
                     naive_converge_disc.record(result.status == "healthy")

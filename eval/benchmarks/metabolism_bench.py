@@ -117,6 +117,13 @@ def run_metabolism_bench(
                 scaler.update()
                 trial_states.add(scaler.state.value)
 
+                # mTOR gates expensive operations: skip if scaler says no
+                if not scaler.should_enable_feature(op.cost):
+                    # In AUTOPHAGY/CONSERVATION, only allow critical ops
+                    if op.priority < 5:
+                        bio_completed.record(False)
+                        continue
+
                 success = store.consume(op.cost, op.name, priority=op.priority)
                 bio_completed.record(success)
 

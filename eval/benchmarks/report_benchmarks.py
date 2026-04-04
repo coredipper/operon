@@ -73,11 +73,18 @@ def print_comparison_table(rows: list[ComparisonRow], benchmark_name: str) -> No
         )
 
 
+def _escape_latex(text: str) -> str:
+    """Escape LaTeX special characters in text."""
+    for char in ("_", "&", "%", "#", "$", "{", "}"):
+        text = text.replace(char, f"\\{char}")
+    return text
+
+
 def generate_latex_table(rows: list[ComparisonRow], benchmark_name: str) -> str:
     """Generate LaTeX table for paper inclusion."""
     lines = [
         r"\begin{table}[h]",
-        rf"\caption{{{benchmark_name}: Biological vs Naive Comparison}}",
+        rf"\caption{{{_escape_latex(benchmark_name)}: Biological vs Naive Comparison}}",
         r"\centering",
         r"\begin{tabular}{llccccc}",
         r"\toprule",
@@ -88,7 +95,7 @@ def generate_latex_table(rows: list[ComparisonRow], benchmark_name: str) -> str:
     for row in rows:
         sig = r"\textbf{" + f"{row.delta_bio_vs_naive:+.3f}" + "}" if row.significant else f"{row.delta_bio_vs_naive:+.3f}"
         lines.append(
-            f"{row.scenario} & {row.metric} "
+            f"{_escape_latex(row.scenario)} & {_escape_latex(row.metric)} "
             f"& {row.biological_rate:.3f} & {row.ablated_rate:.3f} "
             f"& {row.naive_rate:.3f} & {sig} & {row.n} \\\\"
         )

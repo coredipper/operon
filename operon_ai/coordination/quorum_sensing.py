@@ -75,19 +75,27 @@ class SignalEnvironment:
         """Sum all signals of this type, applying exponential decay.
 
         c = Σ s_i.concentration × 2^(-(t - s_i.timestamp) / half_life)
+
+        Auto-prunes decayed signals to prevent unbounded growth.
         """
         signals = self._signals.get(signal_type, [])
         if not signals:
             return 0.0
 
         total = 0.0
+        surviving: list[AutoinducerSignal] = []
         for s in signals:
             age = current_time - s.timestamp
             if age < 0:
-                continue  # Future signal, ignore
+                surviving.append(s)
+                continue  # Future signal, keep but don't count
             decay = 2.0 ** (-age / self.decay_half_life)
-            total += s.concentration * decay
+            decayed = s.concentration * decay
+            if decayed >= self.noise_floor:
+                total += decayed
+                surviving.append(s)
 
+        self._signals[signal_type] = surviving
         return total
 
     def prune(self, current_time: float) -> int:
