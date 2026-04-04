@@ -1,0 +1,18 @@
+\begin{table}[h]
+\caption{metabolism: Biological vs Naive Comparison}
+\centering
+\begin{tabular}{llccccc}
+\toprule
+Scenario & Metric & Biological & Ablated & Naive & $\Delta$ & N \\
+\midrule
+bursty & critical_served_under_pressure & 1.000 & 1.000 & 0.398 & \textbf{+0.602} & 24139 \\
+bursty & operations_completed & 0.715 & 0.715 & 0.685 & \textbf{+0.030} & 2000000 \\
+constant & operations_completed & 1.000 & 1.000 & 1.000 & +0.000 & 2000000 \\
+gradual_depletion & critical_served_under_pressure & 1.000 & 1.000 & 0.769 & \textbf{+0.231} & 43372 \\
+gradual_depletion & operations_completed & 0.996 & 0.996 & 0.950 & \textbf{+0.046} & 2000000 \\
+mixed_priority & critical_served_under_pressure & 1.000 & 1.000 & 1.000 & +0.000 & 92972 \\
+mixed_priority & operations_completed & 1.000 & 1.000 & 1.000 & +0.000 & 2000000 \\
+sudden_spike & operations_completed & 1.000 & 1.000 & 1.000 & +0.000 & 2000000 \\
+\bottomrule
+\end{tabular}
+\end{table}

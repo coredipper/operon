@@ -1,0 +1,1736 @@
+{
+  "seed": 4,
+  "results": [
+    {
+      "name": "epiplexity",
+      "scenario": "loop",
+      "seed": 823802961,
+      "biological": {
+        "detection_accuracy": {
+          "success": 24280,
+          "total": 50000,
+          "rate": 0.4856,
+          "wilson_95": [
+            0.4812203991738083,
+            0.4899818134177938
+          ],
+          "latency_steps": 7.0
+        },
+        "false_positive": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        },
+        "false_negative": {
+          "success": 24280,
+          "total": 50000,
+          "rate": 0.4856,
+          "wilson_95": [
+            0.4812203991738083,
+            0.4899818134177938
+          ]
+        }
+      },
+      "ablated": {
+        "detection_accuracy": {
+          "success": 4000,
+          "total": 50000,
+          "rate": 0.08,
+          "wilson_95": [
+            0.0776541496555487,
+            0.08241038426618102
+          ]
+        },
+        "false_positive": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        },
+        "false_negative": {
+          "success": 4000,
+          "total": 50000,
+          "rate": 0.08,
+          "wilson_95": [
+            0.0776541496555487,
+            0.08241038426618102
+          ]
+        }
+      },
+      "naive": {
+        "detection_accuracy": {
+          "success": 47000,
+          "total": 50000,
+          "rate": 0.94,
+          "wilson_95": [
+            0.937884338077473,
+            0.9420480549569054
+          ],
+          "latency_steps": 0.0
+        },
+        "false_positive": {
+          "success": 47000,
+          "total": 50000,
+          "rate": 0.94,
+          "wilson_95": [
+            0.937884338077473,
+            0.9420480549569054
+          ]
+        },
+        "false_negative": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "name": "epiplexity",
+      "scenario": "convergence",
+      "seed": 2178757384,
+      "biological": {
+        "detection_accuracy": {
+          "success": 23628,
+          "total": 50000,
+          "rate": 0.47256,
+          "wilson_95": [
+            0.4681861873727778,
+            0.4769380288434419
+          ]
+        },
+        "false_positive": {
+          "success": 49998,
+          "total": 50000,
+          "rate": 0.99996,
+          "wilson_95": [
+            0.9998541493304776,
+            0.9999890307183128
+          ]
+        },
+        "false_negative": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        },
+        "convergence_discrimination": {
+          "success": 23628,
+          "total": 50000,
+          "rate": 0.47256,
+          "wilson_95": [
+            0.4681861873727778,
+            0.4769380288434419
+          ]
+        }
+      },
+      "ablated": {
+        "detection_accuracy": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        },
+        "false_positive": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        },
+        "false_negative": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        }
+      },
+      "naive": {
+        "detection_accuracy": {
+          "success": 48000,
+          "total": 50000,
+          "rate": 0.96,
+          "wilson_95": [
+            0.9582467045091633,
+            0.9616826154813233
+          ]
+        },
+        "false_positive": {
+          "success": 48000,
+          "total": 50000,
+          "rate": 0.96,
+          "wilson_95": [
+            0.9582467045091633,
+            0.9616826154813233
+          ]
+        },
+        "false_negative": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        },
+        "convergence_discrimination": {
+          "success": 48000,
+          "total": 50000,
+          "rate": 0.96,
+          "wilson_95": [
+            0.9582467045091633,
+            0.9616826154813233
+          ]
+        }
+      }
+    },
+    {
+      "name": "epiplexity",
+      "scenario": "exploration",
+      "seed": 2981575894,
+      "biological": {
+        "detection_accuracy": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        },
+        "false_positive": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        },
+        "false_negative": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        }
+      },
+      "ablated": {
+        "detection_accuracy": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        },
+        "false_positive": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        },
+        "false_negative": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        }
+      },
+      "naive": {
+        "detection_accuracy": {
+          "success": 48000,
+          "total": 50000,
+          "rate": 0.96,
+          "wilson_95": [
+            0.9582467045091633,
+            0.9616826154813233
+          ]
+        },
+        "false_positive": {
+          "success": 48000,
+          "total": 50000,
+          "rate": 0.96,
+          "wilson_95": [
+            0.9582467045091633,
+            0.9616826154813233
+          ]
+        },
+        "false_negative": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "name": "epiplexity",
+      "scenario": "trophic_withdrawal",
+      "seed": 1291209210,
+      "biological": {
+        "detection_accuracy": {
+          "success": 21575,
+          "total": 50000,
+          "rate": 0.4315,
+          "wilson_95": [
+            0.4271640571370891,
+            0.4358464680382406
+          ],
+          "latency_steps": 27.204104903078676
+        },
+        "false_positive": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        },
+        "false_negative": {
+          "success": 21575,
+          "total": 50000,
+          "rate": 0.4315,
+          "wilson_95": [
+            0.4271640571370891,
+            0.4358464680382406
+          ]
+        }
+      },
+      "ablated": {
+        "detection_accuracy": {
+          "success": 20000,
+          "total": 50000,
+          "rate": 0.4,
+          "wilson_95": [
+            0.3957136958405556,
+            0.4043016693789039
+          ]
+        },
+        "false_positive": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        },
+        "false_negative": {
+          "success": 20000,
+          "total": 50000,
+          "rate": 0.4,
+          "wilson_95": [
+            0.3957136958405556,
+            0.4043016693789039
+          ]
+        }
+      },
+      "naive": {
+        "detection_accuracy": {
+          "success": 26004,
+          "total": 50000,
+          "rate": 0.52008,
+          "wilson_95": [
+            0.5156994677304679,
+            0.5244574469334645
+          ],
+          "latency_steps": 0.0
+        },
+        "false_positive": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        },
+        "false_negative": {
+          "success": 26004,
+          "total": 50000,
+          "rate": 0.52008,
+          "wilson_95": [
+            0.5156994677304679,
+            0.5244574469334645
+          ]
+        }
+      }
+    },
+    {
+      "name": "epiplexity",
+      "scenario": "false_stagnation",
+      "seed": 145441148,
+      "biological": {
+        "detection_accuracy": {
+          "success": 26945,
+          "total": 50000,
+          "rate": 0.5389,
+          "wilson_95": [
+            0.5345277690548573,
+            0.543266253874773
+          ]
+        },
+        "false_positive": {
+          "success": 47443,
+          "total": 50000,
+          "rate": 0.94886,
+          "wilson_95": [
+            0.9468944144652569,
+            0.9507566172106774
+          ]
+        },
+        "false_negative": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        },
+        "convergence_discrimination": {
+          "success": 26945,
+          "total": 50000,
+          "rate": 0.5389,
+          "wilson_95": [
+            0.5345277690548573,
+            0.543266253874773
+          ]
+        }
+      },
+      "ablated": {
+        "detection_accuracy": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        },
+        "false_positive": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        },
+        "false_negative": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        }
+      },
+      "naive": {
+        "detection_accuracy": {
+          "success": 47673,
+          "total": 50000,
+          "rate": 0.95346,
+          "wilson_95": [
+            0.9515784634697434,
+            0.9552718614060957
+          ]
+        },
+        "false_positive": {
+          "success": 47673,
+          "total": 50000,
+          "rate": 0.95346,
+          "wilson_95": [
+            0.9515784634697434,
+            0.9552718614060957
+          ]
+        },
+        "false_negative": {
+          "success": 50000,
+          "total": 50000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9999231739027028,
+            1.0
+          ]
+        },
+        "convergence_discrimination": {
+          "success": 47673,
+          "total": 50000,
+          "rate": 0.95346,
+          "wilson_95": [
+            0.9515784634697434,
+            0.9552718614060957
+          ]
+        }
+      }
+    },
+    {
+      "name": "quorum_sensing",
+      "scenario": "static_n5_c0",
+      "seed": 309195613,
+      "biological": {
+        "false_positive": {
+          "success": 0,
+          "total": 30000,
+          "rate": 0.0,
+          "wilson_95": [
+            1.3552527156068805e-20,
+            0.00012803693777666122
+          ]
+        }
+      },
+      "ablated": {
+        "false_positive": {
+          "success": 1474,
+          "total": 30000,
+          "rate": 0.049133333333333334,
+          "wilson_95": [
+            0.04674461001430458,
+            0.05163751182705323
+          ]
+        }
+      },
+      "naive": {
+        "false_positive": {
+          "success": 0,
+          "total": 30000,
+          "rate": 0.0,
+          "wilson_95": [
+            1.3552527156068805e-20,
+            0.00012803693777666122
+          ]
+        }
+      }
+    },
+    {
+      "name": "quorum_sensing",
+      "scenario": "static_n5_c1",
+      "seed": 653686588,
+      "biological": {
+        "true_positive": {
+          "success": 0,
+          "total": 30000,
+          "rate": 0.0,
+          "wilson_95": [
+            1.3552527156068805e-20,
+            0.00012803693777666122
+          ]
+        }
+      },
+      "ablated": {
+        "true_positive": {
+          "success": 29345,
+          "total": 30000,
+          "rate": 0.9781666666666666,
+          "wilson_95": [
+            0.9764506968927861,
+            0.9797601904490533
+          ]
+        }
+      },
+      "naive": {
+        "true_positive": {
+          "success": 15,
+          "total": 30000,
+          "rate": 0.0005,
+          "wilson_95": [
+            0.0003030394616159254,
+            0.0008248694392229592
+          ]
+        }
+      }
+    },
+    {
+      "name": "quorum_sensing",
+      "scenario": "static_n5_c2",
+      "seed": 1488223447,
+      "biological": {
+        "true_positive": {
+          "success": 1836,
+          "total": 30000,
+          "rate": 0.0612,
+          "wilson_95": [
+            0.05854334969615815,
+            0.06396901552043463
+          ]
+        }
+      },
+      "ablated": {
+        "true_positive": {
+          "success": 29988,
+          "total": 30000,
+          "rate": 0.9996,
+          "wilson_95": [
+            0.9993009027843773,
+            0.9997711627073962
+          ]
+        }
+      },
+      "naive": {
+        "true_positive": {
+          "success": 855,
+          "total": 30000,
+          "rate": 0.0285,
+          "wilson_95": [
+            0.026676570278691497,
+            0.03044416855363189
+          ]
+        }
+      }
+    },
+    {
+      "name": "quorum_sensing",
+      "scenario": "static_n10_c0",
+      "seed": 3855867853,
+      "biological": {
+        "false_positive": {
+          "success": 0,
+          "total": 30000,
+          "rate": 0.0,
+          "wilson_95": [
+            1.3552527156068805e-20,
+            0.00012803693777666122
+          ]
+        }
+      },
+      "ablated": {
+        "false_positive": {
+          "success": 2784,
+          "total": 30000,
+          "rate": 0.0928,
+          "wilson_95": [
+            0.08956855438492942,
+            0.09613571889719585
+          ]
+        }
+      },
+      "naive": {
+        "false_positive": {
+          "success": 0,
+          "total": 30000,
+          "rate": 0.0,
+          "wilson_95": [
+            1.3552527156068805e-20,
+            0.00012803693777666122
+          ]
+        }
+      }
+    },
+    {
+      "name": "quorum_sensing",
+      "scenario": "static_n10_c2",
+      "seed": 168064379,
+      "biological": {
+        "true_positive": {
+          "success": 554,
+          "total": 30000,
+          "rate": 0.018466666666666666,
+          "wilson_95": [
+            0.01700367197325987,
+            0.020052969466948237
+          ]
+        }
+      },
+      "ablated": {
+        "true_positive": {
+          "success": 29981,
+          "total": 30000,
+          "rate": 0.9993666666666666,
+          "wilson_95": [
+            0.9990109644990708,
+            0.9995944940766068
+          ]
+        }
+      },
+      "naive": {
+        "true_positive": {
+          "success": 1,
+          "total": 30000,
+          "rate": 3.3333333333333335e-05,
+          "wilson_95": [
+            5.884024708895249e-06,
+            0.00018881104393858087
+          ]
+        }
+      }
+    },
+    {
+      "name": "quorum_sensing",
+      "scenario": "static_n10_c4",
+      "seed": 434774220,
+      "biological": {
+        "true_positive": {
+          "success": 21322,
+          "total": 30000,
+          "rate": 0.7107333333333333,
+          "wilson_95": [
+            0.7055756568695203,
+            0.7158370464957714
+          ]
+        }
+      },
+      "ablated": {
+        "true_positive": {
+          "success": 30000,
+          "total": 30000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9998719630622233,
+            1.0
+          ]
+        }
+      },
+      "naive": {
+        "true_positive": {
+          "success": 1575,
+          "total": 30000,
+          "rate": 0.0525,
+          "wilson_95": [
+            0.050032951007378375,
+            0.05508164205193173
+          ]
+        }
+      }
+    },
+    {
+      "name": "quorum_sensing",
+      "scenario": "static_n20_c0",
+      "seed": 2318389593,
+      "biological": {
+        "false_positive": {
+          "success": 0,
+          "total": 30000,
+          "rate": 0.0,
+          "wilson_95": [
+            1.3552527156068805e-20,
+            0.00012803693777666122
+          ]
+        }
+      },
+      "ablated": {
+        "false_positive": {
+          "success": 5382,
+          "total": 30000,
+          "rate": 0.1794,
+          "wilson_95": [
+            0.17509930651155503,
+            0.18378279077294735
+          ]
+        }
+      },
+      "naive": {
+        "false_positive": {
+          "success": 0,
+          "total": 30000,
+          "rate": 0.0,
+          "wilson_95": [
+            1.3552527156068805e-20,
+            0.00012803693777666122
+          ]
+        }
+      }
+    },
+    {
+      "name": "quorum_sensing",
+      "scenario": "static_n20_c4",
+      "seed": 3159293868,
+      "biological": {
+        "true_positive": {
+          "success": 22422,
+          "total": 30000,
+          "rate": 0.7474,
+          "wilson_95": [
+            0.7424516671032254,
+            0.7522849802199626
+          ]
+        }
+      },
+      "ablated": {
+        "true_positive": {
+          "success": 30000,
+          "total": 30000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9998719630622233,
+            1.0
+          ]
+        }
+      },
+      "naive": {
+        "true_positive": {
+          "success": 0,
+          "total": 30000,
+          "rate": 0.0,
+          "wilson_95": [
+            1.3552527156068805e-20,
+            0.00012803693777666122
+          ]
+        }
+      }
+    },
+    {
+      "name": "quorum_sensing",
+      "scenario": "static_n20_c8",
+      "seed": 2138675566,
+      "biological": {
+        "true_positive": {
+          "success": 25972,
+          "total": 30000,
+          "rate": 0.8657333333333334,
+          "wilson_95": [
+            0.8618283853117031,
+            0.8695446266028778
+          ]
+        }
+      },
+      "ablated": {
+        "true_positive": {
+          "success": 30000,
+          "total": 30000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9998719630622233,
+            1.0
+          ]
+        }
+      },
+      "naive": {
+        "true_positive": {
+          "success": 131,
+          "total": 30000,
+          "rate": 0.004366666666666666,
+          "wilson_95": [
+            0.0036813401298706654,
+            0.005178911951982745
+          ]
+        }
+      }
+    },
+    {
+      "name": "quorum_sensing",
+      "scenario": "gradual_infiltration_n5_c0",
+      "seed": 3128228412,
+      "biological": {
+        "false_positive": {
+          "success": 0,
+          "total": 30000,
+          "rate": 0.0,
+          "wilson_95": [
+            1.3552527156068805e-20,
+            0.00012803693777666122
+          ]
+        }
+      },
+      "ablated": {
+        "false_positive": {
+          "success": 1402,
+          "total": 30000,
+          "rate": 0.046733333333333335,
+          "wilson_95": [
+            0.04440236680753622,
+            0.04918036961112292
+          ]
+        }
+      },
+      "naive": {
+        "false_positive": {
+          "success": 1,
+          "total": 30000,
+          "rate": 3.3333333333333335e-05,
+          "wilson_95": [
+            5.884024708895249e-06,
+            0.00018881104393858087
+          ]
+        }
+      }
+    },
+    {
+      "name": "quorum_sensing",
+      "scenario": "gradual_infiltration_n5_c1",
+      "seed": 784326872,
+      "biological": {
+        "true_positive": {
+          "success": 0,
+          "total": 15282,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.0002513175329515386
+          ]
+        },
+        "false_positive": {
+          "success": 0,
+          "total": 14718,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.00026094561430412347
+          ]
+        }
+      },
+      "ablated": {
+        "true_positive": {
+          "success": 14969,
+          "total": 15282,
+          "rate": 0.9795183876455962,
+          "wilson_95": [
+            0.9771492134495311,
+            0.9816465390852854
+          ]
+        },
+        "false_positive": {
+          "success": 709,
+          "total": 14718,
+          "rate": 0.04817230601983965,
+          "wilson_95": [
+            0.04482918115164522,
+            0.05175123579836462
+          ]
+        }
+      },
+      "naive": {
+        "true_positive": {
+          "success": 9,
+          "total": 15282,
+          "rate": 0.0005889281507656066,
+          "wilson_95": [
+            0.0003098727782411711,
+            0.0011190050403017085
+          ]
+        },
+        "false_positive": {
+          "success": 1,
+          "total": 14718,
+          "rate": 6.794401413235494e-05,
+          "wilson_95": [
+            1.1993579027083623e-05,
+            0.00038480460415673764
+          ]
+        }
+      }
+    },
+    {
+      "name": "quorum_sensing",
+      "scenario": "gradual_infiltration_n5_c2",
+      "seed": 2951626699,
+      "biological": {
+        "true_positive": {
+          "success": 78,
+          "total": 18198,
+          "rate": 0.004286185295087373,
+          "wilson_95": [
+            0.0034359828740972626,
+            0.005345634036578413
+          ]
+        },
+        "false_positive": {
+          "success": 0,
+          "total": 11802,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.00032539823336271085
+          ]
+        }
+      },
+      "ablated": {
+        "true_positive": {
+          "success": 18073,
+          "total": 18198,
+          "rate": 0.9931311133091548,
+          "wilson_95": [
+            0.9918226303772774,
+            0.9942314401075464
+          ]
+        },
+        "false_positive": {
+          "success": 532,
+          "total": 11802,
+          "rate": 0.045077105575326216,
+          "wilson_95": [
+            0.041479641751716236,
+            0.048970631611260286
+          ]
+        }
+      },
+      "naive": {
+        "true_positive": {
+          "success": 345,
+          "total": 18198,
+          "rate": 0.018958127266732606,
+          "wilson_95": [
+            0.017075801433731247,
+            0.021043506230170185
+          ]
+        },
+        "false_positive": {
+          "success": 0,
+          "total": 11802,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.00032539823336271085
+          ]
+        }
+      }
+    },
+    {
+      "name": "quorum_sensing",
+      "scenario": "gradual_infiltration_n10_c0",
+      "seed": 919112691,
+      "biological": {
+        "false_positive": {
+          "success": 0,
+          "total": 30000,
+          "rate": 0.0,
+          "wilson_95": [
+            1.3552527156068805e-20,
+            0.00012803693777666122
+          ]
+        }
+      },
+      "ablated": {
+        "false_positive": {
+          "success": 2851,
+          "total": 30000,
+          "rate": 0.09503333333333333,
+          "wilson_95": [
+            0.09176643108555176,
+            0.09840393696491813
+          ]
+        }
+      },
+      "naive": {
+        "false_positive": {
+          "success": 0,
+          "total": 30000,
+          "rate": 0.0,
+          "wilson_95": [
+            1.3552527156068805e-20,
+            0.00012803693777666122
+          ]
+        }
+      }
+    },
+    {
+      "name": "quorum_sensing",
+      "scenario": "gradual_infiltration_n10_c2",
+      "seed": 801196476,
+      "biological": {
+        "true_positive": {
+          "success": 26,
+          "total": 18211,
+          "rate": 0.0014277085278128604,
+          "wilson_95": [
+            0.0009745251421746133,
+            0.0020911946277958264
+          ]
+        },
+        "false_positive": {
+          "success": 0,
+          "total": 11789,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.0003257569405494261
+          ]
+        }
+      },
+      "ablated": {
+        "true_positive": {
+          "success": 18074,
+          "total": 18211,
+          "rate": 0.9924770742957553,
+          "wilson_95": [
+            0.9911140522894144,
+            0.9936323646105272
+          ]
+        },
+        "false_positive": {
+          "success": 1059,
+          "total": 11789,
+          "rate": 0.0898295020782085,
+          "wilson_95": [
+            0.08480058044487138,
+            0.09512565548455887
+          ]
+        }
+      },
+      "naive": {
+        "true_positive": {
+          "success": 1,
+          "total": 18211,
+          "rate": 5.491186645434078e-05,
+          "wilson_95": [
+            9.693109213656012e-06,
+            0.00031101239722346825
+          ]
+        },
+        "false_positive": {
+          "success": 0,
+          "total": 11789,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.0003257569405494261
+          ]
+        }
+      }
+    },
+    {
+      "name": "quorum_sensing",
+      "scenario": "gradual_infiltration_n10_c4",
+      "seed": 507852237,
+      "biological": {
+        "true_positive": {
+          "success": 8824,
+          "total": 20172,
+          "rate": 0.4374380329169145,
+          "wilson_95": [
+            0.4306047732800101,
+            0.44429511689359236
+          ]
+        },
+        "false_positive": {
+          "success": 0,
+          "total": 9828,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.0003907304609138536
+          ]
+        }
+      },
+      "ablated": {
+        "true_positive": {
+          "success": 20087,
+          "total": 20172,
+          "rate": 0.9957862383501884,
+          "wilson_95": [
+            0.9947930296612048,
+            0.9965906457538521
+          ]
+        },
+        "false_positive": {
+          "success": 895,
+          "total": 9828,
+          "rate": 0.09106634106634107,
+          "wilson_95": [
+            0.08553687390020782,
+            0.09691537390655096
+          ]
+        }
+      },
+      "naive": {
+        "true_positive": {
+          "success": 581,
+          "total": 20172,
+          "rate": 0.028802300218124133,
+          "wilson_95": [
+            0.026582425398462388,
+            0.031201612715714727
+          ]
+        },
+        "false_positive": {
+          "success": 0,
+          "total": 9828,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.0003907304609138536
+          ]
+        }
+      }
+    },
+    {
+      "name": "quorum_sensing",
+      "scenario": "gradual_infiltration_n20_c0",
+      "seed": 3304664223,
+      "biological": {
+        "false_positive": {
+          "success": 0,
+          "total": 30000,
+          "rate": 0.0,
+          "wilson_95": [
+            1.3552527156068805e-20,
+            0.00012803693777666122
+          ]
+        }
+      },
+      "ablated": {
+        "false_positive": {
+          "success": 5340,
+          "total": 30000,
+          "rate": 0.178,
+          "wilson_95": [
+            0.1737127694701172,
+            0.18236968631781092
+          ]
+        }
+      },
+      "naive": {
+        "false_positive": {
+          "success": 0,
+          "total": 30000,
+          "rate": 0.0,
+          "wilson_95": [
+            1.3552527156068805e-20,
+            0.00012803693777666122
+          ]
+        }
+      }
+    },
+    {
+      "name": "quorum_sensing",
+      "scenario": "gradual_infiltration_n20_c4",
+      "seed": 2918241653,
+      "biological": {
+        "true_positive": {
+          "success": 12449,
+          "total": 20217,
+          "rate": 0.6157689073551961,
+          "wilson_95": [
+            0.6090424514483092,
+            0.6224513751983521
+          ]
+        },
+        "false_positive": {
+          "success": 0,
+          "total": 9783,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.00039252704365829317
+          ]
+        }
+      },
+      "ablated": {
+        "true_positive": {
+          "success": 20149,
+          "total": 20217,
+          "rate": 0.9966364940396696,
+          "wilson_95": [
+            0.9957385504552219,
+            0.9973457334353162
+          ]
+        },
+        "false_positive": {
+          "success": 1789,
+          "total": 9783,
+          "rate": 0.1828682408259225,
+          "wilson_95": [
+            0.17533310155763163,
+            0.19065234567797087
+          ]
+        }
+      },
+      "naive": {
+        "true_positive": {
+          "success": 0,
+          "total": 20217,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.00018998220133429065
+          ]
+        },
+        "false_positive": {
+          "success": 0,
+          "total": 9783,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.00039252704365829317
+          ]
+        }
+      }
+    },
+    {
+      "name": "quorum_sensing",
+      "scenario": "gradual_infiltration_n20_c8",
+      "seed": 2616343886,
+      "biological": {
+        "true_positive": {
+          "success": 15561,
+          "total": 21765,
+          "rate": 0.7149552033080634,
+          "wilson_95": [
+            0.7089201450144267,
+            0.7209143942749767
+          ]
+        },
+        "false_positive": {
+          "success": 0,
+          "total": 8235,
+          "rate": 0.0,
+          "wilson_95": [
+            2.710505431213761e-20,
+            0.0004662791429319384
+          ]
+        }
+      },
+      "ablated": {
+        "true_positive": {
+          "success": 21722,
+          "total": 21765,
+          "rate": 0.9980243510222835,
+          "wilson_95": [
+            0.9973400718474027,
+            0.9985328550794946
+          ]
+        },
+        "false_positive": {
+          "success": 1400,
+          "total": 8235,
+          "rate": 0.1700060716454159,
+          "wilson_95": [
+            0.16204714047040472,
+            0.17827274139259894
+          ]
+        }
+      },
+      "naive": {
+        "true_positive": {
+          "success": 32,
+          "total": 21765,
+          "rate": 0.0014702504020215944,
+          "wilson_95": [
+            0.0010416837587720086,
+            0.0020747705407530527
+          ]
+        },
+        "false_positive": {
+          "success": 0,
+          "total": 8235,
+          "rate": 0.0,
+          "wilson_95": [
+            2.710505431213761e-20,
+            0.0004662791429319384
+          ]
+        }
+      }
+    },
+    {
+      "name": "quorum_sensing",
+      "scenario": "noisy_n5_c0",
+      "seed": 3563613435,
+      "biological": {
+        "false_positive": {
+          "success": 0,
+          "total": 30000,
+          "rate": 0.0,
+          "wilson_95": [
+            1.3552527156068805e-20,
+            0.00012803693777666122
+          ]
+        }
+      },
+      "ablated": {
+        "false_positive": {
+          "success": 1480,
+          "total": 30000,
+          "rate": 0.04933333333333333,
+          "wilson_95": [
+            0.04693987130512894,
+            0.05184219932145375
+          ]
+        }
+      },
+      "naive": {
+        "false_positive": {
+          "success": 0,
+          "total": 30000,
+          "rate": 0.0,
+          "wilson_95": [
+            1.3552527156068805e-20,
+            0.00012803693777666122
+          ]
+        }
+      }
+    },
+    {
+      "name": "quorum_sensing",
+      "scenario": "noisy_n10_c0",
+      "seed": 2760896292,
+      "biological": {
+        "false_positive": {
+          "success": 0,
+          "total": 30000,
+          "rate": 0.0,
+          "wilson_95": [
+            1.3552527156068805e-20,
+            0.00012803693777666122
+          ]
+        }
+      },
+      "ablated": {
+        "false_positive": {
+          "success": 2819,
+          "total": 30000,
+          "rate": 0.09396666666666667,
+          "wilson_95": [
+            0.09071662807296633,
+            0.09732067978963747
+          ]
+        }
+      },
+      "naive": {
+        "false_positive": {
+          "success": 0,
+          "total": 30000,
+          "rate": 0.0,
+          "wilson_95": [
+            1.3552527156068805e-20,
+            0.00012803693777666122
+          ]
+        }
+      }
+    },
+    {
+      "name": "quorum_sensing",
+      "scenario": "noisy_n20_c0",
+      "seed": 3221688145,
+      "biological": {
+        "false_positive": {
+          "success": 0,
+          "total": 30000,
+          "rate": 0.0,
+          "wilson_95": [
+            1.3552527156068805e-20,
+            0.00012803693777666122
+          ]
+        }
+      },
+      "ablated": {
+        "false_positive": {
+          "success": 5307,
+          "total": 30000,
+          "rate": 0.1769,
+          "wilson_95": [
+            0.17262341694369795,
+            0.1812593205254933
+          ]
+        }
+      },
+      "naive": {
+        "false_positive": {
+          "success": 0,
+          "total": 30000,
+          "rate": 0.0,
+          "wilson_95": [
+            1.3552527156068805e-20,
+            0.00012803693777666122
+          ]
+        }
+      }
+    },
+    {
+      "name": "metabolism",
+      "scenario": "constant",
+      "seed": 2984018161,
+      "biological": {
+        "operations_completed": {
+          "success": 200000,
+          "total": 200000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.99998079236894,
+            0.9999999999999999
+          ]
+        }
+      },
+      "ablated": {
+        "operations_completed": {
+          "success": 200000,
+          "total": 200000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.99998079236894,
+            0.9999999999999999
+          ]
+        }
+      },
+      "naive": {
+        "operations_completed": {
+          "success": 200000,
+          "total": 200000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.99998079236894,
+            0.9999999999999999
+          ]
+        }
+      }
+    },
+    {
+      "name": "metabolism",
+      "scenario": "bursty",
+      "seed": 2790918659,
+      "biological": {
+        "operations_completed": {
+          "success": 143000,
+          "total": 200000,
+          "rate": 0.715,
+          "wilson_95": [
+            0.7130174740205801,
+            0.7169742666980641
+          ]
+        },
+        "critical_served_under_pressure": {
+          "success": 2421,
+          "total": 2421,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9984157315677856,
+            0.9999999999999999
+          ]
+        }
+      },
+      "ablated": {
+        "operations_completed": {
+          "success": 143000,
+          "total": 200000,
+          "rate": 0.715,
+          "wilson_95": [
+            0.7130174740205801,
+            0.7169742666980641
+          ]
+        },
+        "critical_served_under_pressure": {
+          "success": 2421,
+          "total": 2421,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9984157315677856,
+            0.9999999999999999
+          ]
+        }
+      },
+      "naive": {
+        "operations_completed": {
+          "success": 137000,
+          "total": 200000,
+          "rate": 0.685,
+          "wilson_95": [
+            0.6829606324467695,
+            0.6870322607297384
+          ]
+        },
+        "critical_served_under_pressure": {
+          "success": 1226,
+          "total": 3037,
+          "rate": 0.4036878498518275,
+          "wilson_95": [
+            0.3863702097450941,
+            0.4212488388761823
+          ]
+        }
+      }
+    },
+    {
+      "name": "metabolism",
+      "scenario": "gradual_depletion",
+      "seed": 4087831214,
+      "biological": {
+        "operations_completed": {
+          "success": 199183,
+          "total": 200000,
+          "rate": 0.995915,
+          "wilson_95": [
+            0.995625772335969,
+            0.9961851769593167
+          ]
+        },
+        "critical_served_under_pressure": {
+          "success": 4316,
+          "total": 4316,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9991107081333722,
+            0.9999999999999999
+          ]
+        }
+      },
+      "ablated": {
+        "operations_completed": {
+          "success": 199183,
+          "total": 200000,
+          "rate": 0.995915,
+          "wilson_95": [
+            0.995625772335969,
+            0.9961851769593167
+          ]
+        },
+        "critical_served_under_pressure": {
+          "success": 4316,
+          "total": 4316,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9991107081333722,
+            0.9999999999999999
+          ]
+        }
+      },
+      "naive": {
+        "operations_completed": {
+          "success": 190000,
+          "total": 200000,
+          "rate": 0.95,
+          "wilson_95": [
+            0.9490361407871057,
+            0.9509465723449402
+          ]
+        },
+        "critical_served_under_pressure": {
+          "success": 5447,
+          "total": 7091,
+          "rate": 0.7681568185023269,
+          "wilson_95": [
+            0.7581906532586682,
+            0.7778325893180229
+          ]
+        }
+      }
+    },
+    {
+      "name": "metabolism",
+      "scenario": "sudden_spike",
+      "seed": 290294918,
+      "biological": {
+        "operations_completed": {
+          "success": 200000,
+          "total": 200000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.99998079236894,
+            0.9999999999999999
+          ]
+        }
+      },
+      "ablated": {
+        "operations_completed": {
+          "success": 200000,
+          "total": 200000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.99998079236894,
+            0.9999999999999999
+          ]
+        }
+      },
+      "naive": {
+        "operations_completed": {
+          "success": 200000,
+          "total": 200000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.99998079236894,
+            0.9999999999999999
+          ]
+        }
+      }
+    },
+    {
+      "name": "metabolism",
+      "scenario": "mixed_priority",
+      "seed": 2573600015,
+      "biological": {
+        "operations_completed": {
+          "success": 200000,
+          "total": 200000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.99998079236894,
+            0.9999999999999999
+          ]
+        },
+        "critical_served_under_pressure": {
+          "success": 9372,
+          "total": 9372,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9995902661154172,
+            1.0
+          ]
+        }
+      },
+      "ablated": {
+        "operations_completed": {
+          "success": 200000,
+          "total": 200000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.99998079236894,
+            0.9999999999999999
+          ]
+        },
+        "critical_served_under_pressure": {
+          "success": 9372,
+          "total": 9372,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9995902661154172,
+            1.0
+          ]
+        }
+      },
+      "naive": {
+        "operations_completed": {
+          "success": 200000,
+          "total": 200000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.99998079236894,
+            0.9999999999999999
+          ]
+        },
+        "critical_served_under_pressure": {
+          "success": 18058,
+          "total": 18058,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9997873085101133,
+            0.9999999999999999
+          ]
+        }
+      }
+    }
+  ]
+}

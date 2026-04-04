@@ -1,0 +1,37 @@
+\begin{table}[h]
+\caption{quorum_sensing: Biological vs Naive Comparison}
+\centering
+\begin{tabular}{llccccc}
+\toprule
+Scenario & Metric & Biological & Ablated & Naive & $\Delta$ & N \\
+\midrule
+gradual_infiltration_n10_c0 & false_positive & 0.000 & 0.094 & 0.000 & +0.000 & 300000 \\
+gradual_infiltration_n10_c2 & false_positive & 0.000 & 0.094 & 0.000 & +0.000 & 117786 \\
+gradual_infiltration_n10_c2 & true_positive & 0.002 & 0.993 & 0.000 & \textbf{+0.002} & 182214 \\
+gradual_infiltration_n10_c4 & false_positive & 0.000 & 0.094 & 0.000 & +0.000 & 97176 \\
+gradual_infiltration_n10_c4 & true_positive & 0.435 & 0.996 & 0.028 & \textbf{+0.407} & 202824 \\
+gradual_infiltration_n20_c0 & false_positive & 0.000 & 0.180 & 0.000 & +0.000 & 300000 \\
+gradual_infiltration_n20_c4 & false_positive & 0.000 & 0.179 & 0.000 & +0.000 & 97466 \\
+gradual_infiltration_n20_c4 & true_positive & 0.617 & 0.997 & 0.000 & \textbf{+0.617} & 202534 \\
+gradual_infiltration_n20_c8 & false_positive & 0.000 & 0.176 & 0.000 & +0.000 & 83041 \\
+gradual_infiltration_n20_c8 & true_positive & 0.718 & 0.999 & 0.002 & \textbf{+0.716} & 216959 \\
+gradual_infiltration_n5_c0 & false_positive & 0.000 & 0.048 & 0.000 & -0.000 & 300000 \\
+gradual_infiltration_n5_c1 & false_positive & 0.000 & 0.048 & 0.000 & -0.000 & 145315 \\
+gradual_infiltration_n5_c1 & true_positive & 0.000 & 0.979 & 0.001 & \textbf{-0.001} & 154685 \\
+gradual_infiltration_n5_c2 & false_positive & 0.000 & 0.047 & 0.000 & -0.000 & 118062 \\
+gradual_infiltration_n5_c2 & true_positive & 0.004 & 0.993 & 0.020 & \textbf{-0.016} & 181938 \\
+noisy_n10_c0 & false_positive & 0.000 & 0.094 & 0.000 & +0.000 & 300000 \\
+noisy_n20_c0 & false_positive & 0.000 & 0.180 & 0.000 & +0.000 & 300000 \\
+noisy_n5_c0 & false_positive & 0.000 & 0.048 & 0.000 & -0.000 & 300000 \\
+static_n10_c0 & false_positive & 0.000 & 0.094 & 0.000 & +0.000 & 300000 \\
+static_n10_c2 & true_positive & 0.019 & 1.000 & 0.000 & \textbf{+0.019} & 300000 \\
+static_n10_c4 & true_positive & 0.711 & 1.000 & 0.052 & \textbf{+0.659} & 300000 \\
+static_n20_c0 & false_positive & 0.000 & 0.179 & 0.000 & +0.000 & 300000 \\
+static_n20_c4 & true_positive & 0.748 & 1.000 & 0.000 & \textbf{+0.748} & 300000 \\
+static_n20_c8 & true_positive & 0.866 & 1.000 & 0.005 & \textbf{+0.861} & 300000 \\
+static_n5_c0 & false_positive & 0.000 & 0.049 & 0.000 & -0.000 & 300000 \\
+static_n5_c1 & true_positive & 0.000 & 0.978 & 0.000 & \textbf{-0.000} & 300000 \\
+static_n5_c2 & true_positive & 0.064 & 1.000 & 0.028 & \textbf{+0.036} & 300000 \\
+\bottomrule
+\end{tabular}
+\end{table}
