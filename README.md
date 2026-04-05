@@ -156,7 +156,7 @@ See the [Bi-Temporal Memory docs](https://banu.be/operon/bitemporal-memory/), [e
 
 ### Convergence: Structural Analysis for External Frameworks
 
-The `operon_ai.convergence` package provides typed adapters for 6 external agent frameworks ([Swarms](https://github.com/kyegomez/swarms), [DeerFlow](https://github.com/bytedance/deer-flow), [AnimaWorks](https://github.com/AnimaWorks/AnimaWorks), [Ralph](https://github.com/mikeyobrien/ralph-orchestrator), [A-Evolve](https://github.com/A-EVO-Lab/a-evolve), [Scion](https://github.com/GoogleCloudPlatform/scion)) into Operon's structural analysis layer. No external dependencies — all operate on plain dicts.
+The `operon_ai.convergence` package provides typed adapters for 6 external agent frameworks ([Swarms](https://github.com/kyegomez/swarms), [DeerFlow](https://github.com/bytedance/deer-flow), [AnimaWorks](https://github.com/xuiltul/animaworks), [Ralph](https://github.com/mikeyobrien/ralph-orchestrator), [A-Evolve](https://github.com/A-EVO-Lab/a-evolve), [Scion](https://github.com/GoogleCloudPlatform/scion)) into Operon's structural analysis layer. No external dependencies — all operate on plain dicts.
 
 ```python
 from operon_ai import PatternLibrary

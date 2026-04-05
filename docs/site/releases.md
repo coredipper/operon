@@ -92,7 +92,7 @@ New:
 
 Focus:
 
-- convergence adapters for [Swarms](https://github.com/kyegomez/swarms), [DeerFlow](https://github.com/bytedance/deer-flow), and [AnimaWorks](https://github.com/AnimaWorks/AnimaWorks)
+- convergence adapters for [Swarms](https://github.com/kyegomez/swarms), [DeerFlow](https://github.com/bytedance/deer-flow), and [AnimaWorks](https://github.com/xuiltul/animaworks)
 - template exchange, [DeerFlow](https://github.com/bytedance/deer-flow) skill bridge, hybrid assembly
 - PrimingView multi-channel context, memory bridge, HeartbeatDaemon
 - AsyncThink Fork/Join execution, TLA+ formal verification, co-design theory
