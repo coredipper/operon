@@ -692,9 +692,11 @@ Under bursty load, the biological system served 100\% of critical
 operations (priority $\geq 5$) during resource pressure, versus 39.8\%
 for the flat counter ($\Delta = +0.602$, $p < 0.001$, $N = 24{,}139$
 pressure events).  Against the naive baseline, the biological system
-also improves total throughput (71.9\% vs 68.5\%); against the ablated
-control, the mTOR scaler trades 1.7 percentage points of throughput
-for guaranteed critical service via feature gating.
+also improves total throughput (71.9\% vs 68.5\% under bursty load).
+Both biological and ablated variants achieve identical critical-service
+rates; the mTOR scaler's additional preemptive gating reduces gradual-depletion
+throughput by 1.7 percentage points (97.9\% vs 99.6\%) without
+providing further critical-service benefit in these experiments.
 
 \paragraph{Quorum sensing: precision--recall tradeoff.}
 The biological signal-accumulation model achieved 0\% false-positive

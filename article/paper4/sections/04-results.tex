@@ -39,13 +39,14 @@ gradual depletion, the gap is smaller but still significant: 100\% vs
 Against the naive baseline, the biological system actually \emph{improves}
 total throughput: 71.9\% versus 68.5\% under bursty load ($\Delta = +0.034$),
 because priority gating preserves budget for later operations that the
-flat counter would miss entirely.  The throughput tradeoff appears when
-comparing biological against ablated: under gradual depletion, biological
-completed 97.9\% versus ablated's 99.6\%, because the MTORScaler's
-anticipatory conservation gates some non-critical operations that
-ATP\_Store alone would have served.  This is the intended tradeoff:
-the mTOR scaler trades 1.7 percentage points of throughput against the
-ablated control for guaranteed critical service via feature gating.
+flat counter would miss entirely.  Comparing biological against ablated,
+both achieve identical critical-service rates (100\%).  However, under
+gradual depletion the mTOR scaler's anticipatory conservation gates some
+non-critical operations earlier: biological completed 97.9\% versus
+ablated's 99.6\%.  This 1.7 percentage-point throughput reduction is the
+cost of the mTOR scaler's preemptive feature gating, which in these
+experiments did not produce an additional critical-service benefit
+beyond what ATP\_Store's own state machine already provides.
 
 Under constant load, sudden spike, and mixed priority, all three
 variants perform identically.  The biological complexity only matters
