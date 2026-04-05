@@ -295,6 +295,30 @@ class TestCalibration:
                 f"Certificate violation at N={n}: activation={level:.3f}"
             )
 
+    def test_calibrate_with_non_unit_interval(self):
+        """Certificate holds when emission interval != 1.0."""
+        import random
+        for dt in [0.5, 2.0, 5.0]:
+            qs = QuorumSensingBio(
+                population_size=10,
+                environment=SignalEnvironment(decay_half_life=5.0),
+                emission_interval=dt,
+            )
+            qs.calibrate()
+
+            rng = random.Random(42)
+            t = 0.0
+            for _ in range(100):
+                for i in range(10):
+                    susp = max(0, 0.15 + rng.gauss(0, 0.05))
+                    qs.produce_signal(f"a{i}", susp, t)
+                t += dt
+
+            level = qs.get_activation_level("AI-1", t - dt)
+            assert level < 1.0, (
+                f"Certificate violation at dt={dt}: activation={level:.3f}"
+            )
+
     def test_backward_compat_uncalibrated(self):
         """Without calibrate(), original log-scaling is used."""
         qs = QuorumSensingBio(population_size=10, threshold_base=10.0)

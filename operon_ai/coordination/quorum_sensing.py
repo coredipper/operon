@@ -173,6 +173,7 @@ class QuorumSensingBio:
     # Calibration parameters (set via calibrate())
     expected_normal_suspicion: float = 0.15
     safety_margin: float = 2.0
+    emission_interval: float = 1.0  # Time units between signal deposits
     _calibrated: bool = field(default=False, repr=False)
 
     def calibrate(self) -> None:
@@ -183,11 +184,11 @@ class QuorumSensingBio:
         of 1/safety_margin at steady state — guaranteeing no false activation
         under normal conditions.
 
-        Uses the exact discrete-time steady state.  Each step, N agents
-        deposit signals of magnitude s.  Previous signals decay by
-        2^(-1/h) per step.  The geometric series gives:
+        Uses the exact discrete-time steady state.  Every dt time units,
+        N agents deposit signals of magnitude s.  Previous signals decay
+        by 2^(-dt/h) per interval.  The geometric series gives:
 
-            c_ss = N × s / (1 - 2^(-1/h))
+            c_ss = N × s / (1 - 2^(-dt/h))
 
         Setting threshold = c_ss × safety_margin ensures activation_level
         = c_ss / threshold = 1/safety_margin < 1.0 for all normal traffic.
@@ -209,8 +210,11 @@ class QuorumSensingBio:
         When not calibrated: log(N) × threshold_base (manual tuning).
         """
         if self._calibrated:
-            # Exact discrete steady state: geometric series with decay 2^(-1/h)
-            decay_per_step = 2.0 ** (-1.0 / self.environment.decay_half_life)
+            # Exact discrete steady state: geometric series with decay
+            # 2^(-dt/h) per emission interval dt
+            decay_per_step = 2.0 ** (
+                -self.emission_interval / self.environment.decay_half_life
+            )
             steady_state = (
                 self.population_size
                 * self.expected_normal_suspicion
