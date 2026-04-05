@@ -1,0 +1,143 @@
+\section{Discussion}\label{sec:discussion}
+
+\subsection{When Biological Structure Earns Complexity}
+
+The two positive results share a common pattern: both work through
+\emph{mechanism design} rather than \emph{algorithmic sophistication}.
+
+The metabolic priority gate is a simple state machine.  When resources
+drop below 10\%, operations with priority $< 5$ are rejected.  This is
+not a complex algorithm---it is a structural rule.  But it provides a
+hard guarantee: critical operations \emph{will} be served under any
+load pattern, at the cost of bounded throughput reduction.  A flat
+counter cannot provide this guarantee without reimplementing the state
+machine, at which point it is no longer a flat counter.
+
+The quorum sensing decay is exponential half-life applied to signal
+concentrations.  Again, not algorithmically complex.  But the
+combination of continuous signals (noise averaging) and temporal decay
+(stale evidence removal) occupies a precision--recall position that
+neither majority voting nor independent detection can reach without
+adding similar structural properties.
+
+In both cases, the biological metaphor provided the \emph{right
+structural choice}---priority-dependent resource gating from metabolic
+state machines, temporal signal decay from autoinducer kinetics---rather
+than a better algorithm for the same structural choice.
+
+\subsection{When Embedding Quality Matters}
+
+The epiplexity result demonstrates a subtler lesson than the other two
+benchmarks: biological designs that rely on \emph{information quality}
+succeed only when that quality is present.
+
+With mock embeddings, the two-signal design fails---the novelty signal
+carries no semantic information, so combining it with approximate
+perplexity produces worse results than a single clean cosine-similarity
+signal.  With real sentence embeddings (all-MiniLM-L6-v2), the same
+design dominates on convergence discrimination: 96\% accuracy versus
+2--40\% for the naive detector on the hardest scenarios.
+
+The structural guarantee here is conditional: the Bayesian two-signal
+design provides a \emph{convergence/stagnation distinction guarantee}
+that the cosine detector structurally cannot make, but only when the
+embedding signal carries semantic meaning.  This is analogous to a
+biological receptor that provides a structural binding guarantee but
+only functions in the presence of its ligand.
+
+This refines the C8 finding~\cite{banu2026operon} that biological
+abstractions generalize as code structure rather than optimization
+algorithms.  The epiplexity monitor's \emph{structure} (two independent
+signals combined via Bayesian weighting) does generalize---but its
+\emph{performance} depends on signal quality.
+
+The pattern across all three benchmarks: biological designs that enforce
+structural invariants outperform simpler alternatives, while
+information-processing gains depend on signal quality.
+
+\subsection{Implications for Framework Integration}
+
+Operon provides convergence adapters for six agent
+frameworks~\cite{banu2026convergence}.  The benchmark results inform
+which frameworks benefit most from biological structural guarantees:
+
+\paragraph{A-Evolve.}
+Its single-agent Solve-Observe-Evolve-Gate-Reload loop is where
+metabolic budgets directly prevent unbounded exploration.  The
+benchmark shows the fitness gate (a critical operation) is always
+evaluated under metabolic budgeting---mapped to A-Evolve, this means
+the evolutionary quality check is never skipped even when the
+exploration budget is depleted.
+
+\paragraph{Swarms.}
+Its graph-based multi-agent topology is where quorum sensing provides
+the most value: leaderless consensus with zero false positives.  When
+false consensus triggers coordinated action across a swarm, the 0\%
+FPR guarantee is operationally critical.
+
+\paragraph{DeerFlow.}
+Its hierarchical architecture with recursive sub-agent calls benefits
+from metabolic budgets that prevent resource exhaustion.  The
+MTORScaler's rate-of-change sensitivity is especially relevant for
+DeerFlow's progressive skill loading, where resource consumption can
+accelerate suddenly.
+
+\paragraph{AnimaWorks, Ralph, Scion.}
+Lighter benefits: genome immutability for configuration audit
+(AnimaWorks), metabolic budgets mapping to backpressure enforcement
+(Ralph), and quorum sensing for cross-container consensus (Scion).
+
+\subsection{Relationship to Epistemic Topology}
+
+Operon's epistemic topology layer derives four bounds from wiring
+diagram structure: error amplification, sequential communication
+overhead, parallel speedup, and tool density scaling.  These
+operate at a different level than the mechanism benchmarks presented
+here.
+
+The epistemic bounds predict architecture-level properties (a long
+pipeline \emph{will} accumulate sequential overhead); the mechanism
+benchmarks test feature-level guarantees (critical operations
+\emph{will} be served under pressure).  The two are complementary:
+epistemic topology identifies architectures likely to need structural
+guarantees; the mechanism benchmarks validate that those guarantees
+work as claimed.
+
+However, the epistemic bounds currently lack empirical validation
+against measured behavior.  The metabolism and quorum sensing
+benchmarks now have stronger empirical backing than the topology
+theorems.  Validating the predicted error amplification and sequential
+overhead bounds against actual benchmark measurements remains future
+work.
+
+\subsection{Categorical Certificates for Structural Guarantees}
+
+The quorum sensing threshold calibration provides a concrete instance
+of \emph{semantic certificates} as formalized by de~los~Riscos
+et~al.~\cite{delosriscos2026categorical}.  The no-false-activation
+guarantee is a certificate $\text{cert}_\text{QS} = (T, \tau, \text{evds})$
+where $T$ states that normal traffic never triggers activation,
+$\tau$ maps the theorem's symbols to the quorum sensing parameters
+$(N, s, h, m)$, and the evidence is the derivation:
+
+\[
+  c_\text{ss} = \frac{N \cdot s}{1 - 2^{-1/h}}, \quad
+  \theta = c_\text{ss} \cdot m, \quad
+  \text{level} = \frac{c_\text{ss}}{\theta} = \frac{1}{m} < 1.
+\]
+
+Because the threshold is defined in terms of architecture parameters
+$(N, s, h)$ rather than a fixed constant, the guarantee preserves
+under architecture morphisms that change $N$---for instance, when a
+convergence compiler maps an Operon organism to a Swarms workflow
+with a different agent count.  This is a concrete instance of
+Proposition~5.1: structural properties are functorially stable under
+architectural refinement.
+
+This pattern---deriving thresholds from steady-state dynamics rather
+than hand-tuning constants---extends to other structural guarantees.
+The metabolic priority gate's STARVING threshold (10\% of capacity)
+could similarly be formalized as a certificate whose evidence is the
+state machine's priority rejection rule.  The epiplexity monitor's
+convergence/stagnation discrimination threshold could be certified
+relative to the embedding model's similarity distribution.

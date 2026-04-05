@@ -1,0 +1,24 @@
+\begin{abstract}
+Biologically-inspired AI agent frameworks claim reliability benefits
+through structural guarantees adapted from gene regulatory networks,
+immune systems, and metabolic control.  These claims are rarely tested
+empirically against simpler alternatives.  We present three deep
+benchmarks---metabolic priority gating, autoinducer-based quorum
+sensing, and Bayesian stagnation detection---each comparing a
+biologically-grounded implementation against a naive non-biological
+alternative and an ablated control, across 1{,}000 trials per seed
+and 10 seeds (10M+ data points total).  Metabolic priority gating
+delivers 100\% critical-operation service under bursty load versus
+39.8\% for a flat budget counter ($\Delta = +0.602$, $p < 0.001$).
+Quorum sensing achieves 0\% false-positive rate with 71--87\%
+true-positive rate at 40\% agent compromise, occupying a unique
+precision--recall operating point that neither majority voting nor
+independent detection reaches.  Bayesian stagnation detection is an
+honest negative: the naive cosine-similarity detector outperforms the
+two-signal biological design on detection accuracy with mock embeddings,
+though at the cost of a 75\% false-positive rate.  The pattern across
+all three benchmarks: biological design earns its complexity through
+\emph{mechanism-level structural guarantees}---priority gating, signal
+accumulation with temporal decay---rather than through algorithmic
+sophistication.
+\end{abstract}

@@ -1,0 +1,84 @@
+\section{Introduction}\label{sec:intro}
+
+Biological metaphors have a long history in computing.  Artificial
+immune systems detect network intrusions~\cite{hofmeyr2000architecture}.
+Swarm intelligence algorithms solve combinatorial
+optimization~\cite{bonabeau1999swarm}.  Neural architectures borrow
+structural motifs from neuroscience.  In each case, the biological
+analogy provides organizing structure for the algorithm---but the
+question of whether that structure \emph{earns its complexity} over
+simpler alternatives is rarely asked.
+
+The default assumption is that biological inspiration provides
+qualitative benefits: more robust error handling, more adaptive
+resource management, more distributed coordination.  What is missing
+is quantitative comparison.  Does a multi-currency metabolic state
+machine actually serve more critical operations under pressure than a
+flat budget counter?  Does signal accumulation with temporal decay
+actually reduce false alarms compared to majority voting?  Does
+Bayesian two-signal stagnation detection actually distinguish
+convergence from pathological loops better than cosine similarity?
+
+This paper tests these questions empirically using Operon, a
+biologically-inspired AI agent reliability framework that implements
+22 biological motifs spanning genome-level configuration through
+tissue-level coordination~\cite{banu2026operon}.  We select three
+motifs that represent distinct reliability claims, ground each
+benchmark in real biological pathway data from KEGG and Reactome,
+and compare each biological implementation against both a naive
+non-biological alternative and an ablated control.
+
+\paragraph{The structural guarantee hypothesis.}
+Our central hypothesis is that biological design earns complexity when
+it provides \emph{mechanism-level structural guarantees}---hard
+properties enforced by design rather than achieved by optimization.
+A metabolic state machine that rejects low-priority operations in
+STARVING state provides a structural guarantee: critical operations
+\emph{will} be served regardless of load pattern.  A signal
+accumulation model with exponential decay provides a structural
+guarantee: stale evidence \emph{will} age out regardless of query
+timing.  These are mechanism design choices, not algorithmic
+improvements.
+
+We contrast this with biological designs that attempt
+\emph{information processing}---using the biological metaphor to make
+better decisions rather than to enforce structural invariants.  Our
+hypothesis is that these do not reliably outperform simpler
+alternatives.
+
+\paragraph{Pathway-grounded methodology.}
+Each benchmark derives its test scenarios from real biological pathway
+data.  The metabolism benchmark uses AMPK signaling pathway parameters
+(KEGG hsa04152) for metabolic state thresholds and rate-of-change
+sensitivity.  The quorum sensing benchmark uses autoinducer kinetics
+from the \emph{V.~fischeri} LuxI/LuxR system (KEGG map02024) for
+signal decay half-life and threshold scaling.  The epiplexity
+benchmark uses the free energy principle~\cite{friston2010} to
+generate trophic-withdrawal scenarios.  This grounding prevents the
+benchmarks from testing against our own assumptions about what failure
+patterns look like.
+
+\paragraph{Three-variant comparison.}
+Each benchmark runs three experimental conditions:
+\begin{enumerate}[nosep]
+  \item \textbf{Biological}: the full Operon feature, biologically grounded.
+  \item \textbf{Ablated}: the feature disabled entirely (e.g., no monitor, no scaling).
+  \item \textbf{Naive}: a simple, reasonable, non-biological alternative
+        that a competent engineer would reach for (e.g., cosine similarity,
+        majority vote, flat counter).
+\end{enumerate}
+Ablation proves necessity; the naive alternative proves the biological
+\emph{design} matters, not just having any feature at all.
+
+\paragraph{Contributions.}
+\begin{enumerate}[nosep]
+  \item A benchmark suite testing three biologically-grounded agent
+        reliability features against naive alternatives, with 10M+
+        data points across 10 seeds.
+  \item Two clear empirical wins for biological structural guarantees
+        (metabolism, quorum sensing) and one honest negative
+        (epiplexity stagnation detection).
+  \item Evidence that the distinction between \emph{structural
+        guarantees} and \emph{algorithmic sophistication} predicts
+        where biological design earns complexity.
+\end{enumerate}

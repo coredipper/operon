@@ -1,0 +1,160 @@
+\section{Methods}\label{sec:methods}
+
+\subsection{Experimental Design}
+
+Each benchmark runs three variants (Biological, Ablated, Naive) across
+the same scenario sequences.  We use $N = 1{,}000$ trials per scenario
+per seed, with 10 independent seeds, yielding 10{,}000 trials per
+scenario.  Confidence intervals use Wilson score intervals at the 95\%
+level.  All benchmarks are deterministic given the seed---no LLM calls
+are made during benchmark execution.
+
+Scenarios are generated from two sources: \emph{synthetic} scenarios
+with controlled failure patterns (loops, bursts, spikes), and
+\emph{pathway-grounded} scenarios whose parameters derive from real
+KEGG/Reactome pathway data.  The synthetic scenarios provide controlled
+baselines; the pathway-grounded scenarios test whether the biological
+design handles biologically-realistic patterns better than alternatives.
+
+\subsection{Benchmark 1: Metabolic Priority Gating}
+
+\paragraph{Biological system.}
+\texttt{ATP\_Store} manages three energy currencies (ATP, GTP, NADH)
+with regeneration, debt tracking, and a five-state metabolic state
+machine: FEASTING ($> 90\%$), NORMAL ($30$--$90\%$), CONSERVING
+($< 30\%$), STARVING ($< 10\%$), and DORMANT.  In STARVING state,
+operations with priority $< 5$ are rejected; in DORMANT, only priority
+$\geq 10$ operations proceed.
+
+\texttt{MTORScaler} reads the ATP store's state and computes an
+effective AMPK ratio (AMP:ATP) including both the absolute level and
+its rate of change, inspired by KEGG pathway hsa04152.  The scaler
+determines a scaling state (GROWTH, MAINTENANCE, CONSERVATION,
+AUTOPHAGY) with hysteresis margins derived from Hill coefficient
+kinetics ($h = 0.05$).  Operations whose cost exceeds the feature
+gate are rejected in CONSERVATION and AUTOPHAGY states unless they
+have critical priority ($\geq 5$).
+
+\paragraph{Naive alternative.}
+\texttt{SimpleBudget}: a flat integer counter that starts at $N$,
+decrements by cost, and returns \texttt{False} when empty.  No states,
+currencies, regeneration, priority gating, or scaling.
+
+\paragraph{Ablated control.}
+\texttt{ATP\_Store} without \texttt{MTORScaler}---the state machine
+operates but no feature gating or scaling is applied.
+
+\paragraph{Scenarios.}
+Five load patterns: constant rate, periodic bursts (cost $50$ every
+$20$ steps), gradual depletion (linearly increasing cost), sudden
+spike (half-budget cost at step $100$), and mixed priority (30\%
+critical operations).  Operations have priorities $0$--$10$.  Budget
+regenerates $5$ units every $10$ steps for the biological and ablated
+variants.
+
+\paragraph{Key metrics.}
+\texttt{operations\_completed}: fraction of all operations that
+succeeded.  \texttt{critical\_served\_under\_pressure}: fraction of
+priority $\geq 5$ operations that succeeded when the system was in
+CONSERVING or STARVING state (biological/ablated) or when balance was
+below $30\%$ of initial budget (naive).
+
+\subsection{Benchmark 2: Quorum Sensing}
+
+\paragraph{Biological system.}
+\texttt{QuorumSensingBio} models autoinducer signal accumulation
+inspired by KEGG pathway map02024 (\emph{V.~fischeri} LuxI/LuxR
+system).  Each agent deposits a continuous signal proportional to its
+suspicion level into a shared \texttt{SignalEnvironment}.  Signals
+decay exponentially with a half-life of $5.0$ time units (derived from
+AHL lactonase degradation rates).  The activation threshold scales as
+$\log(N) \times \theta_{\text{base}}$ where $N$ is the population size
+and $\theta_{\text{base}} = 10.0$.
+
+Signal concentrations below a noise floor ($0.001$) are excluded from
+both reads and writes.  Pruning occurs on the write path (deposits)
+with monotonic time guards to prevent order-dependent state corruption.
+
+\paragraph{Naive alternatives.}
+Three alternatives represent standard coordination approaches:
+\begin{itemize}[nosep]
+  \item \texttt{IndependentActors}: each agent decides alone; alert if
+        \emph{any} agent's suspicion exceeds $0.5$.
+  \item \texttt{MajorityVote}: each agent votes ALERT/NORMAL based on
+        individual threshold ($0.5$); majority ($\geq 50\%$) wins.
+\end{itemize}
+
+\paragraph{Ablated control.}
+Independent actors (no coordination)---each agent's suspicion is
+evaluated in isolation without signal accumulation or decay.
+
+\paragraph{Scenarios.}
+Three scenario types: \emph{static compromise} (compromised agents emit
+high suspicion throughout), \emph{gradual infiltration} (compromised
+agents activate at random times during the simulation), and
+\emph{noisy environment} (no actual compromise, testing false-positive
+rate under noise).  Each runs across agent counts $N \in \{5, 10, 20\}$
+and compromised fractions $\{0\%, 20\%, 40\%\}$.  Normal agents emit
+suspicion $\sim \mathcal{N}(0.15, 0.15)$; compromised agents emit
+$\sim \mathcal{N}(0.80, 0.15)$, both clipped to $[0, 1]$.
+
+\paragraph{Key metrics.}
+\texttt{true\_positive}: fraction of time steps where compromise was
+correctly detected.  \texttt{false\_positive}: fraction of
+non-compromise time steps where an alert was raised.
+
+\subsection{Benchmark 3: Epiplexity Stagnation Detection}
+
+\paragraph{Biological system.}
+\texttt{EpiplexityMonitor} implements the operational epiplexity
+approximation from the free energy principle~\cite{friston2010}:
+\[
+  \hat{E}_t = \alpha \cdot \tfrac{1}{2}(1 - \cos(e_t, e_{t-1}))
+            + (1 - \alpha) \cdot \sigma(H(m_t | m_{<t}))
+\]
+where $e_t$ is the embedding of message $t$, $\sigma(H) = 1 - e^{-H/H_0}$
+is exponential saturation to $[0, 1]$, and $\alpha = 0.5$.  The
+epiplexic integral $E_w = \frac{1}{w} \sum \hat{E}_t$ over a window of
+size $w = 10$ determines health status: HEALTHY, CONVERGING, EXPLORING,
+STAGNANT, or CRITICAL.
+
+The key design insight: stagnation is not just output repetition (low
+novelty) but output repetition \emph{combined with} model uncertainty
+(high perplexity).  An agent with both low novelty and low perplexity
+is \emph{converging}, not stagnant.
+
+\paragraph{Naive alternative.}
+\texttt{RepetitionCounter}: computes average pairwise cosine similarity
+across a sliding window of embeddings.  If similarity exceeds $0.85$,
+declares STAGNANT.  Also declares STAGNANT after $20$ consecutive steps
+of elevated similarity ($> 0.7 \times$ threshold).  Uses the same
+\texttt{MockEmbeddingProvider} as the biological variant for fair
+comparison.
+
+\paragraph{Ablated control.}
+No monitor---always reports HEALTHY.
+
+\paragraph{Scenarios.}
+Five scenarios: \emph{loop} (exact message repetition), \emph{convergence}
+(messages become similar while perplexity drops), \emph{exploration}
+(high-novelty diverse messages), \emph{trophic withdrawal}
+(pathway-grounded: novelty decays gradually while perplexity stays
+high, mimicking neuronal atrophy from trophic factor withdrawal), and
+\emph{false stagnation} (low novelty + low perplexity = convergence,
+not stagnation).
+
+\paragraph{Embedding caveat.}
+All scenarios use \texttt{MockEmbeddingProvider}, which generates
+deterministic pseudo-embeddings via SHA-256 hashing.  This means
+semantically similar but lexically different messages receive
+\emph{random} cosine similarity---the embedding signal does not
+carry semantic information.  Results with real embedding models may
+differ significantly (Section~\ref{sec:limitations}).
+
+\paragraph{Key metrics.}
+\texttt{detection\_accuracy}: fraction of steps where the detector's
+status matched ground truth.  \texttt{false\_positive}: fraction of
+non-stagnant steps where stagnation was incorrectly declared.
+\texttt{false\_negative}: fraction of stagnant steps where stagnation
+was missed.  \texttt{convergence\_discrimination}: fraction of
+converging steps correctly identified as non-stagnant.

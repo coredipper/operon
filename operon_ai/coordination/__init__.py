@@ -52,6 +52,11 @@ from .social_learning import (
     AdoptionOutcome,
     ScaffoldingResult,
 )
+from .quorum_sensing import (
+    AutoinducerSignal,
+    SignalEnvironment,
+    QuorumSensingBio,
+)
 
 __all__ = [
     # Cell Cycle (existing)
@@ -95,4 +100,8 @@ __all__ = [
     "AdoptionResult",
     "AdoptionOutcome",
     "ScaffoldingResult",
+    # Quorum Sensing (biological signal accumulation)
+    "AutoinducerSignal",
+    "SignalEnvironment",
+    "QuorumSensingBio",
 ]

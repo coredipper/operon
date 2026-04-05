@@ -336,6 +336,9 @@ from .coordination import (
     AdoptionResult,
     AdoptionOutcome,
     ScaffoldingResult,
+    AutoinducerSignal,
+    SignalEnvironment,
+    QuorumSensingBio,
 )
 
 # =============================================================================
@@ -713,6 +716,9 @@ __all__ = [
     "AdoptionResult",
     "AdoptionOutcome",
     "ScaffoldingResult",
+    "AutoinducerSignal",
+    "SignalEnvironment",
+    "QuorumSensingBio",
 
     # Multi-cellular Organization
     "ExpressionProfile",
@@ -724,4 +730,4 @@ __all__ = [
     "MetabolicAccessPolicy",
 ]
 
-__version__ = "0.26.0"
+__version__ = "0.27.0"

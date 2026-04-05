@@ -1,6 +1,6 @@
 # Convergence
 
-Operon's convergence package bridges external agent orchestration systems into Operon's structural analysis layer. Currently supports [Swarms](https://github.com/kyegomez/swarms), [DeerFlow](https://github.com/bytedance/deer-flow), [AnimaWorks](https://github.com/AnimaWorks/AnimaWorks), [Ralph](https://github.com/mikeyobrien/ralph-orchestrator), and [A-Evolve](https://github.com/A-EVO-Lab/a-evolve).
+Operon's convergence package bridges external agent orchestration systems into Operon's structural analysis layer. Currently supports [Swarms](https://github.com/kyegomez/swarms), [DeerFlow](https://github.com/bytedance/deer-flow), [AnimaWorks](https://github.com/xuiltul/animaworks), [Ralph](https://github.com/mikeyobrien/ralph-orchestrator), and [A-Evolve](https://github.com/A-EVO-Lab/a-evolve).
 
 ## Five-Layer Architecture
 
@@ -20,7 +20,7 @@ Operon's convergence package bridges external agent orchestration systems into O
 
 ## Adapters (Phase C1)
 
-Type-level bridges to [Swarms](https://github.com/kyegomez/swarms), [DeerFlow](https://github.com/bytedance/deer-flow), [AnimaWorks](https://github.com/AnimaWorks/AnimaWorks), [Ralph](https://github.com/mikeyobrien/ralph-orchestrator), and [A-Evolve](https://github.com/A-EVO-Lab/a-evolve). All adapters produce `ExternalTopology`, which `analyze_external_topology()` consumes to apply Operon's four epistemic theorems as a structural linter.
+Type-level bridges to [Swarms](https://github.com/kyegomez/swarms), [DeerFlow](https://github.com/bytedance/deer-flow), [AnimaWorks](https://github.com/xuiltul/animaworks), [Ralph](https://github.com/mikeyobrien/ralph-orchestrator), and [A-Evolve](https://github.com/A-EVO-Lab/a-evolve). All adapters produce `ExternalTopology`, which `analyze_external_topology()` consumes to apply Operon's four epistemic theorems as a structural linter.
 
 - `parse_swarm_topology()` — Swarms workflow patterns
 - `parse_animaworks_org()` — AnimaWorks org hierarchies

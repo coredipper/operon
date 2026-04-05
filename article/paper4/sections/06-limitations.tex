@@ -1,0 +1,43 @@
+\section{Limitations}\label{sec:limitations}
+
+\paragraph{Embedding dependence.}
+The epiplexity benchmark was run with both mock embeddings (SHA-256
+hash-based) and real sentence embeddings (all-MiniLM-L6-v2).  The
+results differ dramatically: the biological design loses with mock
+embeddings and wins with real embeddings on convergence discrimination.
+The real-embedding results use a single model and $N = 100$ trials
+(versus $N = 10{,}000$ for mock embeddings); confirmation with
+additional embedding models and larger sample sizes would strengthen
+the finding.
+
+\paragraph{Synthetic load patterns.}
+The metabolism benchmark uses programmatically generated operation
+sequences (constant, bursty, gradual, spike).  Real agent workloads
+may have different statistical properties---heavier tails, correlated
+bursts, priority distributions that differ from our 30\% critical
+assumption.
+
+\paragraph{Simulated agents.}
+The quorum sensing benchmark simulates agent suspicion signals as
+Gaussian draws around known baselines.  Real multi-agent systems have
+richer signal environments: suspicion may be autocorrelated, agents
+may have heterogeneous detection capabilities, and compromised agents
+may adapt their behavior to avoid detection.
+
+\paragraph{No end-to-end evaluation.}
+All benchmarks test the structural guarantee mechanisms in isolation.
+None runs actual LLM agents performing real tasks.  The guarantees
+are validated at the mechanism level, not at the system level.
+
+\paragraph{Manual thresholds.}
+Several parameters are manually set rather than auto-calibrated:
+the mTOR hysteresis margin ($h = 0.05$), quorum sensing decay
+half-life ($5.0$ time units), threshold base ($10.0$), and
+epiplexity mixing parameter ($\alpha = 0.5$).  Sensitivity analysis
+across these parameters is not provided.
+
+\paragraph{Statistical assumptions.}
+Wilson CIs assume independence across trials within seeds.  The
+10-seed aggregation partially addresses between-seed variability,
+but within-seed trials share the same random number generator state
+progression.
