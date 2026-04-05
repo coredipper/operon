@@ -183,10 +183,11 @@ class QuorumSensingBio:
         of 1/safety_margin at steady state — guaranteeing no false activation
         under normal conditions.
 
-        The steady-state concentration of N agents each emitting s per step
-        with decay half-life h is:
+        Uses the exact discrete-time steady state.  Each step, N agents
+        deposit signals of magnitude s.  Previous signals decay by
+        2^(-1/h) per step.  The geometric series gives:
 
-            c_ss = N × s × h / ln(2)
+            c_ss = N × s / (1 - 2^(-1/h))
 
         Setting threshold = c_ss × safety_margin ensures activation_level
         = c_ss / threshold = 1/safety_margin < 1.0 for all normal traffic.
@@ -203,16 +204,17 @@ class QuorumSensingBio:
     def _threshold(self) -> float:
         """Activation threshold.
 
-        When calibrated: derived from steady-state formula so normal
-        traffic stays below activation (structural guarantee).
+        When calibrated: derived from discrete steady-state formula so
+        normal traffic stays below activation (structural guarantee).
         When not calibrated: log(N) × threshold_base (manual tuning).
         """
         if self._calibrated:
+            # Exact discrete steady state: geometric series with decay 2^(-1/h)
+            decay_per_step = 2.0 ** (-1.0 / self.environment.decay_half_life)
             steady_state = (
                 self.population_size
                 * self.expected_normal_suspicion
-                * self.environment.decay_half_life
-                / math.log(2)
+                / (1.0 - decay_per_step)
             )
             return max(0.001, steady_state * self.safety_margin)
         return math.log(max(2, self.population_size)) * self.threshold_base

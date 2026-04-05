@@ -38,7 +38,8 @@ class QuorumBenchConfig:
     time_steps: int = 30
     noise_std: float = 0.15
     ahl_decay_half_life: float = 5.0
-    threshold_base: float = 10.0
+    expected_normal_suspicion: float = 0.15
+    safety_margin: float = 2.0
     vote_threshold: float = 0.5
     majority_fraction: float = 0.5
     scenarios: list[str] = field(
@@ -87,6 +88,8 @@ def _run_scenario(
         qs = QuorumSensingBio(
             population_size=n_agents,
             environment=SignalEnvironment(decay_half_life=config.ahl_decay_half_life),
+            expected_normal_suspicion=config.expected_normal_suspicion,
+            safety_margin=config.safety_margin,
         )
         qs.calibrate()  # Auto-derive threshold from population + signal params
         bio_first_correct: int | None = None
