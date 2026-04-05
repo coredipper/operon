@@ -327,6 +327,17 @@ class TestCalibration:
             with pytest.raises(ValueError):
                 qs.calibrate()
 
+    def test_threshold_rejects_mutated_interval(self):
+        """_threshold() raises if emission_interval is mutated to <= 0 after calibration."""
+        import pytest
+        qs = QuorumSensingBio(population_size=5)
+        qs.calibrate()
+        assert qs._threshold() > 0  # works initially
+        for bad_dt in [0.0, -1.0]:
+            qs.emission_interval = bad_dt
+            with pytest.raises(ValueError):
+                qs._threshold()
+
     def test_backward_compat_uncalibrated(self):
         """Without calibrate(), original log-scaling is used."""
         qs = QuorumSensingBio(population_size=10, threshold_base=10.0)
