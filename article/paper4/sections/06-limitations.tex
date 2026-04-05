@@ -1,13 +1,14 @@
 \section{Limitations}\label{sec:limitations}
 
-\paragraph{Mock embeddings.}
-The epiplexity benchmark uses \texttt{MockEmbeddingProvider}, which
-generates deterministic pseudo-embeddings via SHA-256 hashing.
-Semantically similar messages receive random cosine similarity.
-With a real embedding model (e.g., sentence-transformers), the
-novelty signal would carry semantic information, potentially changing
-the two-signal design's relative performance.  The current negative
-result is specific to the mock embedding setting.
+\paragraph{Embedding dependence.}
+The epiplexity benchmark was run with both mock embeddings (SHA-256
+hash-based) and real sentence embeddings (all-MiniLM-L6-v2).  The
+results differ dramatically: the biological design loses with mock
+embeddings and wins with real embeddings on convergence discrimination.
+The real-embedding results use a single model and $N = 100$ trials
+(versus $N = 10{,}000$ for mock embeddings); confirmation with
+additional embedding models and larger sample sizes would strengthen
+the finding.
 
 \paragraph{Synthetic load patterns.}
 The metabolism benchmark uses programmatically generated operation

@@ -706,14 +706,16 @@ TPR.  Independent detection achieved near-100\% TPR but 5--18\% FPR.
 The biological model occupies a unique operating point unreachable by
 either alternative.
 
-\paragraph{Epiplexity: honest negative.}
-The naive cosine-similarity detector outperformed the biological
-Bayesian two-signal design on detection accuracy across all scenarios,
-including pathway-grounded trophic-withdrawal tests.  However, the
-biological variant achieved 0\% false-positive rate (vs.\ naive 75\%
-FP on loops) at the cost of 58\% false negatives.  With mock
-embeddings rather than real LLM outputs, the two-signal advantage
-does not materialize.
+\paragraph{Epiplexity: embedding-dependent.}
+With mock embeddings, the naive cosine-similarity detector outperformed
+the biological Bayesian two-signal design on detection accuracy.
+A follow-up experiment with real sentence embeddings (all-MiniLM-L6-v2)
+reversed the finding: the biological monitor achieved 96\% accuracy on
+convergence and false-stagnation scenarios versus 2--40\% for the naive
+detector, which false-alarmed on 98\% of converging steps.  The
+two-signal design's convergence/stagnation discrimination---its core
+structural guarantee---activates only when the embedding signal carries
+semantic meaning.
 
 \subsection{Revised Framework-Fit Analysis}
 

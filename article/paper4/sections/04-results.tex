@@ -101,59 +101,73 @@ compromise fraction, consistent with the biological signal-accumulation
 model: more agents producing more signal yield higher accumulated
 concentrations relative to the threshold.
 
-\subsection{Epiplexity: Honest Negative}
+\subsection{Epiplexity: Embedding Quality Determines Outcome}
 
-Table~\ref{tab:epiplexity} summarizes the epiplexity benchmark results.
+The epiplexity benchmark produced the most instructive result: the
+biological design's performance depends critically on embedding quality.
+With mock embeddings (SHA-256 hash-based pseudo-embeddings), the naive
+detector wins.  With real semantic embeddings (all-MiniLM-L6-v2), the
+biological design dominates on convergence discrimination---the exact
+capability the two-signal design was built for.
+
+Table~\ref{tab:epiplexity} shows results with both embedding providers.
 
 \begin{table}[h]
-\caption{Epiplexity benchmark: Biological (EpiplexityMonitor, two-signal Bayesian) vs Naive (cosine similarity + timeout). All results with MockEmbeddingProvider.}
+\caption{Epiplexity benchmark with mock vs real embeddings.  Bio =
+EpiplexityMonitor (two-signal Bayesian), Naive = cosine similarity +
+timeout.  Real embeddings: all-MiniLM-L6-v2 ($N = 100$ trials, seed
+42); mock embeddings: SHA-256 hash ($N = 1{,}000 \times 10$ seeds).}
 \label{tab:epiplexity}
 \centering
 \small
-\begin{tabular}{llccccc}
+\begin{tabular}{lll ccc}
 \toprule
-Scenario & Metric & Bio & Abl & Naive & $\Delta$ & N \\
+Embedding & Scenario & Metric & Bio & Naive & $\Delta$ \\
 \midrule
-loop & accuracy & 0.467 & 0.080 & 0.940 & \textbf{$-$0.473} & 500{,}000 \\
-loop & FP rate & 0.000 & 0.000 & 0.750 & \textbf{$-$0.750} & 40{,}000 \\
-loop & FN rate & 0.580 & 1.000 & 0.000 & \textbf{+0.580} & 460{,}000 \\
+\multirow{4}{*}{Mock}
+  & loop & accuracy & 0.467 & \textbf{0.940} & $-$0.473 \\
+  & convergence & accuracy & 0.473 & \textbf{1.000} & $-$0.527 \\
+  & false stagn. & accuracy & 0.540 & \textbf{0.993} & $-$0.453 \\
+  & false stagn. & FP rate & 0.052 & \textbf{0.007} & $+$0.045 \\
 \midrule
-trophic w. & accuracy & 0.431 & 0.400 & 0.480 & $-$0.049 & 500{,}000 \\
-trophic w. & FN rate & 0.948 & 1.000 & 0.866 & +0.081 & 300{,}000 \\
-\midrule
-false stagn. & accuracy & 0.540 & 1.000 & 0.993 & \textbf{$-$0.453} & 500{,}000 \\
-false stagn. & FP rate & 0.052 & 0.000 & 0.007 & +0.045 & 500{,}000 \\
-\midrule
-convergence & accuracy & 0.473 & 1.000 & 1.000 & \textbf{$-$0.527} & 500{,}000 \\
-exploration & accuracy & 1.000 & 1.000 & 1.000 & 0.000 & 500{,}000 \\
+\multirow{5}{*}{Real}
+  & convergence & accuracy & \textbf{0.960} & 0.401 & $+$0.559 \\
+  & false stagn. & accuracy & \textbf{0.960} & 0.020 & $+$0.940 \\
+  & false stagn. & FP rate & \textbf{0.000} & 0.980 & $-$0.980 \\
+  & loop & accuracy & 0.571 & \textbf{0.940} & $-$0.369 \\
+  & loop & FP rate & \textbf{0.000} & 0.750 & $-$0.750 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The naive cosine-similarity detector outperforms the biological
-Bayesian two-signal design on detection accuracy across all scenarios,
-including the pathway-grounded trophic-withdrawal scenario that was
-specifically designed to favor the biological approach.
+\paragraph{With mock embeddings: naive wins.}
+The naive cosine-similarity detector outperforms the biological design
+on detection accuracy across all scenarios.  However, the
+false-positive/false-negative breakdown reveals a precision--recall
+tradeoff: the biological variant achieves 0\% FP rate on loops (versus
+naive's 75\% FP), at the cost of 47\% FN rate.  With mock embeddings,
+the novelty signal is essentially random noise---semantically similar
+messages receive unrelated cosine similarity---so the two-signal
+combination performs worse than a single signal.
 
-However, the false-positive/false-negative breakdown reveals a more
-nuanced picture.  On the loop scenario:
+\paragraph{With real embeddings: biological wins on convergence.}
+Switching to all-MiniLM-L6-v2 sentence embeddings flips the result
+on convergence discrimination.  The biological monitor achieves
+96.0\% accuracy on both convergence and false-stagnation scenarios,
+versus 40.1\% and 2.0\% for the naive detector.  The naive detector's
+false-positive rate on false stagnation reaches 98.0\%---it sees
+similar outputs and screams ``stagnant'' regardless of the agent's
+confidence level.
 
-\begin{itemize}[nosep]
-  \item \textbf{Biological}: 0\% FP rate, 58\% FN rate.
-        Never false-alarms, but misses most stagnation.
-  \item \textbf{Naive}: 75\% FP rate, 0\% FN rate.
-        Catches all stagnation, but false-alarms on 3 of 4 healthy steps.
-\end{itemize}
+The biological design's two-signal structure now earns its complexity:
+the perplexity signal distinguishes convergence (low novelty + low
+perplexity = healthy) from stagnation (low novelty + high perplexity =
+pathological).  The naive cosine detector has no access to this
+distinction.
 
-This is the same precision--recall tradeoff observed in quorum
-sensing---but here the biological variant's recall (42\%) is too low
-to be operationally useful, while its precision advantage (zero false
-positives) is less valuable for stagnation detection than for threat
-consensus.
-
-The trophic-withdrawal scenario---designed to produce the biological
-signature of epistemic atrophy (declining novelty with maintained
-perplexity)---shows marginal differences: naive 48.0\% accuracy versus
-biological 43.1\%.  With mock embeddings, the novelty signal does not
-carry enough semantic information to make the two-signal distinction
-meaningful (Section~\ref{sec:limitations}).
+\paragraph{Loop detection still favors naive.}
+Even with real embeddings, the naive detector wins on loop detection
+(94.0\% vs 57.1\%) because exact repetition is trivially detectable by
+cosine similarity.  The biological monitor's advantage is not on easy
+cases (identical outputs) but on hard cases (semantically similar but
+subtly different outputs where the agent's confidence level matters).

@@ -17,7 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import random
 
-from operon_ai.health.epiplexity import EpiplexityMonitor, MockEmbeddingProvider
+from operon_ai.health.epiplexity import EmbeddingProvider, EpiplexityMonitor, MockEmbeddingProvider
 
 from eval.utils import Counter
 from eval.benchmarks.types import BenchmarkResult, TrialResult, Variant
@@ -58,6 +58,7 @@ class EpiplexityBenchConfig:
     naive_similarity_threshold: float = 0.85
     naive_timeout_steps: int = 20
     scenarios: list[str] = field(default_factory=lambda: list(FE_SCENARIOS.keys()))
+    embedding_provider: EmbeddingProvider | None = None  # None = MockEmbeddingProvider
 
 
 def run_epiplexity_bench(
@@ -65,7 +66,7 @@ def run_epiplexity_bench(
     rng: random.Random,
 ) -> list[BenchmarkResult]:
     """Run the epiplexity benchmark across all scenarios."""
-    provider = MockEmbeddingProvider()
+    provider = config.embedding_provider or MockEmbeddingProvider()
     results: list[BenchmarkResult] = []
 
     for scenario_name in config.scenarios:

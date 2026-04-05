@@ -1,0 +1,426 @@
+{
+  "results": [
+    {
+      "name": "epiplexity",
+      "scenario": "loop",
+      "seed": 3645120421,
+      "biological": {
+        "detection_accuracy": {
+          "success": 2857,
+          "total": 5000,
+          "rate": 0.5714,
+          "wilson_95": [
+            0.5576330842417689,
+            0.5850572838945847
+          ],
+          "latency_steps": 7.0
+        },
+        "false_positive": {
+          "success": 0,
+          "total": 400,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.009512640599680667
+          ]
+        },
+        "false_negative": {
+          "success": 2143,
+          "total": 4600,
+          "rate": 0.4658695652173913,
+          "wilson_95": [
+            0.4514884235645648,
+            0.4803076660315672
+          ]
+        }
+      },
+      "ablated": {
+        "detection_accuracy": {
+          "success": 400,
+          "total": 5000,
+          "rate": 0.08,
+          "wilson_95": [
+            0.0727985573727761,
+            0.08784633594279168
+          ]
+        },
+        "false_positive": {
+          "success": 0,
+          "total": 400,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.009512640599680667
+          ]
+        },
+        "false_negative": {
+          "success": 4600,
+          "total": 4600,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9991655664260907,
+            0.9999999999999999
+          ]
+        }
+      },
+      "naive": {
+        "detection_accuracy": {
+          "success": 4700,
+          "total": 5000,
+          "rate": 0.94,
+          "wilson_95": [
+            0.9330732618410589,
+            0.94625113563787
+          ],
+          "latency_steps": 0.0
+        },
+        "false_positive": {
+          "success": 300,
+          "total": 400,
+          "rate": 0.75,
+          "wilson_95": [
+            0.7053220081939279,
+            0.7899216715062317
+          ]
+        },
+        "false_negative": {
+          "success": 0,
+          "total": 4600,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.0008344335739092325
+          ]
+        }
+      }
+    },
+    {
+      "name": "epiplexity",
+      "scenario": "convergence",
+      "seed": 3226113732,
+      "biological": {
+        "detection_accuracy": {
+          "success": 4798,
+          "total": 5000,
+          "rate": 0.9596,
+          "wilson_95": [
+            0.9537801830203121,
+            0.9647141194372237
+          ]
+        },
+        "false_positive": {
+          "success": 2,
+          "total": 5000,
+          "rate": 0.0004,
+          "wilson_95": [
+            0.0001096989857531115,
+            0.001457416967717518
+          ]
+        },
+        "convergence_discrimination": {
+          "success": 4798,
+          "total": 5000,
+          "rate": 0.9596,
+          "wilson_95": [
+            0.9537801830203121,
+            0.9647141194372237
+          ]
+        }
+      },
+      "ablated": {
+        "detection_accuracy": {
+          "success": 5000,
+          "total": 5000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9992322698624194,
+            1.0
+          ]
+        },
+        "false_positive": {
+          "success": 0,
+          "total": 5000,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.000767730137580694
+          ]
+        }
+      },
+      "naive": {
+        "detection_accuracy": {
+          "success": 2003,
+          "total": 5000,
+          "rate": 0.4006,
+          "wilson_95": [
+            0.3870986502856209,
+            0.41425397446573026
+          ]
+        },
+        "false_positive": {
+          "success": 2997,
+          "total": 5000,
+          "rate": 0.5994,
+          "wilson_95": [
+            0.5857460255342698,
+            0.6129013497143793
+          ]
+        },
+        "convergence_discrimination": {
+          "success": 2003,
+          "total": 5000,
+          "rate": 0.4006,
+          "wilson_95": [
+            0.3870986502856209,
+            0.41425397446573026
+          ]
+        }
+      }
+    },
+    {
+      "name": "epiplexity",
+      "scenario": "exploration",
+      "seed": 951749308,
+      "biological": {
+        "detection_accuracy": {
+          "success": 3344,
+          "total": 5000,
+          "rate": 0.6688,
+          "wilson_95": [
+            0.6556291627301809,
+            0.6817116515753718
+          ]
+        },
+        "false_positive": {
+          "success": 1656,
+          "total": 5000,
+          "rate": 0.3312,
+          "wilson_95": [
+            0.3182883484246282,
+            0.34437083726981915
+          ]
+        }
+      },
+      "ablated": {
+        "detection_accuracy": {
+          "success": 5000,
+          "total": 5000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9992322698624194,
+            1.0
+          ]
+        },
+        "false_positive": {
+          "success": 0,
+          "total": 5000,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.000767730137580694
+          ]
+        }
+      },
+      "naive": {
+        "detection_accuracy": {
+          "success": 1577,
+          "total": 5000,
+          "rate": 0.3154,
+          "wilson_95": [
+            0.30266575478430513,
+            0.32841769118248976
+          ]
+        },
+        "false_positive": {
+          "success": 3423,
+          "total": 5000,
+          "rate": 0.6846,
+          "wilson_95": [
+            0.6715823088175102,
+            0.6973342452156949
+          ]
+        }
+      }
+    },
+    {
+      "name": "epiplexity",
+      "scenario": "trophic_withdrawal",
+      "seed": 1046816259,
+      "biological": {
+        "detection_accuracy": {
+          "success": 3218,
+          "total": 5000,
+          "rate": 0.6436,
+          "wilson_95": [
+            0.6302189832086742,
+            0.6567605246958126
+          ],
+          "latency_steps": 1.2
+        },
+        "false_positive": {
+          "success": 409,
+          "total": 2000,
+          "rate": 0.2045,
+          "wilson_95": [
+            0.1873974068711292,
+            0.22273560963077393
+          ]
+        },
+        "false_negative": {
+          "success": 1373,
+          "total": 3000,
+          "rate": 0.45766666666666667,
+          "wilson_95": [
+            0.43990410306647454,
+            0.4755375100998124
+          ]
+        }
+      },
+      "ablated": {
+        "detection_accuracy": {
+          "success": 2000,
+          "total": 5000,
+          "rate": 0.4,
+          "wilson_95": [
+            0.38650249118689867,
+            0.41365105484061765
+          ]
+        },
+        "false_positive": {
+          "success": 0,
+          "total": 2000,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.0019171176005129348
+          ]
+        },
+        "false_negative": {
+          "success": 3000,
+          "total": 3000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9987211043351955,
+            1.0
+          ]
+        }
+      },
+      "naive": {
+        "detection_accuracy": {
+          "success": 3124,
+          "total": 5000,
+          "rate": 0.6248,
+          "wilson_95": [
+            0.6112883650203663,
+            0.6381200095372935
+          ],
+          "latency_steps": 0.0
+        },
+        "false_positive": {
+          "success": 1876,
+          "total": 2000,
+          "rate": 0.938,
+          "wilson_95": [
+            0.9265679947593196,
+            0.9477526102226309
+          ]
+        },
+        "false_negative": {
+          "success": 0,
+          "total": 3000,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.0012788956648046956
+          ]
+        }
+      }
+    },
+    {
+      "name": "epiplexity",
+      "scenario": "false_stagnation",
+      "seed": 582672654,
+      "biological": {
+        "detection_accuracy": {
+          "success": 4800,
+          "total": 5000,
+          "rate": 0.96,
+          "wilson_95": [
+            0.9542057453187467,
+            0.965087942954679
+          ]
+        },
+        "false_positive": {
+          "success": 0,
+          "total": 5000,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.000767730137580694
+          ]
+        },
+        "convergence_discrimination": {
+          "success": 4800,
+          "total": 5000,
+          "rate": 0.96,
+          "wilson_95": [
+            0.9542057453187467,
+            0.965087942954679
+          ]
+        }
+      },
+      "ablated": {
+        "detection_accuracy": {
+          "success": 5000,
+          "total": 5000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9992322698624194,
+            1.0
+          ]
+        },
+        "false_positive": {
+          "success": 0,
+          "total": 5000,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.000767730137580694
+          ]
+        }
+      },
+      "naive": {
+        "detection_accuracy": {
+          "success": 100,
+          "total": 5000,
+          "rate": 0.02,
+          "wilson_95": [
+            0.0164719336786314,
+            0.02426508725344607
+          ]
+        },
+        "false_positive": {
+          "success": 4900,
+          "total": 5000,
+          "rate": 0.98,
+          "wilson_95": [
+            0.975734912746554,
+            0.9835280663213686
+          ]
+        },
+        "convergence_discrimination": {
+          "success": 100,
+          "total": 5000,
+          "rate": 0.02,
+          "wilson_95": [
+            0.0164719336786314,
+            0.02426508725344607
+          ]
+        }
+      }
+    }
+  ],
+  "provider": "all-MiniLM-L6-v2",
+  "n_trials": 100,
+  "seed": 42
+}
