@@ -200,6 +200,10 @@ class QuorumSensingBio:
         When a convergence compiler changes N, re-calling calibrate()
         restores the guarantee — an instance of Prop 5.1.
         """
+        if self.emission_interval <= 0:
+            raise ValueError(
+                f"emission_interval must be positive, got {self.emission_interval}"
+            )
         self._calibrated = True
 
     def _threshold(self) -> float:

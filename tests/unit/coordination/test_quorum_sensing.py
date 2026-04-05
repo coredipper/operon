@@ -319,6 +319,14 @@ class TestCalibration:
                 f"Certificate violation at dt={dt}: activation={level:.3f}"
             )
 
+    def test_calibrate_rejects_non_positive_interval(self):
+        """calibrate() raises on dt <= 0."""
+        import pytest
+        for bad_dt in [0.0, -1.0]:
+            qs = QuorumSensingBio(population_size=5, emission_interval=bad_dt)
+            with pytest.raises(ValueError):
+                qs.calibrate()
+
     def test_backward_compat_uncalibrated(self):
         """Without calibrate(), original log-scaling is used."""
         qs = QuorumSensingBio(population_size=10, threshold_base=10.0)
