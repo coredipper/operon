@@ -83,12 +83,12 @@ def _run_scenario(
         else:
             continue
 
-        # --- Biological variant: QuorumSensingBio ---
+        # --- Biological variant: QuorumSensingBio (calibrated) ---
         qs = QuorumSensingBio(
             population_size=n_agents,
-            threshold_base=config.threshold_base,
             environment=SignalEnvironment(decay_half_life=config.ahl_decay_half_life),
         )
+        qs.calibrate()  # Auto-derive threshold from population + signal params
         bio_first_correct: int | None = None
         for i, step in enumerate(steps):
             t = step["time"]

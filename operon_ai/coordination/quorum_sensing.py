@@ -153,21 +153,68 @@ class QuorumSensingBio:
     Unlike majority voting, this model:
     - Weights by signal strength (suspicious agents contribute more)
     - Naturally ages out old evidence (exponential decay)
-    - Scales threshold sublinearly with population (log scaling)
+    - Scales threshold with population (auto-calibrated or log scaling)
     - Supports multiple independent signal channels (AI-1, AI-2)
+
+    Threshold modes:
+    - **Calibrated** (call ``calibrate()``): threshold derived from
+      steady-state formula so normal traffic never triggers activation.
+      The guarantee preserves under population changes — a categorical
+      certificate per de los Riscos et al. (2603.28906) Prop 5.1.
+    - **Manual** (default): ``log(N) × threshold_base``, requires
+      hand-tuning threshold_base for each population size.
     """
 
     environment: SignalEnvironment = field(default_factory=SignalEnvironment)
     population_size: int = 10
-    threshold_base: float = 10.0
+    threshold_base: float = 10.0  # Used only when not calibrated
     signal_types: list[str] = field(default_factory=lambda: ["AI-1", "AI-2"])
 
-    def _threshold(self) -> float:
-        """Activation threshold scales as log(N) × base.
+    # Calibration parameters (set via calibrate())
+    expected_normal_suspicion: float = 0.15
+    safety_margin: float = 2.0
+    _calibrated: bool = field(default=False, repr=False)
 
-        Biological observation: QS threshold depends on cell density,
-        roughly logarithmic at moderate densities.
+    def calibrate(self) -> None:
+        """Auto-calibrate threshold from population and signal parameters.
+
+        Derives the activation threshold so that normal traffic (all agents
+        emitting at expected_normal_suspicion) produces an activation level
+        of 1/safety_margin at steady state — guaranteeing no false activation
+        under normal conditions.
+
+        The steady-state concentration of N agents each emitting s per step
+        with decay half-life h is:
+
+            c_ss = N × s × h / ln(2)
+
+        Setting threshold = c_ss × safety_margin ensures activation_level
+        = c_ss / threshold = 1/safety_margin < 1.0 for all normal traffic.
+
+        Categorical certificate (de los Riscos et al., Def 5.3.4):
+        This calibration preserves the no-false-activation guarantee under
+        architecture morphisms that change population_size, because the
+        threshold is defined in terms of (N, s, h), not a fixed constant.
+        When a convergence compiler changes N, re-calling calibrate()
+        restores the guarantee — an instance of Prop 5.1.
         """
+        self._calibrated = True
+
+    def _threshold(self) -> float:
+        """Activation threshold.
+
+        When calibrated: derived from steady-state formula so normal
+        traffic stays below activation (structural guarantee).
+        When not calibrated: log(N) × threshold_base (manual tuning).
+        """
+        if self._calibrated:
+            steady_state = (
+                self.population_size
+                * self.expected_normal_suspicion
+                * self.environment.decay_half_life
+                / math.log(2)
+            )
+            return max(0.001, steady_state * self.safety_margin)
         return math.log(max(2, self.population_size)) * self.threshold_base
 
     def produce_signal(

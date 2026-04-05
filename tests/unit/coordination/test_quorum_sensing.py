@@ -198,3 +198,106 @@ class TestQuorumSensingBio:
         assert c == 0.0  # Below noise floor, should not contribute
         # But the signal is still stored (not mutated by read)
         assert env.total_signals == 1
+
+
+class TestCalibration:
+    """Tests for auto-calibrated thresholds (categorical certificate)."""
+
+    def test_calibrate_scales_with_population(self):
+        qs5 = QuorumSensingBio(population_size=5)
+        qs5.calibrate()
+        t5 = qs5._threshold()
+
+        qs20 = QuorumSensingBio(population_size=20)
+        qs20.calibrate()
+        t20 = qs20._threshold()
+
+        # Threshold scales linearly with N (not log) when calibrated
+        assert t20 > t5
+        assert abs(t20 / t5 - 4.0) < 0.01  # 20/5 = 4x
+
+    def test_calibrate_prevents_false_activation(self):
+        """Normal traffic at steady state should not trigger activation."""
+        import random
+        for n in [5, 10, 20, 50]:
+            qs = QuorumSensingBio(
+                population_size=n,
+                environment=SignalEnvironment(decay_half_life=5.0),
+            )
+            qs.calibrate()
+
+            rng = random.Random(42)
+            # Run normal traffic for enough steps to reach steady state
+            for t in range(60):
+                for i in range(n):
+                    susp = max(0, 0.15 + rng.gauss(0, 0.05))
+                    qs.produce_signal(f"a{i}", susp, float(t))
+
+            # Should NOT activate (certificate guarantee)
+            assert not qs.should_activate("AI-1", 59.0), (
+                f"False activation at N={n}"
+            )
+
+    def test_calibrate_allows_detection_at_compromise(self):
+        """Compromised traffic at 40% should trigger activation."""
+        import random
+        qs = QuorumSensingBio(
+            population_size=20,
+            environment=SignalEnvironment(decay_half_life=5.0),
+        )
+        qs.calibrate()
+
+        rng = random.Random(42)
+        n_compromised = 8  # 40%
+        for t in range(60):
+            for i in range(20):
+                if i < n_compromised:
+                    susp = max(0, 0.8 + rng.gauss(0, 0.1))
+                else:
+                    susp = max(0, 0.15 + rng.gauss(0, 0.05))
+                qs.produce_signal(f"a{i}", susp, float(t))
+
+        assert qs.should_activate("AI-1", 59.0)
+
+    def test_calibrate_adjusts_when_population_changes(self):
+        """Re-calibrating after population change preserves guarantee."""
+        qs = QuorumSensingBio(population_size=10)
+        qs.calibrate()
+        t10 = qs._threshold()
+
+        # Simulate compilation to a framework with more agents
+        qs.population_size = 30
+        # Must re-calibrate — threshold should change
+        qs.calibrate()
+        t30 = qs._threshold()
+
+        assert t30 > t10
+        assert abs(t30 / t10 - 3.0) < 0.01  # 30/10 = 3x
+
+    def test_certificate_holds_across_populations(self):
+        """The no-false-activation guarantee holds for any N."""
+        import random
+        for n in [5, 10, 20, 50]:
+            qs = QuorumSensingBio(
+                population_size=n,
+                environment=SignalEnvironment(decay_half_life=5.0),
+            )
+            qs.calibrate()
+
+            rng = random.Random(n)  # Deterministic per N
+            for t in range(80):
+                for i in range(n):
+                    susp = max(0, 0.15 + rng.gauss(0, 0.05))
+                    qs.produce_signal(f"a{i}", susp, float(t))
+
+            level = qs.get_activation_level("AI-1", 79.0)
+            assert level < 1.0, (
+                f"Certificate violation at N={n}: activation={level:.3f}"
+            )
+
+    def test_backward_compat_uncalibrated(self):
+        """Without calibrate(), original log-scaling is used."""
+        qs = QuorumSensingBio(population_size=10, threshold_base=10.0)
+        import math
+        expected = math.log(10) * 10.0
+        assert abs(qs._threshold() - expected) < 0.01

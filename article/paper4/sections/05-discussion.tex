@@ -109,3 +109,35 @@ benchmarks now have stronger empirical backing than the topology
 theorems.  Validating the predicted error amplification and sequential
 overhead bounds against actual benchmark measurements remains future
 work.
+
+\subsection{Categorical Certificates for Structural Guarantees}
+
+The quorum sensing threshold calibration provides a concrete instance
+of \emph{semantic certificates} as formalized by de~los~Riscos
+et~al.~\cite{delosriscos2026categorical}.  The no-false-activation
+guarantee is a certificate $\text{cert}_\text{QS} = (T, \tau, \text{evds})$
+where $T$ states that normal traffic never triggers activation,
+$\tau$ maps the theorem's symbols to the quorum sensing parameters
+$(N, s, h, m)$, and the evidence is the derivation:
+
+\[
+  c_\text{ss} = \frac{N \cdot s \cdot h}{\ln 2}, \quad
+  \theta = c_\text{ss} \cdot m, \quad
+  \text{level} = \frac{c_\text{ss}}{\theta} = \frac{1}{m} < 1.
+\]
+
+Because the threshold is defined in terms of architecture parameters
+$(N, s, h)$ rather than a fixed constant, the guarantee preserves
+under architecture morphisms that change $N$---for instance, when a
+convergence compiler maps an Operon organism to a Swarms workflow
+with a different agent count.  This is a concrete instance of
+Proposition~5.1: structural properties are functorially stable under
+architectural refinement.
+
+This pattern---deriving thresholds from steady-state dynamics rather
+than hand-tuning constants---extends to other structural guarantees.
+The metabolic priority gate's STARVING threshold (10\% of capacity)
+could similarly be formalized as a certificate whose evidence is the
+state machine's priority rejection rule.  The epiplexity monitor's
+convergence/stagnation discrimination threshold could be certified
+relative to the embedding model's similarity distribution.
