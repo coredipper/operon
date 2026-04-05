@@ -214,6 +214,10 @@ class QuorumSensingBio:
         When not calibrated: log(N) × threshold_base (manual tuning).
         """
         if self._calibrated:
+            if self.emission_interval <= 0:
+                raise ValueError(
+                    f"emission_interval must be positive, got {self.emission_interval}"
+                )
             # Exact discrete steady state: geometric series with decay
             # 2^(-dt/h) per emission interval dt
             decay_per_step = 2.0 ** (
