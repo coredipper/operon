@@ -43,7 +43,8 @@ class MetabolismBenchConfig:
     max_workers: int = 8
     scenarios: list[str] = field(
         default_factory=lambda: [
-            "constant", "bursty", "gradual_depletion", "sudden_spike", "mixed_priority",
+            "constant", "bursty", "gradual_depletion", "sudden_spike",
+            "mixed_priority", "worker_scaling",
         ],
     )
 
@@ -67,6 +68,11 @@ def _generate_ops(
         return generate_sudden_spike(budget, spike_at=100, spike_cost=budget // 2, length=length, rng=rng)
     elif scenario_name == "mixed_priority":
         return generate_mixed_priority(budget, length=length, rng=rng)
+    elif scenario_name == "worker_scaling":
+        # Large pool of cheap ops — runner draws batches of recommended_workers()
+        # per step over a fixed number of steps. Budget depletes from batch processing.
+        return [Operation(cost=3, name=f"task_{i}", priority=rng.randint(0, 5))
+                for i in range(2000)]
     else:
         return generate_constant_load(budget, cost_per_op=5, length=length, rng=rng)
 
@@ -110,33 +116,55 @@ def run_metabolism_bench(
             )
 
             trial_states: set[str] = set()
-            for i, op in enumerate(ops):
-                # Regenerate periodically
-                if i > 0 and i % 10 == 0:
-                    store.regenerate(config.regeneration_per_step)
-                scaler.update()
-                trial_states.add(scaler.state.value)
+            is_scaling = scenario_name == "worker_scaling"
+            op_idx = 0
 
-                # mTOR gates expensive operations: skip if scaler says no
-                if not scaler.should_enable_feature(op.cost):
-                    # In AUTOPHAGY/CONSERVATION, only allow critical ops
-                    if op.priority < 5:
-                        bio_completed.record(False)
-                        continue
-
-                success = store.consume(op.cost, op.name, priority=op.priority)
-                bio_completed.record(success)
-
-                # Track critical operations served under pressure
-                if op.priority >= 5 and store.get_state() in (
-                    MetabolicState.STARVING, MetabolicState.CONSERVING,
-                ):
-                    bio_critical_served.record(success)
+            if is_scaling:
+                # Worker scaling: fixed 100 steps, each processes
+                # recommended_workers() ops. Bio adapts batch size to
+                # resource level; ablated uses fixed count.
+                max_steps = 100
+                for step in range(max_steps):
+                    if step > 0 and step % 10 == 0:
+                        store.regenerate(config.regeneration_per_step)
+                    scaler.update()
+                    trial_states.add(scaler.state.value)
+                    batch_size = scaler.recommended_workers()
+                    for _ in range(batch_size):
+                        if op_idx >= len(ops):
+                            break
+                        op = ops[op_idx]
+                        op_idx += 1
+                        if not scaler.should_enable_feature(op.cost) and op.priority < 5:
+                            bio_completed.record(False)
+                            continue
+                        success = store.consume(op.cost, op.name, priority=op.priority)
+                        bio_completed.record(success)
+                        if op.priority >= 5 and store.get_state() in (
+                            MetabolicState.STARVING, MetabolicState.CONSERVING,
+                        ):
+                            bio_critical_served.record(success)
+            else:
+                for i, op in enumerate(ops):
+                    if i > 0 and i % 10 == 0:
+                        store.regenerate(config.regeneration_per_step)
+                    scaler.update()
+                    trial_states.add(scaler.state.value)
+                    if not scaler.should_enable_feature(op.cost):
+                        if op.priority < 5:
+                            bio_completed.record(False)
+                            continue
+                    success = store.consume(op.cost, op.name, priority=op.priority)
+                    bio_completed.record(success)
+                    if op.priority >= 5 and store.get_state() in (
+                        MetabolicState.STARVING, MetabolicState.CONSERVING,
+                    ):
+                        bio_critical_served.record(success)
 
             bio_transitions.append(scaler._transitions)
             bio_states_visited.append(trial_states)
 
-            # --- Ablated variant: ATP_Store without mTOR (no scaling) ---
+            # --- Ablated variant: ATP_Store without mTOR (fixed workers) ---
             store_abl = ATP_Store(
                 budget=config.initial_budget,
                 gtp_budget=config.gtp_budget,
@@ -144,15 +172,35 @@ def run_metabolism_bench(
                 max_debt=config.max_debt,
                 silent=True,
             )
-            for i, op in enumerate(ops):
-                if i > 0 and i % 10 == 0:
-                    store_abl.regenerate(config.regeneration_per_step)
-                success = store_abl.consume(op.cost, op.name, priority=op.priority)
-                abl_completed.record(success)
-                if op.priority >= 5 and store_abl.get_state() in (
-                    MetabolicState.STARVING, MetabolicState.CONSERVING,
-                ):
-                    abl_critical_served.record(success)
+            op_idx = 0
+            if is_scaling:
+                # Fixed worker count = midpoint (no adaptive scaling)
+                fixed_workers = (config.min_workers + config.max_workers) // 2
+                max_steps = 100
+                for step in range(max_steps):
+                    if step > 0 and step % 10 == 0:
+                        store_abl.regenerate(config.regeneration_per_step)
+                    for _ in range(fixed_workers):
+                        if op_idx >= len(ops):
+                            break
+                        op = ops[op_idx]
+                        op_idx += 1
+                        success = store_abl.consume(op.cost, op.name, priority=op.priority)
+                        abl_completed.record(success)
+                        if op.priority >= 5 and store_abl.get_state() in (
+                            MetabolicState.STARVING, MetabolicState.CONSERVING,
+                        ):
+                            abl_critical_served.record(success)
+            else:
+                for i, op in enumerate(ops):
+                    if i > 0 and i % 10 == 0:
+                        store_abl.regenerate(config.regeneration_per_step)
+                    success = store_abl.consume(op.cost, op.name, priority=op.priority)
+                    abl_completed.record(success)
+                    if op.priority >= 5 and store_abl.get_state() in (
+                        MetabolicState.STARVING, MetabolicState.CONSERVING,
+                    ):
+                        abl_critical_served.record(success)
 
             # --- Naive variant: SimpleBudget ---
             budget = SimpleBudget(budget=config.initial_budget)
