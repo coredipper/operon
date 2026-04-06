@@ -1,0 +1,32 @@
+{
+  "all-MiniLM-L6-v2": {
+    "convergence": 0.96,
+    "false_stagnation": 0.96,
+    "loop": 0.631,
+    "dim": 384,
+    "seeds": 3,
+    "n_trials": 100
+  },
+  "all-mpnet-base-v2": {
+    "convergence": 0.872,
+    "false_stagnation": 0.96,
+    "loop": 0.626,
+    "dim": 768,
+    "seeds": 1,
+    "n_trials": 50
+  },
+  "BAAI/bge-small-en-v1.5": {
+    "convergence": 0.608,
+    "false_stagnation": 0.96,
+    "loop": 0.532,
+    "dim": 384,
+    "seeds": 1,
+    "n_trials": 50
+  },
+  "naive_baseline": {
+    "convergence": "0.02-0.40",
+    "false_stagnation": 0.02,
+    "loop": 0.94,
+    "note": "cosine similarity + timeout"
+  }
+}
