@@ -14,10 +14,11 @@ Quorum sensing achieves 0\% false-positive rate with 71--87\%
 true-positive rate at 40\% agent compromise, occupying a unique
 precision--recall operating point that neither majority voting nor
 independent detection reaches.  Bayesian stagnation detection loses to cosine similarity with mock
-embeddings but dominates with real sentence embeddings: 96\%
-false-stagnation discrimination versus 2\% naive, and 96\% convergence
-accuracy versus 40\% naive.  This reveals a conditional structural
-guarantee that activates when embedding quality is present.  The
+embeddings but wins on convergence and false-stagnation discrimination
+with real sentence embeddings (96\% versus 2--40\% naive), while the
+naive detector retains an advantage on trivial loop detection.  This
+reveals a conditional structural guarantee that activates when
+embedding quality is present.  The
 pattern across all three benchmarks: biological design earns its
 complexity through \emph{mechanism-level structural guarantees}---priority
 gating, signal accumulation with temporal decay, two-signal
