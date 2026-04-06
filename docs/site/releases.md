@@ -2,6 +2,20 @@
 
 This page tracks the recent direction of the project.
 
+## v0.27.0
+
+Focus:
+
+- **Structural guarantee benchmarks** — three-variant comparison (biological, ablated, naive) with pathway-grounded scenarios from KEGG/Reactome, 10M+ data points
+
+New:
+
+- `QuorumSensingBio`: autoinducer signal accumulation with temporal decay (KEGG map02024), auto-calibrated thresholds via categorical certificate (de los Riscos et al. Prop 5.1)
+- `MTORScaler`: AMPK ratio + rate-of-change sensing with hysteresis (KEGG hsa04152), adaptive worker scaling
+- Benchmark suite (`eval/benchmarks/`): metabolism, quorum sensing, epiplexity — all three biological wins
+- Real embedding confirmation: convergence discrimination 96% bio vs 2% naive, confirmed across 3 models
+- Paper 4, Paper 2 extension (Sections 8-9), blog post
+
 ## v0.26.0
 
 Focus:

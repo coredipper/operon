@@ -13,12 +13,12 @@ delivers 100\% critical-operation service under bursty load versus
 Quorum sensing achieves 0\% false-positive rate with 71--87\%
 true-positive rate at 40\% agent compromise, occupying a unique
 precision--recall operating point that neither majority voting nor
-independent detection reaches.  Bayesian stagnation detection is an
-honest negative: the naive cosine-similarity detector outperforms the
-two-signal biological design on detection accuracy with mock embeddings,
-though at the cost of a 75\% false-positive rate.  The pattern across
-all three benchmarks: biological design earns its complexity through
-\emph{mechanism-level structural guarantees}---priority gating, signal
-accumulation with temporal decay---rather than through algorithmic
-sophistication.
+independent detection reaches.  Bayesian stagnation detection loses to cosine similarity with mock
+embeddings but dominates with real sentence embeddings (96\% convergence
+discrimination versus 2\% naive), revealing a conditional structural
+guarantee that activates when embedding quality is present.  The
+pattern across all three benchmarks: biological design earns its
+complexity through \emph{mechanism-level structural guarantees}---priority
+gating, signal accumulation with temporal decay, two-signal
+discrimination---rather than through algorithmic sophistication.
 \end{abstract}
