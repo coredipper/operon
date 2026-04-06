@@ -1,32 +1,32 @@
 {
   "all-MiniLM-L6-v2": {
-    "convergence": 0.96,
-    "false_stagnation": 0.96,
-    "loop": 0.631,
-    "dim": 384,
+    "convergence_bio": 0.96,
+    "false_stagnation_bio": 0.96,
+    "loop_bio": 0.631,
+    "convergence_naive": 0.401,
+    "false_stagnation_naive": 0.02,
+    "loop_naive": 0.94,
     "seeds": 3,
-    "n_trials": 100
+    "n_trials_per_seed": 100
   },
   "all-mpnet-base-v2": {
-    "convergence": 0.872,
-    "false_stagnation": 0.96,
-    "loop": 0.626,
-    "dim": 768,
-    "seeds": 1,
-    "n_trials": 50
+    "convergence_bio": 0.875,
+    "false_stagnation_bio": 0.96,
+    "loop_bio": 0.608,
+    "convergence_naive": 0.102,
+    "false_stagnation_naive": 0.02,
+    "loop_naive": 0.94,
+    "seeds": 3,
+    "n_trials_per_seed": 100
   },
   "BAAI/bge-small-en-v1.5": {
-    "convergence": 0.608,
-    "false_stagnation": 0.96,
-    "loop": 0.532,
-    "dim": 384,
-    "seeds": 1,
-    "n_trials": 50
-  },
-  "naive_baseline": {
-    "convergence": "0.02-0.40",
-    "false_stagnation": 0.02,
-    "loop": 0.94,
-    "note": "cosine similarity + timeout"
+    "convergence_bio": 0.586,
+    "false_stagnation_bio": 0.96,
+    "loop_bio": 0.668,
+    "convergence_naive": 0.021,
+    "false_stagnation_naive": 0.02,
+    "loop_naive": 0.94,
+    "seeds": 3,
+    "n_trials_per_seed": 100
   }
 }

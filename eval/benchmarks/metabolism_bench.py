@@ -120,19 +120,21 @@ def run_metabolism_bench(
             op_idx = 0
 
             if is_scaling:
-                # Worker scaling: fixed 100 steps, each processes
-                # recommended_workers() ops. Bio adapts batch size to
-                # resource level; ablated uses fixed count.
+                # Worker scaling: fixed 100 steps × max_workers slots.
+                # Bio uses recommended_workers() of those slots; unused
+                # slots count as idle (not attempted). All variants use
+                # the same denominator: 100 × max_workers.
                 max_steps = 100
                 for step in range(max_steps):
                     if step > 0 and step % 10 == 0:
                         store.regenerate(config.regeneration_per_step)
                     scaler.update()
                     trial_states.add(scaler.state.value)
-                    batch_size = scaler.recommended_workers()
-                    for _ in range(batch_size):
-                        if op_idx >= len(ops):
-                            break
+                    active_workers = scaler.recommended_workers()
+                    for slot in range(config.max_workers):
+                        if slot >= active_workers or op_idx >= len(ops):
+                            bio_completed.record(False)  # idle or exhausted
+                            continue
                         op = ops[op_idx]
                         op_idx += 1
                         if not scaler.should_enable_feature(op.cost) and op.priority < 5:
@@ -174,15 +176,16 @@ def run_metabolism_bench(
             )
             op_idx = 0
             if is_scaling:
-                # Fixed worker count = midpoint (no adaptive scaling)
+                # Fixed worker count = midpoint, same denominator as bio
                 fixed_workers = (config.min_workers + config.max_workers) // 2
                 max_steps = 100
                 for step in range(max_steps):
                     if step > 0 and step % 10 == 0:
                         store_abl.regenerate(config.regeneration_per_step)
-                    for _ in range(fixed_workers):
-                        if op_idx >= len(ops):
-                            break
+                    for slot in range(config.max_workers):
+                        if slot >= fixed_workers or op_idx >= len(ops):
+                            abl_completed.record(False)  # idle or exhausted
+                            continue
                         op = ops[op_idx]
                         op_idx += 1
                         success = store_abl.consume(op.cost, op.name, priority=op.priority)
@@ -204,14 +207,27 @@ def run_metabolism_bench(
 
             # --- Naive variant: SimpleBudget ---
             budget = SimpleBudget(budget=config.initial_budget)
-            for i, op in enumerate(ops):
-                # No regeneration — simple counter
-                success = budget.consume(op.cost, op.name, op.priority)
-                naive_completed.record(success)
-                # Simple budget has no priority gating, so critical_served
-                # is the same as completed (no special treatment)
-                if op.priority >= 5 and budget.get_balance() < config.initial_budget * 0.3:
-                    naive_critical_served.record(success)
+            op_idx = 0
+            if is_scaling:
+                # Same 100-step schedule + max_workers denominator
+                max_steps = 100
+                for step in range(max_steps):
+                    for slot in range(config.max_workers):
+                        if op_idx >= len(ops):
+                            naive_completed.record(False)
+                            continue
+                        op = ops[op_idx]
+                        op_idx += 1
+                        success = budget.consume(op.cost, op.name, op.priority)
+                        naive_completed.record(success)
+                        if op.priority >= 5 and budget.get_balance() < config.initial_budget * 0.3:
+                            naive_critical_served.record(success)
+            else:
+                for i, op in enumerate(ops):
+                    success = budget.consume(op.cost, op.name, op.priority)
+                    naive_completed.record(success)
+                    if op.priority >= 5 and budget.get_balance() < config.initial_budget * 0.3:
+                        naive_critical_served.record(success)
 
         def _counter_to_trial(c: Counter, variant: Variant) -> TrialResult:
             return TrialResult(variant=variant, metric_name=c.name, success=c.success, total=c.total)
