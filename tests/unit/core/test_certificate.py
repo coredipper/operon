@@ -167,6 +167,26 @@ class TestCertificate:
         except TypeError:
             pass
 
+    def test_single_element_tuple_subclass(self):
+        class MyTuple(tuple):
+            def __new__(cls, iterable):
+                return super().__new__(cls, iterable)
+
+        cert = Certificate(
+            theorem="test",
+            parameters={"data": MyTuple([{"k": "v"}])},
+            conclusion="",
+            source="",
+            _verify_fn=lambda p: (True, {}),
+        )
+        assert len(cert.parameters["data"]) == 1
+        assert type(cert.parameters["data"]).__name__ == "MyTuple"
+        try:
+            cert.parameters["data"][0]["k"] = "mutated"
+            assert False, "Should be immutable"
+        except TypeError:
+            pass
+
 
 # ---------------------------------------------------------------------------
 # QuorumSensingBio certificate
