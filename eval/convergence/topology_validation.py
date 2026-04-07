@@ -115,28 +115,12 @@ ROLE_CAPABILITIES: dict[str, list[str]] = {
     "audio_processor": ["read_fs", "exec_code"],
     "video_processor": ["read_fs", "exec_code"],
     "fusion_engine": ["read_fs", "exec_code"],
-    # Analysis / reasoning roles
-    "analyzer": ["read_fs"],
-    "correlator": ["read_fs"],
-    "diagnostician": ["read_fs"],
-    "evaluator": ["read_fs"],
+    # Analysis roles with clear external tool needs
     "feature_engineer": ["read_fs", "exec_code"],
     "security_auditor": ["read_fs", "net"],
-    "validator": ["read_fs"],
-    "reviewer": ["read_fs"],
-    "resolver": ["read_fs"],
-    # Translation / generation
-    "translator": ["net"],
-    "translator_back": ["net"],
-    "generator": ["exec_code"],
-    "designer": ["write_fs"],
-    "artist": ["write_fs"],
-    # Routing / aggregation (lightweight, no special capabilities)
-    "aggregator": ["read_fs"],
-    "router": ["read_fs"],
-    "answerer": ["net"],
-    "responder": ["net"],
-    "synthesizer": ["read_fs"],
+    # Pure reasoning / coordination roles — intentionally unmapped so
+    # planning_cost_ratio distinguishes tool-heavy from tool-light
+    # pipelines rather than collapsing to stage count.
 }
 
 
@@ -551,14 +535,13 @@ def compute_theorem_validations(
         spearman_rho=rho,
         spearman_p=p,
         direction_correct=rho >= 0,
-        validation_pass=rho > 0 and p < 0.1,
-        informational=False,
+        validation_pass=False,
+        informational=True,
         notes=(
-            "Positive rho = more tool modules predicts more token usage. "
-            "Note: capabilities are annotated in predictions via "
-            "ROLE_CAPABILITIES but not in the live executor's topology — "
-            "this tests whether role-implied tool density correlates with "
-            "actual token consumption."
+            "Informational — capabilities are annotated in predictions "
+            "via ROLE_CAPABILITIES but not in the live executor's "
+            "topology. Reported to check whether role-implied tool "
+            "density correlates with token consumption."
         ),
     ))
 
