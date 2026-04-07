@@ -205,6 +205,28 @@ class TestCertificate:
         except TypeError:
             pass
 
+    def test_positional_tuple_subclass_preserved(self):
+        class Pair(tuple):
+            def __new__(cls, left, right):
+                return super().__new__(cls, (left, right))
+
+        cert = Certificate(
+            theorem="test",
+            parameters={"data": Pair({"a": 1}, [2, 3])},
+            conclusion="",
+            source="",
+            _verify_fn=lambda p: (True, {}),
+        )
+        assert type(cert.parameters["data"]).__name__ == "Pair"
+        assert len(cert.parameters["data"]) == 2
+        # Contents frozen
+        try:
+            cert.parameters["data"][0]["a"] = 999
+            assert False, "Should be immutable"
+        except TypeError:
+            pass
+        assert isinstance(cert.parameters["data"][1], tuple)
+
 
 # ---------------------------------------------------------------------------
 # QuorumSensingBio certificate

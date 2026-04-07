@@ -47,11 +47,12 @@ def _deep_freeze(value: Any) -> Any:
                 except (TypeError, ValueError):
                     pass
             else:
-                # Other tuple subclasses: iterable constructor
-                try:
-                    return type(value)(frozen)
-                except (TypeError, ValueError):
-                    pass
+                # Other tuple subclasses: try iterable, then variadic
+                for factory in (lambda: type(value)(frozen), lambda: type(value)(*frozen)):
+                    try:
+                        return factory()
+                    except (TypeError, ValueError):
+                        continue
         return frozen
     return value
 
