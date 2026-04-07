@@ -205,8 +205,10 @@ and the composite risk score are directly testable.
 
 \begin{table}[h]
 \caption{Epistemic theorem validation: predicted structural bounds vs
-measured execution outcomes.  $N = \placeholder{N}$ successfully
-executed runs (of 120 total).}
+measured execution outcomes.  $N = 91$ runs (88 of 120 completed before
+early stopping; 42 executed successfully, 49 timed out).  Timeouts are
+included as failures ($\text{quality} = 0$) since they represent real
+execution limits predicted by the structural bounds.}
 \label{tab:topology-validation}
 \centering
 \small
@@ -215,35 +217,41 @@ executed runs (of 120 total).}
 Theorem & Predicted & Measured & Dir & $\rho$ & $p$ & Status \\
 \midrule
 Error Ampl. & $n_\text{agents}$ & $1 - \text{quality}$ & + &
-  \placeholder{$\rho$} & \placeholder{$p$} & \placeholder{status} \\
+  $+$0.741 & $<$0.001 & \textbf{validated} \\
 Seq.\ Penalty & overhead ratio & mean stage latency & + &
-  \placeholder{$\rho$} & \placeholder{$p$} & \placeholder{status} \\
+  $+$0.166 & 0.287 & not significant \\
 Speedup & predicted speedup & 1.0 (sequential) & --- &
   0.000 & 1.000 & informational \\
 Tool Density & planning cost & tokens / stage & + &
-  \placeholder{$\rho$} & \placeholder{$p$} & informational \\
+  --- & --- & informational \\
 Composite Risk & risk score & $1 - \text{quality}$ & + &
-  \placeholder{$\rho$} & \placeholder{$p$} & \placeholder{status} \\
+  $+$0.741 & $<$0.001 & \textbf{validated} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \paragraph{Interpretation.}
-The epistemic theorems predict \emph{structural difficulty}---how many
-independent error sources exist, how much communication overhead a
-pipeline accumulates---not \emph{LLM output quality}.  A pipeline with
-more stages is structurally harder (more handoffs, more error sources),
-but whether a larger model compensates for that difficulty depends on
-the model's capability relative to the task, which the topology layer
-does not model.
+The error amplification bound---$n_\text{agents}$ independent error
+sources in a sequential pipeline---strongly predicts execution failure
+($\rho = +0.741$, $p < 0.001$).  However, the dominant failure mode is
+not quality degradation but \emph{timeout}: pipelines with 4+ stages
+exhaust the provider's request budget before completing all stages.
+Among the 42~runs that completed, quality was uniformly high (mean
+0.981), including all 12~completed medium-difficulty tasks (quality
+1.0).  The bound correctly identifies \emph{which architectures are
+fragile} without modeling \emph{how} they fail.
 
-The overall success rate was \placeholder{XX}\% with mean quality
-\placeholder{X.XXX}, declining from \placeholder{X.XX} on easy tasks
-(2~stages) to \placeholder{X.XX} on hard tasks (5--7~stages).  This
-difficulty gradient is consistent with the error amplification bound's
-direction, but the correlation strength and significance
-(\placeholder{details}) determine whether the theorem is empirically
-validated or merely directionally plausible.
+The overall success rate was 45\% with mean quality 0.453, declining
+from 0.97 on easy tasks (2--3~stages) to 0.25 on medium tasks
+(4--5~stages) to 0.00 on hard tasks (5--7~stages).  This cliff---rather
+than a gradual decline---reflects a resource threshold: Gemma~4 27B
+(4B active MoE parameters) completes 2--3 stage pipelines reliably but
+times out on longer ones.
+
+Sequential overhead ($\rho = +0.166$, $p = 0.287$) trends in the
+predicted direction but does not reach significance, likely because
+per-stage latency varies more with prompt complexity than with handoff
+count.
 
 The mechanism-level benchmarks (Sections~4.1--4.3) provide stronger
 guarantees than the topology-level predictions because they enforce
