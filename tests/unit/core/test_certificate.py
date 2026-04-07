@@ -103,6 +103,26 @@ class TestCertificate:
         # List converted to tuple
         assert isinstance(cert.parameters["items"], tuple)
 
+    def test_tuple_contents_frozen(self):
+        cert = Certificate(
+            theorem="test",
+            parameters={"pair": ([1, 2], {"a": 3})},
+            conclusion="",
+            source="",
+            _verify_fn=lambda p: (True, {"out": ([4],)}),
+        )
+        # List inside tuple is frozen to tuple
+        assert isinstance(cert.parameters["pair"][0], tuple)
+        # Dict inside tuple is frozen
+        try:
+            cert.parameters["pair"][1]["a"] = 999
+            assert False, "Dict inside tuple should be immutable"
+        except TypeError:
+            pass
+        # Evidence tuple contents also frozen
+        result = cert.verify()
+        assert isinstance(result.evidence["out"][0], tuple)
+
 
 # ---------------------------------------------------------------------------
 # QuorumSensingBio certificate
