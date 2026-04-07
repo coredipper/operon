@@ -227,6 +227,27 @@ class TestCertificate:
             pass
         assert isinstance(cert.parameters["data"][1], tuple)
 
+    def test_single_field_positional_tuple_subclass(self):
+        class Box(tuple):
+            def __new__(cls, item):
+                return super().__new__(cls, (item,))
+
+        cert = Certificate(
+            theorem="test",
+            parameters={"data": Box({"k": "v"})},
+            conclusion="",
+            source="",
+            _verify_fn=lambda p: (True, {}),
+        )
+        # Shape preserved: single element, not nested
+        assert len(cert.parameters["data"]) == 1
+        # Content frozen
+        try:
+            cert.parameters["data"][0]["k"] = "mutated"
+            assert False, "Should be immutable"
+        except TypeError:
+            pass
+
 
 # ---------------------------------------------------------------------------
 # QuorumSensingBio certificate
