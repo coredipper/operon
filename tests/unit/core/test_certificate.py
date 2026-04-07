@@ -144,6 +144,29 @@ class TestCertificate:
         except TypeError:
             pass
 
+    def test_custom_tuple_subclass_preserved(self):
+        class MyTuple(tuple):
+            """Tuple subclass with single-iterable constructor."""
+            def __new__(cls, iterable):
+                return super().__new__(cls, iterable)
+
+        cert = Certificate(
+            theorem="test",
+            parameters={"data": MyTuple([[1, 2], {"k": "v"}])},
+            conclusion="",
+            source="",
+            _verify_fn=lambda p: (True, {}),
+        )
+        # Type preserved
+        assert type(cert.parameters["data"]).__name__ == "MyTuple"
+        # Contents frozen
+        assert isinstance(cert.parameters["data"][0], tuple)
+        try:
+            cert.parameters["data"][1]["k"] = "mutated"
+            assert False, "Dict inside custom tuple should be immutable"
+        except TypeError:
+            pass
+
 
 # ---------------------------------------------------------------------------
 # QuorumSensingBio certificate

@@ -40,10 +40,11 @@ def _deep_freeze(value: Any) -> Any:
         frozen = tuple(_deep_freeze(v) for v in value)
         # Reconstruct subclasses (namedtuple etc.) to preserve type
         if type(value) is not tuple:
-            try:
-                return type(value)(*frozen)
-            except (TypeError, ValueError):
-                pass  # fall back to plain tuple if reconstruction fails
+            for factory in (lambda: type(value)(*frozen), lambda: type(value)(frozen)):
+                try:
+                    return factory()
+                except (TypeError, ValueError):
+                    continue
         return frozen
     return value
 
