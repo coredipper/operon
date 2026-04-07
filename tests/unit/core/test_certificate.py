@@ -123,6 +123,27 @@ class TestCertificate:
         result = cert.verify()
         assert isinstance(result.evidence["out"][0], tuple)
 
+    def test_namedtuple_preserved_and_frozen(self):
+        from collections import namedtuple
+        Pair = namedtuple("Pair", ["items", "meta"])
+        cert = Certificate(
+            theorem="test",
+            parameters={"data": Pair(items=[1, 2], meta={"k": "v"})},
+            conclusion="",
+            source="",
+            _verify_fn=lambda p: (True, {}),
+        )
+        # Type preserved
+        assert type(cert.parameters["data"]).__name__ == "Pair"
+        assert hasattr(cert.parameters["data"], "items")
+        # Contents frozen
+        assert isinstance(cert.parameters["data"].items, tuple)
+        try:
+            cert.parameters["data"].meta["k"] = "mutated"
+            assert False, "Namedtuple dict field should be immutable"
+        except TypeError:
+            pass
+
 
 # ---------------------------------------------------------------------------
 # QuorumSensingBio certificate

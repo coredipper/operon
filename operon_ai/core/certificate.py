@@ -36,8 +36,12 @@ def _deep_freeze(value: Any) -> Any:
         return tuple(_deep_freeze(v) for v in value)
     if isinstance(value, set):
         return frozenset(_deep_freeze(v) for v in value)
-    if type(value) is tuple:  # exact match — preserve namedtuple subclasses
-        return tuple(_deep_freeze(v) for v in value)
+    if isinstance(value, tuple):
+        frozen = tuple(_deep_freeze(v) for v in value)
+        # Reconstruct namedtuples to preserve field access
+        if hasattr(type(value), "_fields"):
+            return type(value)(*frozen)
+        return frozen
     return value
 
 
