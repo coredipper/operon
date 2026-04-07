@@ -36,6 +36,8 @@ def _deep_freeze(value: Any) -> Any:
         return tuple(_deep_freeze(v) for v in value)
     if isinstance(value, set):
         return frozenset(_deep_freeze(v) for v in value)
+    if isinstance(value, tuple):
+        return tuple(_deep_freeze(v) for v in value)
     return value
 
 
