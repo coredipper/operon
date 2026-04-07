@@ -38,14 +38,20 @@ def _deep_freeze(value: Any) -> Any:
         return frozenset(_deep_freeze(v) for v in value)
     if isinstance(value, tuple):
         frozen = tuple(_deep_freeze(v) for v in value)
-        # Reconstruct subclasses (namedtuple etc.) to preserve type
+        # Reconstruct subclasses to preserve type
         if type(value) is not tuple:
-            # Try iterable form first (most tuple subclasses), then variadic (namedtuple)
-            for factory in (lambda: type(value)(frozen), lambda: type(value)(*frozen)):
+            if hasattr(type(value), "_fields"):
+                # namedtuple: variadic constructor
                 try:
-                    return factory()
+                    return type(value)(*frozen)
                 except (TypeError, ValueError):
-                    continue
+                    pass
+            else:
+                # Other tuple subclasses: iterable constructor
+                try:
+                    return type(value)(frozen)
+                except (TypeError, ValueError):
+                    pass
         return frozen
     return value
 

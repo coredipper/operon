@@ -123,6 +123,24 @@ class TestCertificate:
         result = cert.verify()
         assert isinstance(result.evidence["out"][0], tuple)
 
+    def test_single_field_namedtuple(self):
+        from collections import namedtuple
+        Single = namedtuple("Single", ["x"])
+        cert = Certificate(
+            theorem="test",
+            parameters={"data": Single(x={"k": "v"})},
+            conclusion="",
+            source="",
+            _verify_fn=lambda p: (True, {}),
+        )
+        assert type(cert.parameters["data"]).__name__ == "Single"
+        assert cert.parameters["data"].x is not None
+        try:
+            cert.parameters["data"].x["k"] = "mutated"
+            assert False, "Single-field namedtuple should be frozen"
+        except TypeError:
+            pass
+
     def test_namedtuple_preserved_and_frozen(self):
         from collections import namedtuple
         Pair = namedtuple("Pair", ["items", "meta"])
