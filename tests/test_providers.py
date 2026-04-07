@@ -27,7 +27,7 @@ class TestLLMProviderProtocol:
         config = ProviderConfig()
         assert config.temperature == 0.7
         assert config.max_tokens == 1024
-        assert config.timeout_seconds == 30.0
+        assert config.timeout_seconds == 120.0
         assert config.response_format is None
 
 

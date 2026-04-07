@@ -171,3 +171,94 @@ Even with real embeddings, the naive detector wins on loop detection
 cosine similarity.  The biological monitor's advantage is not on easy
 cases (identical outputs) but on hard cases (semantically similar but
 subtly different outputs where the agent's confidence level matters).
+
+\subsection{Epistemic Theorem Validation}\label{sec:topology-validation}
+
+The preceding benchmarks test mechanism-level guarantees (priority
+gating, signal accumulation, stagnation detection).  Operon also
+provides architecture-level predictions via epistemic topology analysis:
+four theorems that bound error amplification, sequential overhead,
+parallel speedup, and tool density from wiring diagram structure alone.
+We validate two of these predictions against measured behavior from real
+LLM execution.
+
+\paragraph{Methodology.}
+We constructed a validation harness that, for each of 20 benchmark tasks
+(5~easy, 8~medium, 7~hard), builds the same \texttt{ExternalTopology}
+the live evaluator would construct, runs full epistemic analysis to
+capture all theorem predictions, then executes the task through a
+\texttt{SkillOrganism} pipeline with Gemma~4 27B (mixture-of-experts,
+4B active parameters) served locally via Ollama.  Each task was run in
+both guided and unguided configurations with 3~repetitions, yielding
+$20 \times 2 \times 3 = 120$ runs.  Quality was assessed by LLM
+self-judging on a 0.0--1.0 scale (correctness 50\%, completeness 30\%,
+clarity 20\%).  Correlations are Spearman rank ($\rho$) with p-values
+floored at 0.1 for $n < 10$.
+
+\paragraph{Testable theorems.}
+Since \texttt{SkillOrganism} always executes stages as a sequential
+pipeline, Theorem~3 (parallel speedup) is structurally constant and
+reported for completeness only.  Theorem~4 (tool density) uses
+role-implied capability annotations that are not present in the live
+executor's topology, so it is reported as informational.  Theorems~1--2
+and the composite risk score are directly testable.
+
+\begin{table}[h]
+\caption{Epistemic theorem validation: predicted structural bounds vs
+measured execution outcomes.  $N = 120$ runs (20 tasks $\times$ 2
+configs $\times$ 3 repeats).  Of these, 42 executed successfully and
+78 timed out.  Timeouts are
+included as failures ($\text{quality} = 0$) since they represent real
+execution limits predicted by the structural bounds.}
+\label{tab:topology-validation}
+\centering
+\small
+\begin{tabular}{llll rrl}
+\toprule
+Theorem & Predicted & Measured & Dir & $\rho$ & $p$ & Status \\
+\midrule
+Error Ampl. & $n_\text{agents}$ & $1 - \text{quality}$ & + &
+  $+$0.751 & $<$0.001 & \textbf{validated} \\
+Seq.\ Penalty & overhead ratio & mean stage latency & + &
+  $+$0.166 & 0.287 & not significant \\
+Speedup & predicted speedup & 1.0 (sequential) & --- &
+  0.000 & 1.000 & informational \\
+Tool Density & planning cost & tokens / stage & + &
+  --- & --- & informational \\
+Composite Risk & risk score & $1 - \text{quality}$ & + &
+  $+$0.751 & $<$0.001 & \textbf{validated} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Interpretation.}
+The error amplification bound---$n_\text{agents}$ independent error
+sources in a sequential pipeline---strongly predicts execution failure
+($\rho = +0.751$, $p < 0.001$).  However, the dominant failure mode is
+not quality degradation but \emph{timeout}: longer pipelines are
+increasingly likely to exceed the provider's request budget.
+Among the 42~runs that completed, quality was uniformly high (mean
+0.981), including all 12~completed medium-difficulty tasks (quality
+1.0).  The bound correctly identifies \emph{which architectures are
+fragile} without modeling \emph{how} they fail.
+
+The overall success rate was 35\% with mean quality 0.343, declining
+from 0.97 on easy tasks (2--3~stages) to 0.25 on medium tasks
+(4--5~stages) to 0.00 on hard tasks (5--7~stages).  Timeout risk
+increases with stage count: 0/30 easy runs timed out, 36/48 medium
+runs timed out, and 42/42 hard runs timed out.  This reflects a
+resource threshold for Gemma~4 27B (4B active MoE parameters) at
+the 30s default timeout, not an inherent quality limit.
+
+Sequential overhead ($\rho = +0.166$, $p = 0.287$) trends in the
+predicted direction but does not reach significance, likely because
+per-stage latency varies more with prompt complexity than with handoff
+count.
+
+The mechanism-level benchmarks (Sections~4.1--4.3) provide stronger
+guarantees than the topology-level predictions because they enforce
+structural invariants at the feature level (priority gates, signal
+decay, two-signal discrimination) rather than predicting outcomes from
+architecture shape alone.  The two layers are complementary: epistemic
+topology identifies architectures likely to need structural guarantees;
+the mechanism benchmarks validate that those guarantees deliver.

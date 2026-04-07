@@ -47,3 +47,6 @@ docs/*
 .beadhub
 .aw/
 .operon/
+
+# Topology validation generated artifacts
+eval/results/topology_validation/

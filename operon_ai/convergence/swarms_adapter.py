@@ -30,7 +30,7 @@ from ..core.epistemic import (
     tool_density,
 )
 from ..core.types import Capability, DataType, IntegrityLabel
-from ..core.wagent import ModuleSpec, PortType, WiringDiagram
+from ..core.wagent import ModuleSpec, PortType, ResourceCost, WiringDiagram
 from ..patterns.repository import PatternTemplate, TaskFingerprint
 from ..patterns.types import TopologyAdvice
 from .types import AdapterResult, ExternalTopology
@@ -125,6 +125,11 @@ def parse_swarm_topology(
 # ---------------------------------------------------------------------------
 
 
+def build_wiring_diagram(topology: ExternalTopology) -> WiringDiagram:
+    """Public interface: construct a :class:`WiringDiagram` from an :class:`ExternalTopology`."""
+    return _build_wiring_diagram(topology)
+
+
 def _build_wiring_diagram(topology: ExternalTopology) -> WiringDiagram:
     """Construct a :class:`WiringDiagram` from an external topology.
 
@@ -161,7 +166,11 @@ def _build_wiring_diagram(topology: ExternalTopology) -> WiringDiagram:
         agent_caps = _get_agent_capabilities(spec)
         caps = {Capability(c) for c in agent_caps if c in _cap_values}
 
-        diagram.add_module(ModuleSpec(name=name, inputs=inputs, outputs=outputs, capabilities=caps))
+        # Assign unit cost so critical-path and speedup analyses are non-degenerate.
+        diagram.add_module(ModuleSpec(
+            name=name, inputs=inputs, outputs=outputs, capabilities=caps,
+            cost=ResourceCost(atp=1, latency_ms=1.0),
+        ))
 
     # Wire edges.  Track how many wires have already landed on each dst.
     dst_cursor: dict[str, int] = {}

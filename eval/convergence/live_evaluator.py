@@ -93,7 +93,7 @@ def _detect_ollama() -> OpenAICompatibleProvider | None:
     if not models:
         return None
     # Try preferred reasoning models first, then all others
-    preferred = ["deepseek-r1:8b", "deepseek-r1:latest", "qwen3:latest"]
+    preferred = ["gemma4:latest", "deepseek-r1:8b", "deepseek-r1:latest", "qwen3:latest"]
     ordered = [m for m in preferred if m in models] + [m for m in models if m not in preferred]
     model = _first_chat_model(base, ordered)
     if not model:
@@ -436,11 +436,11 @@ def _judge_quality(
         # Reasoning models and Gemini need more tokens for CoT / verbose output
         _model = getattr(prov, "model", "").lower()
         is_reasoning = (
-            _model.startswith(("deepseek-r1", "qwen"))
+            _model.startswith(("deepseek-r1", "qwen", "gemma4"))
             or "nemotron" in _model
         )
         is_gemini = isinstance(prov, GeminiProvider)
-        max_tok = 500 if (is_reasoning or is_gemini) else 150
+        max_tok = 2048 if is_reasoning else 500 if is_gemini else 150
 
         # Only use structured output for providers known to support it.
         # Local OpenAI-compatible servers (Ollama, LM Studio) and Gemini
@@ -459,6 +459,11 @@ def _judge_quality(
                     ),
                 )
                 text = resp.content.strip()
+
+                # Strip markdown code fences (e.g. ```json\n...\n```)
+                fence = re.match(r"^```\w*\n(.*?)```\s*$", text, re.DOTALL)
+                if fence:
+                    text = fence.group(1).strip()
 
                 # 1) Try full JSON parse — handles {"score": N}, bare
                 #    numbers (0.78, 1.0), and exact 0/1
@@ -756,7 +761,7 @@ class LiveEvaluator:
                 quality_reason=f"Execution failed: {e}",
                 total_tokens=0,
                 total_latency_ms=elapsed_ms,
-                stage_count=len(stages),
+                stage_count=0,
                 risk_score=risk_score,
                 stage_details=(),
                 judge_provider=judge_name,
