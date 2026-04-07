@@ -1,12 +1,12 @@
 """Sequential pipeline validation harness.
 
-Compares epistemic analysis predictions (error bounds, sequential penalty)
-against measured behavior from real LLM execution via Ollama/Gemma 4.
+Compares epistemic analysis predictions (error bounds, sequential penalty,
+tool density) against measured behavior from real LLM execution via
+Ollama/Gemma 4.
 
 Scope: SkillOrganism always executes stages as a sequential pipeline,
 so this harness validates sequential-topology theorems only. Parallel
-speedup is reported as informational; tool density is omitted entirely
-(ExternalTopology lacks capability annotations).
+speedup is reported as informational.
 
 For each benchmark task × config (guided/unguided) × repeat:
   1. Constructs the same ExternalTopology the live evaluator would build
@@ -39,6 +39,83 @@ from operon_ai.patterns.advisor import advise_topology
 
 from .live_evaluator import LiveEvaluator, LiveRunResult, _TASK_PROMPTS
 from .tasks import TaskDefinition, get_benchmark_tasks
+
+
+# ---------------------------------------------------------------------------
+# Role → Capability mapping
+# ---------------------------------------------------------------------------
+# Maps task roles to Capability enum values (read_fs, write_fs, net,
+# exec_code, money, email_send).  Roles without a clear capability
+# mapping are absent — they contribute zero to tool density, which is
+# honest (a "synthesizer" doesn't inherently need filesystem or network).
+
+ROLE_CAPABILITIES: dict[str, list[str]] = {
+    # Filesystem readers
+    "reader": ["read_fs"],
+    "parser": ["read_fs"],
+    "loader": ["read_fs"],
+    "chunker": ["read_fs"],
+    "extractor": ["read_fs"],
+    "entity_extractor": ["read_fs"],
+    "relation_extractor": ["read_fs"],
+    "classifier": ["read_fs"],
+    "detector": ["read_fs"],
+    # Filesystem writers
+    "writer": ["write_fs"],
+    "logger": ["write_fs"],
+    "reporter": ["write_fs"],
+    # Filesystem read + write
+    "editor": ["read_fs", "write_fs"],
+    "formatter": ["read_fs", "write_fs"],
+    "merger": ["read_fs", "write_fs"],
+    "transformer": ["read_fs", "write_fs"],
+    "cleaner": ["read_fs", "write_fs"],
+    "graph_builder": ["read_fs", "write_fs"],
+    # Code execution
+    "runner": ["exec_code"],
+    "tester": ["exec_code"],
+    "unit_runner": ["exec_code"],
+    "integration_runner": ["exec_code"],
+    "e2e_runner": ["exec_code"],
+    "perf_runner": ["exec_code"],
+    "fuzz_runner": ["exec_code"],
+    "trainer": ["exec_code"],
+    "tuner": ["exec_code"],
+    "embedder": ["exec_code"],
+    # Code + filesystem
+    "linter": ["read_fs", "exec_code"],
+    "bug_finder": ["read_fs", "exec_code"],
+    "style_checker": ["read_fs", "exec_code"],
+    "sast_scanner": ["read_fs", "exec_code"],
+    "secret_scanner": ["read_fs", "exec_code"],
+    "dep_scanner": ["read_fs", "exec_code"],
+    "compliance_checker": ["read_fs", "exec_code"],
+    # Network
+    "researcher": ["net"],
+    "researcher_1": ["net"],
+    "researcher_2": ["net"],
+    "researcher_3": ["net"],
+    "researcher_4": ["net"],
+    "researcher_5": ["net"],
+    "collector": ["net"],
+    "retriever": ["net"],
+    "ingester": ["net"],
+    "monitor": ["net"],
+    # Network + code
+    "dast_scanner": ["net", "exec_code"],
+    # Network + filesystem
+    "backend_dev": ["read_fs", "write_fs", "net"],
+    "frontend_dev": ["read_fs", "write_fs", "net"],
+    "devops": ["read_fs", "write_fs", "net", "exec_code"],
+    "deployer": ["write_fs", "net", "exec_code"],
+    "architect": ["read_fs", "net"],
+    # Multi-modal processors
+    "text_processor": ["read_fs"],
+    "image_processor": ["read_fs", "exec_code"],
+    "audio_processor": ["read_fs", "exec_code"],
+    "video_processor": ["read_fs", "exec_code"],
+    "fusion_engine": ["read_fs", "exec_code"],
+}
 
 
 # ---------------------------------------------------------------------------
@@ -238,7 +315,12 @@ def build_prediction(
                 mode = "fuzzy"
         else:
             mode = "fuzzy"
-        agent_specs.append({"name": f"{role}_{i}", "role": role, "mode": mode})
+        agent_specs.append({
+            "name": f"{role}_{i}",
+            "role": role,
+            "mode": mode,
+            "capabilities": ROLE_CAPABILITIES.get(role, []),
+        })
 
     # Sequential edges (same as evaluate_task lines 686-688)
     realized_edges = [
@@ -428,9 +510,26 @@ def compute_theorem_validations(
         ),
     ))
 
-    # Theorem 4 (Tool Density) omitted — ExternalTopology does not carry
-    # capability annotations, so planning_cost_ratio is structurally zero
-    # for all tasks and no meaningful correlation can be computed.
+    # -- Theorem 4: Tool Density --
+    # Higher planning_cost_ratio → more tokens per stage
+    pred_den = [p.planning_cost_ratio for p in all_pred]
+    meas_den = [
+        m.total_tokens / max(m.stage_count, 1) for m in all_meas
+    ]
+    rho, p = spearman_rho(pred_den, meas_den)
+    validations.append(TheoremValidation(
+        theorem_name="ToolDensity",
+        description="planning_cost_ratio vs tokens per stage",
+        n_pairs=len(valid),
+        predicted_values=pred_den,
+        measured_values=meas_den,
+        spearman_rho=rho,
+        spearman_p=p,
+        direction_correct=rho >= 0,
+        validation_pass=rho > 0 and p < 0.1,
+        informational=False,
+        notes="Positive rho = more tool modules predicts more token usage",
+    ))
 
     # -- Composite Risk Score --
     pred_risk = [p.risk_score for p in all_pred]
