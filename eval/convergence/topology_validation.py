@@ -535,7 +535,7 @@ def compute_theorem_validations(
         spearman_rho=rho,
         spearman_p=p,
         direction_correct=rho >= 0,
-        validation_pass=False,
+        validation_pass=rho > 0 and p < 0.1,
         informational=True,
         notes=(
             "Informational — capabilities are annotated in predictions "
@@ -612,7 +612,7 @@ def _pair_from_dict(d: dict) -> ValidationPair:
     return ValidationPair(prediction=pred, measurement=meas)
 
 
-_CHECKPOINT_VERSION = 2  # bump when prediction schema changes
+_CHECKPOINT_VERSION = 3  # bump when prediction schema changes
 
 
 def _save_checkpoint(
