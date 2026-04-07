@@ -86,6 +86,23 @@ class TestCertificate:
         except TypeError:
             pass
 
+    def test_nested_parameters_immutable(self):
+        cert = Certificate(
+            theorem="test",
+            parameters={"config": {"threshold": 0.5}, "items": [1, 2]},
+            conclusion="",
+            source="",
+            _verify_fn=lambda p: (True, {}),
+        )
+        # Nested dict is frozen
+        try:
+            cert.parameters["config"]["threshold"] = 999
+            assert False, "Nested dict should be immutable"
+        except TypeError:
+            pass
+        # List converted to tuple
+        assert isinstance(cert.parameters["items"], tuple)
+
 
 # ---------------------------------------------------------------------------
 # QuorumSensingBio certificate

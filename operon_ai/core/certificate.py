@@ -28,9 +28,20 @@ from types import MappingProxyType
 from typing import Any, Callable, Mapping
 
 
+def _deep_freeze(value: Any) -> Any:
+    """Recursively freeze mutable containers."""
+    if isinstance(value, dict):
+        return MappingProxyType({k: _deep_freeze(v) for k, v in value.items()})
+    if isinstance(value, list):
+        return tuple(_deep_freeze(v) for v in value)
+    if isinstance(value, set):
+        return frozenset(_deep_freeze(v) for v in value)
+    return value
+
+
 def _freeze(d: dict[str, Any]) -> MappingProxyType:
-    """Return a read-only view of *d*."""
-    return MappingProxyType(dict(d))
+    """Return a deeply frozen read-only view of *d*."""
+    return _deep_freeze(d)
 
 
 @dataclass(frozen=True)
