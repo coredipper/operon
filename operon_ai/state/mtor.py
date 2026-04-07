@@ -148,7 +148,7 @@ class MTORScaler:
                 "autophagy_threshold": self.autophagy_threshold,
                 "hysteresis": self.hysteresis,
             },
-            conclusion="State transitions require crossing threshold +/- hysteresis",
+            conclusion="Adjacent-state transitions require crossing threshold +/- hysteresis; non-adjacent jumps bypass hysteresis",
             source="MTORScaler",
             _verify_fn=_verify_no_oscillation,
         )

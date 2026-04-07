@@ -24,7 +24,13 @@ Example::
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable
+from types import MappingProxyType
+from typing import Any, Callable, Mapping
+
+
+def _freeze(d: dict[str, Any]) -> MappingProxyType:
+    """Return a read-only view of *d*."""
+    return MappingProxyType(dict(d))
 
 
 @dataclass(frozen=True)
@@ -34,17 +40,31 @@ class Certificate:
     Attributes:
         theorem: Short identifier for the guarantee
             (e.g. ``"no_false_activation"``).
-        parameters: The values the guarantee depends on.
+        parameters: The values the guarantee depends on (immutable).
         conclusion: Human-readable statement of what is guaranteed.
         source: Where the certificate was produced
             (e.g. ``"QuorumSensingBio.calibrate"``).
     """
 
     theorem: str
-    parameters: dict[str, Any]
+    parameters: Mapping[str, Any]
     conclusion: str
     source: str
-    _verify_fn: Callable[[dict[str, Any]], tuple[bool, dict[str, Any]]]
+    _verify_fn: Callable[[Mapping[str, Any]], tuple[bool, dict[str, Any]]]
+
+    def __init__(
+        self,
+        theorem: str,
+        parameters: dict[str, Any] | Mapping[str, Any],
+        conclusion: str,
+        source: str,
+        _verify_fn: Callable,
+    ) -> None:
+        object.__setattr__(self, "theorem", theorem)
+        object.__setattr__(self, "parameters", _freeze(dict(parameters)))
+        object.__setattr__(self, "conclusion", conclusion)
+        object.__setattr__(self, "source", source)
+        object.__setattr__(self, "_verify_fn", _verify_fn)
 
     def verify(self) -> CertificateVerification:
         """Re-derive the guarantee from current parameters.
@@ -56,7 +76,7 @@ class Certificate:
         return CertificateVerification(
             certificate=self,
             holds=holds,
-            evidence=evidence,
+            evidence=_freeze(evidence),
         )
 
 
@@ -73,4 +93,4 @@ class CertificateVerification:
 
     certificate: Certificate
     holds: bool
-    evidence: dict[str, Any]
+    evidence: Mapping[str, Any]

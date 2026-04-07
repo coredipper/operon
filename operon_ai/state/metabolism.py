@@ -528,7 +528,7 @@ class ATP_Store:
                 "priority_threshold_starving": 5,
                 "priority_threshold_dormant": 10,
             },
-            conclusion="Critical operations (priority >= threshold) always served when ATP > cost",
+            conclusion="Priority gating is structurally configured: budget > 0, thresholds ordered (starving < dormant)",
             source="ATP_Store.consume",
             _verify_fn=_verify_priority_gating,
         )

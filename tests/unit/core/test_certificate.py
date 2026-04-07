@@ -51,6 +51,41 @@ class TestCertificate:
         except AttributeError:
             pass
 
+    def test_parameters_immutable(self):
+        orig = {"x": 1}
+        cert = Certificate(
+            theorem="test",
+            parameters=orig,
+            conclusion="",
+            source="",
+            _verify_fn=lambda p: (p["x"] > 0, dict(p)),
+        )
+        # Mutating the original dict doesn't affect the certificate
+        orig["x"] = -999
+        result = cert.verify()
+        assert result.holds is True
+        # Can't mutate parameters directly
+        try:
+            cert.parameters["x"] = -1
+            assert False, "Should be immutable"
+        except TypeError:
+            pass
+
+    def test_evidence_immutable(self):
+        cert = Certificate(
+            theorem="test",
+            parameters={"x": 1},
+            conclusion="",
+            source="",
+            _verify_fn=lambda p: (True, {"y": 2}),
+        )
+        result = cert.verify()
+        try:
+            result.evidence["y"] = -1
+            assert False, "Should be immutable"
+        except TypeError:
+            pass
+
 
 # ---------------------------------------------------------------------------
 # QuorumSensingBio certificate
