@@ -1,0 +1,155 @@
+"""Tests for the categorical certificate framework."""
+
+from operon_ai.core.certificate import Certificate, CertificateVerification
+from operon_ai.coordination.quorum_sensing import QuorumSensingBio
+from operon_ai.state.metabolism import ATP_Store
+from operon_ai.state.mtor import MTORScaler
+
+
+# ---------------------------------------------------------------------------
+# Certificate dataclass
+# ---------------------------------------------------------------------------
+
+
+class TestCertificate:
+    def test_verify_returns_verification(self):
+        cert = Certificate(
+            theorem="test",
+            parameters={"x": 1},
+            conclusion="x is positive",
+            source="test",
+            _verify_fn=lambda p: (p["x"] > 0, {"x": p["x"]}),
+        )
+        result = cert.verify()
+        assert isinstance(result, CertificateVerification)
+        assert result.holds is True
+        assert result.evidence == {"x": 1}
+        assert result.certificate is cert
+
+    def test_verify_failing_certificate(self):
+        cert = Certificate(
+            theorem="test",
+            parameters={"x": -1},
+            conclusion="x is positive",
+            source="test",
+            _verify_fn=lambda p: (p["x"] > 0, {"x": p["x"]}),
+        )
+        result = cert.verify()
+        assert result.holds is False
+
+    def test_frozen(self):
+        cert = Certificate(
+            theorem="test",
+            parameters={},
+            conclusion="",
+            source="",
+            _verify_fn=lambda p: (True, {}),
+        )
+        try:
+            cert.theorem = "changed"
+            assert False, "Should be frozen"
+        except AttributeError:
+            pass
+
+
+# ---------------------------------------------------------------------------
+# QuorumSensingBio certificate
+# ---------------------------------------------------------------------------
+
+
+class TestQSCertificate:
+    def test_certify_after_calibrate(self):
+        qs = QuorumSensingBio(population_size=10)
+        qs.calibrate()
+        cert = qs.certify()
+        assert cert.theorem == "no_false_activation"
+        assert cert.source == "QuorumSensingBio.calibrate"
+
+    def test_certify_without_calibrate_raises(self):
+        qs = QuorumSensingBio(population_size=10)
+        try:
+            qs.certify()
+            assert False, "Should raise"
+        except ValueError:
+            pass
+
+    def test_verify_holds(self):
+        qs = QuorumSensingBio(population_size=10)
+        qs.calibrate()
+        result = qs.certify().verify()
+        assert result.holds is True
+        assert result.evidence["ratio"] < 1.0
+
+    def test_verify_holds_across_population_sizes(self):
+        for n in [5, 10, 20, 50, 100]:
+            qs = QuorumSensingBio(population_size=n)
+            qs.calibrate()
+            result = qs.certify().verify()
+            assert result.holds is True, f"Failed for N={n}"
+
+    def test_ratio_equals_inverse_safety_margin(self):
+        qs = QuorumSensingBio(population_size=10, safety_margin=4.0)
+        qs.calibrate()
+        result = qs.certify().verify()
+        assert abs(result.evidence["ratio"] - 0.25) < 1e-10
+
+
+# ---------------------------------------------------------------------------
+# MTORScaler certificate
+# ---------------------------------------------------------------------------
+
+
+class TestMTORCertificate:
+    def test_certify(self):
+        atp = ATP_Store(budget=1000)
+        scaler = MTORScaler(atp_store=atp)
+        cert = scaler.certify()
+        assert cert.theorem == "no_oscillation"
+
+    def test_verify_default_thresholds(self):
+        atp = ATP_Store(budget=1000)
+        scaler = MTORScaler(atp_store=atp)
+        result = scaler.certify().verify()
+        assert result.holds is True
+        assert result.evidence["gap_growth_conservation"] > 0
+        assert result.evidence["gap_conservation_autophagy"] > 0
+
+    def test_verify_fails_with_overlapping_bands(self):
+        atp = ATP_Store(budget=1000)
+        scaler = MTORScaler(
+            atp_store=atp,
+            growth_threshold=0.3,
+            conservation_threshold=0.35,
+            autophagy_threshold=0.9,
+            hysteresis=0.1,
+        )
+        result = scaler.certify().verify()
+        assert result.holds is False
+
+    def test_verify_fails_with_zero_hysteresis(self):
+        atp = ATP_Store(budget=1000)
+        scaler = MTORScaler(atp_store=atp, hysteresis=0.0)
+        result = scaler.certify().verify()
+        assert result.holds is False
+
+
+# ---------------------------------------------------------------------------
+# ATP_Store certificate
+# ---------------------------------------------------------------------------
+
+
+class TestATPCertificate:
+    def test_certify(self):
+        atp = ATP_Store(budget=1000)
+        cert = atp.certify()
+        assert cert.theorem == "priority_gating"
+
+    def test_verify_holds(self):
+        atp = ATP_Store(budget=1000)
+        result = atp.certify().verify()
+        assert result.holds is True
+
+    def test_verify_fails_with_zero_budget(self):
+        atp = ATP_Store(budget=0)
+        result = atp.certify().verify()
+        assert result.holds is False

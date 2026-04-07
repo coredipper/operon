@@ -51,6 +51,24 @@ class AMPKRatio:
         self.rate_of_change = self.current_ratio - self.previous_ratio
 
 
+def _verify_no_oscillation(
+    params: dict,
+) -> tuple[bool, dict]:
+    """Derivation replay for the mTOR no-oscillation guarantee."""
+    g = params["growth_threshold"]
+    c = params["conservation_threshold"]
+    a = params["autophagy_threshold"]
+    h = params["hysteresis"]
+    gap_gc = (c - h) - (g + h)
+    gap_ca = (a - h) - (c + h)
+    holds = h > 0 and gap_gc > 0 and gap_ca > 0
+    return holds, {
+        "hysteresis": h,
+        "gap_growth_conservation": gap_gc,
+        "gap_conservation_autophagy": gap_ca,
+    }
+
+
 @dataclass
 class MTORScaler:
     """Adaptive resource scaling inspired by mTOR/AMPK signaling.
@@ -117,6 +135,23 @@ class MTORScaler:
         if self.state == ScalingState.CONSERVATION:
             return feature_cost <= 10  # Only cheap features
         return True  # GROWTH and MAINTENANCE allow all features
+
+    def certify(self) -> "Certificate":
+        """Return a certificate for the no-oscillation guarantee."""
+        from ..core.certificate import Certificate
+
+        return Certificate(
+            theorem="no_oscillation",
+            parameters={
+                "growth_threshold": self.growth_threshold,
+                "conservation_threshold": self.conservation_threshold,
+                "autophagy_threshold": self.autophagy_threshold,
+                "hysteresis": self.hysteresis,
+            },
+            conclusion="State transitions require crossing threshold +/- hysteresis",
+            source="MTORScaler",
+            _verify_fn=_verify_no_oscillation,
+        )
 
     def _compute_state(self) -> ScalingState:
         """Core state computation with hysteresis and rate sensitivity.

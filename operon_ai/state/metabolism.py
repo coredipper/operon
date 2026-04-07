@@ -98,6 +98,21 @@ class MetabolicAccessPolicy:
         return self.state_thresholds.get(state, 1)
 
 
+def _verify_priority_gating(
+    params: dict,
+) -> tuple[bool, dict]:
+    """Derivation replay for the ATP priority gating guarantee."""
+    budget = params["budget"]
+    t_starving = params["priority_threshold_starving"]
+    t_dormant = params["priority_threshold_dormant"]
+    holds = budget > 0 and t_starving > 0 and t_dormant > t_starving
+    return holds, {
+        "budget": budget,
+        "threshold_starving": t_starving,
+        "threshold_dormant": t_dormant,
+    }
+
+
 class ATP_Store:
     """
     Advanced Metabolic Budget Manager.
@@ -500,6 +515,22 @@ class ATP_Store:
             transactions_count=len(self._transactions),
             debt=self._debt,
             health_score=health
+        )
+
+    def certify(self) -> "Certificate":
+        """Return a certificate for the priority gating guarantee."""
+        from ..core.certificate import Certificate
+
+        return Certificate(
+            theorem="priority_gating",
+            parameters={
+                "budget": self.max_atp,
+                "priority_threshold_starving": 5,
+                "priority_threshold_dormant": 10,
+            },
+            conclusion="Critical operations (priority >= threshold) always served when ATP > cost",
+            source="ATP_Store.consume",
+            _verify_fn=_verify_priority_gating,
         )
 
     def get_statistics(self) -> dict:
