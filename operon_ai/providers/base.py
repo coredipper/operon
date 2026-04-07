@@ -40,7 +40,7 @@ class ProviderConfig:
     """Configuration for LLM provider behavior."""
     temperature: float = 0.7
     max_tokens: int = 1024
-    timeout_seconds: float = 30.0
+    timeout_seconds: float = 120.0
     system_prompt: str | None = None
     response_format: dict | None = None
 
