@@ -171,3 +171,84 @@ Even with real embeddings, the naive detector wins on loop detection
 cosine similarity.  The biological monitor's advantage is not on easy
 cases (identical outputs) but on hard cases (semantically similar but
 subtly different outputs where the agent's confidence level matters).
+
+\subsection{Epistemic Theorem Validation}\label{sec:topology-validation}
+
+The preceding benchmarks test mechanism-level guarantees (priority
+gating, signal accumulation, stagnation detection).  Operon also
+provides architecture-level predictions via epistemic topology analysis:
+four theorems that bound error amplification, sequential overhead,
+parallel speedup, and tool density from wiring diagram structure alone.
+We validate two of these predictions against measured behavior from real
+LLM execution.
+
+\paragraph{Methodology.}
+We constructed a validation harness that, for each of 20 benchmark tasks
+(5~easy, 8~medium, 7~hard), builds the same \texttt{ExternalTopology}
+the live evaluator would construct, runs full epistemic analysis to
+capture all theorem predictions, then executes the task through a
+\texttt{SkillOrganism} pipeline with Gemma~4 27B (mixture-of-experts,
+4B active parameters) served locally via Ollama.  Each task was run in
+both guided and unguided configurations with 3~repetitions, yielding
+$20 \times 2 \times 3 = 120$ runs.  Quality was assessed by LLM
+self-judging on a 0.0--1.0 scale (correctness 50\%, completeness 30\%,
+clarity 20\%).  Correlations are Spearman rank ($\rho$) with p-values
+floored at 0.1 for $n < 10$.
+
+\paragraph{Testable theorems.}
+Since \texttt{SkillOrganism} always executes stages as a sequential
+pipeline, Theorem~3 (parallel speedup) is structurally constant and
+reported for completeness only.  Theorem~4 (tool density) uses
+role-implied capability annotations that are not present in the live
+executor's topology, so it is reported as informational.  Theorems~1--2
+and the composite risk score are directly testable.
+
+\begin{table}[h]
+\caption{Epistemic theorem validation: predicted structural bounds vs
+measured execution outcomes.  $N = \placeholder{N}$ successfully
+executed runs (of 120 total).}
+\label{tab:topology-validation}
+\centering
+\small
+\begin{tabular}{llll rrl}
+\toprule
+Theorem & Predicted & Measured & Dir & $\rho$ & $p$ & Status \\
+\midrule
+Error Ampl. & $n_\text{agents}$ & $1 - \text{quality}$ & + &
+  \placeholder{$\rho$} & \placeholder{$p$} & \placeholder{status} \\
+Seq.\ Penalty & overhead ratio & mean stage latency & + &
+  \placeholder{$\rho$} & \placeholder{$p$} & \placeholder{status} \\
+Speedup & predicted speedup & 1.0 (sequential) & --- &
+  0.000 & 1.000 & informational \\
+Tool Density & planning cost & tokens / stage & + &
+  \placeholder{$\rho$} & \placeholder{$p$} & informational \\
+Composite Risk & risk score & $1 - \text{quality}$ & + &
+  \placeholder{$\rho$} & \placeholder{$p$} & \placeholder{status} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Interpretation.}
+The epistemic theorems predict \emph{structural difficulty}---how many
+independent error sources exist, how much communication overhead a
+pipeline accumulates---not \emph{LLM output quality}.  A pipeline with
+more stages is structurally harder (more handoffs, more error sources),
+but whether a larger model compensates for that difficulty depends on
+the model's capability relative to the task, which the topology layer
+does not model.
+
+The overall success rate was \placeholder{XX}\% with mean quality
+\placeholder{X.XXX}, declining from \placeholder{X.XX} on easy tasks
+(2~stages) to \placeholder{X.XX} on hard tasks (5--7~stages).  This
+difficulty gradient is consistent with the error amplification bound's
+direction, but the correlation strength and significance
+(\placeholder{details}) determine whether the theorem is empirically
+validated or merely directionally plausible.
+
+The mechanism-level benchmarks (Sections~4.1--4.3) provide stronger
+guarantees than the topology-level predictions because they enforce
+structural invariants at the feature level (priority gates, signal
+decay, two-signal discrimination) rather than predicting outcomes from
+architecture shape alone.  The two layers are complementary: epistemic
+topology identifies architectures likely to need structural guarantees;
+the mechanism benchmarks validate that those guarantees deliver.

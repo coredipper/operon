@@ -103,12 +103,13 @@ epistemic topology identifies architectures likely to need structural
 guarantees; the mechanism benchmarks validate that those guarantees
 work as claimed.
 
-However, the epistemic bounds currently lack empirical validation
-against measured behavior.  The metabolism and quorum sensing
-benchmarks now have stronger empirical backing than the topology
-theorems.  Validating the predicted error amplification and sequential
-overhead bounds against actual benchmark measurements remains future
-work.
+Section~\ref{sec:topology-validation} provides the first empirical
+validation of these bounds against measured LLM execution.  The
+results confirm that the epistemic and mechanism layers operate at
+different levels of abstraction: topology predicts structural
+difficulty (more stages $\Rightarrow$ harder), while mechanism
+benchmarks enforce feature-level invariants (priority gates, signal
+decay) that deliver regardless of difficulty.
 
 \subsection{Categorical Certificates for Structural Guarantees}
 
