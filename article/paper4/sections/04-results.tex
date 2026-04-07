@@ -205,8 +205,9 @@ and the composite risk score are directly testable.
 
 \begin{table}[h]
 \caption{Epistemic theorem validation: predicted structural bounds vs
-measured execution outcomes.  $N = 91$ runs (88 of 120 completed before
-early stopping; 42 executed successfully, 49 timed out).  Timeouts are
+measured execution outcomes.  $N = 91$ runs (of 120 planned; early
+stopping after convergence).  Of these, 42 executed successfully and
+49 timed out.  Timeouts are
 included as failures ($\text{quality} = 0$) since they represent real
 execution limits predicted by the structural bounds.}
 \label{tab:topology-validation}
@@ -234,19 +235,20 @@ Composite Risk & risk score & $1 - \text{quality}$ & + &
 The error amplification bound---$n_\text{agents}$ independent error
 sources in a sequential pipeline---strongly predicts execution failure
 ($\rho = +0.741$, $p < 0.001$).  However, the dominant failure mode is
-not quality degradation but \emph{timeout}: pipelines with 4+ stages
-exhaust the provider's request budget before completing all stages.
+not quality degradation but \emph{timeout}: longer pipelines are
+increasingly likely to exceed the provider's request budget.
 Among the 42~runs that completed, quality was uniformly high (mean
 0.981), including all 12~completed medium-difficulty tasks (quality
 1.0).  The bound correctly identifies \emph{which architectures are
 fragile} without modeling \emph{how} they fail.
 
-The overall success rate was 45\% with mean quality 0.453, declining
+The overall success rate was 46\% with mean quality 0.453, declining
 from 0.97 on easy tasks (2--3~stages) to 0.25 on medium tasks
-(4--5~stages) to 0.00 on hard tasks (5--7~stages).  This cliff---rather
-than a gradual decline---reflects a resource threshold: Gemma~4 27B
-(4B active MoE parameters) completes 2--3 stage pipelines reliably but
-times out on longer ones.
+(4--5~stages) to 0.00 on hard tasks (5--7~stages).  Timeout risk
+increases with stage count: 0/30 easy runs timed out, 36/48 medium
+runs timed out, and 13/13 hard runs timed out.  This reflects a
+resource threshold for Gemma~4 27B (4B active MoE parameters) at
+the 30s default timeout, not an inherent quality limit.
 
 Sequential overhead ($\rho = +0.166$, $p = 0.287$) trends in the
 predicted direction but does not reach significance, likely because
