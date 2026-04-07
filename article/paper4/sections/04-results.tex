@@ -205,9 +205,9 @@ and the composite risk score are directly testable.
 
 \begin{table}[h]
 \caption{Epistemic theorem validation: predicted structural bounds vs
-measured execution outcomes.  $N = 91$ runs (of 120 planned; early
-stopping after convergence).  Of these, 42 executed successfully and
-49 timed out.  Timeouts are
+measured execution outcomes.  $N = 120$ runs (20 tasks $\times$ 2
+configs $\times$ 3 repeats).  Of these, 42 executed successfully and
+78 timed out.  Timeouts are
 included as failures ($\text{quality} = 0$) since they represent real
 execution limits predicted by the structural bounds.}
 \label{tab:topology-validation}
@@ -218,7 +218,7 @@ execution limits predicted by the structural bounds.}
 Theorem & Predicted & Measured & Dir & $\rho$ & $p$ & Status \\
 \midrule
 Error Ampl. & $n_\text{agents}$ & $1 - \text{quality}$ & + &
-  $+$0.741 & $<$0.001 & \textbf{validated} \\
+  $+$0.751 & $<$0.001 & \textbf{validated} \\
 Seq.\ Penalty & overhead ratio & mean stage latency & + &
   $+$0.166 & 0.287 & not significant \\
 Speedup & predicted speedup & 1.0 (sequential) & --- &
@@ -226,7 +226,7 @@ Speedup & predicted speedup & 1.0 (sequential) & --- &
 Tool Density & planning cost & tokens / stage & + &
   --- & --- & informational \\
 Composite Risk & risk score & $1 - \text{quality}$ & + &
-  $+$0.741 & $<$0.001 & \textbf{validated} \\
+  $+$0.751 & $<$0.001 & \textbf{validated} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -234,7 +234,7 @@ Composite Risk & risk score & $1 - \text{quality}$ & + &
 \paragraph{Interpretation.}
 The error amplification bound---$n_\text{agents}$ independent error
 sources in a sequential pipeline---strongly predicts execution failure
-($\rho = +0.741$, $p < 0.001$).  However, the dominant failure mode is
+($\rho = +0.751$, $p < 0.001$).  However, the dominant failure mode is
 not quality degradation but \emph{timeout}: longer pipelines are
 increasingly likely to exceed the provider's request budget.
 Among the 42~runs that completed, quality was uniformly high (mean
@@ -242,11 +242,11 @@ Among the 42~runs that completed, quality was uniformly high (mean
 1.0).  The bound correctly identifies \emph{which architectures are
 fragile} without modeling \emph{how} they fail.
 
-The overall success rate was 46\% with mean quality 0.453, declining
+The overall success rate was 34\% with mean quality 0.343, declining
 from 0.97 on easy tasks (2--3~stages) to 0.25 on medium tasks
 (4--5~stages) to 0.00 on hard tasks (5--7~stages).  Timeout risk
 increases with stage count: 0/30 easy runs timed out, 36/48 medium
-runs timed out, and 13/13 hard runs timed out.  This reflects a
+runs timed out, and 42/42 hard runs timed out.  This reflects a
 resource threshold for Gemma~4 27B (4B active MoE parameters) at
 the 30s default timeout, not an inherent quality limit.
 
