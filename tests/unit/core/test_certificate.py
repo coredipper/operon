@@ -239,7 +239,8 @@ class TestCertificate:
             source="",
             _verify_fn=lambda p: (True, {}),
         )
-        # Shape preserved: single element, not nested
+        # Type and shape preserved
+        assert type(cert.parameters["data"]).__name__ == "Box"
         assert len(cert.parameters["data"]) == 1
         # Content frozen
         try:
