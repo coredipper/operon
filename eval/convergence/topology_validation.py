@@ -115,6 +115,28 @@ ROLE_CAPABILITIES: dict[str, list[str]] = {
     "audio_processor": ["read_fs", "exec_code"],
     "video_processor": ["read_fs", "exec_code"],
     "fusion_engine": ["read_fs", "exec_code"],
+    # Analysis / reasoning roles
+    "analyzer": ["read_fs"],
+    "correlator": ["read_fs"],
+    "diagnostician": ["read_fs"],
+    "evaluator": ["read_fs"],
+    "feature_engineer": ["read_fs", "exec_code"],
+    "security_auditor": ["read_fs", "net"],
+    "validator": ["read_fs"],
+    "reviewer": ["read_fs"],
+    "resolver": ["read_fs"],
+    # Translation / generation
+    "translator": ["net"],
+    "translator_back": ["net"],
+    "generator": ["exec_code"],
+    "designer": ["write_fs"],
+    "artist": ["write_fs"],
+    # Routing / aggregation (lightweight, no special capabilities)
+    "aggregator": ["read_fs"],
+    "router": ["read_fs"],
+    "answerer": ["net"],
+    "responder": ["net"],
+    "synthesizer": ["read_fs"],
 }
 
 
@@ -444,13 +466,14 @@ def compute_theorem_validations(
     all_meas = [p.measurement for p in valid]
 
     # -- Theorem 1: Error Amplification --
-    # Higher centralized_bound → lower quality (more error potential)
-    pred_err = [p.error_centralized_bound for p in all_pred]
+    # For sequential pipelines, independent_bound (= n_agents) is the
+    # appropriate predictor — each stage can independently introduce errors.
+    pred_err = [float(p.error_independent_bound) for p in all_pred]
     meas_err = [1.0 - m.quality_score for m in all_meas]
     rho, p = spearman_rho(pred_err, meas_err)
     validations.append(TheoremValidation(
         theorem_name="ErrorAmplification",
-        description="centralized_bound vs (1 - quality_score)",
+        description="independent_bound (n_agents) vs (1 - quality_score)",
         n_pairs=len(valid),
         predicted_values=pred_err,
         measured_values=meas_err,
@@ -459,19 +482,21 @@ def compute_theorem_validations(
         direction_correct=rho >= 0,
         validation_pass=rho > 0 and p < 0.1,
         informational=False,
-        notes="Positive rho = higher bound correlates with lower quality",
+        notes="Positive rho = more agents correlates with lower quality",
     ))
 
     # -- Theorem 2: Sequential Penalty --
-    # Higher overhead_ratio → higher per-stage latency
+    # Higher overhead_ratio → higher mean stage latency
     pred_seq = [p.seq_overhead_ratio for p in all_pred]
     meas_seq = [
-        m.total_latency_ms / max(m.stage_count, 1) for m in all_meas
+        (sum(m.per_stage_latency_ms) / len(m.per_stage_latency_ms))
+        if m.per_stage_latency_ms else 0.0
+        for m in all_meas
     ]
     rho, p = spearman_rho(pred_seq, meas_seq)
     validations.append(TheoremValidation(
         theorem_name="SequentialPenalty",
-        description="overhead_ratio vs per-stage latency (ms)",
+        description="overhead_ratio vs mean stage latency (ms)",
         n_pairs=len(valid),
         predicted_values=pred_seq,
         measured_values=meas_seq,
@@ -528,7 +553,13 @@ def compute_theorem_validations(
         direction_correct=rho >= 0,
         validation_pass=rho > 0 and p < 0.1,
         informational=False,
-        notes="Positive rho = more tool modules predicts more token usage",
+        notes=(
+            "Positive rho = more tool modules predicts more token usage. "
+            "Note: capabilities are annotated in predictions via "
+            "ROLE_CAPABILITIES but not in the live executor's topology — "
+            "this tests whether role-implied tool density correlates with "
+            "actual token consumption."
+        ),
     ))
 
     # -- Composite Risk Score --
@@ -598,6 +629,9 @@ def _pair_from_dict(d: dict) -> ValidationPair:
     return ValidationPair(prediction=pred, measurement=meas)
 
 
+_CHECKPOINT_VERSION = 2  # bump when prediction schema changes
+
+
 def _save_checkpoint(
     path: str,
     pairs: list[ValidationPair],
@@ -606,7 +640,11 @@ def _save_checkpoint(
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(
-            {"model": model, "pairs": [_pair_to_dict(p) for p in pairs]},
+            {
+                "version": _CHECKPOINT_VERSION,
+                "model": model,
+                "pairs": [_pair_to_dict(p) for p in pairs],
+            },
             f,
             indent=2,
         )
@@ -630,7 +668,9 @@ def _load_checkpoint(
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
 
-    # Model mismatch or missing model metadata → discard checkpoint
+    # Version or model mismatch → discard checkpoint
+    if data.get("version") != _CHECKPOINT_VERSION:
+        return []
     saved_model = data.get("model", "")
     if expected_model and (not saved_model or saved_model != expected_model):
         return []
