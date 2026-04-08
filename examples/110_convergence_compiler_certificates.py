@@ -150,6 +150,11 @@ def main():
         assert len(compiled_certs) == len(certs), (
             f"{name} should preserve all {len(certs)} certificates, got {len(compiled_certs)}"
         )
+        original_theorems = {c.theorem for c in certs}
+        compiled_theorems = {c["theorem"] for c in compiled_certs}
+        assert original_theorems == compiled_theorems, (
+            f"{name} theorem mismatch: {original_theorems} vs {compiled_theorems}"
+        )
         verifications = verify_compiled(compiled)
         for v in verifications:
             assert v.holds, f"{name}/{v.certificate.theorem} should hold"

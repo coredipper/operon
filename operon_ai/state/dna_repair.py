@@ -103,6 +103,7 @@ class StateCheckpoint:
     genome_hash: str
     expression_snapshot: tuple[tuple[str, int], ...]  # (gene_name, level_value) pairs
     gene_values: tuple[tuple[str, Any], ...]  # (gene_name, value) pairs
+    gene_metadata: tuple[tuple[str, str, str, bool], ...]  # (name, gene_type, description, required)
     gene_count: int
     timestamp: datetime
     checkpoint_id: str
@@ -236,11 +237,16 @@ class DNARepair:
             (name, gene.value)
             for name, gene in sorted(genome._genes.items())
         )
+        gene_meta_pairs = tuple(
+            (name, gene.gene_type.value, gene.description, gene.required)
+            for name, gene in sorted(genome._genes.items())
+        )
 
         cp = StateCheckpoint(
             genome_hash=genome.get_hash(),
             expression_snapshot=expression_pairs,
             gene_values=gene_value_pairs,
+            gene_metadata=gene_meta_pairs,
             gene_count=len(genome._genes),
             timestamp=datetime.now(),
             checkpoint_id=str(uuid.uuid4())[:8],
@@ -405,10 +411,16 @@ class DNARepair:
                     f"no damage detected"
                 )
 
-        # Auto-repair if enabled
+        # Auto-repair if enabled: repair highest-severity, re-scan, repeat
         if self._auto_repair and damage:
-            for d in damage:
-                self.repair(genome, d)
+            self._auto_repair = False  # Prevent recursion
+            try:
+                remaining = damage
+                while remaining:
+                    self.repair(genome, remaining[0], checkpoint=checkpoint)
+                    remaining = self.scan(genome, checkpoint)
+            finally:
+                self._auto_repair = True
 
         return damage
 
@@ -559,18 +571,26 @@ class DNARepair:
                 target_cp = list(self._checkpoints.values())[-1]
 
             if target_cp is not None:
-                # Restore expression state
-                cp_expr = target_cp.expression_dict
-                for gname, level_value in cp_expr.items():
-                    if gname in genome._expression:
-                        genome.set_expression(
-                            gname,
-                            ExpressionLevel(level_value),
-                            "checkpoint_restore",
-                        )
+                from .genome import Gene, GeneType
+
+                cp_values = target_cp.values_dict
+                cp_meta = {m[0]: m for m in target_cp.gene_metadata}
+
+                # Recreate missing genes from checkpoint metadata
+                for gname, expected_value in cp_values.items():
+                    if genome.get_gene(gname) is None:
+                        meta = cp_meta.get(gname)
+                        if meta:
+                            _, gtype, desc, req = meta
+                            genome.add_gene(Gene(
+                                name=gname,
+                                value=expected_value,
+                                gene_type=GeneType(gtype),
+                                description=desc,
+                                required=req,
+                            ))
 
                 # Restore gene values from checkpoint
-                cp_values = target_cp.values_dict
                 for gname, expected_value in cp_values.items():
                     gene = genome.get_gene(gname)
                     if gene is not None and gene.value != expected_value:
@@ -582,6 +602,16 @@ class DNARepair:
                     if genome.allow_mutations:
                         del genome._genes[gname]
                         genome._expression.pop(gname, None)
+
+                # Restore expression state
+                cp_expr = target_cp.expression_dict
+                for gname, level_value in cp_expr.items():
+                    if gname in genome._expression:
+                        genome.set_expression(
+                            gname,
+                            ExpressionLevel(level_value),
+                            "checkpoint_restore",
+                        )
 
                 success = True
                 details = f"Restored full state from checkpoint {target_cp.checkpoint_id}"

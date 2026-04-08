@@ -8,7 +8,7 @@ from pathlib import Path
 
 import gradio as gr
 
-_repo_root = Path(__file__).resolve().parent.parent
+_repo_root = Path(__file__).resolve().parents[2]
 if str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
@@ -215,15 +215,18 @@ def tab2_pipeline(preset_name: str) -> str:
     damage = repair.scan(genome, checkpoint)
     html += _format_damage(damage)
 
-    # Step 4: Repair
+    # Step 4: Repair (iterative: repair highest severity, re-scan, repeat)
     repair_html = ""
-    for d in damage:
-        result = repair.repair(genome, d)
+    remaining = damage
+    while remaining:
+        d = remaining[0]
+        result = repair.repair(genome, d, checkpoint=checkpoint)
         badge = _ok_badge("SUCCESS") if result.success else _fail_badge("FAILED")
         repair_html += (
             f'<div style="margin:4px 0;">{badge} '
             f'<code>{result.strategy_used.value}</code>: {result.details}</div>'
         )
+        remaining = repair.scan(genome, checkpoint)
     html += _section("Step 4: Repair", repair_html or "No damage to repair.")
 
     # Step 5: Re-scan
