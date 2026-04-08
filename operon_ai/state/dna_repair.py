@@ -379,22 +379,20 @@ class DNARepair:
                 ))
 
         # 5. Required gene validation
-        valid, errors = genome.validate()
-        if not valid:
-            for error in errors:
-                # Extract gene name from "Required gene 'X' is silenced"
-                import re as _re
-                match = _re.search(r"'([^']+)'", error)
-                gene_name = match.group(1) if match else "unknown"
-                damage.append(DamageReport(
-                    corruption_type=CorruptionType.EXPRESSION_DRIFT,
-                    severity=DamageSeverity.HIGH,
-                    location=f"expression:{gene_name}",
-                    description=error,
-                    expected="expressed",
-                    actual="silenced",
-                    recommended_strategy=RepairStrategy.RE_EXPRESS,
-                ))
+        # Check required genes directly rather than parsing error strings
+        for gname, gene in genome._genes.items():
+            if gene.required:
+                expr = genome._expression.get(gname)
+                if expr and expr.level == ExpressionLevel.SILENCED:
+                    damage.append(DamageReport(
+                        corruption_type=CorruptionType.EXPRESSION_DRIFT,
+                        severity=DamageSeverity.HIGH,
+                        location=f"expression:{gname}",
+                        description=f"Required gene '{gname}' is silenced",
+                        expected="expressed",
+                        actual="silenced",
+                        recommended_strategy=RepairStrategy.RE_EXPRESS,
+                    ))
 
         # Sort by severity descending
         damage.sort(key=lambda d: d.severity.value, reverse=True)
@@ -620,10 +618,16 @@ class DNARepair:
                         del genome._genes[gname]
                         genome._expression.pop(gname, None)
 
-                    # Restore expression state
+                    # Restore expression state (create missing entries)
+                    from .genome import ExpressionState
                     cp_expr = target_cp.expression_dict
                     for gname, level_value in cp_expr.items():
-                        if gname in genome._expression:
+                        if gname not in genome._expression:
+                            genome._expression[gname] = ExpressionState(
+                                level=ExpressionLevel(level_value),
+                                modifier="checkpoint_restore",
+                            )
+                        else:
                             genome.set_expression(
                                 gname,
                                 ExpressionLevel(level_value),
@@ -632,14 +636,21 @@ class DNARepair:
                 finally:
                     genome.allow_mutations = was_mutable
 
-                # Verify restore succeeded
-                if genome.get_hash() == target_cp.genome_hash:
+                # Verify restore: hash + expression parity
+                hash_ok = genome.get_hash() == target_cp.genome_hash
+                expr_ok = all(
+                    gname in genome._expression
+                    and genome._expression[gname].level.value == level_value
+                    for gname, level_value in target_cp.expression_dict.items()
+                )
+                if hash_ok and expr_ok:
                     success = True
                     details = f"Restored full state from checkpoint {target_cp.checkpoint_id}"
                 else:
                     details = (
-                        f"Checkpoint restore incomplete: hash "
-                        f"{genome.get_hash()} != {target_cp.genome_hash}"
+                        f"Checkpoint restore incomplete: "
+                        f"hash={'match' if hash_ok else 'mismatch'}, "
+                        f"expression={'match' if expr_ok else 'mismatch'}"
                     )
             else:
                 details = "No checkpoint available for restore"
