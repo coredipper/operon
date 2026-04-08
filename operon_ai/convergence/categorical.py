@@ -189,11 +189,18 @@ def extract_compiled_architecture(
         or compiled.get("hats")
         or []
     )
-    # DeerFlow: agents in "sub_agents" (skills are instruction strings)
+    # DeerFlow: lead agent from "assistant_id" + "sub_agents"
     if not agents:
+        lead_id = compiled.get("assistant_id")
         sub_agents = compiled.get("sub_agents", [])
-        agents = [a if isinstance(a, dict) else {"name": str(a)}
-                  for a in sub_agents]
+        agents = []
+        if lead_id:
+            agents.append({"name": str(lead_id), "role": "lead"})
+        for a in sub_agents:
+            if isinstance(a, dict):
+                agents.append(a)
+            else:
+                agents.append({"name": str(a)})
 
     stage_names = tuple(a.get("name", f"agent_{i}") for i, a in enumerate(agents))
 
@@ -293,15 +300,23 @@ class CompilerFunctor:
         """Verify that the compilation preserves architectural properties."""
         details: dict[str, Any] = {}
 
-        # 1. Graph preservation: source stages embedded in target
+        # 1. Graph preservation: source subgraph embedded in target
         # Compilers may enrich (add watcher agents, etc.), so we check
-        # that the source is a subgraph, not that they're identical.
-        graph_ok = (
-            source.stage_count <= target.stage_count
-            and frozenset(source.stage_names) <= frozenset(target.stage_names)
-        )
+        # that source stages and edges are subsets of the target.
+        source_stages = frozenset(source.stage_names)
+        target_stages = frozenset(target.stage_names)
+        stages_embedded = source_stages <= target_stages
+
+        # Edge embedding: each source edge must appear in target
+        source_edges = frozenset(source.edges)
+        target_edges = frozenset(target.edges)
+        edges_embedded = source_edges <= target_edges
+
+        graph_ok = stages_embedded and edges_embedded
         details["source_stages"] = source.stage_count
         details["target_stages"] = target.stage_count
+        details["stages_embedded"] = stages_embedded
+        details["edges_embedded"] = edges_embedded
 
         # 2. Certificate preservation (Prop 5.1)
         source_theorems = source.certificate_theorems
@@ -317,7 +332,8 @@ class CompilerFunctor:
         details["target_theorems"] = sorted(target_theorems)
         details["all_certs_hold"] = certs_hold
 
-        # 3. Interface preservation: every source stage appears in target
+        # 3. Interface preservation: source stage names present in target
+        # (mode→model mapping may differ since compilers remap models)
         source_stage_set = frozenset(source.stage_names)
         target_stage_set = frozenset(target.stage_names)
         interface_ok = source_stage_set <= target_stage_set
