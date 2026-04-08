@@ -184,8 +184,10 @@ def _resolve_verify_fn(theorem: str) -> Callable | None:
     import importlib
     try:
         module = importlib.import_module(module_name)
-    except ImportError:
-        return None
+    except ModuleNotFoundError as e:
+        if e.name == module_name:
+            return None
+        raise
     fn = getattr(module, fn_name, None)
     if fn is not None:
         _VERIFY_REGISTRY[theorem] = fn
