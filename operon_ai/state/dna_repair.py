@@ -622,22 +622,38 @@ class DNARepair:
                                 modifier="checkpoint_restore",
                             )
 
-                # Phase 2: Atomic swap only if fully validated
+                # Phase 2: Pre-swap validation + atomic swap with rollback
                 if build_ok:
-                    was_mutable = genome.allow_mutations
-                    genome.allow_mutations = True
-                    try:
-                        genome._genes = dict(new_genes)
-                        genome._expression = dict(new_expression)
-                    finally:
-                        genome.allow_mutations = was_mutable
-
-                    # Verify
-                    if genome.get_hash() == target_cp.genome_hash:
-                        success = True
-                        details = f"Restored full state from checkpoint {target_cp.checkpoint_id}"
+                    # Validate count parity before swap
+                    if target_cp.gene_count != len(new_genes):
+                        details = (
+                            f"Checkpoint gene_count ({target_cp.gene_count}) "
+                            f"!= restored genes ({len(new_genes)})"
+                        )
                     else:
-                        details = f"Checkpoint restore: hash mismatch after swap"
+                        # Preserve originals for rollback
+                        orig_genes = genome._genes
+                        orig_expression = genome._expression
+                        was_mutable = genome.allow_mutations
+                        genome.allow_mutations = True
+                        try:
+                            genome._genes = dict(new_genes)
+                            genome._expression = dict(new_expression)
+
+                            if genome.get_hash() == target_cp.genome_hash:
+                                success = True
+                                details = f"Restored full state from checkpoint {target_cp.checkpoint_id}"
+                            else:
+                                # Roll back — hash mismatch
+                                genome._genes = orig_genes
+                                genome._expression = orig_expression
+                                details = "Checkpoint restore: hash mismatch, rolled back"
+                        except Exception:
+                            genome._genes = orig_genes
+                            genome._expression = orig_expression
+                            details = "Checkpoint restore: error during swap, rolled back"
+                        finally:
+                            genome.allow_mutations = was_mutable
             else:
                 details = "No checkpoint available for restore"
 
