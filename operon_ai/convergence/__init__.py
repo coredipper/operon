@@ -105,6 +105,18 @@ from .swarms_compiler import (
     managed_to_swarms,
     organism_to_swarms,
 )
+from .categorical import (
+    Architecture,
+    CompilationResult,
+    CompilerFunctor,
+    PreservationResult,
+    extract_architecture,
+    extract_compiled_architecture,
+    swarms_functor,
+    deerflow_functor,
+    ralph_functor,
+    scion_functor,
+)
 from .memory_bridge import (
     bridge_animaworks_memory,
     bridge_deerflow_memory,
@@ -194,6 +206,17 @@ __all__ = [
     # LangGraph watcher (C5)
     "operon_watcher_node",
     "create_watcher_config",
+    # Categorical formalization (C5+)
+    "Architecture",
+    "CompilationResult",
+    "CompilerFunctor",
+    "PreservationResult",
+    "extract_architecture",
+    "extract_compiled_architecture",
+    "swarms_functor",
+    "deerflow_functor",
+    "ralph_functor",
+    "scion_functor",
     # Prompt optimization (C7)
     "PromptOptimizer",
     "EvolutionaryOptimizer",
