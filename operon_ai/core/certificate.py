@@ -185,7 +185,7 @@ def _resolve_verify_fn(theorem: str) -> Callable | None:
     try:
         module = importlib.import_module(module_name)
     except ModuleNotFoundError as e:
-        if e.name == module_name:
+        if e.name and module_name.startswith(e.name):
             return None
         raise
     fn = getattr(module, fn_name, None)

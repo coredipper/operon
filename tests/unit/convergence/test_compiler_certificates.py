@@ -168,6 +168,49 @@ class TestVerifyCompiledEdgeCases:
             "priority_threshold_dormant": 10,
         })
 
+    def test_missing_target_module_returns_keyerror(self):
+        """ModuleNotFoundError for the target module → KeyError."""
+        from unittest.mock import patch
+        from operon_ai.core.certificate import _VERIFY_REGISTRY, _THEOREM_FN_PATHS
+
+        # Temporarily add a fake theorem pointing to a nonexistent module
+        _THEOREM_FN_PATHS["_test_missing"] = ("nonexistent.module", "fn")
+        try:
+            d = {"theorem": "_test_missing", "parameters": {}, "conclusion": "", "source": ""}
+            try:
+                certificate_from_dict(d)
+                assert False, "Should raise KeyError"
+            except KeyError:
+                pass
+        finally:
+            del _THEOREM_FN_PATHS["_test_missing"]
+            _VERIFY_REGISTRY.pop("_test_missing", None)
+
+    def test_transitive_import_error_propagates(self):
+        """ModuleNotFoundError from a dependency re-raises, not swallowed."""
+        from unittest.mock import patch
+        from operon_ai.core.certificate import _VERIFY_REGISTRY
+
+        saved = _VERIFY_REGISTRY.pop("no_false_activation", None)
+        try:
+            def bad_import(name):
+                raise ModuleNotFoundError(name="some_dependency")
+
+            with patch("importlib.import_module", side_effect=bad_import):
+                d = {
+                    "theorem": "no_false_activation",
+                    "parameters": {"N": 10, "s": 0.15, "h": 5.0, "dt": 1.0, "safety_margin": 2.0},
+                    "conclusion": "", "source": "",
+                }
+                try:
+                    certificate_from_dict(d)
+                    assert False, "Should propagate ModuleNotFoundError"
+                except ModuleNotFoundError as e:
+                    assert e.name == "some_dependency"
+        finally:
+            if saved is not None:
+                _VERIFY_REGISTRY["no_false_activation"] = saved
+
     def test_qs_certificate_round_trip(self):
         """QuorumSensing certificate survives serialize → deserialize."""
         from operon_ai.coordination.quorum_sensing import QuorumSensingBio
