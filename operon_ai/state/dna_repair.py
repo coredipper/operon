@@ -584,52 +584,44 @@ class DNARepair:
             if target_cp is not None:
                 from .genome import Gene, GeneType
 
+                from .genome import ExpressionState
                 cp_values = target_cp.values_dict
                 cp_meta = {m[0]: m for m in target_cp.gene_metadata}
+                cp_expr = target_cp.expression_dict
 
-                # Rebuild all genes from checkpoint (values + metadata)
-                was_mutable = genome.allow_mutations
-                genome.allow_mutations = True
-                try:
-                    # Remove all current genes and rebuild from checkpoint
-                    genome._genes.clear()
-                    for gname, expected_value in cp_values.items():
-                        meta = cp_meta.get(gname)
-                        if meta:
-                            _, gtype, desc, req, def_expr = meta
-                            genome.add_gene(Gene(
-                                name=gname,
-                                value=expected_value,
-                                gene_type=GeneType(gtype),
-                                description=desc,
-                                required=req,
-                                default_expression=ExpressionLevel(def_expr),
-                            ))
-                        else:
-                            genome.add_gene(Gene(name=gname, value=expected_value))
-
-                    # Rebuild expression state from checkpoint
-                    from .genome import ExpressionState
-                    cp_expr = target_cp.expression_dict
-                    # Remove orphaned expression entries
-                    orphaned = set(genome._expression.keys()) - set(cp_expr.keys())
-                    for gname in orphaned:
-                        del genome._expression[gname]
-                    # Restore/create expression entries
-                    for gname, level_value in cp_expr.items():
-                        if gname not in genome._expression:
-                            genome._expression[gname] = ExpressionState(
+                # Phase 1: Build replacement objects in temp structures
+                # (validates metadata before touching the genome)
+                new_genes: dict[str, Gene] = {}
+                for gname, expected_value in cp_values.items():
+                    meta = cp_meta.get(gname)
+                    if meta is None:
+                        # Incomplete checkpoint — cannot guarantee restore
+                        details = f"Checkpoint missing metadata for gene '{gname}'"
+                        break
+                    _, gtype, desc, req, def_expr = meta
+                    new_genes[gname] = Gene(
+                        name=gname,
+                        value=expected_value,
+                        gene_type=GeneType(gtype),
+                        description=desc,
+                        required=req,
+                        default_expression=ExpressionLevel(def_expr),
+                    )
+                else:
+                    # Phase 2: All genes validated — swap into genome
+                    was_mutable = genome.allow_mutations
+                    genome.allow_mutations = True
+                    try:
+                        genome._genes = dict(new_genes)
+                        genome._expression = {
+                            gname: ExpressionState(
                                 level=ExpressionLevel(level_value),
                                 modifier="checkpoint_restore",
                             )
-                        else:
-                            genome.set_expression(
-                                gname,
-                                ExpressionLevel(level_value),
-                                "checkpoint_restore",
-                            )
-                finally:
-                    genome.allow_mutations = was_mutable
+                            for gname, level_value in cp_expr.items()
+                        }
+                    finally:
+                        genome.allow_mutations = was_mutable
 
                 # Verify restore: hash + exact expression parity
                 hash_ok = genome.get_hash() == target_cp.genome_hash
