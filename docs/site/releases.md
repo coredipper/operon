@@ -2,6 +2,13 @@
 
 This page tracks the recent direction of the project.
 
+## v0.28.1
+
+- Certificate preservation through convergence compilers (Swarms, DeerFlow, Ralph, Scion)
+- `collect_certificates()` on SkillOrganism, `verify_compiled()` for post-compilation verification
+- Certificate serialization/deserialization with lazy theorem resolution
+- Concrete implementation of Prop 5.1: structural guarantees are functorially stable under compilation
+
 ## v0.28.0
 
 New:
