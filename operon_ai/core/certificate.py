@@ -184,11 +184,12 @@ def _resolve_verify_fn(theorem: str) -> Callable | None:
     import importlib
     try:
         module = importlib.import_module(module_name)
-        fn = getattr(module, fn_name)
-        _VERIFY_REGISTRY[theorem] = fn
-        return fn
-    except (ImportError, AttributeError):
+    except ImportError:
         return None
+    fn = getattr(module, fn_name, None)
+    if fn is not None:
+        _VERIFY_REGISTRY[theorem] = fn
+    return fn
 
 
 def certificate_from_dict(d: dict[str, Any]) -> Certificate:

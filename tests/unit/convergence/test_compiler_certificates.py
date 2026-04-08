@@ -133,28 +133,40 @@ class TestVerifyCompiledEdgeCases:
         assert len(results) >= 1
         assert any(not r.holds for r in results)
 
-    def test_lazy_import_resolves_missing_theorem(self):
-        """Deserializing a theorem not yet in the registry triggers lazy import."""
+    def _lazy_import_test(self, theorem, params):
+        """Helper: clear registry entry, deserialize, verify lazy resolution."""
         from operon_ai.core.certificate import _VERIFY_REGISTRY
 
-        # Remove QS verifier if present (simulate partial registry)
-        saved = _VERIFY_REGISTRY.pop("no_false_activation", None)
+        had_key = theorem in _VERIFY_REGISTRY
+        saved = _VERIFY_REGISTRY.pop(theorem, None)
         try:
-            d = {
-                "theorem": "no_false_activation",
-                "parameters": {"N": 10, "s": 0.15, "h": 5.0, "dt": 1.0, "safety_margin": 2.0},
-                "conclusion": "test",
-                "source": "test",
-            }
-            # Should succeed via lazy import
+            d = {"theorem": theorem, "parameters": params, "conclusion": "t", "source": "t"}
             restored = certificate_from_dict(d)
-            assert restored.theorem == "no_false_activation"
+            assert restored.theorem == theorem
             result = restored.verify()
             assert result.holds is True
         finally:
-            # Restore registry state
-            if saved is not None:
-                _VERIFY_REGISTRY["no_false_activation"] = saved
+            if had_key and saved is not None:
+                _VERIFY_REGISTRY[theorem] = saved
+            elif not had_key:
+                _VERIFY_REGISTRY.pop(theorem, None)
+
+    def test_lazy_import_qs(self):
+        self._lazy_import_test("no_false_activation", {
+            "N": 10, "s": 0.15, "h": 5.0, "dt": 1.0, "safety_margin": 2.0,
+        })
+
+    def test_lazy_import_mtor(self):
+        self._lazy_import_test("no_oscillation", {
+            "growth_threshold": 0.3, "conservation_threshold": 0.7,
+            "autophagy_threshold": 0.9, "hysteresis": 0.05,
+        })
+
+    def test_lazy_import_atp(self):
+        self._lazy_import_test("priority_gating", {
+            "budget": 1000, "priority_threshold_starving": 5,
+            "priority_threshold_dormant": 10,
+        })
 
     def test_qs_certificate_round_trip(self):
         """QuorumSensing certificate survives serialize → deserialize."""
