@@ -209,11 +209,12 @@ class TestExtractCompiledArchitecture:
         # No worker→worker edge (hub-and-spoke, not chain)
         assert ("worker1", "worker2") not in target.edges
 
-    def test_explicit_empty_edges_no_fallback(self):
-        """Explicit edges=[] should not trigger fallback synthesis."""
+    @pytest.mark.parametrize("edge_key", ["edges", "messaging", "events"])
+    def test_explicit_empty_edges_no_fallback(self, edge_key):
+        """Explicit empty edge keys should not trigger fallback synthesis."""
         compiled = {
             "agents": [{"name": "a"}, {"name": "b"}],
-            "edges": [],  # Intentionally empty
+            edge_key: [],  # Intentionally empty
             "certificates": [],
         }
         target = extract_compiled_architecture(compiled)
