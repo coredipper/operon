@@ -211,6 +211,34 @@ class TestVerifyCompiledEdgeCases:
             if saved is not None:
                 _VERIFY_REGISTRY["no_false_activation"] = saved
 
+    def test_near_prefix_import_error_propagates(self):
+        """ModuleNotFoundError with near-prefix name (no dot boundary) re-raises."""
+        from unittest.mock import patch
+        from operon_ai.core.certificate import _VERIFY_REGISTRY
+
+        saved = _VERIFY_REGISTRY.pop("no_oscillation", None)
+        try:
+            # "operon_ai.state.mto" is a prefix of "operon_ai.state.mtor"
+            # but not at a dot boundary — should NOT be treated as "target missing"
+            def bad_import(name):
+                raise ModuleNotFoundError(name="operon_ai.state.mto")
+
+            with patch("importlib.import_module", side_effect=bad_import):
+                d = {
+                    "theorem": "no_oscillation",
+                    "parameters": {"growth_threshold": 0.3, "conservation_threshold": 0.7,
+                                   "autophagy_threshold": 0.9, "hysteresis": 0.05},
+                    "conclusion": "", "source": "",
+                }
+                try:
+                    certificate_from_dict(d)
+                    assert False, "Should propagate ModuleNotFoundError"
+                except ModuleNotFoundError as e:
+                    assert e.name == "operon_ai.state.mto"
+        finally:
+            if saved is not None:
+                _VERIFY_REGISTRY["no_oscillation"] = saved
+
     def test_qs_certificate_round_trip(self):
         """QuorumSensing certificate survives serialize → deserialize."""
         from operon_ai.coordination.quorum_sensing import QuorumSensingBio
