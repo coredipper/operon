@@ -618,9 +618,14 @@ class DNARepair:
                         del genome._genes[gname]
                         genome._expression.pop(gname, None)
 
-                    # Restore expression state (create missing entries)
+                    # Rebuild expression state from checkpoint
                     from .genome import ExpressionState
                     cp_expr = target_cp.expression_dict
+                    # Remove orphaned expression entries
+                    orphaned = set(genome._expression.keys()) - set(cp_expr.keys())
+                    for gname in orphaned:
+                        del genome._expression[gname]
+                    # Restore/create expression entries
                     for gname, level_value in cp_expr.items():
                         if gname not in genome._expression:
                             genome._expression[gname] = ExpressionState(
@@ -636,12 +641,15 @@ class DNARepair:
                 finally:
                     genome.allow_mutations = was_mutable
 
-                # Verify restore: hash + expression parity
+                # Verify restore: hash + exact expression parity
                 hash_ok = genome.get_hash() == target_cp.genome_hash
-                expr_ok = all(
-                    gname in genome._expression
-                    and genome._expression[gname].level.value == level_value
-                    for gname, level_value in target_cp.expression_dict.items()
+                cp_expr_keys = set(target_cp.expression_dict.keys())
+                expr_ok = (
+                    set(genome._expression.keys()) == cp_expr_keys
+                    and all(
+                        genome._expression[gname].level.value == level_value
+                        for gname, level_value in target_cp.expression_dict.items()
+                    )
                 )
                 if hash_ok and expr_ok:
                     success = True
