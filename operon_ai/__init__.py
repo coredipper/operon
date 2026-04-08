@@ -144,6 +144,15 @@ from .state.development import (
     StageTransition,
     stage_reached,
 )
+from .state.dna_repair import (
+    DNARepair,
+    StateCheckpoint,
+    CorruptionType,
+    DamageSeverity,
+    DamageReport,
+    RepairStrategy,
+    RepairResult,
+)
 
 # =============================================================================
 # Topologies
@@ -555,6 +564,15 @@ __all__ = [
     "StageTransition",
     "stage_reached",
 
+    # State - DNA Repair
+    "DNARepair",
+    "StateCheckpoint",
+    "CorruptionType",
+    "DamageSeverity",
+    "DamageReport",
+    "RepairStrategy",
+    "RepairResult",
+
     # Topology - Loops
     "CoherentFeedForwardLoop",
     "NegativeFeedbackLoop",
@@ -730,4 +748,4 @@ __all__ = [
     "MetabolicAccessPolicy",
 ]
 
-__version__ = "0.28.1"
+__version__ = "0.29.0"

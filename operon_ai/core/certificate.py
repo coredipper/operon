@@ -165,6 +165,7 @@ _THEOREM_FN_PATHS: dict[str, tuple[str, str]] = {
     "no_false_activation": ("operon_ai.coordination.quorum_sensing", "_verify_no_false_activation"),
     "no_oscillation": ("operon_ai.state.mtor", "_verify_no_oscillation"),
     "priority_gating": ("operon_ai.state.metabolism", "_verify_priority_gating"),
+    "state_integrity_verified": ("operon_ai.state.dna_repair", "_verify_state_integrity"),
 }
 
 

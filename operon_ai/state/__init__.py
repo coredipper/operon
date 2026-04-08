@@ -54,6 +54,16 @@ from .development import (
     stage_reached,
 )
 
+from .dna_repair import (
+    DNARepair,
+    StateCheckpoint,
+    CorruptionType,
+    DamageSeverity,
+    DamageReport,
+    RepairStrategy,
+    RepairResult,
+)
+
 __all__ = [
     # Metabolism
     "ATP_Store",
@@ -88,4 +98,12 @@ __all__ = [
     "CriticalPeriod",
     "StageTransition",
     "stage_reached",
+    # DNA Repair
+    "DNARepair",
+    "StateCheckpoint",
+    "CorruptionType",
+    "DamageSeverity",
+    "DamageReport",
+    "RepairStrategy",
+    "RepairResult",
 ]
