@@ -204,14 +204,25 @@ def extract_compiled_architecture(
 
     stage_names = tuple(a.get("name", f"agent_{i}") for i, a in enumerate(agents))
 
-    # Extract edges from whichever key exists
-    raw_edges = compiled.get("edges") or compiled.get("messaging") or []
+    # Extract edges from whichever key the compiler uses
+    raw_edges = (
+        compiled.get("edges")
+        or compiled.get("messaging")
+        or compiled.get("events")  # Ralph
+        or []
+    )
     edges_list: list[tuple[str, str]] = []
     for e in raw_edges:
         if isinstance(e, dict):
             edges_list.append((e.get("from", ""), e.get("to", "")))
         elif isinstance(e, (list, tuple)) and len(e) >= 2:
             edges_list.append((str(e[0]), str(e[1])))
+
+    # DeerFlow: derive chain from agent order if no explicit edges
+    if not edges_list and len(stage_names) > 1:
+        for i in range(len(stage_names) - 1):
+            edges_list.append((stage_names[i], stage_names[i + 1]))
+
     edges = tuple(edges_list)
 
     cert_dicts = tuple(compiled.get("certificates", []))
