@@ -161,21 +161,22 @@ def certificate_to_dict(cert: Certificate) -> dict[str, Any]:
     }
 
 
-def _ensure_registry_loaded() -> None:
-    """Ensure all known theorem modules are imported (registers verify fns)."""
-    if _VERIFY_REGISTRY:
+_THEOREM_MODULES: dict[str, str] = {
+    "no_false_activation": "operon_ai.coordination.quorum_sensing",
+    "no_oscillation": "operon_ai.state.mtor",
+    "priority_gating": "operon_ai.state.metabolism",
+}
+
+
+def _ensure_theorem_registered(theorem: str) -> None:
+    """Import the module that registers *theorem*'s verify function."""
+    if theorem in _VERIFY_REGISTRY:
         return
-    # Import modules that register their verify functions at module level
+    module = _THEOREM_MODULES.get(theorem)
+    if module is None:
+        return
     try:
-        import operon_ai.coordination.quorum_sensing  # noqa: F401
-    except ImportError:
-        pass
-    try:
-        import operon_ai.state.mtor  # noqa: F401
-    except ImportError:
-        pass
-    try:
-        import operon_ai.state.metabolism  # noqa: F401
+        __import__(module)
     except ImportError:
         pass
 
@@ -185,8 +186,8 @@ def certificate_from_dict(d: dict[str, Any]) -> Certificate:
 
     Raises ``KeyError`` if the theorem's verify function is not registered.
     """
-    _ensure_registry_loaded()
     theorem = d["theorem"]
+    _ensure_theorem_registered(theorem)
     fn = _VERIFY_REGISTRY.get(theorem)
     if fn is None:
         raise KeyError(

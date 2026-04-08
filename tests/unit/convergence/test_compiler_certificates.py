@@ -132,3 +132,26 @@ class TestVerifyCompiledEdgeCases:
         results = verify_compiled(compiled)
         assert len(results) >= 1
         assert any(not r.holds for r in results)
+
+    def test_qs_certificate_round_trip(self):
+        """QuorumSensing certificate survives serialize → deserialize."""
+        from operon_ai.coordination.quorum_sensing import QuorumSensingBio
+        qs = QuorumSensingBio(population_size=10)
+        qs.calibrate()
+        cert = qs.certify()
+        d = certificate_to_dict(cert)
+        restored = certificate_from_dict(d)
+        assert restored.theorem == "no_false_activation"
+        result = restored.verify()
+        assert result.holds is True
+
+    def test_mtor_certificate_round_trip(self):
+        """MTORScaler certificate survives serialize → deserialize."""
+        from operon_ai.state.mtor import MTORScaler
+        scaler = MTORScaler(atp_store=ATP_Store(budget=1000))
+        cert = scaler.certify()
+        d = certificate_to_dict(cert)
+        restored = certificate_from_dict(d)
+        assert restored.theorem == "no_oscillation"
+        result = restored.verify()
+        assert result.holds is True
