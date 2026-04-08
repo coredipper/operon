@@ -285,6 +285,72 @@ class TestRepair:
         assert genome._expression["temperature"].level == ExpressionLevel.NORMAL
         assert genome._expression["max_tokens"].level == ExpressionLevel.NORMAL
 
+    def test_checkpoint_restore_count_mismatch_fails(self):
+        """Regression: gene_count mismatch in checkpoint should fail restore."""
+        genome = _make_genome()
+        repair = DNARepair(silent=True)
+        cp = repair.checkpoint(genome)
+
+        # Tamper with checkpoint gene_count via a new checkpoint object
+        bad_cp = StateCheckpoint(
+            genome_hash=cp.genome_hash,
+            expression_snapshot=cp.expression_snapshot,
+            gene_values=cp.gene_values,
+            gene_metadata=cp.gene_metadata,
+            gene_count=999,  # Wrong count
+            timestamp=cp.timestamp,
+            checkpoint_id=cp.checkpoint_id,
+        )
+
+        dummy_damage = DamageReport(
+            corruption_type=CorruptionType.CHECKSUM_FAILURE,
+            severity=DamageSeverity.HIGH,
+            location="genome:hash",
+            description="test",
+            expected="a",
+            actual="b",
+            recommended_strategy=RepairStrategy.CHECKPOINT_RESTORE,
+        )
+        result = repair.repair(genome, dummy_damage, checkpoint=bad_cp)
+        assert not result.success
+
+    def test_checkpoint_restore_preserves_original_on_failure(self):
+        """Regression: failed restore must not leave genome in partial state."""
+        genome = _make_genome()
+        repair = DNARepair(silent=True)
+        cp = repair.checkpoint(genome)
+
+        # Mutate genome
+        genome.mutate("temperature", 999)
+        original_hash = genome.get_hash()
+        original_expr_keys = set(genome._expression.keys())
+
+        # Create checkpoint with mismatched count to force failure
+        bad_cp = StateCheckpoint(
+            genome_hash=cp.genome_hash,
+            expression_snapshot=cp.expression_snapshot,
+            gene_values=cp.gene_values,
+            gene_metadata=cp.gene_metadata,
+            gene_count=999,
+            timestamp=cp.timestamp,
+            checkpoint_id=cp.checkpoint_id,
+        )
+
+        dummy_damage = DamageReport(
+            corruption_type=CorruptionType.CHECKSUM_FAILURE,
+            severity=DamageSeverity.HIGH,
+            location="genome:hash",
+            description="test",
+            expected="a",
+            actual="b",
+            recommended_strategy=RepairStrategy.CHECKPOINT_RESTORE,
+        )
+        repair.repair(genome, dummy_damage, checkpoint=bad_cp)
+
+        # Genome should be unchanged
+        assert genome.get_hash() == original_hash
+        assert set(genome._expression.keys()) == original_expr_keys
+
     def test_epigenetic_patch_stores_marker(self):
         histones = HistoneStore(silent=True)
         repair = DNARepair(histone_store=histones, silent=True)
