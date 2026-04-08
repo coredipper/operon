@@ -589,14 +589,15 @@ class DNARepair:
                 cp_meta = {m[0]: m for m in target_cp.gene_metadata}
                 cp_expr = target_cp.expression_dict
 
-                # Phase 1: Build replacement objects in temp structures
-                # (validates metadata before touching the genome)
+                # Phase 1: Build ALL replacement structures in temps
+                # Fail before touching the genome if anything is invalid
                 new_genes: dict[str, Gene] = {}
+                build_ok = True
                 for gname, expected_value in cp_values.items():
                     meta = cp_meta.get(gname)
                     if meta is None:
-                        # Incomplete checkpoint — cannot guarantee restore
                         details = f"Checkpoint missing metadata for gene '{gname}'"
+                        build_ok = False
                         break
                     _, gtype, desc, req, def_expr = meta
                     new_genes[gname] = Gene(
@@ -607,41 +608,36 @@ class DNARepair:
                         required=req,
                         default_expression=ExpressionLevel(def_expr),
                     )
-                else:
-                    # Phase 2: All genes validated — swap into genome
+
+                new_expression: dict[str, ExpressionState] = {}
+                if build_ok:
+                    # Validate expression covers exactly the gene set
+                    if set(cp_expr.keys()) != set(cp_values.keys()):
+                        details = "Checkpoint expression/gene key mismatch"
+                        build_ok = False
+                    else:
+                        for gname, level_value in cp_expr.items():
+                            new_expression[gname] = ExpressionState(
+                                level=ExpressionLevel(level_value),
+                                modifier="checkpoint_restore",
+                            )
+
+                # Phase 2: Atomic swap only if fully validated
+                if build_ok:
                     was_mutable = genome.allow_mutations
                     genome.allow_mutations = True
                     try:
                         genome._genes = dict(new_genes)
-                        genome._expression = {
-                            gname: ExpressionState(
-                                level=ExpressionLevel(level_value),
-                                modifier="checkpoint_restore",
-                            )
-                            for gname, level_value in cp_expr.items()
-                        }
+                        genome._expression = dict(new_expression)
                     finally:
                         genome.allow_mutations = was_mutable
 
-                # Verify restore: hash + exact expression parity
-                hash_ok = genome.get_hash() == target_cp.genome_hash
-                cp_expr_keys = set(target_cp.expression_dict.keys())
-                expr_ok = (
-                    set(genome._expression.keys()) == cp_expr_keys
-                    and all(
-                        genome._expression[gname].level.value == level_value
-                        for gname, level_value in target_cp.expression_dict.items()
-                    )
-                )
-                if hash_ok and expr_ok:
-                    success = True
-                    details = f"Restored full state from checkpoint {target_cp.checkpoint_id}"
-                else:
-                    details = (
-                        f"Checkpoint restore incomplete: "
-                        f"hash={'match' if hash_ok else 'mismatch'}, "
-                        f"expression={'match' if expr_ok else 'mismatch'}"
-                    )
+                    # Verify
+                    if genome.get_hash() == target_cp.genome_hash:
+                        success = True
+                        details = f"Restored full state from checkpoint {target_cp.checkpoint_id}"
+                    else:
+                        details = f"Checkpoint restore: hash mismatch after swap"
             else:
                 details = "No checkpoint available for restore"
 
