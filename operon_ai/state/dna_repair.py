@@ -384,7 +384,7 @@ class DNARepair:
             for error in errors:
                 # Extract gene name from "Required gene 'X' is silenced"
                 import re as _re
-                match = _re.search(r"'(\w+)'", error)
+                match = _re.search(r"'([^']+)'", error)
                 gene_name = match.group(1) if match else "unknown"
                 damage.append(DamageReport(
                     corruption_type=CorruptionType.EXPRESSION_DRIFT,
@@ -604,31 +604,43 @@ class DNARepair:
                                 default_expression=ExpressionLevel(def_expr),
                             ))
 
-                # Restore gene values from checkpoint
-                for gname, expected_value in cp_values.items():
-                    gene = genome.get_gene(gname)
-                    if gene is not None and gene.value != expected_value:
-                        genome.mutate(gname, expected_value, "checkpoint_restore")
+                # Temporarily enable mutations for restore
+                was_mutable = genome.allow_mutations
+                genome.allow_mutations = True
+                try:
+                    # Restore gene values from checkpoint
+                    for gname, expected_value in cp_values.items():
+                        gene = genome.get_gene(gname)
+                        if gene is not None and gene.value != expected_value:
+                            genome.mutate(gname, expected_value, "checkpoint_restore")
 
-                # Remove genes not in checkpoint
-                extra_genes = set(genome._genes.keys()) - set(cp_values.keys())
-                for gname in extra_genes:
-                    if genome.allow_mutations:
+                    # Remove genes not in checkpoint
+                    extra_genes = set(genome._genes.keys()) - set(cp_values.keys())
+                    for gname in extra_genes:
                         del genome._genes[gname]
                         genome._expression.pop(gname, None)
 
-                # Restore expression state
-                cp_expr = target_cp.expression_dict
-                for gname, level_value in cp_expr.items():
-                    if gname in genome._expression:
-                        genome.set_expression(
-                            gname,
-                            ExpressionLevel(level_value),
-                            "checkpoint_restore",
-                        )
+                    # Restore expression state
+                    cp_expr = target_cp.expression_dict
+                    for gname, level_value in cp_expr.items():
+                        if gname in genome._expression:
+                            genome.set_expression(
+                                gname,
+                                ExpressionLevel(level_value),
+                                "checkpoint_restore",
+                            )
+                finally:
+                    genome.allow_mutations = was_mutable
 
-                success = True
-                details = f"Restored full state from checkpoint {target_cp.checkpoint_id}"
+                # Verify restore succeeded
+                if genome.get_hash() == target_cp.genome_hash:
+                    success = True
+                    details = f"Restored full state from checkpoint {target_cp.checkpoint_id}"
+                else:
+                    details = (
+                        f"Checkpoint restore incomplete: hash "
+                        f"{genome.get_hash()} != {target_cp.genome_hash}"
+                    )
             else:
                 details = "No checkpoint available for restore"
 
