@@ -126,3 +126,102 @@ class CertificateVerification:
     certificate: Certificate
     holds: bool
     evidence: Mapping[str, Any]
+
+
+# ---------------------------------------------------------------------------
+# Verification function registry (enables serialization/deserialization)
+# ---------------------------------------------------------------------------
+
+_VERIFY_REGISTRY: dict[str, Callable] = {}
+
+
+def register_verify_fn(theorem: str, fn: Callable) -> None:
+    """Register a verification function for a theorem name."""
+    _VERIFY_REGISTRY[theorem] = fn
+
+
+def _thaw(value: Any) -> Any:
+    """Recursively convert frozen containers to JSON-serializable types."""
+    if isinstance(value, Mapping):
+        return {k: _thaw(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_thaw(v) for v in value]
+    if isinstance(value, (set, frozenset)):
+        return [_thaw(v) for v in sorted(value, key=repr)]
+    return value
+
+
+def certificate_to_dict(cert: Certificate) -> dict[str, Any]:
+    """Serialize a certificate to a JSON-compatible dict."""
+    return {
+        "theorem": cert.theorem,
+        "parameters": _thaw(cert.parameters),
+        "conclusion": cert.conclusion,
+        "source": cert.source,
+    }
+
+
+_THEOREM_FN_PATHS: dict[str, tuple[str, str]] = {
+    "no_false_activation": ("operon_ai.coordination.quorum_sensing", "_verify_no_false_activation"),
+    "no_oscillation": ("operon_ai.state.mtor", "_verify_no_oscillation"),
+    "priority_gating": ("operon_ai.state.metabolism", "_verify_priority_gating"),
+}
+
+
+def _resolve_verify_fn(theorem: str) -> Callable | None:
+    """Look up a verify function by theorem name.
+
+    Checks the dynamic registry first, then falls back to the built-in
+    function path map for lazy resolution.
+    """
+    fn = _VERIFY_REGISTRY.get(theorem)
+    if fn is not None:
+        return fn
+    path = _THEOREM_FN_PATHS.get(theorem)
+    if path is None:
+        return None
+    module_name, fn_name = path
+    import importlib
+    try:
+        module = importlib.import_module(module_name)
+    except ModuleNotFoundError as e:
+        if e.name and (e.name == module_name or module_name.startswith(f"{e.name}.")):
+            return None
+        raise
+    fn = getattr(module, fn_name, None)
+    if fn is not None:
+        _VERIFY_REGISTRY[theorem] = fn
+    return fn
+
+
+def certificate_from_dict(d: dict[str, Any]) -> Certificate:
+    """Deserialize a certificate from a dict.
+
+    Raises ``KeyError`` if the theorem's verify function is not registered.
+    """
+    theorem = d["theorem"]
+    fn = _resolve_verify_fn(theorem)
+    if fn is None:
+        raise KeyError(
+            f"No verify function registered for theorem {theorem!r}. "
+            f"Known theorems: {sorted(_VERIFY_REGISTRY)}"
+        )
+    return Certificate(
+        theorem=theorem,
+        parameters=d["parameters"],
+        conclusion=d["conclusion"],
+        source=d["source"],
+        _verify_fn=fn,
+    )
+
+
+def verify_compiled(compiled: dict[str, Any]) -> list[CertificateVerification]:
+    """Verify all certificates in a compiled organism dict.
+
+    Raises ``KeyError`` if any certificate's theorem is not registered.
+    """
+    results = []
+    for cert_dict in compiled.get("certificates", []):
+        cert = certificate_from_dict(cert_dict)
+        results.append(cert.verify())
+    return results

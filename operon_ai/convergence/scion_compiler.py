@@ -92,6 +92,12 @@ def organism_to_scion(
         },
     }
 
+    from ..core.certificate import certificate_to_dict
+
+    certificates = [
+        certificate_to_dict(c) for c in organism.collect_certificates()
+    ]
+
     return {
         "grove": {
             "name": grove_name,
@@ -104,6 +110,7 @@ def organism_to_scion(
             "agent_name": "operon-watcher",
             "telemetry": "otel",
         },
+        "certificates": certificates,
     }
 
 

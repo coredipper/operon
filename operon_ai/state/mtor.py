@@ -69,6 +69,12 @@ def _verify_no_oscillation(
     }
 
 
+# Register for certificate serialization
+from ..core.certificate import register_verify_fn as _register
+_register("no_oscillation", _verify_no_oscillation)
+del _register
+
+
 @dataclass
 class MTORScaler:
     """Adaptive resource scaling inspired by mTOR/AMPK signaling.

@@ -126,6 +126,12 @@ def organism_to_deerflow(
     cog_mode = resolve_cognitive_mode(lead)
     thinking_enabled = cog_mode != CognitiveMode.OBSERVATIONAL
 
+    from ..core.certificate import certificate_to_dict
+
+    certificates = [
+        certificate_to_dict(c) for c in organism.collect_certificates()
+    ]
+
     return {
         "assistant_id": lead.name,
         "skills": lead_skills,
@@ -135,6 +141,7 @@ def organism_to_deerflow(
         "config": {
             "thinking_enabled": thinking_enabled,
         },
+        "certificates": certificates,
     }
 
 

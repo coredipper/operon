@@ -238,6 +238,29 @@ class SkillOrganism:
                 silent=True,
             )
 
+    def collect_certificates(self) -> list:
+        """Gather certificates from all certifiable components.
+
+        Checks the budget (ATP_Store) and any components that expose
+        a ``certify()`` method.  Returns a list of :class:`Certificate`
+        objects.
+        """
+        from ..core.certificate import Certificate
+
+        certs: list[Certificate] = []
+        if hasattr(self.budget, "certify"):
+            try:
+                certs.append(self.budget.certify())
+            except (ValueError, TypeError):
+                pass
+        for component in self.components:
+            if hasattr(component, "certify"):
+                try:
+                    certs.append(component.certify())
+                except (ValueError, TypeError):
+                    pass
+        return certs
+
     def run(
         self,
         task: str,

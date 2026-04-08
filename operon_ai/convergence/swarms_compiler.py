@@ -136,6 +136,12 @@ def organism_to_swarms(
 
     workflow_type = "SequentialWorkflow" if linear else "GraphWorkflow"
 
+    from ..core.certificate import certificate_to_dict
+
+    certificates = [
+        certificate_to_dict(c) for c in organism.collect_certificates()
+    ]
+
     return {
         "workflow_type": workflow_type,
         "agents": agents,
@@ -146,6 +152,7 @@ def organism_to_swarms(
             "provider": cfg.provider,
             "sandbox": cfg.sandbox,
         },
+        "certificates": certificates,
     }
 
 
