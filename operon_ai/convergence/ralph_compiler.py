@@ -76,12 +76,19 @@ def organism_to_ralph(
             backpressure = ["tests", "lint"]
             break
 
+    from ..core.certificate import certificate_to_dict
+
+    certificates = [
+        certificate_to_dict(c) for c in organism.collect_certificates()
+    ]
+
     return {
         "backend": backend,
         "hats": hats,
         "events": events,
         "backpressure": backpressure,
         "iteration_limit": cfg.max_retries * len(organism.stages) if cfg.max_retries > 1 else 10,
+        "certificates": certificates,
     }
 
 

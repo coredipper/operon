@@ -126,3 +126,57 @@ class CertificateVerification:
     certificate: Certificate
     holds: bool
     evidence: Mapping[str, Any]
+
+
+# ---------------------------------------------------------------------------
+# Verification function registry (enables serialization/deserialization)
+# ---------------------------------------------------------------------------
+
+_VERIFY_REGISTRY: dict[str, Callable] = {}
+
+
+def register_verify_fn(theorem: str, fn: Callable) -> None:
+    """Register a verification function for a theorem name."""
+    _VERIFY_REGISTRY[theorem] = fn
+
+
+def certificate_to_dict(cert: Certificate) -> dict[str, Any]:
+    """Serialize a certificate to a JSON-compatible dict."""
+    return {
+        "theorem": cert.theorem,
+        "parameters": dict(cert.parameters),
+        "conclusion": cert.conclusion,
+        "source": cert.source,
+    }
+
+
+def certificate_from_dict(d: dict[str, Any]) -> Certificate | None:
+    """Deserialize a certificate from a dict.
+
+    Returns None if the theorem's verify function is not registered.
+    """
+    theorem = d["theorem"]
+    fn = _VERIFY_REGISTRY.get(theorem)
+    if fn is None:
+        return None
+    return Certificate(
+        theorem=theorem,
+        parameters=d["parameters"],
+        conclusion=d["conclusion"],
+        source=d["source"],
+        _verify_fn=fn,
+    )
+
+
+def verify_compiled(compiled: dict[str, Any]) -> list[CertificateVerification]:
+    """Verify all certificates in a compiled organism dict.
+
+    Returns a list of verification results. Certificates whose theorem
+    is not in the registry are skipped.
+    """
+    results = []
+    for cert_dict in compiled.get("certificates", []):
+        cert = certificate_from_dict(cert_dict)
+        if cert is not None:
+            results.append(cert.verify())
+    return results

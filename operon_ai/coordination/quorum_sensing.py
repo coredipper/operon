@@ -158,6 +158,12 @@ def _verify_no_false_activation(
     return ratio < 1.0, {"c_ss": c_ss, "threshold": threshold, "ratio": ratio}
 
 
+# Register for certificate serialization
+from ..core.certificate import register_verify_fn as _register
+_register("no_false_activation", _verify_no_false_activation)
+del _register
+
+
 @dataclass
 class QuorumSensingBio:
     """Biologically-faithful quorum sensing based on autoinducer accumulation.

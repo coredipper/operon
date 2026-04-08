@@ -113,6 +113,12 @@ def _verify_priority_gating(
     }
 
 
+# Register for certificate serialization
+from ..core.certificate import register_verify_fn as _register
+_register("priority_gating", _verify_priority_gating)
+del _register
+
+
 class ATP_Store:
     """
     Advanced Metabolic Budget Manager.
