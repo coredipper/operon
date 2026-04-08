@@ -60,5 +60,7 @@ The lower-level layer models modules, ports, wires, and topology explicitly so t
 - `v0.25` added evaluation harness (20 tasks, 7 configs), prompt optimization protocols, workflow generation — phases C6–C7
 - `v0.25.1` added live LLM evaluation with cross-judging across Gemini API, Claude CLI, and Codex CLI; C8 roadmap
 - `v0.26` added meta-evolution (C8 Phase A): evolves organism configurations using biological primitives at the meta-level, with dual stall detection and LLM proposer
+- `v0.27` added structural guarantee benchmarks (metabolism, quorum sensing, epiplexity) with 10M+ data points, QuorumSensingBio auto-calibration, MTORScaler, real-embedding confirmation
+- `v0.28` added categorical certificate framework (`Certificate`, `certify()`, `verify()`), sequential pipeline validation harness with Gemma 4 local eval, Paper 4 empirical results (error bound validated, rho=+0.751)
 
 The current center of gravity is pattern-first workflows with auditable state.

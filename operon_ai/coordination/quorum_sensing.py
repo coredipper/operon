@@ -142,6 +142,22 @@ class SignalEnvironment:
         return sum(len(v) for v in self._signals.values())
 
 
+def _verify_no_false_activation(
+    params: dict,
+) -> tuple[bool, dict]:
+    """Derivation replay for the QS no-false-activation guarantee."""
+    N = params["N"]
+    s = params["s"]
+    h = params["h"]
+    dt = params["dt"]
+    m = params["safety_margin"]
+    decay = 2.0 ** (-dt / h)
+    c_ss = (N * s) / (1.0 - decay)
+    threshold = c_ss * m
+    ratio = c_ss / threshold  # = 1/m
+    return ratio < 1.0, {"c_ss": c_ss, "threshold": threshold, "ratio": ratio}
+
+
 @dataclass
 class QuorumSensingBio:
     """Biologically-faithful quorum sensing based on autoinducer accumulation.
@@ -205,6 +221,32 @@ class QuorumSensingBio:
                 f"emission_interval must be positive, got {self.emission_interval}"
             )
         self._calibrated = True
+
+    def certify(self) -> "Certificate":
+        """Return a certificate for the no-false-activation guarantee.
+
+        Requires ``calibrate()`` to have been called first.
+
+        The certificate's ``verify()`` re-derives the steady-state
+        concentration and confirms ``c_ss / threshold < 1.0``.
+        """
+        from ..core.certificate import Certificate
+
+        if not self._calibrated:
+            raise ValueError("Must calibrate() before certifying")
+        return Certificate(
+            theorem="no_false_activation",
+            parameters={
+                "N": self.population_size,
+                "s": self.expected_normal_suspicion,
+                "h": self.environment.decay_half_life,
+                "dt": self.emission_interval,
+                "safety_margin": self.safety_margin,
+            },
+            conclusion="Normal traffic activation level < 1.0",
+            source="QuorumSensingBio.calibrate",
+            _verify_fn=_verify_no_false_activation,
+        )
 
     def _threshold(self) -> float:
         """Activation threshold.
