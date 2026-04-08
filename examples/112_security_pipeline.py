@@ -171,9 +171,16 @@ def main():
     # -----------------------------------------------------------------------
     print("\n--- Scenario 4: Post-Repair Verification ---")
     damage = repair.scan(genome, checkpoint)
-    while damage:
-        repair.repair(genome, damage[0], checkpoint=checkpoint)
+    for _ in range(len(damage) + 2):
+        if not damage:
+            break
+        result = repair.repair(genome, damage[0], checkpoint=checkpoint)
+        if not result.success:
+            break
+        prev = len(damage)
         damage = repair.scan(genome, checkpoint)
+        if len(damage) >= prev:
+            break
 
     r4 = run_pipeline(
         "Standard request after repair.",

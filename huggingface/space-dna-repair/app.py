@@ -218,7 +218,10 @@ def tab2_pipeline(preset_name: str) -> str:
     # Step 4: Repair (iterative: repair highest severity, re-scan, repeat)
     repair_html = ""
     remaining = damage
-    while remaining:
+    max_iters = len(damage) + 2
+    for _ in range(max_iters):
+        if not remaining:
+            break
         d = remaining[0]
         result = repair.repair(genome, d, checkpoint=checkpoint)
         badge = _ok_badge("SUCCESS") if result.success else _fail_badge("FAILED")
@@ -226,7 +229,12 @@ def tab2_pipeline(preset_name: str) -> str:
             f'<div style="margin:4px 0;">{badge} '
             f'<code>{result.strategy_used.value}</code>: {result.details}</div>'
         )
+        if not result.success:
+            break
+        prev_count = len(remaining)
         remaining = repair.scan(genome, checkpoint)
+        if len(remaining) >= prev_count:
+            break
     html += _section("Step 4: Repair", repair_html or "No damage to repair.")
 
     # Step 5: Re-scan

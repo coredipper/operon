@@ -103,7 +103,7 @@ class StateCheckpoint:
     genome_hash: str
     expression_snapshot: tuple[tuple[str, int], ...]  # (gene_name, level_value) pairs
     gene_values: tuple[tuple[str, Any], ...]  # (gene_name, value) pairs
-    gene_metadata: tuple[tuple[str, str, str, bool], ...]  # (name, gene_type, description, required)
+    gene_metadata: tuple[tuple[str, str, str, bool, int], ...]  # (name, gene_type, desc, required, default_expression)
     gene_count: int
     timestamp: datetime
     checkpoint_id: str
@@ -238,7 +238,8 @@ class DNARepair:
             for name, gene in sorted(genome._genes.items())
         )
         gene_meta_pairs = tuple(
-            (name, gene.gene_type.value, gene.description, gene.required)
+            (name, gene.gene_type.value, gene.description, gene.required,
+             gene.default_expression.value)
             for name, gene in sorted(genome._genes.items())
         )
 
@@ -315,7 +316,7 @@ class DNARepair:
                     description=f"Gene '{gene_name}' was removed",
                     expected=expected_value,
                     actual=None,
-                    recommended_strategy=RepairStrategy.ROLLBACK,
+                    recommended_strategy=RepairStrategy.CHECKPOINT_RESTORE,
                 ))
             elif gene.value != expected_value:
                 damage.append(DamageReport(
@@ -381,10 +382,14 @@ class DNARepair:
         valid, errors = genome.validate()
         if not valid:
             for error in errors:
+                # Extract gene name from "Required gene 'X' is silenced"
+                import re as _re
+                match = _re.search(r"'(\w+)'", error)
+                gene_name = match.group(1) if match else "unknown"
                 damage.append(DamageReport(
                     corruption_type=CorruptionType.EXPRESSION_DRIFT,
                     severity=DamageSeverity.HIGH,
-                    location=f"validation:{error}",
+                    location=f"expression:{gene_name}",
                     description=error,
                     expected="expressed",
                     actual="silenced",
@@ -416,9 +421,17 @@ class DNARepair:
             self._auto_repair = False  # Prevent recursion
             try:
                 remaining = damage
-                while remaining:
-                    self.repair(genome, remaining[0], checkpoint=checkpoint)
+                max_iterations = len(damage) + 2
+                for _ in range(max_iterations):
+                    if not remaining:
+                        break
+                    result = self.repair(genome, remaining[0], checkpoint=checkpoint)
+                    if not result.success:
+                        break  # Can't make progress
+                    prev_count = len(remaining)
                     remaining = self.scan(genome, checkpoint)
+                    if len(remaining) >= prev_count:
+                        break  # Not making progress
             finally:
                 self._auto_repair = True
 
@@ -581,13 +594,14 @@ class DNARepair:
                     if genome.get_gene(gname) is None:
                         meta = cp_meta.get(gname)
                         if meta:
-                            _, gtype, desc, req = meta
+                            _, gtype, desc, req, def_expr = meta
                             genome.add_gene(Gene(
                                 name=gname,
                                 value=expected_value,
                                 gene_type=GeneType(gtype),
                                 description=desc,
                                 required=req,
+                                default_expression=ExpressionLevel(def_expr),
                             ))
 
                 # Restore gene values from checkpoint

@@ -102,11 +102,17 @@ def main():
     # all state at once, then re-scan to confirm clean.
     repair_results = []
     remaining = damage
-    while remaining:
-        d = remaining[0]  # Highest severity (list is sorted)
-        result = repair.repair(genome, d, checkpoint=checkpoint)
+    for _ in range(len(damage) + 2):
+        if not remaining:
+            break
+        result = repair.repair(genome, remaining[0], checkpoint=checkpoint)
         repair_results.append(result)
+        if not result.success:
+            break
+        prev = len(remaining)
         remaining = repair.scan(genome, checkpoint)
+        if len(remaining) >= prev:
+            break
 
     # -----------------------------------------------------------------------
     # 6. Re-scan (should be clean)
