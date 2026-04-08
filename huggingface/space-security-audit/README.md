@@ -8,7 +8,7 @@ sdk_version: "6.5.1"
 app_file: app.py
 pinned: false
 license: mit
-short_description: Unified security audit dashboard with certificate verification
+short_description: Security audit and certificate dashboard
 ---
 
 # Operon Security Audit

@@ -8,7 +8,7 @@ sdk_version: "6.5.1"
 app_file: app.py
 pinned: false
 license: mit
-short_description: Compile multi-agent organisms and verify structural certificates
+short_description: Compile organisms and verify certificates
 ---
 
 # Operon Convergence Compiler

@@ -8,7 +8,7 @@ sdk_version: "6.5.1"
 app_file: app.py
 pinned: false
 license: mit
-short_description: Genome integrity checking, corruption repair, and certification
+short_description: Genome integrity and corruption repair
 ---
 
 # Operon DNA Repair
