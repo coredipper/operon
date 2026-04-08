@@ -587,9 +587,13 @@ class DNARepair:
                 cp_values = target_cp.values_dict
                 cp_meta = {m[0]: m for m in target_cp.gene_metadata}
 
-                # Recreate missing genes from checkpoint metadata
-                for gname, expected_value in cp_values.items():
-                    if genome.get_gene(gname) is None:
+                # Rebuild all genes from checkpoint (values + metadata)
+                was_mutable = genome.allow_mutations
+                genome.allow_mutations = True
+                try:
+                    # Remove all current genes and rebuild from checkpoint
+                    genome._genes.clear()
+                    for gname, expected_value in cp_values.items():
                         meta = cp_meta.get(gname)
                         if meta:
                             _, gtype, desc, req, def_expr = meta
@@ -601,22 +605,8 @@ class DNARepair:
                                 required=req,
                                 default_expression=ExpressionLevel(def_expr),
                             ))
-
-                # Temporarily enable mutations for restore
-                was_mutable = genome.allow_mutations
-                genome.allow_mutations = True
-                try:
-                    # Restore gene values from checkpoint
-                    for gname, expected_value in cp_values.items():
-                        gene = genome.get_gene(gname)
-                        if gene is not None and gene.value != expected_value:
-                            genome.mutate(gname, expected_value, "checkpoint_restore")
-
-                    # Remove genes not in checkpoint
-                    extra_genes = set(genome._genes.keys()) - set(cp_values.keys())
-                    for gname in extra_genes:
-                        del genome._genes[gname]
-                        genome._expression.pop(gname, None)
+                        else:
+                            genome.add_gene(Gene(name=gname, value=expected_value))
 
                     # Rebuild expression state from checkpoint
                     from .genome import ExpressionState
