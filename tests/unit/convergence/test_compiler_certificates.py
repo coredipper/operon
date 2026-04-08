@@ -49,20 +49,23 @@ class TestCertificateSerialization:
         cert = org.collect_certificates()[0]
         d = certificate_to_dict(cert)
         restored = certificate_from_dict(d)
-        assert restored is not None
         assert restored.theorem == cert.theorem
         assert dict(restored.parameters) == dict(cert.parameters)
         result = restored.verify()
         assert result.holds is True
 
-    def test_unknown_theorem_returns_none(self):
+    def test_unknown_theorem_raises(self):
         d = {
             "theorem": "unknown_theorem",
             "parameters": {},
             "conclusion": "",
             "source": "",
         }
-        assert certificate_from_dict(d) is None
+        try:
+            certificate_from_dict(d)
+            assert False, "Should raise KeyError"
+        except KeyError:
+            pass
 
 
 class TestSwarmsCertificates:
@@ -71,10 +74,10 @@ class TestSwarmsCertificates:
         assert "certificates" in compiled
         assert len(compiled["certificates"]) >= 1
 
-    def test_verify_compiled(self):
+    def test_verify_compiled_all_verified(self):
         compiled = organism_to_swarms(_make_organism())
         results = verify_compiled(compiled)
-        assert len(results) >= 1
+        assert len(results) == len(compiled["certificates"])
         assert all(r.holds for r in results)
 
 
@@ -84,9 +87,10 @@ class TestRalphCertificates:
         assert "certificates" in compiled
         assert len(compiled["certificates"]) >= 1
 
-    def test_verify_compiled(self):
+    def test_verify_compiled_all_verified(self):
         compiled = organism_to_ralph(_make_organism())
         results = verify_compiled(compiled)
+        assert len(results) == len(compiled["certificates"])
         assert all(r.holds for r in results)
 
 
@@ -96,9 +100,10 @@ class TestScionCertificates:
         assert "certificates" in compiled
         assert len(compiled["certificates"]) >= 1
 
-    def test_verify_compiled(self):
+    def test_verify_compiled_all_verified(self):
         compiled = organism_to_scion(_make_organism())
         results = verify_compiled(compiled)
+        assert len(results) == len(compiled["certificates"])
         assert all(r.holds for r in results)
 
 
@@ -108,9 +113,10 @@ class TestDeerflowCertificates:
         assert "certificates" in compiled
         assert len(compiled["certificates"]) >= 1
 
-    def test_verify_compiled(self):
+    def test_verify_compiled_all_verified(self):
         compiled = organism_to_deerflow(_make_organism())
         results = verify_compiled(compiled)
+        assert len(results) == len(compiled["certificates"])
         assert all(r.holds for r in results)
 
 

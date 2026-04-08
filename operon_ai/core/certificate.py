@@ -140,25 +140,59 @@ def register_verify_fn(theorem: str, fn: Callable) -> None:
     _VERIFY_REGISTRY[theorem] = fn
 
 
+def _thaw(value: Any) -> Any:
+    """Recursively convert frozen containers to JSON-serializable types."""
+    if isinstance(value, Mapping):
+        return {k: _thaw(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_thaw(v) for v in value]
+    if isinstance(value, (set, frozenset)):
+        return [_thaw(v) for v in sorted(value, key=repr)]
+    return value
+
+
 def certificate_to_dict(cert: Certificate) -> dict[str, Any]:
     """Serialize a certificate to a JSON-compatible dict."""
     return {
         "theorem": cert.theorem,
-        "parameters": dict(cert.parameters),
+        "parameters": _thaw(cert.parameters),
         "conclusion": cert.conclusion,
         "source": cert.source,
     }
 
 
-def certificate_from_dict(d: dict[str, Any]) -> Certificate | None:
+def _ensure_registry_loaded() -> None:
+    """Ensure all known theorem modules are imported (registers verify fns)."""
+    if _VERIFY_REGISTRY:
+        return
+    # Import modules that register their verify functions at module level
+    try:
+        import operon_ai.coordination.quorum_sensing  # noqa: F401
+    except ImportError:
+        pass
+    try:
+        import operon_ai.state.mtor  # noqa: F401
+    except ImportError:
+        pass
+    try:
+        import operon_ai.state.metabolism  # noqa: F401
+    except ImportError:
+        pass
+
+
+def certificate_from_dict(d: dict[str, Any]) -> Certificate:
     """Deserialize a certificate from a dict.
 
-    Returns None if the theorem's verify function is not registered.
+    Raises ``KeyError`` if the theorem's verify function is not registered.
     """
+    _ensure_registry_loaded()
     theorem = d["theorem"]
     fn = _VERIFY_REGISTRY.get(theorem)
     if fn is None:
-        return None
+        raise KeyError(
+            f"No verify function registered for theorem {theorem!r}. "
+            f"Known theorems: {sorted(_VERIFY_REGISTRY)}"
+        )
     return Certificate(
         theorem=theorem,
         parameters=d["parameters"],
@@ -171,12 +205,10 @@ def certificate_from_dict(d: dict[str, Any]) -> Certificate | None:
 def verify_compiled(compiled: dict[str, Any]) -> list[CertificateVerification]:
     """Verify all certificates in a compiled organism dict.
 
-    Returns a list of verification results. Certificates whose theorem
-    is not in the registry are skipped.
+    Raises ``KeyError`` if any certificate's theorem is not registered.
     """
     results = []
     for cert_dict in compiled.get("certificates", []):
         cert = certificate_from_dict(cert_dict)
-        if cert is not None:
-            results.append(cert.verify())
+        results.append(cert.verify())
     return results
