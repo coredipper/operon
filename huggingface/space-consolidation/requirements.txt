@@ -1,2 +1,1 @@
 gradio>=4.0
-operon-ai>=0.28.0

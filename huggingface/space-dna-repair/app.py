@@ -99,11 +99,6 @@ def _make_genome() -> Genome:
 # Tab 1: Checkpoint & Scan
 # ---------------------------------------------------------------------------
 
-_t1_genome: Genome | None = None
-_t1_histones: HistoneStore | None = None
-_t1_repair: DNARepair | None = None
-_t1_checkpoint = None
-
 CORRUPTION_CHOICES = [
     "Mutate temperature gene",
     "Silence required gene (model)",
@@ -112,66 +107,70 @@ CORRUPTION_CHOICES = [
 ]
 
 
-def tab1_init() -> str:
-    global _t1_genome, _t1_histones, _t1_repair, _t1_checkpoint
-    _t1_genome = _make_genome()
-    _t1_histones = HistoneStore(silent=True)
-    _t1_repair = DNARepair(histone_store=_t1_histones, silent=True)
-    _t1_checkpoint = None
+def tab1_init(state: dict) -> tuple[str, dict]:
+    genome = _make_genome()
+    histones = HistoneStore(silent=True)
+    repair = DNARepair(histone_store=histones, silent=True)
+    state = {"genome": genome, "histones": histones, "repair": repair, "checkpoint": None}
 
     genes_html = ""
-    for name, gene in sorted(_t1_genome._genes.items()):
-        expr = _t1_genome._expression[name].level.name
+    for name, gene in sorted(genome._genes.items()):
+        expr = genome._expression[name].level.name
         req = " (required)" if gene.required else ""
         genes_html += (f'<div style="margin:2px 0;"><code>{name}</code> = '
                        f'<b>{gene.value}</b> [{gene.gene_type.value}] '
                        f'expression={expr}{req}</div>')
-    return _section("Genome (4 genes)", genes_html)
+    return _section("Genome (4 genes)", genes_html), state
 
 
-def tab1_checkpoint() -> str:
-    global _t1_checkpoint
-    if _t1_genome is None or _t1_repair is None:
-        return "Initialize the genome first."
-    _t1_checkpoint = _t1_repair.checkpoint(_t1_genome)
-    cp = _t1_checkpoint
+def tab1_checkpoint(state: dict) -> tuple[str, dict]:
+    genome = state.get("genome")
+    repair = state.get("repair")
+    if genome is None or repair is None:
+        return "Initialize the genome first.", state
+    cp = repair.checkpoint(genome)
+    state["checkpoint"] = cp
     body = (f'<div>ID: <code>{cp.checkpoint_id}</code> | '
             f'Hash: <code>{cp.genome_hash}</code> | '
             f'Genes: <b>{cp.gene_count}</b></div><div>Expression:</div>')
     for name, level in cp.expression_snapshot:
         body += f'<div style="margin-left:12px;"><code>{name}</code> = {ExpressionLevel(level).name}</div>'
-    return _section("Checkpoint Taken", body)
+    return _section("Checkpoint Taken", body), state
 
 
-def tab1_inject(corruption_type: str) -> str:
-    if _t1_genome is None:
-        return "Initialize the genome first."
+def tab1_inject(corruption_type: str, state: dict) -> tuple[str, dict]:
+    genome = state.get("genome")
+    if genome is None:
+        return "Initialize the genome first.", state
 
     actions = {
         "Mutate temperature gene": (
-            lambda: _t1_genome.mutate("temperature", 0.95, reason="simulated drift"),
+            lambda: genome.mutate("temperature", 0.95, reason="simulated drift"),
             "Mutated <code>temperature</code>: 0.7 &rarr; 0.95"),
         "Silence required gene (model)": (
-            lambda: _t1_genome.set_expression("model", ExpressionLevel.SILENCED, "corruption"),
+            lambda: genome.set_expression("model", ExpressionLevel.SILENCED, "corruption"),
             "Silenced required gene <code>model</code>"),
         "Change expression (max_tokens -> HIGH)": (
-            lambda: _t1_genome.set_expression("max_tokens", ExpressionLevel.HIGH, ""),
+            lambda: genome.set_expression("max_tokens", ExpressionLevel.HIGH, ""),
             "Changed <code>max_tokens</code> expression to HIGH (no modifier)"),
         "Add extra gene": (
-            lambda: _t1_genome.add_gene(Gene("rogue_param", "unexpected", gene_type=GeneType.CONDITIONAL)),
+            lambda: genome.add_gene(Gene("rogue_param", "unexpected", gene_type=GeneType.CONDITIONAL)),
             "Added rogue gene <code>rogue_param</code>"),
     }
     if corruption_type not in actions:
-        return "Unknown corruption type."
+        return "Unknown corruption type.", state
     fn, desc = actions[corruption_type]
     fn()
-    return _section("Corruption Injected", desc)
+    return _section("Corruption Injected", desc), state
 
 
-def tab1_scan() -> str:
-    if _t1_genome is None or _t1_repair is None or _t1_checkpoint is None:
+def tab1_scan(state: dict) -> str:
+    genome = state.get("genome")
+    repair = state.get("repair")
+    checkpoint = state.get("checkpoint")
+    if genome is None or repair is None or checkpoint is None:
         return "Take a checkpoint first, then inject corruption."
-    damage = _t1_repair.scan(_t1_genome, _t1_checkpoint)
+    damage = repair.scan(genome, checkpoint)
     return _format_damage(damage)
 
 
@@ -314,6 +313,9 @@ def build_app() -> gr.Blocks:
             "[Paper](https://github.com/coredipper/operon/tree/main/article)"
         )
 
+        # Session-scoped state for Tab 1
+        t1_state = gr.State(value={})
+
         # ------ Tab 1: Checkpoint & Scan ------
         with gr.Tab("Checkpoint & Scan"):
             gr.Markdown(
@@ -339,10 +341,10 @@ def build_app() -> gr.Blocks:
             scan_btn = gr.Button("Scan for Damage", variant="primary")
             scan_html = gr.HTML()
 
-            init_btn.click(fn=tab1_init, outputs=[genome_html])
-            checkpoint_btn.click(fn=tab1_checkpoint, outputs=[checkpoint_html])
-            inject_btn.click(fn=tab1_inject, inputs=[corruption_dd], outputs=[inject_html])
-            scan_btn.click(fn=tab1_scan, outputs=[scan_html])
+            init_btn.click(fn=tab1_init, inputs=[t1_state], outputs=[genome_html, t1_state])
+            checkpoint_btn.click(fn=tab1_checkpoint, inputs=[t1_state], outputs=[checkpoint_html, t1_state])
+            inject_btn.click(fn=tab1_inject, inputs=[corruption_dd, t1_state], outputs=[inject_html, t1_state])
+            scan_btn.click(fn=tab1_scan, inputs=[t1_state], outputs=[scan_html])
 
         # ------ Tab 2: Repair & Certify ------
         with gr.Tab("Repair & Certify"):

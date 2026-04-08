@@ -93,7 +93,10 @@ def run_pipeline(
     result["layers"].append(("Certificate", verification.holds, cert.theorem))
     print(f"  [4] Certificate:    {cert.theorem} → {'HOLDS' if verification.holds else 'FAILS'}")
 
-    result["verdict"] = "PASSED" if verification.holds else "INTEGRITY_FAILURE"
+    if damage or not verification.holds:
+        result["verdict"] = "INTEGRITY_FAILURE"
+    else:
+        result["verdict"] = "PASSED"
     return result
 
 
@@ -168,8 +171,9 @@ def main():
     # -----------------------------------------------------------------------
     print("\n--- Scenario 4: Post-Repair Verification ---")
     damage = repair.scan(genome, checkpoint)
-    for d in damage:
-        repair.repair(genome, d)
+    while damage:
+        repair.repair(genome, damage[0], checkpoint=checkpoint)
+        damage = repair.scan(genome, checkpoint)
 
     r4 = run_pipeline(
         "Standard request after repair.",

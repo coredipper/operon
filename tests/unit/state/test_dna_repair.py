@@ -334,6 +334,33 @@ class TestCertify:
         verification = cert.verify()
         assert not verification.holds
 
+    def test_certify_expression_drift_alone_fails(self):
+        """Regression: expression-only corruption must fail the certificate."""
+        genome = _make_genome()
+        repair = DNARepair(silent=True)
+        cp = repair.checkpoint(genome)
+
+        # Only change expression — hash and count stay the same
+        genome.silence_gene("temperature")
+
+        cert = repair.certify(genome, cp)
+        verification = cert.verify()
+        assert not verification.holds
+        assert verification.evidence["expression_match"] is False
+
+    def test_certify_required_gene_silenced_fails(self):
+        """Regression: silenced required gene must fail the certificate."""
+        genome = _make_genome()
+        repair = DNARepair(silent=True)
+        cp = repair.checkpoint(genome)
+
+        genome.silence_gene("model")
+
+        cert = repair.certify(genome, cp)
+        verification = cert.verify()
+        assert not verification.holds
+        assert verification.evidence["validation_ok"] is False
+
     def test_certificate_round_trip(self):
         genome = _make_genome()
         repair = DNARepair(silent=True)

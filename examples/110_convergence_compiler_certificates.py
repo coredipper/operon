@@ -146,6 +146,10 @@ def main():
 
     for name, compiled in compiled_outputs.items():
         assert "certificates" in compiled, f"{name} must have certificates key"
+        compiled_certs = compiled["certificates"]
+        assert len(compiled_certs) == len(certs), (
+            f"{name} should preserve all {len(certs)} certificates, got {len(compiled_certs)}"
+        )
         verifications = verify_compiled(compiled)
         for v in verifications:
             assert v.holds, f"{name}/{v.certificate.theorem} should hold"

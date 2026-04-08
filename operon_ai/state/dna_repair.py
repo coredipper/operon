@@ -153,16 +153,19 @@ def _verify_state_integrity(
 ) -> tuple[bool, dict[str, Any]]:
     """Verify that genome state matches checkpoint.
 
-    Checks genome_hash equality and gene_count match.
+    Checks genome_hash, gene_count, expression snapshot, and
+    required-gene validation status.
     """
     genome_hash = params["genome_hash"]
     checkpoint_hash = params["checkpoint_hash"]
     gene_count = params["gene_count"]
     checkpoint_gene_count = params["checkpoint_gene_count"]
+    expression_match = params.get("expression_match", True)
+    validation_ok = params.get("validation_ok", True)
 
     hash_match = genome_hash == checkpoint_hash
     count_match = gene_count == checkpoint_gene_count
-    holds = hash_match and count_match
+    holds = hash_match and count_match and expression_match and validation_ok
 
     return holds, {
         "genome_hash": genome_hash,
@@ -171,6 +174,8 @@ def _verify_state_integrity(
         "gene_count": gene_count,
         "checkpoint_gene_count": checkpoint_gene_count,
         "count_match": count_match,
+        "expression_match": expression_match,
+        "validation_ok": validation_ok,
     }
 
 
@@ -289,7 +294,7 @@ class DNARepair:
                 ),
                 expected=checkpoint.genome_hash,
                 actual=current_hash,
-                recommended_strategy=RepairStrategy.ROLLBACK,
+                recommended_strategy=RepairStrategy.CHECKPOINT_RESTORE,
             ))
 
         # 2. Individual gene value scan (BER analog)
@@ -481,6 +486,7 @@ class DNARepair:
         genome: Genome,
         damage: DamageReport,
         strategy: RepairStrategy | None = None,
+        checkpoint: StateCheckpoint | None = None,
     ) -> RepairResult:
         """Apply a repair to the genome.
 
@@ -488,6 +494,8 @@ class DNARepair:
             genome: The genome to repair.
             damage: The damage to fix.
             strategy: Override the recommended strategy.
+            checkpoint: Target checkpoint for CHECKPOINT_RESTORE.
+                Falls back to the most recent stored checkpoint.
 
         Returns:
             Result of the repair attempt.
@@ -512,7 +520,11 @@ class DNARepair:
             if gene_name:
                 gene = genome.get_gene(gene_name)
                 if gene:
-                    target_level = gene.default_expression
+                    # Restore to checkpointed level if available, else default
+                    if damage.expected is not None and isinstance(damage.expected, int):
+                        target_level = ExpressionLevel(damage.expected)
+                    else:
+                        target_level = gene.default_expression
                     genome.set_expression(gene_name, target_level, "dna_repair")
                     success = True
                     details = (
@@ -541,20 +553,39 @@ class DNARepair:
             )
 
         elif strategy == RepairStrategy.CHECKPOINT_RESTORE:
-            # Find the checkpoint that matches and restore all expression
-            for cp in self._checkpoints.values():
-                cp_expr = cp.expression_dict
-                for gene_name, level_value in cp_expr.items():
-                    if gene_name in genome._expression:
+            # Use provided checkpoint, or fall back to most recent stored
+            target_cp = checkpoint
+            if target_cp is None and self._checkpoints:
+                target_cp = list(self._checkpoints.values())[-1]
+
+            if target_cp is not None:
+                # Restore expression state
+                cp_expr = target_cp.expression_dict
+                for gname, level_value in cp_expr.items():
+                    if gname in genome._expression:
                         genome.set_expression(
-                            gene_name,
+                            gname,
                             ExpressionLevel(level_value),
                             "checkpoint_restore",
                         )
+
+                # Restore gene values from checkpoint
+                cp_values = target_cp.values_dict
+                for gname, expected_value in cp_values.items():
+                    gene = genome.get_gene(gname)
+                    if gene is not None and gene.value != expected_value:
+                        genome.mutate(gname, expected_value, "checkpoint_restore")
+
+                # Remove genes not in checkpoint
+                extra_genes = set(genome._genes.keys()) - set(cp_values.keys())
+                for gname in extra_genes:
+                    if genome.allow_mutations:
+                        del genome._genes[gname]
+                        genome._expression.pop(gname, None)
+
                 success = True
-                details = f"Restored expression state from checkpoint {cp.checkpoint_id}"
-                break
-            if not success:
+                details = f"Restored full state from checkpoint {target_cp.checkpoint_id}"
+            else:
                 details = "No checkpoint available for restore"
 
         result = RepairResult(
@@ -587,8 +618,8 @@ class DNARepair:
     ) -> Certificate:
         """Issue a state integrity certificate.
 
-        The certificate's ``verify()`` re-checks that the genome hash
-        and gene count match the checkpoint.
+        The certificate's ``verify()`` checks genome hash, gene count,
+        expression snapshot match, and required-gene validation.
 
         Args:
             genome: Current genome state.
@@ -597,6 +628,18 @@ class DNARepair:
         Returns:
             A :class:`Certificate` with theorem ``state_integrity_verified``.
         """
+        # Check expression snapshot match
+        cp_expr = checkpoint.expression_dict
+        expression_match = True
+        for gene_name, expected_level in cp_expr.items():
+            if gene_name in genome._expression:
+                if genome._expression[gene_name].level.value != expected_level:
+                    expression_match = False
+                    break
+
+        # Check required-gene validation
+        valid, _errors = genome.validate()
+
         return Certificate(
             theorem="state_integrity_verified",
             parameters={
@@ -604,6 +647,8 @@ class DNARepair:
                 "checkpoint_hash": checkpoint.genome_hash,
                 "gene_count": len(genome._genes),
                 "checkpoint_gene_count": checkpoint.gene_count,
+                "expression_match": expression_match,
+                "validation_ok": valid,
             },
             conclusion=(
                 "Genome state matches checkpoint with no detected corruption"

@@ -190,6 +190,8 @@ def run_pipeline(text: str) -> str:
     html_parts.append(_arrow())
 
     # Layer 3: DNA Repair scan
+    # Note: DNA repair checks *internal state* integrity, not the input.
+    # A fresh genome always passes; see space-dna-repair for corruption demos.
     genome = Genome(
         genes=[Gene("model", "gpt-4", gene_type=GeneType.STRUCTURAL, required=True)],
         allow_mutations=True,
@@ -200,7 +202,9 @@ def run_pipeline(text: str) -> str:
     damage = repair.scan(genome, checkpoint)
     dna_passed = len(damage) == 0
 
-    d_detail = "Genome state: clean (no drift from checkpoint)" if dna_passed else f"{len(damage)} damage(s) detected"
+    d_detail = ("Genome state: clean (internal state integrity verified) "
+                "&mdash; <em>see DNA Repair Space for corruption scenarios</em>"
+                if dna_passed else f"{len(damage)} damage(s) detected")
     html_parts.append(_pipeline_step("DNA Repair Scan", "&#x1F9EC;", dna_passed, d_detail))
     html_parts.append(_arrow())
 

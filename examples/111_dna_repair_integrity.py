@@ -98,14 +98,21 @@ def main():
     # 5. Repair each damage
     # -----------------------------------------------------------------------
     print("\n--- Repair ---")
-    for d in damage:
-        result = repair.repair(genome, d)
+    # Apply the highest-severity repair (CHECKPOINT_RESTORE) which fixes
+    # all state at once, then re-scan to confirm clean.
+    repair_results = []
+    remaining = damage
+    while remaining:
+        d = remaining[0]  # Highest severity (list is sorted)
+        result = repair.repair(genome, d, checkpoint=checkpoint)
+        repair_results.append(result)
+        remaining = repair.scan(genome, checkpoint)
 
     # -----------------------------------------------------------------------
     # 6. Re-scan (should be clean)
     # -----------------------------------------------------------------------
     print("\n--- Re-scan ---")
-    remaining = repair.scan(genome, checkpoint)
+    print(f"  remaining damage: {len(remaining)}")
 
     # -----------------------------------------------------------------------
     # 7. Certify state integrity
@@ -145,6 +152,9 @@ def main():
     assert any(d.corruption_type == CorruptionType.CHECKSUM_FAILURE for d in damage)
     assert any(d.corruption_type == CorruptionType.EXPRESSION_DRIFT for d in damage)
 
+    # Re-scan should be clean after repair
+    assert len(remaining) == 0, f"post-repair scan should be clean, got {len(remaining)} damage"
+
     # Certificate should hold after repair
     assert verification.holds, "repaired genome should verify clean"
 
@@ -154,7 +164,8 @@ def main():
     # Statistics should reflect operations
     assert stats["checkpoints"] == 1
     assert stats["scans_performed"] >= 2
-    assert stats["repairs_attempted"] >= 2
+    assert stats["repairs_attempted"] >= 1
+    assert stats["repairs_successful"] >= 1
 
     print("  all assertions passed ✓")
 
