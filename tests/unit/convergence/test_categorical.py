@@ -194,3 +194,37 @@ class TestExtractCompiledArchitecture:
         target = extract_compiled_architecture({})
         assert target.stage_count == 0
         assert target.certificates == ()
+
+    def test_deerflow_hub_and_spoke(self):
+        """DeerFlow: lead → each sub_agent (hub-and-spoke)."""
+        compiled = {
+            "assistant_id": "lead",
+            "sub_agents": [{"name": "worker1"}, {"name": "worker2"}],
+            "certificates": [],
+        }
+        target = extract_compiled_architecture(compiled)
+        assert set(target.stage_names) == {"lead", "worker1", "worker2"}
+        assert ("lead", "worker1") in target.edges
+        assert ("lead", "worker2") in target.edges
+        # No worker→worker edge (hub-and-spoke, not chain)
+        assert ("worker1", "worker2") not in target.edges
+
+    def test_explicit_empty_edges_no_fallback(self):
+        """Explicit edges=[] should not trigger fallback synthesis."""
+        compiled = {
+            "agents": [{"name": "a"}, {"name": "b"}],
+            "edges": [],  # Intentionally empty
+            "certificates": [],
+        }
+        target = extract_compiled_architecture(compiled)
+        assert target.edges == ()  # No synthesized edges
+
+    def test_ralph_events_extracted(self):
+        """Ralph: edges from events field."""
+        compiled = {
+            "hats": [{"name": "h1"}, {"name": "h2"}],
+            "events": [{"from": "h1", "event": "complete", "to": "h2"}],
+            "certificates": [],
+        }
+        target = extract_compiled_architecture(compiled)
+        assert ("h1", "h2") in target.edges
