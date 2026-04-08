@@ -204,13 +204,13 @@ def extract_compiled_architecture(
 
     stage_names = tuple(a.get("name", f"agent_{i}") for i, a in enumerate(agents))
 
-    # Extract edges from whichever key the compiler uses
-    raw_edges = (
-        compiled.get("edges")
-        or compiled.get("messaging")
-        or compiled.get("events")  # Ralph
-        or []
-    )
+    # Extract edges — check key presence, not truthiness
+    raw_edges: list = []
+    for key in ("edges", "messaging", "events"):
+        if key in compiled:
+            raw_edges = compiled[key]
+            break
+
     edges_list: list[tuple[str, str]] = []
     for e in raw_edges:
         if isinstance(e, dict):
@@ -218,10 +218,13 @@ def extract_compiled_architecture(
         elif isinstance(e, (list, tuple)) and len(e) >= 2:
             edges_list.append((str(e[0]), str(e[1])))
 
-    # DeerFlow: derive chain from agent order if no explicit edges
-    if not edges_list and len(stage_names) > 1:
-        for i in range(len(stage_names) - 1):
-            edges_list.append((stage_names[i], stage_names[i + 1]))
+    # DeerFlow: hub-and-spoke (lead → each sub_agent) when no edge key exists
+    has_edge_key = any(k in compiled for k in ("edges", "messaging", "events"))
+    if not has_edge_key and "assistant_id" in compiled:
+        lead = str(compiled["assistant_id"])
+        for name in stage_names:
+            if name != lead:
+                edges_list.append((lead, name))
 
     edges = tuple(edges_list)
 
