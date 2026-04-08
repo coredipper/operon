@@ -133,6 +133,29 @@ class TestVerifyCompiledEdgeCases:
         assert len(results) >= 1
         assert any(not r.holds for r in results)
 
+    def test_lazy_import_resolves_missing_theorem(self):
+        """Deserializing a theorem not yet in the registry triggers lazy import."""
+        from operon_ai.core.certificate import _VERIFY_REGISTRY
+
+        # Remove QS verifier if present (simulate partial registry)
+        saved = _VERIFY_REGISTRY.pop("no_false_activation", None)
+        try:
+            d = {
+                "theorem": "no_false_activation",
+                "parameters": {"N": 10, "s": 0.15, "h": 5.0, "dt": 1.0, "safety_margin": 2.0},
+                "conclusion": "test",
+                "source": "test",
+            }
+            # Should succeed via lazy import
+            restored = certificate_from_dict(d)
+            assert restored.theorem == "no_false_activation"
+            result = restored.verify()
+            assert result.holds is True
+        finally:
+            # Restore registry state
+            if saved is not None:
+                _VERIFY_REGISTRY["no_false_activation"] = saved
+
     def test_qs_certificate_round_trip(self):
         """QuorumSensing certificate survives serialize → deserialize."""
         from operon_ai.coordination.quorum_sensing import QuorumSensingBio

@@ -161,24 +161,34 @@ def certificate_to_dict(cert: Certificate) -> dict[str, Any]:
     }
 
 
-_THEOREM_MODULES: dict[str, str] = {
-    "no_false_activation": "operon_ai.coordination.quorum_sensing",
-    "no_oscillation": "operon_ai.state.mtor",
-    "priority_gating": "operon_ai.state.metabolism",
+_THEOREM_FN_PATHS: dict[str, tuple[str, str]] = {
+    "no_false_activation": ("operon_ai.coordination.quorum_sensing", "_verify_no_false_activation"),
+    "no_oscillation": ("operon_ai.state.mtor", "_verify_no_oscillation"),
+    "priority_gating": ("operon_ai.state.metabolism", "_verify_priority_gating"),
 }
 
 
-def _ensure_theorem_registered(theorem: str) -> None:
-    """Import the module that registers *theorem*'s verify function."""
-    if theorem in _VERIFY_REGISTRY:
-        return
-    module = _THEOREM_MODULES.get(theorem)
-    if module is None:
-        return
+def _resolve_verify_fn(theorem: str) -> Callable | None:
+    """Look up a verify function by theorem name.
+
+    Checks the dynamic registry first, then falls back to the built-in
+    function path map for lazy resolution.
+    """
+    fn = _VERIFY_REGISTRY.get(theorem)
+    if fn is not None:
+        return fn
+    path = _THEOREM_FN_PATHS.get(theorem)
+    if path is None:
+        return None
+    module_name, fn_name = path
+    import importlib
     try:
-        __import__(module)
-    except ImportError:
-        pass
+        module = importlib.import_module(module_name)
+        fn = getattr(module, fn_name)
+        _VERIFY_REGISTRY[theorem] = fn
+        return fn
+    except (ImportError, AttributeError):
+        return None
 
 
 def certificate_from_dict(d: dict[str, Any]) -> Certificate:
@@ -187,8 +197,7 @@ def certificate_from_dict(d: dict[str, Any]) -> Certificate:
     Raises ``KeyError`` if the theorem's verify function is not registered.
     """
     theorem = d["theorem"]
-    _ensure_theorem_registered(theorem)
-    fn = _VERIFY_REGISTRY.get(theorem)
+    fn = _resolve_verify_fn(theorem)
     if fn is None:
         raise KeyError(
             f"No verify function registered for theorem {theorem!r}. "
