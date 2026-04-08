@@ -2,6 +2,18 @@
 
 This page tracks the recent direction of the project.
 
+## v0.28.0
+
+New:
+
+- `Certificate` framework: self-verifiable structural guarantees with derivation-replay `verify()`
+- `certify()` on QuorumSensingBio (no-false-activation), MTORScaler (no-oscillation), ATP_Store (priority gating)
+- Sequential pipeline validation harness (`run_topology_validation.py`)
+- Paper 4 Section 4.4: error amplification bound validated (rho=+0.751, p<0.001)
+- Role-to-capability mapping for ToolDensity theorem
+- Gemma 4 / Ollama support in live evaluator
+- Default provider timeout 30s → 120s
+
 ## v0.27.1
 
 - Worker scaling benchmark: fixed denominator for consistent slot accounting
