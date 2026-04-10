@@ -280,6 +280,7 @@ class SkillOrganism:
             # --- Pre-stage intervention check (e.g. CertificateGate) ---
             _pre = state.pop(WATCHER_STATE_KEY, None)
             if isinstance(_pre, WatcherIntervention) and _pre.kind == InterventionKind.HALT:
+                state["_blocked_by"] = _pre
                 break
 
             # --- Substrate read ---
@@ -307,8 +308,15 @@ class SkillOrganism:
                     stage, task, result, state, stage_outputs, now,
                 )
 
+            # Run non-watcher components first (e.g. VerifierComponent deposits
+            # signals), then watcher last so it can collect all signals before
+            # deciding interventions.
             for component in self.components:
-                component.on_stage_result(stage, result, state, stage_outputs)
+                if not hasattr(component, '_decide_intervention'):
+                    component.on_stage_result(stage, result, state, stage_outputs)
+            for component in self.components:
+                if hasattr(component, '_decide_intervention'):
+                    component.on_stage_result(stage, result, state, stage_outputs)
 
             # --- Watcher intervention check ---
             _intervention = state.pop(WATCHER_STATE_KEY, None)
