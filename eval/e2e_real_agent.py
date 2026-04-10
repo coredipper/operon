@@ -180,7 +180,7 @@ def _check_ollama(base_url: str, model: str) -> bool:
             headers={"Content-Type": "application/json"},
             method="POST",
         )
-        with urllib.request.urlopen(req, timeout=15.0) as resp:
+        with urllib.request.urlopen(req, timeout=120.0) as resp:
             return bool(json.loads(resp.read()).get("choices"))
     except Exception as e:
         print(f"  Ollama check failed: {e}")
@@ -850,6 +850,8 @@ def main() -> None:
     parser.add_argument("--output", default="eval/results/e2e_real_agent.json")
     parser.add_argument("--model", default=OLLAMA_MODEL)
     parser.add_argument("--base-url", default=OLLAMA_BASE)
+    parser.add_argument("--max-tokens", type=int, default=4096,
+                        help="Max tokens per LLM call (4096 for reasoning models, 2048 for others)")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -870,9 +872,7 @@ def main() -> None:
         base_url=args.base_url,
         model=args.model,
     )
-    # Reasoning models (Gemma 4) need 4096+ max_tokens — most tokens go to
-    # thinking before producing content. Default 1024 yields empty responses.
-    reasoning_config = ProviderConfig(max_tokens=4096)
+    reasoning_config = ProviderConfig(max_tokens=args.max_tokens)
     fast_nucleus = Nucleus(provider=provider, base_energy_cost=10)
     deep_nucleus = Nucleus(provider=provider, base_energy_cost=30)
     judge_nucleus = Nucleus(provider=provider, base_energy_cost=5)
