@@ -303,7 +303,10 @@ def _task1_organism(
         budget=budget,
     )
 
-    # Track verifier judge tokens separately
+    # Track all token usage via nucleus deltas (captures retried/escalated
+    # attempts that stage_results overwrites)
+    fast_tokens_before = fast_nucleus.get_total_tokens_used()
+    deep_tokens_before = deep_nucleus.get_total_tokens_used()
     judge_tokens_before = judge_nucleus.get_total_tokens_used()
 
     start = time.perf_counter()
@@ -313,8 +316,6 @@ def _task1_organism(
         output = result.final_output or ""
         if not isinstance(output, str):
             output = str(output)
-
-        verifier_tokens = judge_nucleus.get_total_tokens_used() - judge_tokens_before
 
         escalated = any(
             i.kind == InterventionKind.ESCALATE for i in watcher.interventions
@@ -333,13 +334,18 @@ def _task1_organism(
             cert_holds = all(c.verify().holds for c in raw_certs) if raw_certs else False
 
         quality = _judge_quality(judge_nucleus, output, config=config)
-        tokens = sum(r.tokens_used for r in result.stage_results)
+        # Include final judge call in total (it also uses judge_nucleus)
+        run_tokens = (
+            (fast_nucleus.get_total_tokens_used() - fast_tokens_before)
+            + (deep_nucleus.get_total_tokens_used() - deep_tokens_before)
+            + (judge_nucleus.get_total_tokens_used() - judge_tokens_before)
+        )
 
         return RepetitionResult(
             variant=variant.value, repetition=0,
             output=output,
             quality_score=quality,
-            tokens_used=tokens + verifier_tokens,
+            tokens_used=run_tokens,
             latency_ms=latency,
             escalated=escalated,
             watcher_interventions=len(watcher.interventions),
@@ -696,20 +702,16 @@ def _task3_full(fast_nucleus: Nucleus, deep_nucleus: Nucleus,
     budget = ATP_Store(budget=500, silent=True)
     watcher = WatcherComponent(config=WatcherConfig(), budget=budget)
 
-    # Corruption component: mutates genome after stage 1 completes,
-    # so the CertificateGate catches it before stage 2 starts.
-    class _CorruptAfterStage1:
-        def on_run_start(self, task, shared_state):
-            pass
-        def on_stage_start(self, stage, shared_state, stage_outputs):
-            pass
-        def on_stage_result(self, stage, result, shared_state, stage_outputs):
-            if getattr(stage, "name", "") == "explain":
-                _corrupt_genome(genome)
-        def on_run_complete(self, result, shared_state):
-            pass
+    # Dedicated corruption stage: deterministic handler that mutates the
+    # genome and returns immediately. Runs between explain and summarize,
+    # so by the time CertificateGate scans before summarize, corruption
+    # is visible. Using a stage (not a component) avoids interference
+    # with retry/escalate paths on other stages.
+    def _corrupt_handler(_task, *_args, _genome=genome):
+        _corrupt_genome(_genome)
+        return {"status": "corrupted", "tokens_used": 0}
 
-    # G1/S checkpoint: CertificateGate halts before stage 2 if corruption
+    # G1/S checkpoint: CertificateGate halts before stage 3 if corruption
     # is detected, preventing corrupted state from reaching the LLM.
     gate = CertificateGateComponent(
         genome=genome, repair=repair, checkpoint=checkpoint,
@@ -720,13 +722,15 @@ def _task3_full(fast_nucleus: Nucleus, deep_nucleus: Nucleus,
             SkillStage(name="explain", role="explainer",
                        instructions="Explain the concept clearly.", mode="fast",
                        provider_config=config),
+            SkillStage(name="inject_corruption", role="adversary",
+                       handler=_corrupt_handler, mode="fast"),
             SkillStage(name="summarize", role="summarizer",
                        instructions="Summarize briefly.", mode="fast",
                        provider_config=config),
         ],
         fast_nucleus=fast_nucleus,
         deep_nucleus=deep_nucleus,
-        components=[_CorruptAfterStage1(), gate, watcher],
+        components=[gate, watcher],
         budget=budget,
     )
 
