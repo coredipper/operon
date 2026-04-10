@@ -470,17 +470,24 @@ def _task2_organism(
         def _handler(task, _ss, _so, _st, _sv,
                       _nucleus=fast_nucleus, _immune=immune, _agent_id=agent_id,
                       _config=config or ProviderConfig(max_tokens=4096)):
-            """Handler that calls LLM AND records observation for immune inspection."""
+            """Handler that calls LLM AND records observation + canary for immune."""
             t0 = time.perf_counter()
             response = _nucleus.transcribe(task, config=_config)
             elapsed = time.perf_counter() - t0
+            output = response.content[:500]
             _immune.record_observation(
                 agent_id=_agent_id,
-                output=response.content[:500],
+                output=output,
                 response_time=elapsed,
-                confidence=0.7 if len(response.content) < 50 else 0.85,
+                confidence=0.7 if len(output) < 50 else 0.85,
                 error=None,
             )
+            # Record canary result — a simple behavioral check that feeds
+            # Signal 2.  If the output has abnormal formatting (ALL CAPS,
+            # every line starts with a prefix, pure JSON), the canary fails.
+            upper_ratio = sum(1 for c in output if c.isupper()) / max(1, len(output))
+            canary_pass = upper_ratio < 0.5 and not output.strip().startswith("{")
+            _immune.record_canary_result(_agent_id, passed=canary_pass)
             return {
                 "response": response.content,
                 "tokens_used": response.tokens_used,
@@ -880,7 +887,8 @@ def main() -> None:
 
         for variant in [Variant.RAW, Variant.GUARDED, Variant.FULL]:
             results: list[RepetitionResult] = []
-            injection_warmup = (0, 0.0)
+            injection_warmup_tokens = 0
+            injection_warmup_latency = 0.0
 
             for rep in range(args.repetitions):
                 sys.stdout.write(f"  {variant.value:<9} rep {rep+1}/{args.repetitions}... ")
@@ -901,11 +909,11 @@ def main() -> None:
                     )
                     if variant == Variant.RAW:
                         batch = _task2_raw(fast_nucleus, prompts, config=reasoning_config)
-                        wu_tok, wu_lat = 0, 0.0
                     else:
                         batch, wu_tok, wu_lat = _task2_organism(
                             fast_nucleus, deep_nucleus, prompts, variant, config=reasoning_config)
-                    injection_warmup = (wu_tok, wu_lat)
+                        injection_warmup_tokens += wu_tok
+                        injection_warmup_latency += wu_lat
                     for br in batch:
                         br.repetition = rep
                     results.extend(batch)
@@ -928,8 +936,8 @@ def main() -> None:
 
             summary = _aggregate(task_name, variant.value, results)
             if task_name == "injection" and variant != Variant.RAW:
-                summary.warmup_tokens = injection_warmup[0]
-                summary.warmup_latency_ms = injection_warmup[1]
+                summary.warmup_tokens = injection_warmup_tokens
+                summary.warmup_latency_ms = injection_warmup_latency
             all_summaries.append(summary)
 
     total_runtime = time.perf_counter() - total_start
