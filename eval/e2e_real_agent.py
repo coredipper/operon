@@ -886,6 +886,10 @@ def main() -> None:
     parser.add_argument("--base-url", default=OLLAMA_BASE)
     parser.add_argument("--max-tokens", type=int, default=None,
                         help="Max tokens per LLM call (auto: 4096 for reasoning models, 2048 for others)")
+    parser.add_argument("--judge-url", default=None,
+                        help="Base URL for cross-model judge (e.g. http://localhost:8080/v1 for vllama)")
+    parser.add_argument("--judge-model", default=None,
+                        help="Model name for cross-model judge (e.g. gemma-4-26B-A4B-it-Q8_0)")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -922,7 +926,25 @@ def main() -> None:
     print(f"  Max tokens: {max_tokens}")
     fast_nucleus = Nucleus(provider=provider, base_energy_cost=10)
     deep_nucleus = Nucleus(provider=provider, base_energy_cost=30)
-    judge_nucleus = Nucleus(provider=provider, base_energy_cost=5)
+
+    # Cross-model judging: use a separate, stronger model as judge
+    if args.judge_url and args.judge_model:
+        sys.stdout.write(f"  Checking judge ({args.judge_model})... ")
+        sys.stdout.flush()
+        if not _check_ollama(args.judge_url, args.judge_model):
+            print(f"\nERROR: Cannot reach {args.judge_model} at {args.judge_url}")
+            sys.exit(1)
+        print("OK")
+        judge_provider = OpenAICompatibleProvider(
+            api_key="not-needed",
+            base_url=args.judge_url,
+            model=args.judge_model,
+        )
+        judge_nucleus = Nucleus(provider=judge_provider, base_energy_cost=5)
+        print(f"  Judge: {args.judge_model} @ {args.judge_url} (cross-model)")
+    else:
+        judge_nucleus = Nucleus(provider=provider, base_energy_cost=5)
+        print(f"  Judge: {args.model} (self-judge)")
 
     tasks = args.tasks if "all" not in args.tasks else ["stagnation", "injection", "integrity"]
     all_summaries: list[TaskSummary] = []
