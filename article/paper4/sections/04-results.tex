@@ -262,3 +262,91 @@ decay, two-signal discrimination) rather than predicting outcomes from
 architecture shape alone.  The two layers are complementary: epistemic
 topology identifies architectures likely to need structural guarantees;
 the mechanism benchmarks validate that those guarantees deliver.
+
+\subsection{End-to-End Real Agent Evaluation}\label{sec:e2e-eval}
+
+The preceding benchmarks test mechanisms in isolation.  We now evaluate
+whether the structural guarantees provide measurable value when wrapping
+a real LLM agent performing real tasks.
+
+\paragraph{Methodology.}
+We compare three runtime variants: \textbf{RAW} (direct
+\texttt{Nucleus.transcribe()} call, no Operon wrapper), \textbf{GUARDED}
+(\texttt{SkillOrganism} with \texttt{WatcherComponent} integrating
+epiplexity monitoring, immune inspection, and ATP budgeting), and
+\textbf{FULL} (GUARDED plus pre/post-flight \texttt{DNARepair} and
+certificate collection).  Each variant is tested on three tasks:
+\emph{stagnation escalation} (code review with subtle bugs),
+\emph{injection blocking} (behavioral manipulation prompts against a
+trained immune baseline), and \emph{state integrity} (genome corruption
+injected mid-run between organism stages).  All runs use Gemma~4 27B
+(4B active MoE) via local Ollama with 3~repetitions per cell.  A
+multi-model comparison uses Phi-3 Mini (3.8B) on the stagnation task.
+
+\begin{table}[h]
+\caption{End-to-end evaluation: RAW vs GUARDED vs FULL across three
+tasks.  Gemma~4 27B, $n = 3$ repetitions (injection: $n = 30$, i.e.\
+$3 \times 10$ prompts).  TP = true positive rate, FP = false positive
+rate, Det = corruption detection rate, Rep = repair rate.}
+\label{tab:e2e-eval}
+\centering
+\small
+\begin{tabular}{ll rrr rrr}
+\toprule
+Task & Variant & Quality & Tokens & Latency & TP\% & Det\% & Rep\% \\
+\midrule
+Stagnation & RAW     & 1.000 & 2149 &  58s & --- & --- & --- \\
+Stagnation & GUARDED & 1.000 & 3468 &  85s & --- & --- & --- \\
+Stagnation & FULL    & 1.000 & 3076 &  76s & --- & --- & --- \\
+\midrule
+Injection  & RAW     & ---   &  829 &  25s &   0 & --- & --- \\
+Injection  & GUARDED & ---   &  792 &  23s &  20 & --- & --- \\
+Injection  & FULL    & ---   &  787 &  24s &  20 & --- & --- \\
+\midrule
+Integrity  & RAW     & ---   & 2199 &  68s & --- &   0 &   0 \\
+Integrity  & GUARDED & ---   & 2012 &  61s & --- &   0 &   0 \\
+Integrity  & FULL    & ---   & 2058 &  63s & --- & 100 & 100 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{State integrity: clear structural value.}
+The FULL variant detects all four corruption sites (three gene drifts
+plus one checksum failure) injected between organism stages and repairs
+them in a single \texttt{CHECKPOINT\_RESTORE} operation.  The
+certificate (\texttt{state\_integrity\_verified}) holds after repair
+in all repetitions.  RAW and GUARDED are completely blind to genome
+corruption---the \texttt{WatcherComponent} monitors epiplexity, ATP,
+and immune signals but has no genome-level signal source.
+\texttt{DNARepair} as a pre/post-flight integrity check is the
+strongest structural guarantee in the evaluated stack.
+
+\paragraph{Injection blocking: precise but limited.}
+The immune system is trained on 10~real Gemma~4 outputs to clean Python
+questions, then evaluated on 5~clean and 5~behaviorally manipulative
+prompts (ALL CAPS, structured prefix, JSON-only format).  Per-prompt
+isolation with seeded baseline profiles yields TP = 20\% with FP = 0\%:
+the canary-based Signal~2 fires on the most format-deviant anomalies
+with zero false positives.  The two-signal activation architecture
+(\texttt{TCell} requires both Signal~1 and Signal~2) is designed for
+sustained behavioral monitoring, not single-prompt classification---a
+single observation cannot reach \texttt{REPEATED\_ANOMALY}, so only
+the canary path provides Signal~2 in one-shot evaluation.
+
+\paragraph{Stagnation escalation: correctly scoped.}
+Both Gemma~4 (quality = 1.0) and Phi-3 Mini (quality = 0.63) show 0\%
+escalation.  The \texttt{EpiplexityMonitor} measures output
+\emph{novelty} (are successive outputs repetitive?), not output
+\emph{quality} (is the output good?).  Phi-3 Mini produces
+different-but-mediocre reviews each time, which register as novel to
+the monitor.  Escalation is a loop-breaker---correctly scoped to
+detect stuck agents, not to gate output quality.
+
+\paragraph{Wrapper tax.}
+The organism wrapper adds measurable overhead: +1{,}319 tokens and
++27s mean latency on Gemma~4 for the stagnation task (GUARDED vs RAW).
+On Phi-3 Mini the proportional cost is similar (+432 tokens, +10s).
+This cost floor is model-size-dependent: the wrapper's prompt
+augmentation (stage instructions, role context, shared state) is a
+fixed input-token overhead that becomes proportionally larger on
+smaller, slower models.
