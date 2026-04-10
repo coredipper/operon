@@ -303,6 +303,9 @@ def _task1_organism(
         budget=budget,
     )
 
+    # Track verifier judge tokens separately
+    judge_tokens_before = judge_nucleus.get_total_tokens_used()
+
     start = time.perf_counter()
     try:
         result = organism.run(STAGNATION_PROMPT)
@@ -310,6 +313,8 @@ def _task1_organism(
         output = result.final_output or ""
         if not isinstance(output, str):
             output = str(output)
+
+        verifier_tokens = judge_nucleus.get_total_tokens_used() - judge_tokens_before
 
         escalated = any(
             i.kind == InterventionKind.ESCALATE for i in watcher.interventions
@@ -334,7 +339,7 @@ def _task1_organism(
             variant=variant.value, repetition=0,
             output=output,
             quality_score=quality,
-            tokens_used=tokens,
+            tokens_used=tokens + verifier_tokens,
             latency_ms=latency,
             escalated=escalated,
             watcher_interventions=len(watcher.interventions),
@@ -691,14 +696,18 @@ def _task3_full(fast_nucleus: Nucleus, deep_nucleus: Nucleus,
     budget = ATP_Store(budget=500, silent=True)
     watcher = WatcherComponent(config=WatcherConfig(), budget=budget)
 
-    # Same standalone genome pattern as guarded — see comment above.
-    def _corrupt_then_summarize(_task, _ss, _so, _st, _sv,
-                                _genome=genome, _nucleus=fast_nucleus,
-                                _config=config):
-        _corrupt_genome(_genome)
-        resp = _nucleus.transcribe(
-            "Summarize your previous explanation in one sentence.", config=_config)
-        return {"response": resp.content, "tokens_used": resp.tokens_used}
+    # Corruption component: mutates genome after stage 1 completes,
+    # so the CertificateGate catches it before stage 2 starts.
+    class _CorruptAfterStage1:
+        def on_run_start(self, task, shared_state):
+            pass
+        def on_stage_start(self, stage, shared_state, stage_outputs):
+            pass
+        def on_stage_result(self, stage, result, shared_state, stage_outputs):
+            if getattr(stage, "name", "") == "explain":
+                _corrupt_genome(genome)
+        def on_run_complete(self, result, shared_state):
+            pass
 
     # G1/S checkpoint: CertificateGate halts before stage 2 if corruption
     # is detected, preventing corrupted state from reaching the LLM.
@@ -712,11 +721,12 @@ def _task3_full(fast_nucleus: Nucleus, deep_nucleus: Nucleus,
                        instructions="Explain the concept clearly.", mode="fast",
                        provider_config=config),
             SkillStage(name="summarize", role="summarizer",
-                       handler=_corrupt_then_summarize, mode="fast"),
+                       instructions="Summarize briefly.", mode="fast",
+                       provider_config=config),
         ],
         fast_nucleus=fast_nucleus,
         deep_nucleus=deep_nucleus,
-        components=[watcher, gate],
+        components=[_CorruptAfterStage1(), gate, watcher],
         budget=budget,
     )
 
