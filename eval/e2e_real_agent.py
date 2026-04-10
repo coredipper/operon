@@ -860,10 +860,19 @@ def _print_comparison(summaries: list[TaskSummary]) -> None:
         print()
 
 
-def _save_json(summaries: list[TaskSummary], path: str, model: str, runtime: float) -> None:
+def _save_json(
+    summaries: list[TaskSummary],
+    path: str,
+    model: str,
+    runtime: float,
+    judge_model: str | None = None,
+    judge_url: str | None = None,
+) -> None:
     report = {
         "timestamp": datetime.now().isoformat(),
         "model": model,
+        "judge_model": judge_model or model,
+        "judge_url": judge_url,
         "total_runtime_s": round(runtime, 1),
         "summaries": [asdict(s) for s in summaries],
     }
@@ -892,6 +901,9 @@ def main() -> None:
                         help="Model name for cross-model judge (e.g. gemma-4-26B-A4B-it-Q8_0)")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
+
+    if bool(args.judge_url) != bool(args.judge_model):
+        parser.error("--judge-url and --judge-model must be provided together")
 
     print(f"E2E Real Agent Evaluation")
     print(f"  Model: {args.model}")
@@ -1017,7 +1029,8 @@ def main() -> None:
     print(f"{'='*60}")
     _print_table(all_summaries)
     _print_comparison(all_summaries)
-    _save_json(all_summaries, args.output, args.model, total_runtime)
+    _save_json(all_summaries, args.output, args.model, total_runtime,
+               judge_model=args.judge_model, judge_url=args.judge_url)
     print(f"\nTotal runtime: {total_runtime:.0f}s")
 
 
