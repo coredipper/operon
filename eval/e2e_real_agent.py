@@ -871,11 +871,15 @@ def main() -> None:
         base_url=args.base_url,
         model=args.model,
     )
-    # Auto-detect reasoning models for max_tokens default
-    _REASONING_MODELS = ("gemma4", "deepseek-r1", "qwen3")
+    # Auto-detect reasoning models — aligned with live_evaluator.py:438
+    _model = args.model.lower()
+    _is_reasoning = (
+        _model.startswith(("deepseek-r1", "qwen", "gemma4"))
+        or "nemotron" in _model
+    )
     if args.max_tokens is not None:
         max_tokens = args.max_tokens
-    elif any(r in args.model.lower() for r in _REASONING_MODELS):
+    elif _is_reasoning:
         max_tokens = 4096
     else:
         max_tokens = 2048
