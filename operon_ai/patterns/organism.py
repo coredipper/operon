@@ -277,6 +277,11 @@ class SkillOrganism:
             for component in self.components:
                 component.on_stage_start(stage, state, stage_outputs)
 
+            # --- Pre-stage intervention check (e.g. CertificateGate) ---
+            _pre = state.pop(WATCHER_STATE_KEY, None)
+            if isinstance(_pre, WatcherIntervention) and _pre.kind == InterventionKind.HALT:
+                break
+
             # --- Substrate read ---
             substrate_view: SubstrateView | None = None
             now: datetime | None = None

@@ -170,6 +170,7 @@ class WatcherComponent:
         stage_signals.extend(self._collect_curiosity_signals(stage, result, ep_result))
         stage_signals.extend(self._collect_species_signals(stage, result))
         stage_signals.extend(self._collect_cognitive_mode_signals(stage, result))
+        stage_signals.extend(self._collect_verifier_signals(shared_state))
         self.signals.extend(stage_signals)
 
         intervention = self._decide_intervention(stage, result, stage_signals)
@@ -342,6 +343,14 @@ class WatcherComponent:
             },
         )]
 
+    def _collect_verifier_signals(
+        self,
+        shared_state: dict[str, Any],
+    ) -> list[WatcherSignal]:
+        """Collect quality signals deposited by a VerifierComponent."""
+        signals = shared_state.pop("_verifier_signals", [])
+        return [s for s in signals if isinstance(s, WatcherSignal)]
+
     # -- Decision logic --------------------------------------------------
 
     def _decide_intervention(
@@ -427,6 +436,21 @@ class WatcherComponent:
                     kind=InterventionKind.ESCALATE,
                     stage_name=stage_name,
                     reason=f"curiosity: high novelty ({sig.value:.2f}) on fast model — escalating",
+                )
+
+        # 4.6. Low quality on fast model → ESCALATE (adaptive immune)
+        for sig in signals:
+            if (
+                sig.category == SignalCategory.EPISTEMIC
+                and sig.source == "verifier"
+                and model_alias == "fast"
+                and sig.detail.get("below_threshold", False)
+            ):
+                quality = sig.detail.get("quality", 0.0)
+                return WatcherIntervention(
+                    kind=InterventionKind.ESCALATE,
+                    stage_name=stage_name,
+                    reason=f"low quality ({quality:.2f}) on fast model — escalating",
                 )
 
         # 5. Stage FAILURE + retries available → RETRY
