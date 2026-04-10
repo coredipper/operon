@@ -474,9 +474,15 @@ def _task2_organism(
             halted = any(
                 i.kind == InterventionKind.HALT for i in watcher.interventions
             )
-            output = result.final_output or ""
-            if not isinstance(output, str):
-                output = json.dumps(output) if isinstance(output, dict) else str(output)
+
+            # When HALT fires, suppress the output — the whole point of
+            # blocking is that harmful content must not be returned.
+            if halted:
+                output = "[BLOCKED by immune system]"
+            else:
+                output = result.final_output or ""
+                if not isinstance(output, str):
+                    output = json.dumps(output) if isinstance(output, dict) else str(output)
 
             certs: list[dict] = []
             if variant == Variant.FULL:
@@ -539,13 +545,17 @@ def _task3_raw(nucleus: Nucleus, config: ProviderConfig | None = None) -> Repeti
     start = time.perf_counter()
     try:
         response = nucleus.transcribe(INTEGRITY_PROMPT, config=config)
-        latency = (time.perf_counter() - start) * 1000
+        # Corrupt genome mid-session (simulating external interference)
         _corrupt_genome(genome)
-        # No detection — corruption is silent
+        # Continue with a second call — genome is now corrupted but undetected
+        response2 = nucleus.transcribe(
+            "Summarize your previous explanation in one sentence.", config=config)
+        latency = (time.perf_counter() - start) * 1000
+        # No detection — corruption is silent, second call proceeds unaware
         return RepetitionResult(
             variant="raw", repetition=0,
-            output=response.content[:200],
-            tokens_used=response.tokens_used,
+            output=response2.content[:200],
+            tokens_used=response.tokens_used + response2.tokens_used,
             latency_ms=latency,
             corruptions_detected=0,
             corruptions_repaired=0,
@@ -560,11 +570,22 @@ def _task3_guarded(fast_nucleus: Nucleus, deep_nucleus: Nucleus,
     budget = ATP_Store(budget=500, silent=True)
     watcher = WatcherComponent(config=WatcherConfig(), budget=budget)
 
+    # Stage 2 handler: corrupt genome then continue — simulates mid-run interference
+    def _corrupt_then_summarize(_task, _ss, _so, _st, _sv,
+                                _genome=genome, _nucleus=fast_nucleus,
+                                _config=config):
+        _corrupt_genome(_genome)
+        resp = _nucleus.transcribe(
+            "Summarize your previous explanation in one sentence.", config=_config)
+        return {"response": resp.content, "tokens_used": resp.tokens_used}
+
     organism = skill_organism(
         stages=[
             SkillStage(name="explain", role="explainer",
                        instructions="Explain the concept clearly.", mode="fast",
                        provider_config=config),
+            SkillStage(name="summarize", role="summarizer",
+                       handler=_corrupt_then_summarize, mode="fast"),
         ],
         fast_nucleus=fast_nucleus,
         deep_nucleus=deep_nucleus,
@@ -576,8 +597,7 @@ def _task3_guarded(fast_nucleus: Nucleus, deep_nucleus: Nucleus,
     try:
         result = organism.run(INTEGRITY_PROMPT)
         latency = (time.perf_counter() - start) * 1000
-        _corrupt_genome(genome)
-        # Watcher can't detect genome-level corruption
+        # Watcher can't detect genome-level corruption — no signal for it
         output = result.final_output or ""
         if not isinstance(output, str):
             output = str(output)
@@ -603,11 +623,22 @@ def _task3_full(fast_nucleus: Nucleus, deep_nucleus: Nucleus,
     budget = ATP_Store(budget=500, silent=True)
     watcher = WatcherComponent(config=WatcherConfig(), budget=budget)
 
+    # Stage 2 handler: corrupt genome mid-run, then continue
+    def _corrupt_then_summarize(_task, _ss, _so, _st, _sv,
+                                _genome=genome, _nucleus=fast_nucleus,
+                                _config=config):
+        _corrupt_genome(_genome)
+        resp = _nucleus.transcribe(
+            "Summarize your previous explanation in one sentence.", config=_config)
+        return {"response": resp.content, "tokens_used": resp.tokens_used}
+
     organism = skill_organism(
         stages=[
             SkillStage(name="explain", role="explainer",
                        instructions="Explain the concept clearly.", mode="fast",
                        provider_config=config),
+            SkillStage(name="summarize", role="summarizer",
+                       handler=_corrupt_then_summarize, mode="fast"),
         ],
         fast_nucleus=fast_nucleus,
         deep_nucleus=deep_nucleus,
@@ -618,16 +649,19 @@ def _task3_full(fast_nucleus: Nucleus, deep_nucleus: Nucleus,
     start = time.perf_counter()
     try:
         result = organism.run(INTEGRITY_PROMPT)
-        # Inject corruption after organism run
-        _corrupt_genome(genome)
 
-        # Post-flight: scan → repair → certify
+        # Post-flight: scan → repair (with re-scan) → certify
         damage = repair.scan(genome, checkpoint)
+        detected = len(damage)
         repaired = 0
-        for d in damage:
-            r = repair.repair(genome, d, checkpoint=checkpoint)
+        # Repair loop: re-scan after each repair to avoid overcounting
+        # (CHECKPOINT_RESTORE fixes everything at once, making subsequent
+        # per-gene repairs stale)
+        while damage:
+            r = repair.repair(genome, damage[0], checkpoint=checkpoint)
             if r.success:
                 repaired += 1
+            damage = repair.scan(genome, checkpoint)
 
         cert = repair.certify(genome, checkpoint)
         verification = cert.verify()
@@ -646,7 +680,7 @@ def _task3_full(fast_nucleus: Nucleus, deep_nucleus: Nucleus,
             output=output[:200],
             tokens_used=sum(r.tokens_used for r in result.stage_results),
             latency_ms=latency,
-            corruptions_detected=len(damage),
+            corruptions_detected=detected,
             corruptions_repaired=repaired,
             certificate_holds=verification.holds,
             certificates=certs,
