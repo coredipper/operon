@@ -24,10 +24,16 @@ richer signal environments: suspicion may be autocorrelated, agents
 may have heterogeneous detection capabilities, and compromised agents
 may adapt their behavior to avoid detection.
 
-\paragraph{No end-to-end evaluation.}
-All benchmarks test the structural guarantee mechanisms in isolation.
-None runs actual LLM agents performing real tasks.  The guarantees
-are validated at the mechanism level, not at the system level.
+\paragraph{Limited end-to-end evaluation.}
+Section~\ref{sec:e2e-eval} provides initial end-to-end results with a
+single local model (Gemma~4 27B) and self-judging across 3~repetitions.
+The positive result (state integrity) is deterministic and
+model-independent.  The statistical results (20\% injection TP, 0\%
+stagnation escalation) are honest but underpowered: larger sample
+sizes, cross-model validation, and external judging would strengthen
+the findings.  The immune system's behavioral detection is evaluated
+in single-prompt mode, which underestimates its design intent as a
+sustained monitoring system.
 
 \paragraph{Manual thresholds.}
 Several parameters are manually set rather than auto-calibrated:

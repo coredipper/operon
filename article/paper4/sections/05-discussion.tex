@@ -144,3 +144,40 @@ could similarly be formalized as a certificate whose evidence is the
 state machine's priority rejection rule.  The epiplexity monitor's
 convergence/stagnation discrimination threshold could be certified
 relative to the embedding model's similarity distribution.
+
+\subsection{Structural Guarantees by Layer}
+
+The end-to-end evaluation (Section~\ref{sec:e2e-eval}) reveals that
+structural guarantee value is layer-dependent:
+
+\paragraph{State layer (deterministic).}
+DNA repair provides 100\% corruption detection and repair across all
+repetitions.  The guarantee is deterministic: checkpointing, scanning,
+and restoring are structural operations on the genome datastructure,
+independent of model quality or prompt content.  This is the strongest
+form of structural guarantee---verifiable, reproducible, and
+unconditional.
+
+\paragraph{Behavioral layer (statistical).}
+The immune system's two-signal activation detects behavioral anomalies
+with zero false positives (FP = 0\%) but limited sensitivity in
+single-prompt evaluation (TP = 20\%).  The architecture is correctly
+conservative: requiring both Signal~1 (baseline violation) and
+Signal~2 (canary failure or repeated anomaly) prevents false alarms
+at the cost of delayed detection.  This is appropriate for sustained
+agent monitoring where observations accumulate over time, less so for
+one-shot prompt classification.
+
+\paragraph{Output layer (stochastic).}
+The epiplexity monitor detects output \emph{repetition}, not output
+\emph{mediocrity}.  A weaker model (Phi-3 Mini, quality 0.63) does
+not trigger escalation because it produces varied output---the
+stagnation signal measures novelty, not quality.  The wrapper tax
+(+1{,}300 tokens, +27s) is the cost floor for structural wrapping,
+justified for state integrity but not yet for output quality
+improvement with capable models.
+
+The pattern mirrors the mechanism benchmarks: structural guarantees
+that enforce invariants (state checksums, signal thresholds) deliver
+unconditionally, while guarantees that depend on information quality
+(embedding novelty, behavioral baselines) deliver conditionally.
