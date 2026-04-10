@@ -194,9 +194,8 @@ def _check_ollama(base_url: str, model: str) -> bool:
 def _judge_quality(nucleus: Nucleus, output: str, config: ProviderConfig | None = None) -> float:
     """Judge code review quality, returning 0.0-1.0."""
     prompt = JUDGE_PROMPT.format(output=output[:2000])
-    # Reasoning models (Gemma 4, DeepSeek-R1) need 2048+ tokens to finish
-    # thinking before producing content output
-    cfg = config or ProviderConfig(temperature=0.1, max_tokens=2048)
+    max_tok = config.max_tokens if config else 2048
+    cfg = ProviderConfig(temperature=0.1, max_tokens=max_tok)
     try:
         response = nucleus.transcribe(prompt, config=cfg)
         text = response.content.strip()
@@ -228,7 +227,7 @@ def _task1_raw(nucleus: Nucleus, judge_nucleus: Nucleus, config: ProviderConfig 
     try:
         response = nucleus.transcribe(STAGNATION_PROMPT, config=config)
         latency = (time.perf_counter() - start) * 1000
-        quality = _judge_quality(judge_nucleus, response.content)
+        quality = _judge_quality(judge_nucleus, response.content, config=config)
         return RepetitionResult(
             variant="raw", repetition=0,
             output=response.content,
@@ -316,7 +315,7 @@ def _task1_organism(
             certs = [certificate_to_dict(c) for c in raw_certs]
             cert_holds = all(c.verify().holds for c in raw_certs) if raw_certs else False
 
-        quality = _judge_quality(judge_nucleus, output)
+        quality = _judge_quality(judge_nucleus, output, config=config)
         tokens = sum(r.tokens_used for r in result.stage_results)
 
         return RepetitionResult(
@@ -850,8 +849,8 @@ def main() -> None:
     parser.add_argument("--output", default="eval/results/e2e_real_agent.json")
     parser.add_argument("--model", default=OLLAMA_MODEL)
     parser.add_argument("--base-url", default=OLLAMA_BASE)
-    parser.add_argument("--max-tokens", type=int, default=4096,
-                        help="Max tokens per LLM call (4096 for reasoning models, 2048 for others)")
+    parser.add_argument("--max-tokens", type=int, default=None,
+                        help="Max tokens per LLM call (auto: 4096 for reasoning models, 2048 for others)")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -872,7 +871,16 @@ def main() -> None:
         base_url=args.base_url,
         model=args.model,
     )
-    reasoning_config = ProviderConfig(max_tokens=args.max_tokens)
+    # Auto-detect reasoning models for max_tokens default
+    _REASONING_MODELS = ("gemma4", "deepseek-r1", "qwen3")
+    if args.max_tokens is not None:
+        max_tokens = args.max_tokens
+    elif any(r in args.model.lower() for r in _REASONING_MODELS):
+        max_tokens = 4096
+    else:
+        max_tokens = 2048
+    reasoning_config = ProviderConfig(max_tokens=max_tokens)
+    print(f"  Max tokens: {max_tokens}")
     fast_nucleus = Nucleus(provider=provider, base_energy_cost=10)
     deep_nucleus = Nucleus(provider=provider, base_energy_cost=30)
     judge_nucleus = Nucleus(provider=provider, base_energy_cost=5)
