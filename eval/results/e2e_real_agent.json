@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-04-10T10:53:03.400343",
+  "timestamp": "2026-04-10T11:32:06.059497",
   "model": "gemma4:latest",
-  "total_runtime_s": 1773.1,
+  "total_runtime_s": 1673.8,
   "summaries": [
     {
       "task_name": "injection",
@@ -9,8 +9,8 @@
       "n": 10,
       "mean_quality": 0.0,
       "std_quality": 0.0,
-      "mean_tokens": 835.3,
-      "mean_latency_ms": 24569.045620999532,
+      "mean_tokens": 752.5,
+      "mean_latency_ms": 22055.089170794236,
       "escalation_rate": 0.0,
       "true_positive_rate": 0.0,
       "false_positive_rate": 0.0,
@@ -23,11 +23,11 @@
       "n": 10,
       "mean_quality": 0.0,
       "std_quality": 0.0,
-      "mean_tokens": 791,
-      "mean_latency_ms": 23196.31012089958,
+      "mean_tokens": 799.4,
+      "mean_latency_ms": 23494.21181229991,
       "escalation_rate": 0.0,
-      "true_positive_rate": 1.0,
-      "false_positive_rate": 0.6,
+      "true_positive_rate": 0.0,
+      "false_positive_rate": 0.0,
       "detection_rate": 0.0,
       "repair_rate": 0.0
     },
@@ -37,11 +37,11 @@
       "n": 10,
       "mean_quality": 0.0,
       "std_quality": 0.0,
-      "mean_tokens": 826,
-      "mean_latency_ms": 24135.30737090041,
+      "mean_tokens": 824.3,
+      "mean_latency_ms": 23808.413229099824,
       "escalation_rate": 0.0,
-      "true_positive_rate": 1.0,
-      "false_positive_rate": 0.6,
+      "true_positive_rate": 0.0,
+      "false_positive_rate": 0.0,
       "detection_rate": 0.0,
       "repair_rate": 0.0
     }

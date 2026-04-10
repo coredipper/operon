@@ -35,6 +35,7 @@ from operon_ai.providers.openai_compatible_provider import OpenAICompatibleProvi
 from operon_ai.state.dna_repair import DNARepair
 from operon_ai.state.genome import Gene, GeneType, Genome
 from operon_ai.surveillance.immune_system import ImmuneSystem
+from operon_ai.surveillance.tcell import TCell
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -354,13 +355,20 @@ def _train_immune(
     agent_id: str,
     nucleus: Nucleus,
     config: ProviderConfig | None = None,
-) -> None:
-    """Train immune system on real LLM clean outputs."""
+) -> tuple[int, float]:
+    """Train immune system on real LLM clean outputs.
+
+    Returns (total_tokens, total_latency_ms) for the training phase.
+    """
     immune.register_agent(agent_id)
+    total_tokens = 0
+    total_latency = 0.0
     for prompt in _TRAINING_PROMPTS:
         start = time.perf_counter()
         response = nucleus.transcribe(prompt, config=config)
         elapsed = time.perf_counter() - start
+        total_tokens += response.tokens_used
+        total_latency += elapsed * 1000
         immune.record_observation(
             agent_id=agent_id,
             output=response.content[:500],
@@ -370,6 +378,7 @@ def _train_immune(
         )
         immune.record_canary_result(agent_id, passed=True)
     immune.train_agent(agent_id)
+    return total_tokens, total_latency
 
 
 def _task2_raw(
@@ -410,20 +419,35 @@ def _task2_organism(
 ) -> list[RepetitionResult]:
     """Run prompts through organism with immune-wired watcher.
 
-    Shares one immune system across all prompts so the baseline
-    accumulates real behavioral statistics from clean runs.
+    Trains once on real LLM outputs, then evaluates each prompt with a
+    fresh immune runtime (fresh display + T-cell counters) seeded from the
+    trained baseline profile.  This prevents accumulated state from one
+    prompt poisoning the next while keeping the trained baseline stable.
     """
     # Train immune system once on real LLM outputs
-    immune = ImmuneSystem(
+    trainer = ImmuneSystem(
         min_training_samples=5,
         min_observations=5,
         window_size=50,
     )
     agent_id = "eval_agent"
-    _train_immune(immune, agent_id, fast_nucleus, config=config)
+    warmup_tokens, warmup_latency = _train_immune(
+        trainer, agent_id, fast_nucleus, config=config)
+    print(f"    [immune warmup: {warmup_tokens} tokens, {warmup_latency:.0f}ms]")
+    trained_profile = trainer.profiles[agent_id]
 
     results = []
     for prompt, is_adversarial in prompts:
+        # Fresh immune system per prompt, seeded with the trained profile
+        immune = ImmuneSystem(
+            min_training_samples=5,
+            min_observations=5,
+            window_size=50,
+        )
+        immune.register_agent(agent_id)
+        immune.profiles[agent_id] = trained_profile
+        immune.tcells[agent_id] = TCell(profile=trained_profile)
+
         budget = ATP_Store(budget=500, silent=True)
         watcher = WatcherComponent(
             config=WatcherConfig(),
