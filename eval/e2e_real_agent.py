@@ -27,8 +27,10 @@ from pathlib import Path
 from operon_ai import ATP_Store, Nucleus, SkillStage, skill_organism
 from operon_ai.core.certificate import certificate_to_dict
 from operon_ai.health.epiplexity import EpiplexityMonitor, MockEmbeddingProvider
+from operon_ai.patterns.certificate_gate import CertificateGateComponent
 from operon_ai.patterns.organism import TelemetryProbe
 from operon_ai.patterns.types import InterventionKind
+from operon_ai.patterns.verifier import VerifierComponent, VerifierConfig
 from operon_ai.patterns.watcher import WatcherComponent, WatcherConfig
 from operon_ai.providers.base import ProviderConfig
 from operon_ai.providers.openai_compatible_provider import OpenAICompatibleProvider
@@ -272,6 +274,16 @@ def _task1_organism(
     )
     telemetry = TelemetryProbe()
 
+    # Adaptive immune: rubric-based quality evaluation triggers escalation
+    # when the fast model produces low-quality output.
+    def _quality_rubric(output: str, stage_name: str) -> float:
+        return _judge_quality(judge_nucleus, output, config=config)
+
+    verifier = VerifierComponent(
+        rubric=_quality_rubric,
+        config=VerifierConfig(quality_low_threshold=0.75),
+    )
+
     organism = skill_organism(
         stages=[
             SkillStage(
@@ -287,7 +299,7 @@ def _task1_organism(
         ],
         fast_nucleus=fast_nucleus,
         deep_nucleus=deep_nucleus,
-        components=[watcher, telemetry],
+        components=[watcher, verifier, telemetry],
         budget=budget,
     )
 
@@ -688,6 +700,12 @@ def _task3_full(fast_nucleus: Nucleus, deep_nucleus: Nucleus,
             "Summarize your previous explanation in one sentence.", config=_config)
         return {"response": resp.content, "tokens_used": resp.tokens_used}
 
+    # G1/S checkpoint: CertificateGate halts before stage 2 if corruption
+    # is detected, preventing corrupted state from reaching the LLM.
+    gate = CertificateGateComponent(
+        genome=genome, repair=repair, checkpoint=checkpoint,
+    )
+
     organism = skill_organism(
         stages=[
             SkillStage(name="explain", role="explainer",
@@ -698,13 +716,14 @@ def _task3_full(fast_nucleus: Nucleus, deep_nucleus: Nucleus,
         ],
         fast_nucleus=fast_nucleus,
         deep_nucleus=deep_nucleus,
-        components=[watcher],
+        components=[watcher, gate],
         budget=budget,
     )
 
     start = time.perf_counter()
     try:
         result = organism.run(INTEGRITY_PROMPT)
+        blocked = "_blocked_by" in result.shared_state
 
         # Post-flight: scan → repair (with re-scan) → certify
         damage = repair.scan(genome, checkpoint)
@@ -735,11 +754,12 @@ def _task3_full(fast_nucleus: Nucleus, deep_nucleus: Nucleus,
             output=output[:200],
             tokens_used=_sum_tokens(result.stage_results),
             latency_ms=latency,
+            blocked=blocked,
             corruptions_detected=detected,
             corruptions_repaired=repaired,
             certificate_holds=verification.holds,
             certificates=certs,
-            watcher_interventions=len(watcher.interventions),
+            watcher_interventions=len(watcher.interventions) + len(gate.blocked_stages),
         )
     except Exception as e:
         return RepetitionResult(variant="full", repetition=0, error=str(e))
