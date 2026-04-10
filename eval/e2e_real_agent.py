@@ -518,6 +518,16 @@ def _task2_organism(
 # Task 3: State Integrity
 # ---------------------------------------------------------------------------
 
+def _sum_tokens(stage_results) -> int:
+    """Sum tokens from stage results, including handler payload tokens."""
+    total = 0
+    for sr in stage_results:
+        total += sr.tokens_used
+        if isinstance(sr.output, dict):
+            total += int(sr.output.get("tokens_used", 0))
+    return total
+
+
 def _make_genome() -> Genome:
     return Genome(
         genes=[
@@ -570,7 +580,11 @@ def _task3_guarded(fast_nucleus: Nucleus, deep_nucleus: Nucleus,
     budget = ATP_Store(budget=500, silent=True)
     watcher = WatcherComponent(config=WatcherConfig(), budget=budget)
 
-    # Stage 2 handler: corrupt genome then continue — simulates mid-run interference
+    # Genome is standalone — skill_organism() doesn't consume genome state.
+    # DNARepair is designed as a pre/post-flight check, not inline runtime
+    # protection. Corruption happens mid-run (between stages) to simulate
+    # external interference; guarded variant shows Watcher can't detect
+    # genome drift without DNARepair.
     def _corrupt_then_summarize(_task, _ss, _so, _st, _sv,
                                 _genome=genome, _nucleus=fast_nucleus,
                                 _config=config):
@@ -604,7 +618,7 @@ def _task3_guarded(fast_nucleus: Nucleus, deep_nucleus: Nucleus,
         return RepetitionResult(
             variant="guarded", repetition=0,
             output=output[:200],
-            tokens_used=sum(r.tokens_used for r in result.stage_results),
+            tokens_used=_sum_tokens(result.stage_results),
             latency_ms=latency,
             corruptions_detected=0,
             corruptions_repaired=0,
@@ -623,7 +637,7 @@ def _task3_full(fast_nucleus: Nucleus, deep_nucleus: Nucleus,
     budget = ATP_Store(budget=500, silent=True)
     watcher = WatcherComponent(config=WatcherConfig(), budget=budget)
 
-    # Stage 2 handler: corrupt genome mid-run, then continue
+    # Same standalone genome pattern as guarded — see comment above.
     def _corrupt_then_summarize(_task, _ss, _so, _st, _sv,
                                 _genome=genome, _nucleus=fast_nucleus,
                                 _config=config):
@@ -654,14 +668,13 @@ def _task3_full(fast_nucleus: Nucleus, deep_nucleus: Nucleus,
         damage = repair.scan(genome, checkpoint)
         detected = len(damage)
         repaired = 0
-        # Repair loop: re-scan after each repair to avoid overcounting
-        # (CHECKPOINT_RESTORE fixes everything at once, making subsequent
-        # per-gene repairs stale)
+        # Repair loop: re-scan after each repair to count eliminated sites
+        # (CHECKPOINT_RESTORE may fix everything at once)
         while damage:
-            r = repair.repair(genome, damage[0], checkpoint=checkpoint)
-            if r.success:
-                repaired += 1
+            before = len(damage)
+            repair.repair(genome, damage[0], checkpoint=checkpoint)
             damage = repair.scan(genome, checkpoint)
+            repaired += before - len(damage)
 
         cert = repair.certify(genome, checkpoint)
         verification = cert.verify()
@@ -678,7 +691,7 @@ def _task3_full(fast_nucleus: Nucleus, deep_nucleus: Nucleus,
         return RepetitionResult(
             variant="full", repetition=0,
             output=output[:200],
-            tokens_used=sum(r.tokens_used for r in result.stage_results),
+            tokens_used=_sum_tokens(result.stage_results),
             latency_ms=latency,
             corruptions_detected=detected,
             corruptions_repaired=repaired,
