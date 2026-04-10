@@ -267,6 +267,7 @@ class SkillOrganism:
         shared_state: dict[str, Any] | None = None,
     ) -> SkillRunResult:
         state = dict(shared_state or {})
+        state.pop("_blocked_by", None)  # Clear stale pre-stage halt marker
         stage_outputs: dict[str, Any] = {}
         stage_results: list[SkillStageResult] = []
 
