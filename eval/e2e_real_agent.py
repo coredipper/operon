@@ -333,13 +333,14 @@ def _task1_organism(
             certs = [certificate_to_dict(c) for c in raw_certs]
             cert_holds = all(c.verify().holds for c in raw_certs) if raw_certs else False
 
-        quality = _judge_quality(judge_nucleus, output, config=config)
-        # Include final judge call in total (it also uses judge_nucleus)
+        # Capture run tokens BEFORE the final judge call so the eval-only
+        # overhead is excluded — keeps comparison fair vs RAW baseline.
         run_tokens = (
             (fast_nucleus.get_total_tokens_used() - fast_tokens_before)
             + (deep_nucleus.get_total_tokens_used() - deep_tokens_before)
             + (judge_nucleus.get_total_tokens_used() - judge_tokens_before)
         )
+        quality = _judge_quality(judge_nucleus, output, config=config)
 
         return RepetitionResult(
             variant=variant.value, repetition=0,
