@@ -150,6 +150,8 @@ class TaskSummary:
     false_positive_rate: float = 0.0
     detection_rate: float = 0.0
     repair_rate: float = 0.0
+    warmup_tokens: int = 0
+    warmup_latency_ms: float = 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -416,7 +418,7 @@ def _task2_organism(
     prompts: list[tuple[str, bool]],
     variant: Variant,
     config: ProviderConfig | None = None,
-) -> list[RepetitionResult]:
+) -> tuple[list[RepetitionResult], int, float]:
     """Run prompts through organism with immune-wired watcher.
 
     Trains once on real LLM outputs, then evaluates each prompt with a
@@ -436,15 +438,24 @@ def _task2_organism(
     print(f"    [immune warmup: {warmup_tokens} tokens, {warmup_latency:.0f}ms]")
     trained_profile = trainer.profiles[agent_id]
 
+    # Snapshot training display state to seed each fresh runtime
+    trained_display = trainer.displays[agent_id]
+    trained_observations = list(trained_display.observations)
+    trained_canaries = list(trained_display.canary_results)
+
     results = []
     for prompt, is_adversarial in prompts:
-        # Fresh immune system per prompt, seeded with the trained profile
+        # Fresh immune system per prompt, seeded with trained profile AND
+        # training observations (display needs min_observations to generate
+        # peptides for inspect())
         immune = ImmuneSystem(
             min_training_samples=5,
             min_observations=5,
             window_size=50,
         )
         immune.register_agent(agent_id)
+        immune.displays[agent_id].observations = list(trained_observations)
+        immune.displays[agent_id].canary_results = list(trained_canaries)
         immune.profiles[agent_id] = trained_profile
         immune.tcells[agent_id] = TCell(profile=trained_profile)
 
@@ -535,7 +546,7 @@ def _task2_organism(
                 is_adversarial=is_adversarial,
                 error=str(e),
             ))
-    return results
+    return results, warmup_tokens, warmup_latency
 
 
 # ---------------------------------------------------------------------------
@@ -869,6 +880,7 @@ def main() -> None:
 
         for variant in [Variant.RAW, Variant.GUARDED, Variant.FULL]:
             results: list[RepetitionResult] = []
+            injection_warmup = (0, 0.0)
 
             for rep in range(args.repetitions):
                 sys.stdout.write(f"  {variant.value:<9} rep {rep+1}/{args.repetitions}... ")
@@ -889,8 +901,11 @@ def main() -> None:
                     )
                     if variant == Variant.RAW:
                         batch = _task2_raw(fast_nucleus, prompts, config=reasoning_config)
+                        wu_tok, wu_lat = 0, 0.0
                     else:
-                        batch = _task2_organism(fast_nucleus, deep_nucleus, prompts, variant, config=reasoning_config)
+                        batch, wu_tok, wu_lat = _task2_organism(
+                            fast_nucleus, deep_nucleus, prompts, variant, config=reasoning_config)
+                    injection_warmup = (wu_tok, wu_lat)
                     for br in batch:
                         br.repetition = rep
                     results.extend(batch)
@@ -912,6 +927,9 @@ def main() -> None:
                 time.sleep(0.5)
 
             summary = _aggregate(task_name, variant.value, results)
+            if task_name == "injection" and variant != Variant.RAW:
+                summary.warmup_tokens = injection_warmup[0]
+                summary.warmup_latency_ms = injection_warmup[1]
             all_summaries.append(summary)
 
     total_runtime = time.perf_counter() - total_start
