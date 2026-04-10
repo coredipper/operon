@@ -1030,7 +1030,8 @@ def main() -> None:
     _print_table(all_summaries)
     _print_comparison(all_summaries)
     _save_json(all_summaries, args.output, args.model, total_runtime,
-               judge_model=args.judge_model, judge_url=args.judge_url)
+               judge_model=args.judge_model or args.model,
+               judge_url=args.judge_url or args.base_url)
     print(f"\nTotal runtime: {total_runtime:.0f}s")
 
 
