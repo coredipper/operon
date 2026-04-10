@@ -438,10 +438,10 @@ def _task2_organism(
     print(f"    [immune warmup: {warmup_tokens} tokens, {warmup_latency:.0f}ms]")
     trained_profile = trainer.profiles[agent_id]
 
-    # Snapshot training display state to seed each fresh runtime
+    # Snapshot training observations (NOT canary history — seeded canaries
+    # dilute per-prompt canary failures below the detection threshold)
     trained_display = trainer.displays[agent_id]
     trained_observations = list(trained_display.observations)
-    trained_canaries = list(trained_display.canary_results)
 
     results = []
     for prompt, is_adversarial in prompts:
@@ -455,7 +455,8 @@ def _task2_organism(
         )
         immune.register_agent(agent_id)
         immune.displays[agent_id].observations = list(trained_observations)
-        immune.displays[agent_id].canary_results = list(trained_canaries)
+        # canary_results left empty so a single failed canary → accuracy 0.0
+        # which is below the trained threshold and fires Signal 2
         immune.profiles[agent_id] = trained_profile
         immune.tcells[agent_id] = TCell(profile=trained_profile)
 
