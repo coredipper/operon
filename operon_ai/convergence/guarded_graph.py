@@ -243,121 +243,155 @@ def compile_guarded_graph(
 
         return agent
 
+    # --- Post-guard helper functions (refactored from god-function) ---
+
+    def _evaluate_quality(
+        output: str, stage_name: str, action_type: str,
+    ) -> float:
+        """Run rubric on output. Returns 1.0 if no rubric or on FAILURE."""
+        if rubric is None or action_type == "FAILURE":
+            return 1.0
+        try:
+            q = rubric(output, stage_name)
+            return max(0.0, min(1.0, q))
+        except Exception:
+            return 0.5
+
+    def _observe_watcher(
+        state: GuardedState,
+        stage_name: str,
+        action_type: str,
+        quality: float,
+    ) -> dict[str, Any]:
+        """Feed stage result to watcher, return updated watcher state."""
+        ws = dict(state.get("watcher_state", {
+            "stage_results": [],
+            "watcher_signals": [],
+            "watcher_interventions": [],
+            "_watcher_cursor": 0,
+        }))
+        ws["stage_results"] = list(ws.get("stage_results", []))
+        ws["stage_results"].append({
+            "stage_name": stage_name,
+            "action_type": action_type,
+            "quality": quality,
+        })
+        watcher_update = operon_watcher_node(ws, watcher_config=watcher_config)
+        ws.update(watcher_update)
+        return ws
+
+    def _extract_stage_intervention(
+        old_watcher_state: dict[str, Any],
+        new_watcher_state: dict[str, Any],
+        stage_name: str,
+    ) -> str | None:
+        """Return the watcher's action for this stage, or None.
+
+        Compares old vs new intervention lists to find only NEW
+        interventions for the specified stage.
+        """
+        old_list = old_watcher_state.get("watcher_interventions", [])
+        new_list = new_watcher_state.get("watcher_interventions", [])
+        for wi in new_list[len(old_list):]:
+            if wi.get("stage_name") == stage_name:
+                return wi.get("action")
+        return None
+
+    def _route_intervention(
+        stage_name: str,
+        action_type: str,
+        quality: float,
+        stage_intervention: str | None,
+        already_escalated: bool,
+        model_alias: str,
+    ) -> str:
+        """Decide routing: 'accept', 'escalate', or 'halt'.
+
+        Priority order:
+        1. Watcher says escalate/retry → 'escalate'
+        2. Quality-based escalation (fast model, quality < 0.5) → 'escalate'
+        3. Stage FAILURE with no retry available → 'halt'
+        4. Otherwise → 'accept'
+        """
+        # Watcher intervention takes priority (it knows the retry budget)
+        if stage_intervention in ("escalate", "retry"):
+            return "escalate"
+        # Quality-based escalation (only on fast model, only once)
+        if quality < 0.5 and model_alias == "fast" and not already_escalated:
+            return "escalate"
+        # Failure with no watcher retry → halt
+        if action_type == "FAILURE":
+            return "halt"
+        return "accept"
+
     def make_post_guard(stage_info: dict) -> Any:
-        """Factory for post-guard nodes (Verifier + Watcher check)."""
+        """Factory for post-guard nodes (evaluate → observe → route)."""
         stage_name = stage_info["name"]
 
         def post_guard(state: GuardedState) -> dict:
             output = state.get("_pending_output", "")
             action_type = state.get("_pending_action", "EXECUTE")
-            interventions: list[dict] = []
-
-            # --- Verifier quality check ---
-            quality = 1.0
-            if rubric is not None and action_type != "FAILURE":
-                try:
-                    quality = rubric(output, stage_name)
-                    quality = max(0.0, min(1.0, quality))
-                except Exception:
-                    quality = 0.5
-
-            # --- Feed watcher with real action type ---
-            ws = dict(state.get("watcher_state", {
-                "stage_results": [],
-                "watcher_signals": [],
-                "watcher_interventions": [],
-                "_watcher_cursor": 0,
-            }))
-            ws["stage_results"] = list(ws.get("stage_results", []))
-            ws["stage_results"].append({
-                "stage_name": stage_name,
-                "action_type": action_type,
-                "quality": quality,
-            })
-            watcher_update = operon_watcher_node(ws, watcher_config=watcher_config)
-            ws.update(watcher_update)
-
-            # --- Decide intervention ---
             model_alias = "deep" if state.get("use_deep") else "fast"
             already_escalated = state.get("retry_count", 0) > 0
 
-            # Quality-based escalation (adaptive immune).
-            # Only escalate once per stage.
-            if quality < 0.5 and model_alias == "fast" and not already_escalated:
-                interventions.append({
-                    "stage": stage_name,
-                    "kind": "escalate",
-                    "reason": f"low quality ({quality:.2f}) on fast model",
-                    "phase": "post_guard",
-                })
+            # 1. Evaluate
+            quality = _evaluate_quality(output, stage_name, action_type)
+
+            # 2. Observe
+            ws = _observe_watcher(state, stage_name, action_type, quality)
+
+            # 3. Route
+            if ws.get("should_halt"):
+                return {
+                    "halted": True,
+                    "intervention_log": [{
+                        "stage": stage_name, "kind": "halt",
+                        "reason": "watcher convergence failure",
+                        "phase": "post_guard",
+                    }],
+                    "watcher_state": ws,
+                }
+
+            stage_intervention = _extract_stage_intervention(
+                state.get("watcher_state", {}), ws, stage_name,
+            )
+            decision = _route_intervention(
+                stage_name, action_type, quality,
+                stage_intervention, already_escalated, model_alias,
+            )
+
+            if decision == "escalate":
+                reason = (
+                    f"watcher {stage_intervention}" if stage_intervention
+                    else f"low quality ({quality:.2f}) on {model_alias}"
+                )
                 return {
                     "use_deep": True,
-                    "intervention_log": interventions,
+                    "intervention_log": [{
+                        "stage": stage_name, "kind": "escalate",
+                        "reason": reason, "phase": "post_guard",
+                    }],
                     "watcher_state": ws,
                 }
 
-            # Watcher-based halt
-            if watcher_update.get("should_halt"):
-                interventions.append({
-                    "stage": stage_name,
-                    "kind": "halt",
-                    "reason": "watcher convergence failure",
-                    "phase": "post_guard",
-                })
+            if decision == "halt":
                 return {
                     "halted": True,
-                    "intervention_log": interventions,
-                    "watcher_state": ws,
-                }
-
-            # Read NEW watcher interventions for THIS stage only.
-            # Compare against pre-call count to avoid reacting to prior stages.
-            old_interventions = state.get("watcher_state", {}).get(
-                "watcher_interventions", []
-            )
-            new_watcher_interventions = ws.get("watcher_interventions", [])[
-                len(old_interventions):
-            ]
-            for wi in new_watcher_interventions:
-                if wi.get("stage_name") != stage_name:
-                    continue
-                action = wi.get("action", "")
-                if action in ("escalate", "retry") and not already_escalated:
-                    interventions.append({
-                        "stage": stage_name,
-                        "kind": "escalate",
-                        "reason": wi.get("reason", "watcher escalation"),
+                    "intervention_log": [{
+                        "stage": stage_name, "kind": "halt",
+                        "reason": "stage failed, no retry available",
                         "phase": "post_guard",
-                    })
-                    return {
-                        "use_deep": True,
-                        "intervention_log": interventions,
-                        "watcher_state": ws,
-                    }
-
-            # If already escalated and still failing, halt — don't accept
-            # error output into the pipeline.
-            if already_escalated and action_type == "FAILURE":
-                interventions.append({
-                    "stage": stage_name,
-                    "kind": "halt",
-                    "reason": "stage failed on both fast and deep models",
-                    "phase": "post_guard",
-                })
-                return {
-                    "halted": True,
-                    "intervention_log": interventions,
+                    }],
                     "watcher_state": ws,
                 }
 
-            # --- Accept output: move from pending to stage_outputs ---
+            # Accept output
             new_outputs = dict(state.get("stage_outputs", {}))
             new_outputs[stage_name] = output
-
             return {
                 "stage_outputs": new_outputs,
                 "watcher_state": ws,
-                "intervention_log": interventions,
+                "intervention_log": [],
             }
 
         return post_guard
