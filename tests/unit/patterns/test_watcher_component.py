@@ -426,3 +426,67 @@ def test_run_context_telemetry_append_persists():
     ctx = RunContext()
     ctx.telemetry_events.append("event_1")
     assert ctx[_TELEMETRY_KEY] == ["event_1"]
+
+
+def test_organism_resolves_custom_watcher_key():
+    """SkillOrganism.run() picks up WatcherConfig.state_key for RunContext."""
+    from operon_ai import MockProvider, Nucleus, SkillStage, skill_organism
+    from operon_ai.patterns.watcher import WatcherComponent, WatcherConfig
+    from operon_ai.patterns.types import RunContext
+
+    custom_key = "_custom_intervention"
+    watcher = WatcherComponent(config=WatcherConfig(state_key=custom_key))
+
+    captured = {}
+
+    class KeySpy:
+        def on_run_start(self, task, shared_state):
+            if isinstance(shared_state, RunContext):
+                captured["watcher_key"] = shared_state._watcher_key
+        def on_stage_start(self, stage, shared_state, stage_outputs): pass
+        def on_stage_result(self, stage, result, shared_state, stage_outputs): pass
+        def on_run_complete(self, result, shared_state): pass
+
+    org = skill_organism(
+        stages=[SkillStage(name="s", role="r", instructions="do it")],
+        fast_nucleus=Nucleus(provider=MockProvider(responses={"do it": "done"})),
+        deep_nucleus=Nucleus(provider=MockProvider(responses={"do it": "done"})),
+        components=[watcher, KeySpy()],
+    )
+    org.run("test")
+    assert captured["watcher_key"] == custom_key
+
+
+def test_certificate_gate_uses_custom_watcher_key():
+    """CertificateGateComponent writes HALT to RunContext._watcher_key."""
+    from operon_ai.patterns.certificate_gate import CertificateGateComponent
+    from operon_ai.patterns.types import RunContext, WatcherIntervention
+    from operon_ai.state.genome import Genome, Gene, GeneType
+    from operon_ai.state.dna_repair import DNARepair
+
+    genome = Genome(
+        genes=[Gene(name="g1", gene_type=GeneType.REGULATORY, value="ok")],
+        allow_mutations=True,
+    )
+    repair = DNARepair(silent=True)
+    checkpoint = repair.checkpoint(genome)
+
+    # Corrupt the genome after checkpoint
+    genome.mutate("g1", "corrupted")
+
+    custom_key = "_my_gate_key"
+    ctx = RunContext({}, watcher_key=custom_key)
+
+    gate = CertificateGateComponent(
+        genome=genome, repair=repair, checkpoint=checkpoint,
+    )
+    gate.on_run_start("test", ctx)
+
+    class FakeStage:
+        name = "s1"
+
+    gate.on_stage_start(FakeStage(), ctx, {})
+
+    # HALT should be written to the custom key, not the default
+    assert custom_key in ctx, f"Expected HALT under {custom_key}, got keys: {list(ctx.keys())}"
+    assert isinstance(ctx[custom_key], WatcherIntervention)
