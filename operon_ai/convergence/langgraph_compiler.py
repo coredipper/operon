@@ -99,6 +99,8 @@ def organism_to_langgraph(organism: Any) -> Any:
 
     def run_organism(state: LangGraphState) -> dict:
         """Execute the full organism pipeline."""
+        from langchain_core.messages import AIMessage
+
         # Extract task from messages
         task = ""
         for m in state.get("messages", []):
@@ -106,8 +108,20 @@ def organism_to_langgraph(organism: Any) -> Any:
                 task = m.content
                 break
 
-        # Run the organism — all guarantees enforced internally
-        result = organism.run(task)
+        # Run the organism — catch exceptions so the graph returns a
+        # stable result instead of aborting.
+        halted = False
+        try:
+            result = organism.run(task)
+        except Exception as exc:
+            return {
+                "output": f"Error: {exc}",
+                "messages": [AIMessage(content=f"Error: {exc}")],
+                "stage_outputs": {},
+                "halted": True,
+                "intervention_log": [{"stage": "organism", "kind": "halt", "reason": str(exc)}],
+                "run_complete": True,
+            }
 
         # Extract outputs
         stage_outputs = {
@@ -129,10 +143,15 @@ def organism_to_langgraph(organism: Any) -> Any:
                         "reason": intv.reason,
                     })
 
-        halted = bool(result.shared_state.get("_blocked_by"))
+        # Detect halted: pre-stage block, watcher halt, or incomplete pipeline
+        halted = (
+            bool(result.shared_state.get("_blocked_by"))
+            or len(result.stage_results) < len(organism.stages)
+        )
 
         return {
             "output": final_output,
+            "messages": [AIMessage(content=final_output)],
             "stage_outputs": stage_outputs,
             "halted": halted,
             "intervention_log": interventions,
