@@ -150,6 +150,16 @@ def execute_deerflow(
     ImportError
         If DeerFlow is not installed.
     """
+    # --- Reject unsupported multi-agent configs ---
+    sub_agents = compiled.get("sub_agents", [])
+    if sub_agents:
+        raise ValueError(
+            f"execute_deerflow() does not support multi-agent execution "
+            f"({len(sub_agents)} sub-agents). Use compile_guarded_graph() "
+            f"from guarded_graph.py for multi-stage pipelines with "
+            f"structural guarantees."
+        )
+
     # --- Lazy imports (all DeerFlow + LangChain deps) ---
     try:
         from deerflow.agents.factory import create_deerflow_agent
@@ -162,10 +172,10 @@ def execute_deerflow(
             '#subdirectory=backend/packages/harness"'
         ) from e
 
-    from langchain_openai import ChatOpenAI
-
     # --- Model resolution ---
     if model is None:
+        from langchain_openai import ChatOpenAI
+
         thinking = compiled.get("config", {}).get("thinking_enabled", False)
         model = ChatOpenAI(
             base_url=ollama_base_url,
@@ -190,7 +200,7 @@ def execute_deerflow(
         name=kwargs["name"],
     )
 
-    # --- Stream-based execution with watcher ---
+    # --- Single-call execution with watcher ---
     from langchain_core.messages import HumanMessage
 
     state = {"messages": [HumanMessage(content=task)]}
@@ -205,40 +215,37 @@ def execute_deerflow(
 
     collected_messages: list[dict[str, Any]] = []
     final_text = ""
+    action_type = "EXECUTE"
     t0 = time.monotonic()
 
-    for chunk in agent.stream(state, config=config, stream_mode="values"):
-        # Check timeout
-        elapsed = (time.monotonic() - t0) * 1000
-        if elapsed > timeout_seconds * 1000:
-            break
-
-        messages = chunk.get("messages", [])
-        if messages:
-            last = messages[-1]
+    try:
+        result_state = agent.invoke(state, config=config)
+        messages = result_state.get("messages", [])
+        for msg in messages:
             msg_dict = {
-                "type": getattr(last, "type", "unknown"),
-                "content": getattr(last, "content", ""),
+                "type": getattr(msg, "type", "unknown"),
+                "content": getattr(msg, "content", ""),
             }
             collected_messages.append(msg_dict)
-            final_text = msg_dict["content"] or final_text
-
-            # Feed watcher
-            if enable_watcher:
-                stage_result = {
-                    "stage_name": kwargs["name"],
-                    "action_type": "EXECUTE",
-                }
-                watcher_state["stage_results"].append(stage_result)
-                watcher_update = operon_watcher_node(
-                    watcher_state, watcher_config=watcher_config,
-                )
-                watcher_state.update(watcher_update)
-
-                if watcher_update.get("should_halt"):
-                    break
+        if messages:
+            final_text = getattr(messages[-1], "content", "") or ""
+    except Exception as exc:
+        action_type = "FAILURE"
+        final_text = f"Execution failed: {exc}"
+        collected_messages.append({"type": "error", "content": final_text})
 
     elapsed_ms = (time.monotonic() - t0) * 1000
+
+    # Feed one stage result to watcher (one agent = one stage)
+    if enable_watcher:
+        watcher_state["stage_results"].append({
+            "stage_name": kwargs["name"],
+            "action_type": action_type,
+        })
+        watcher_update = operon_watcher_node(
+            watcher_state, watcher_config=watcher_config,
+        )
+        watcher_state.update(watcher_update)
 
     # --- Certificate verification ---
     cert_results: list[dict[str, Any]] = []

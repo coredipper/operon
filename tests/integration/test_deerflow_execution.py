@@ -47,8 +47,27 @@ needs_ollama = pytest.mark.skipif(
 # ---------------------------------------------------------------------------
 
 
-def _make_organism():
-    """Build a simple 2-stage organism for testing."""
+def _make_organism_single():
+    """Build a single-stage organism for DeerFlow executor testing."""
+    provider = MockProvider(responses={})
+    nucleus = Nucleus(provider=provider)
+    return skill_organism(
+        stages=[
+            SkillStage(
+                name="assistant",
+                role="Assistant",
+                instructions="Answer the question clearly and concisely.",
+                mode="fixed",
+            ),
+        ],
+        fast_nucleus=nucleus,
+        deep_nucleus=nucleus,
+        budget=ATP_Store(budget=1000),
+    )
+
+
+def _make_organism_multi():
+    """Build a multi-stage organism (for guarded_graph, not executor)."""
     provider = MockProvider(responses={})
     nucleus = Nucleus(provider=provider)
     return skill_organism(
@@ -81,24 +100,24 @@ class TestSchemaTransformation:
     """Verify _compiled_to_agent_kwargs produces valid kwargs."""
 
     def test_basic_transformation(self):
-        org = _make_organism()
+        org = _make_organism_single()
         compiled = organism_to_deerflow(org)
         kwargs = _compiled_to_agent_kwargs(compiled)
 
-        assert kwargs["name"] == "researcher"
+        assert kwargs["name"] == "assistant"
         assert "system_prompt" in kwargs
         assert isinstance(kwargs["sandbox"], bool)
         assert kwargs["subagent"] is False
 
     def test_system_prompt_includes_skills(self):
-        org = _make_organism()
+        org = _make_organism_single()
         compiled = organism_to_deerflow(org)
         kwargs = _compiled_to_agent_kwargs(compiled)
 
-        assert "Search for relevant information" in kwargs["system_prompt"]
+        assert "Answer the question" in kwargs["system_prompt"]
 
-    def test_system_prompt_includes_sub_agents(self):
-        org = _make_organism()
+    def test_multi_stage_includes_sub_agents_in_prompt(self):
+        org = _make_organism_multi()
         compiled = organism_to_deerflow(org)
         kwargs = _compiled_to_agent_kwargs(compiled)
 
@@ -106,7 +125,7 @@ class TestSchemaTransformation:
         assert "writer" in kwargs["system_prompt"].lower()
 
     def test_sandbox_mapping(self):
-        org = _make_organism()
+        org = _make_organism_single()
         compiled = organism_to_deerflow(org)
 
         # Default sandbox is "none"
@@ -120,11 +139,20 @@ class TestSchemaTransformation:
 
     def test_certificates_not_in_kwargs(self):
         """Certificates are verified post-execution, not passed to DeerFlow."""
-        org = _make_organism()
+        org = _make_organism_single()
         compiled = organism_to_deerflow(org)
         kwargs = _compiled_to_agent_kwargs(compiled)
 
         assert "certificates" not in kwargs
+
+    def test_multi_stage_rejected(self):
+        """Multi-stage compiled configs are rejected with clear error."""
+        org = _make_organism_multi()
+        compiled = organism_to_deerflow(org)
+        assert len(compiled["sub_agents"]) > 0
+
+        with pytest.raises(ValueError, match="multi-agent execution"):
+            execute_deerflow(compiled, task="test")
 
 
 # ---------------------------------------------------------------------------
@@ -139,7 +167,7 @@ class TestDeerflowExecution:
 
     def test_single_task_produces_output(self):
         """Compile organism, execute in DeerFlow, get non-empty output."""
-        org = _make_organism()
+        org = _make_organism_single()
         compiled = organism_to_deerflow(org)
 
         result = execute_deerflow(
@@ -155,7 +183,7 @@ class TestDeerflowExecution:
 
     def test_watcher_summary_populated(self):
         """Watcher observes execution and produces a summary."""
-        org = _make_organism()
+        org = _make_organism_single()
         compiled = organism_to_deerflow(org)
 
         result = execute_deerflow(
@@ -171,7 +199,7 @@ class TestDeerflowExecution:
 
     def test_certificates_verified_after_execution(self):
         """Certificates from the compiled dict still verify after DeerFlow run."""
-        org = _make_organism()
+        org = _make_organism_single()
         compiled = organism_to_deerflow(org)
 
         result = execute_deerflow(
@@ -191,7 +219,7 @@ class TestDeerflowExecution:
 
     def test_watcher_disabled(self):
         """Execution works without the watcher."""
-        org = _make_organism()
+        org = _make_organism_single()
         compiled = organism_to_deerflow(org)
 
         result = execute_deerflow(

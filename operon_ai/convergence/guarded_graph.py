@@ -68,6 +68,8 @@ class GuardedState(TypedDict):
     intervention_log: Annotated[list, operator.add]
     watcher_state: dict[str, Any]
     retry_count: int
+    _pending_output: str
+    _pending_action: str
 
 
 @dataclass(frozen=True)
@@ -215,22 +217,28 @@ def compile_guarded_graph(
                 if isinstance(m, HumanMessage):
                     input_msgs.append(m)
                     break
-            # Add previous stage outputs as context
+            # Add previous ACCEPTED stage outputs as context (not pending)
             for prev_name, prev_output in state.get("stage_outputs", {}).items():
-                input_msgs.append(AIMessage(content=f"[{prev_name}]: {prev_output}"))
+                if prev_name != stage_name:  # Exclude own prior rejected output
+                    input_msgs.append(AIMessage(content=f"[{prev_name}]: {prev_output}"))
 
             was_escalated = state.get("use_deep", False)
-            response = model.invoke(input_msgs)
-            output_text = response.content if hasattr(response, "content") else str(response)
+            action_type = "EXECUTE"
+            try:
+                response = model.invoke(input_msgs)
+                output_text = response.content if hasattr(response, "content") else str(response)
+            except Exception as exc:
+                output_text = f"Error: {exc}"
+                action_type = "FAILURE"
+                response = AIMessage(content=output_text)
 
-            new_outputs = dict(state.get("stage_outputs", {}))
-            new_outputs[stage_name] = output_text
-
+            # Write to a pending key — post_guard decides whether to accept
             return {
                 "messages": [response],
-                "stage_outputs": new_outputs,
+                "_pending_output": output_text,
+                "_pending_action": action_type,
                 "use_deep": False,  # Reset flag
-                "retry_count": 1 if was_escalated else 0,  # Track that we already escalated
+                "retry_count": 1 if was_escalated else 0,
             }
 
         return agent
@@ -240,19 +248,20 @@ def compile_guarded_graph(
         stage_name = stage_info["name"]
 
         def post_guard(state: GuardedState) -> dict:
-            output = state.get("stage_outputs", {}).get(stage_name, "")
+            output = state.get("_pending_output", "")
+            action_type = state.get("_pending_action", "EXECUTE")
             interventions: list[dict] = []
 
             # --- Verifier quality check ---
             quality = 1.0
-            if rubric is not None:
+            if rubric is not None and action_type != "FAILURE":
                 try:
                     quality = rubric(output, stage_name)
                     quality = max(0.0, min(1.0, quality))
                 except Exception:
                     quality = 0.5
 
-            # --- Feed watcher ---
+            # --- Feed watcher with real action type ---
             ws = dict(state.get("watcher_state", {
                 "stage_results": [],
                 "watcher_signals": [],
@@ -262,7 +271,7 @@ def compile_guarded_graph(
             ws["stage_results"] = list(ws.get("stage_results", []))
             ws["stage_results"].append({
                 "stage_name": stage_name,
-                "action_type": "EXECUTE",
+                "action_type": action_type,
                 "quality": quality,
             })
             watcher_update = operon_watcher_node(ws, watcher_config=watcher_config)
@@ -270,10 +279,10 @@ def compile_guarded_graph(
 
             # --- Decide intervention ---
             model_alias = "deep" if state.get("use_deep") else "fast"
+            already_escalated = state.get("retry_count", 0) > 0
 
             # Quality-based escalation (adaptive immune).
-            # Only escalate once per stage (retry_count tracks escalation).
-            already_escalated = state.get("retry_count", 0) > 0
+            # Only escalate once per stage.
             if quality < 0.5 and model_alias == "fast" and not already_escalated:
                 interventions.append({
                     "stage": stage_name,
@@ -287,7 +296,7 @@ def compile_guarded_graph(
                     "watcher_state": ws,
                 }
 
-            # Watcher-based halt
+            # Watcher-based halt (convergence failure or FAILURE action)
             if watcher_update.get("should_halt"):
                 interventions.append({
                     "stage": stage_name,
@@ -301,7 +310,12 @@ def compile_guarded_graph(
                     "watcher_state": ws,
                 }
 
+            # --- Accept output: move from pending to stage_outputs ---
+            new_outputs = dict(state.get("stage_outputs", {}))
+            new_outputs[stage_name] = output
+
             return {
+                "stage_outputs": new_outputs,
                 "watcher_state": ws,
                 "intervention_log": interventions,
             }
@@ -337,10 +351,12 @@ def compile_guarded_graph(
         builder.add_edge(agent_name, post_name)
 
         # Wire: post_guard → conditional (halt/escalate/next)
+        # Escalation routes back through pre_guard so the certificate
+        # gate runs before every LLM call, not just the first attempt.
         if i < len(stages) - 1:
             next_pre = f"pre_guard_{stages[i + 1]['name']}"
 
-            def make_post_route(an: str, npre: str):
+            def make_post_route(pn: str, npre: str):
                 def route(state: GuardedState) -> str:
                     if state.get("halted"):
                         return "halt"
@@ -351,12 +367,12 @@ def compile_guarded_graph(
 
             builder.add_conditional_edges(
                 post_name,
-                make_post_route(agent_name, next_pre),
-                {"next": next_pre, "escalate": agent_name, "halt": END},
+                make_post_route(pre_name, next_pre),
+                {"next": next_pre, "escalate": pre_name, "halt": END},
             )
         else:
             # Last stage: halt or done
-            def make_final_route(an: str):
+            def make_final_route(pn: str):
                 def route(state: GuardedState) -> str:
                     if state.get("halted"):
                         return "halt"
@@ -367,8 +383,8 @@ def compile_guarded_graph(
 
             builder.add_conditional_edges(
                 post_name,
-                make_final_route(agent_name),
-                {"done": END, "escalate": agent_name, "halt": END},
+                make_final_route(pre_name),
+                {"done": END, "escalate": pre_name, "halt": END},
             )
 
     # Entry edge: START → first pre_guard
@@ -430,6 +446,8 @@ def run_guarded_graph(
         "intervention_log": [],
         "watcher_state": {},
         "retry_count": 0,
+        "_pending_output": "",
+        "_pending_action": "",
     })
     elapsed_ms = (time.monotonic() - t0) * 1000
 
