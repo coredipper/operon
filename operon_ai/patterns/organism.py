@@ -267,7 +267,12 @@ class SkillOrganism:
         task: str,
         shared_state: dict[str, Any] | None = None,
     ) -> SkillRunResult:
-        state = RunContext(shared_state or {})
+        # Preserve an incoming RunContext (keeps custom key configuration);
+        # otherwise wrap in a new RunContext with defaults.
+        if isinstance(shared_state, RunContext):
+            state = shared_state
+        else:
+            state = RunContext(shared_state or {})
         state.pop("_blocked_by", None)  # Clear stale pre-stage halt marker
         stage_outputs: dict[str, Any] = {}
         stage_results: list[SkillStageResult] = []
@@ -280,7 +285,7 @@ class SkillOrganism:
                 component.on_stage_start(stage, state, stage_outputs)
 
             # --- Pre-stage intervention check (e.g. CertificateGate) ---
-            _pre = state.pop(WATCHER_STATE_KEY, None)
+            _pre = state.pop(state._watcher_key, None)
             if isinstance(_pre, WatcherIntervention) and _pre.kind == InterventionKind.HALT:
                 state["_blocked_by"] = _pre
                 break
@@ -321,7 +326,7 @@ class SkillOrganism:
                     component.on_stage_result(stage, result, state, stage_outputs)
 
             # --- Watcher intervention check ---
-            _intervention = state.pop(WATCHER_STATE_KEY, None)
+            _intervention = state.pop(state._watcher_key, None)
             if isinstance(_intervention, WatcherIntervention):
                 if _intervention.kind == InterventionKind.RETRY:
                     retry_result = self._run_stage(
