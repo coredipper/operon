@@ -114,9 +114,11 @@ def execute_deerflow(
     enable_watcher: bool = True,
     watcher_config: dict[str, Any] | None = None,
     verify_certificates: bool = True,
-    timeout_seconds: float = 300.0,
 ) -> DeerFlowResult:
     """Execute a compiled organism dict in DeerFlow's LangGraph runtime.
+
+    Note: execution time is bounded by the LangGraph ``recursion_limit``
+    derived from the compiled dict's timeout, not by a wall-clock timer.
 
     Parameters
     ----------
@@ -137,8 +139,6 @@ def execute_deerflow(
         Config dict for the watcher (max_intervention_rate, max_retries).
     verify_certificates:
         If ``True``, verify certificates from the compiled dict post-run.
-    timeout_seconds:
-        Maximum execution time before aborting.
 
     Returns
     -------

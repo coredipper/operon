@@ -296,7 +296,7 @@ def compile_guarded_graph(
                     "watcher_state": ws,
                 }
 
-            # Watcher-based halt (convergence failure or FAILURE action)
+            # Watcher-based halt
             if watcher_update.get("should_halt"):
                 interventions.append({
                     "stage": stage_name,
@@ -309,6 +309,36 @@ def compile_guarded_graph(
                     "intervention_log": interventions,
                     "watcher_state": ws,
                 }
+
+            # Read the watcher's latest intervention (retry/escalate)
+            watcher_interventions = ws.get("watcher_interventions", [])
+            if watcher_interventions:
+                latest = watcher_interventions[-1]
+                action = latest.get("action", "")
+                if action == "escalate" and not already_escalated:
+                    interventions.append({
+                        "stage": stage_name,
+                        "kind": "escalate",
+                        "reason": latest.get("reason", "watcher escalation"),
+                        "phase": "post_guard",
+                    })
+                    return {
+                        "use_deep": True,
+                        "intervention_log": interventions,
+                        "watcher_state": ws,
+                    }
+                if action == "retry" and not already_escalated:
+                    interventions.append({
+                        "stage": stage_name,
+                        "kind": "escalate",  # retry → escalate to deep model
+                        "reason": latest.get("reason", "watcher retry → escalate"),
+                        "phase": "post_guard",
+                    })
+                    return {
+                        "use_deep": True,
+                        "intervention_log": interventions,
+                        "watcher_state": ws,
+                    }
 
             # --- Accept output: move from pending to stage_outputs ---
             new_outputs = dict(state.get("stage_outputs", {}))

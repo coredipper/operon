@@ -174,7 +174,7 @@ class TestDeerflowExecution:
             compiled,
             task="What is 2 + 2? Answer in one word.",
             model_name="gemma4:latest",
-            timeout_seconds=60.0,
+
         )
 
         assert isinstance(result, DeerFlowResult)
@@ -191,7 +191,7 @@ class TestDeerflowExecution:
             task="Say hello.",
             model_name="gemma4:latest",
             enable_watcher=True,
-            timeout_seconds=60.0,
+
         )
 
         assert result.watcher_summary is not None
@@ -207,7 +207,7 @@ class TestDeerflowExecution:
             task="Say hello.",
             model_name="gemma4:latest",
             verify_certificates=True,
-            timeout_seconds=60.0,
+
         )
 
         # ATP budget certificate should hold (budget > 0)
@@ -227,7 +227,7 @@ class TestDeerflowExecution:
             task="Say hello.",
             model_name="gemma4:latest",
             enable_watcher=False,
-            timeout_seconds=60.0,
+
         )
 
         assert len(result.output) > 0
