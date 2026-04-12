@@ -134,12 +134,17 @@ class TelemetryProbe:
         )
 
     def on_run_start(self, task: str, shared_state: dict[str, Any]) -> None:
+        payload: dict[str, Any] = {"task": task}
+        # Capture organism config if injected by SkillOrganism.run()
+        org_config = shared_state.get("_organism_config")
+        if isinstance(org_config, dict):
+            payload["organism_config"] = org_config
         self._append(
             shared_state,
             TelemetryEvent(
                 kind="run_start",
                 stage_name=None,
-                payload={"task": task},
+                payload=payload,
             ),
         )
 
@@ -284,6 +289,16 @@ class SkillOrganism:
         state.pop("_blocked_by", None)  # Clear stale pre-stage halt marker
         stage_outputs: dict[str, Any] = {}
         stage_results: list[SkillStageResult] = []
+
+        # Inject organism metadata so TelemetryProbe can capture it.
+        state["_organism_config"] = {
+            "stage_count": len(self.stages),
+            "stage_names": [s.name for s in self.stages],
+            "mode_assignments": {s.name: s.mode for s in self.stages},
+            "certificate_theorems": [
+                c.theorem for c in self.collect_certificates()
+            ],
+        }
 
         for component in self.components:
             component.on_run_start(task, state)
