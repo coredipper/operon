@@ -27,8 +27,10 @@ from pathlib import Path
 from operon_ai import ATP_Store, Nucleus, SkillStage, skill_organism
 from operon_ai.core.certificate import certificate_to_dict
 from operon_ai.health.epiplexity import EpiplexityMonitor, MockEmbeddingProvider
+from operon_ai.patterns.certificate_gate import CertificateGateComponent
 from operon_ai.patterns.organism import TelemetryProbe
 from operon_ai.patterns.types import InterventionKind
+from operon_ai.patterns.verifier import VerifierComponent, VerifierConfig
 from operon_ai.patterns.watcher import WatcherComponent, WatcherConfig
 from operon_ai.providers.base import ProviderConfig
 from operon_ai.providers.openai_compatible_provider import OpenAICompatibleProvider
@@ -272,6 +274,16 @@ def _task1_organism(
     )
     telemetry = TelemetryProbe()
 
+    # Adaptive immune: rubric-based quality evaluation triggers escalation
+    # when the fast model produces low-quality output.
+    def _quality_rubric(output: str, stage_name: str) -> float:
+        return _judge_quality(judge_nucleus, output, config=config)
+
+    verifier = VerifierComponent(
+        rubric=_quality_rubric,
+        config=VerifierConfig(quality_low_threshold=0.75),
+    )
+
     organism = skill_organism(
         stages=[
             SkillStage(
@@ -287,9 +299,15 @@ def _task1_organism(
         ],
         fast_nucleus=fast_nucleus,
         deep_nucleus=deep_nucleus,
-        components=[watcher, telemetry],
+        components=[watcher, verifier, telemetry],
         budget=budget,
     )
+
+    # Track all token usage via nucleus deltas (captures retried/escalated
+    # attempts that stage_results overwrites)
+    fast_tokens_before = fast_nucleus.get_total_tokens_used()
+    deep_tokens_before = deep_nucleus.get_total_tokens_used()
+    judge_tokens_before = judge_nucleus.get_total_tokens_used()
 
     start = time.perf_counter()
     try:
@@ -315,14 +333,20 @@ def _task1_organism(
             certs = [certificate_to_dict(c) for c in raw_certs]
             cert_holds = all(c.verify().holds for c in raw_certs) if raw_certs else False
 
+        # Capture run tokens BEFORE the final judge call so the eval-only
+        # overhead is excluded — keeps comparison fair vs RAW baseline.
+        run_tokens = (
+            (fast_nucleus.get_total_tokens_used() - fast_tokens_before)
+            + (deep_nucleus.get_total_tokens_used() - deep_tokens_before)
+            + (judge_nucleus.get_total_tokens_used() - judge_tokens_before)
+        )
         quality = _judge_quality(judge_nucleus, output, config=config)
-        tokens = sum(r.tokens_used for r in result.stage_results)
 
         return RepetitionResult(
             variant=variant.value, repetition=0,
             output=output,
             quality_score=quality,
-            tokens_used=tokens,
+            tokens_used=run_tokens,
             latency_ms=latency,
             escalated=escalated,
             watcher_interventions=len(watcher.interventions),
@@ -679,32 +703,42 @@ def _task3_full(fast_nucleus: Nucleus, deep_nucleus: Nucleus,
     budget = ATP_Store(budget=500, silent=True)
     watcher = WatcherComponent(config=WatcherConfig(), budget=budget)
 
-    # Same standalone genome pattern as guarded — see comment above.
-    def _corrupt_then_summarize(_task, _ss, _so, _st, _sv,
-                                _genome=genome, _nucleus=fast_nucleus,
-                                _config=config):
+    # Dedicated corruption stage: deterministic handler that mutates the
+    # genome and returns immediately. Runs between explain and summarize,
+    # so by the time CertificateGate scans before summarize, corruption
+    # is visible. Using a stage (not a component) avoids interference
+    # with retry/escalate paths on other stages.
+    def _corrupt_handler(_task, *_args, _genome=genome):
         _corrupt_genome(_genome)
-        resp = _nucleus.transcribe(
-            "Summarize your previous explanation in one sentence.", config=_config)
-        return {"response": resp.content, "tokens_used": resp.tokens_used}
+        return {"status": "corrupted", "tokens_used": 0}
+
+    # G1/S checkpoint: CertificateGate halts before stage 3 if corruption
+    # is detected, preventing corrupted state from reaching the LLM.
+    gate = CertificateGateComponent(
+        genome=genome, repair=repair, checkpoint=checkpoint,
+    )
 
     organism = skill_organism(
         stages=[
             SkillStage(name="explain", role="explainer",
                        instructions="Explain the concept clearly.", mode="fast",
                        provider_config=config),
+            SkillStage(name="inject_corruption", role="adversary",
+                       handler=_corrupt_handler, mode="fast"),
             SkillStage(name="summarize", role="summarizer",
-                       handler=_corrupt_then_summarize, mode="fast"),
+                       instructions="Summarize briefly.", mode="fast",
+                       provider_config=config),
         ],
         fast_nucleus=fast_nucleus,
         deep_nucleus=deep_nucleus,
-        components=[watcher],
+        components=[gate, watcher],
         budget=budget,
     )
 
     start = time.perf_counter()
     try:
         result = organism.run(INTEGRITY_PROMPT)
+        blocked = "_blocked_by" in result.shared_state
 
         # Post-flight: scan → repair (with re-scan) → certify
         damage = repair.scan(genome, checkpoint)
@@ -735,11 +769,12 @@ def _task3_full(fast_nucleus: Nucleus, deep_nucleus: Nucleus,
             output=output[:200],
             tokens_used=_sum_tokens(result.stage_results),
             latency_ms=latency,
+            blocked=blocked,
             corruptions_detected=detected,
             corruptions_repaired=repaired,
             certificate_holds=verification.holds,
             certificates=certs,
-            watcher_interventions=len(watcher.interventions),
+            watcher_interventions=len(watcher.interventions) + len(gate.blocked_stages),
         )
     except Exception as e:
         return RepetitionResult(variant="full", repetition=0, error=str(e))
@@ -825,10 +860,19 @@ def _print_comparison(summaries: list[TaskSummary]) -> None:
         print()
 
 
-def _save_json(summaries: list[TaskSummary], path: str, model: str, runtime: float) -> None:
+def _save_json(
+    summaries: list[TaskSummary],
+    path: str,
+    model: str,
+    runtime: float,
+    judge_model: str | None = None,
+    judge_url: str | None = None,
+) -> None:
     report = {
         "timestamp": datetime.now().isoformat(),
         "model": model,
+        "judge_model": judge_model or model,
+        "judge_url": judge_url,
         "total_runtime_s": round(runtime, 1),
         "summaries": [asdict(s) for s in summaries],
     }
@@ -851,8 +895,15 @@ def main() -> None:
     parser.add_argument("--base-url", default=OLLAMA_BASE)
     parser.add_argument("--max-tokens", type=int, default=None,
                         help="Max tokens per LLM call (auto: 4096 for reasoning models, 2048 for others)")
+    parser.add_argument("--judge-url", default=None,
+                        help="Base URL for cross-model judge (e.g. http://localhost:8080/v1 for vllama)")
+    parser.add_argument("--judge-model", default=None,
+                        help="Model name for cross-model judge (e.g. gemma-4-26B-A4B-it-Q8_0)")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
+
+    if bool(args.judge_url) != bool(args.judge_model):
+        parser.error("--judge-url and --judge-model must be provided together")
 
     print(f"E2E Real Agent Evaluation")
     print(f"  Model: {args.model}")
@@ -887,7 +938,25 @@ def main() -> None:
     print(f"  Max tokens: {max_tokens}")
     fast_nucleus = Nucleus(provider=provider, base_energy_cost=10)
     deep_nucleus = Nucleus(provider=provider, base_energy_cost=30)
-    judge_nucleus = Nucleus(provider=provider, base_energy_cost=5)
+
+    # Cross-model judging: use a separate, stronger model as judge
+    if args.judge_url and args.judge_model:
+        sys.stdout.write(f"  Checking judge ({args.judge_model})... ")
+        sys.stdout.flush()
+        if not _check_ollama(args.judge_url, args.judge_model):
+            print(f"\nERROR: Cannot reach {args.judge_model} at {args.judge_url}")
+            sys.exit(1)
+        print("OK")
+        judge_provider = OpenAICompatibleProvider(
+            api_key="not-needed",
+            base_url=args.judge_url,
+            model=args.judge_model,
+        )
+        judge_nucleus = Nucleus(provider=judge_provider, base_energy_cost=5)
+        print(f"  Judge: {args.judge_model} @ {args.judge_url} (cross-model)")
+    else:
+        judge_nucleus = Nucleus(provider=provider, base_energy_cost=5)
+        print(f"  Judge: {args.model} (self-judge)")
 
     tasks = args.tasks if "all" not in args.tasks else ["stagnation", "injection", "integrity"]
     all_summaries: list[TaskSummary] = []
@@ -960,7 +1029,9 @@ def main() -> None:
     print(f"{'='*60}")
     _print_table(all_summaries)
     _print_comparison(all_summaries)
-    _save_json(all_summaries, args.output, args.model, total_runtime)
+    _save_json(all_summaries, args.output, args.model, total_runtime,
+               judge_model=args.judge_model or args.model,
+               judge_url=args.judge_url or args.base_url)
     print(f"\nTotal runtime: {total_runtime:.0f}s")
 
 
