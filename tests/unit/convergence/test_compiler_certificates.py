@@ -342,24 +342,28 @@ class TestCertificatePreservationMeasurement:
         org, extra = self._make_multi_cert_organism()
         result = self._measure_preservation(organism_to_deerflow, org, extra)
         assert result["compiled_count"] >= 3, f"Expected >=3 certs, got {result['compiled_count']}"
+        assert result["preserved_theorems"] == result["source_count"], "Not all source theorems survived"
         assert result["verified_count"] == result["compiled_count"]
 
     def test_swarms_preservation(self):
         org, extra = self._make_multi_cert_organism()
         result = self._measure_preservation(organism_to_swarms, org, extra)
         assert result["compiled_count"] >= 3, f"Expected >=3 certs, got {result['compiled_count']}"
+        assert result["preserved_theorems"] == result["source_count"], "Not all source theorems survived"
         assert result["verified_count"] == result["compiled_count"]
 
     def test_ralph_preservation(self):
         org, extra = self._make_multi_cert_organism()
         result = self._measure_preservation(organism_to_ralph, org, extra)
         assert result["compiled_count"] >= 3, f"Expected >=3 certs, got {result['compiled_count']}"
+        assert result["preserved_theorems"] == result["source_count"], "Not all source theorems survived"
         assert result["verified_count"] == result["compiled_count"]
 
     def test_scion_preservation(self):
         org, extra = self._make_multi_cert_organism()
         result = self._measure_preservation(organism_to_scion, org, extra)
         assert result["compiled_count"] >= 3, f"Expected >=3 certs, got {result['compiled_count']}"
+        assert result["preserved_theorems"] == result["source_count"], "Not all source theorems survived"
         assert result["verified_count"] == result["compiled_count"]
 
     def test_all_compilers_100_percent_verification(self):
@@ -373,6 +377,10 @@ class TestCertificatePreservationMeasurement:
         }
         for name, compiler_fn in compilers.items():
             result = self._measure_preservation(compiler_fn, org, extra)
+            assert result["preserved_theorems"] == result["source_count"], (
+                f"{name}: {result['preserved_theorems']}/{result['source_count']} "
+                f"theorems preserved (expected 100%)"
+            )
             assert result["verified_count"] == result["compiled_count"], (
                 f"{name}: {result['verified_count']}/{result['compiled_count']} "
                 f"certificates verified (expected 100%)"
