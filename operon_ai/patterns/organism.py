@@ -134,11 +134,13 @@ class TelemetryProbe:
         )
 
     def on_run_start(self, task: str, shared_state: dict[str, Any]) -> None:
+        import copy
         payload: dict[str, Any] = {"task": task}
-        # Capture organism config if injected by SkillOrganism.run()
+        # Capture organism config if injected by SkillOrganism.run().
+        # Deep-copy to make the telemetry record immutable.
         org_config = shared_state.get("_organism_config")
         if isinstance(org_config, dict):
-            payload["organism_config"] = org_config
+            payload["organism_config"] = copy.deepcopy(org_config)
         self._append(
             shared_state,
             TelemetryEvent(
@@ -290,7 +292,9 @@ class SkillOrganism:
         stage_outputs: dict[str, Any] = {}
         stage_results: list[SkillStageResult] = []
 
-        # Inject organism metadata so TelemetryProbe can capture it.
+        # Inject organism metadata temporarily so TelemetryProbe can capture
+        # it during on_run_start, then remove it to avoid leaking into
+        # stage-visible shared_state or the returned SkillRunResult.
         state["_organism_config"] = {
             "stage_count": len(self.stages),
             "stage_names": [s.name for s in self.stages],
@@ -302,6 +306,8 @@ class SkillOrganism:
 
         for component in self.components:
             component.on_run_start(task, state)
+
+        state.pop("_organism_config", None)
 
         for stage in self.stages:
             for component in self.components:

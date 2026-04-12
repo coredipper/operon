@@ -148,6 +148,11 @@ def test_telemetry_captures_organism_config():
     assert config["mode_assignments"] == {"reader": "fixed", "writer": "fuzzy"}
     assert "priority_gating" in config["certificate_theorems"]
 
+    # _organism_config must not leak into returned shared_state
+    assert "_organism_config" not in result.shared_state, (
+        "_organism_config should be removed after on_run_start"
+    )
+
 
 def test_skill_organism_halts_on_blocking_stage_by_default():
     fast = Nucleus(provider=MockProvider(responses={
