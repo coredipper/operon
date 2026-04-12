@@ -17,7 +17,7 @@ from typing import Any
 from ..patterns.managed import ManagedOrganism
 from ..patterns.organism import SkillOrganism
 from ..patterns.types import CognitiveMode, SkillStage, resolve_cognitive_mode
-from .types import RuntimeConfig
+from .types import ExternalTopology, RuntimeConfig
 
 # ---------------------------------------------------------------------------
 # Model selection heuristic
@@ -154,6 +154,54 @@ def organism_to_swarms(
         },
         "certificates": certificates,
     }
+
+
+def swarms_to_topology(compiled: dict[str, Any]) -> ExternalTopology:
+    """Decompile a Swarms workflow config dict back to an :class:`ExternalTopology`.
+
+    This is the inverse of :func:`organism_to_swarms`.  It calls
+    :func:`parse_swarm_topology` and enriches the result with
+    certificates from the compiled dict's ``"certificates"`` key.
+
+    Parameters
+    ----------
+    compiled:
+        A dict produced by :func:`organism_to_swarms`.
+
+    Returns
+    -------
+    ExternalTopology
+        Topology with agents, edges, and certificate metadata.
+    """
+    from .swarms_adapter import parse_swarm_topology
+
+    pattern_name = compiled.get("workflow_type", "SequentialWorkflow")
+    agent_specs = compiled.get("agents", [])
+    edges = compiled.get("edges", [])
+    config_meta = compiled.get("config", {})
+
+    topology = parse_swarm_topology(
+        pattern_name=pattern_name,
+        agent_specs=agent_specs,
+        edges=edges,
+        **config_meta,
+    )
+
+    # Enrich metadata with certificates if present.
+    certs = compiled.get("certificates", [])
+    if certs:
+        enriched_meta = dict(topology.metadata)
+        enriched_meta["certificates"] = certs
+        topology = ExternalTopology(
+            source=topology.source,
+            pattern_name=topology.pattern_name,
+            agents=topology.agents,
+            edges=topology.edges,
+            capabilities=topology.capabilities,
+            metadata=enriched_meta,
+        )
+
+    return topology
 
 
 def managed_to_swarms(

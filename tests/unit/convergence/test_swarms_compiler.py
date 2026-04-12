@@ -171,3 +171,54 @@ class TestManagedToSwarms:
         managed = ManagedOrganism()
         with pytest.raises(ValueError, match="no inner SkillOrganism"):
             managed_to_swarms(managed)
+
+
+# ---------------------------------------------------------------------------
+# Round-trip: compile -> decompile
+# ---------------------------------------------------------------------------
+
+
+class TestSwarmsDecompile:
+    """Tests for swarms_to_topology() round-trip."""
+
+    def test_roundtrip_agents_preserved(self) -> None:
+        from operon_ai.convergence.swarms_compiler import swarms_to_topology
+
+        org = _make_organism()
+        compiled = organism_to_swarms(org)
+        topology = swarms_to_topology(compiled)
+
+        agent_names = {a["name"] for a in topology.agents}
+        assert "intake" in agent_names
+        assert "router" in agent_names
+        assert "planner" in agent_names
+
+    def test_roundtrip_edges_preserved(self) -> None:
+        from operon_ai.convergence.swarms_compiler import swarms_to_topology
+
+        org = _make_organism()
+        compiled = organism_to_swarms(org)
+        topology = swarms_to_topology(compiled)
+
+        # Swarms uses 1:1 linear chain
+        assert ("intake", "router") in topology.edges
+        assert ("router", "planner") in topology.edges
+
+    def test_roundtrip_certificates_preserved(self) -> None:
+        from operon_ai.convergence.swarms_compiler import swarms_to_topology
+
+        org = _make_organism()
+        compiled = organism_to_swarms(org)
+        topology = swarms_to_topology(compiled)
+
+        certs = topology.metadata.get("certificates", [])
+        assert certs == compiled.get("certificates", [])
+
+    def test_roundtrip_workflow_type_preserved(self) -> None:
+        from operon_ai.convergence.swarms_compiler import swarms_to_topology
+
+        org = _make_organism()
+        compiled = organism_to_swarms(org)
+        topology = swarms_to_topology(compiled)
+
+        assert topology.pattern_name == compiled["workflow_type"]

@@ -39,6 +39,15 @@ class ExternalTopology:
     """Directed edges ``(from_agent, to_agent)`` describing the communication or
     control-flow graph."""
 
+    capabilities: tuple[tuple[str, tuple[str, ...]], ...] = ()
+    """Per-agent capability annotations: ``((agent_name, (cap1, cap2, ...)), ...)``.
+
+    Capability strings should match :class:`~operon_ai.core.types.Capability`
+    values (e.g., ``"net"``, ``"exec_code"``) or common external tool names
+    that are mapped via :data:`EXTERNAL_CAPABILITY_MAP`.  This structured field
+    complements the ad-hoc ``"capabilities"``/``"skills"`` keys in agent dicts
+    and is consumed by :func:`tool_density` for the ToolDensity theorem."""
+
     metadata: dict[str, Any] = field(default_factory=dict)
     """Arbitrary framework-specific metadata (e.g., sandbox mode, recursion limit)."""
 

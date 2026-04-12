@@ -229,3 +229,133 @@ class TestExtractCompiledArchitecture:
         }
         target = extract_compiled_architecture(compiled)
         assert ("h1", "h2") in target.edges
+
+
+# ---------------------------------------------------------------------------
+# TestRoundTripPreservation
+# ---------------------------------------------------------------------------
+
+
+class TestRoundTripPreservation:
+    """Compile → decompile → analyze → verify certificates preserved.
+
+    Tests Prop 5.1: structural properties are functorially stable under
+    architectural refinement.
+    """
+
+    def test_deerflow_roundtrip_certificates_verified(self):
+        """DeerFlow: compile → decompile → certificates still verify."""
+        from operon_ai.convergence.deerflow_compiler import (
+            organism_to_deerflow,
+            deerflow_to_topology,
+        )
+        from operon_ai.convergence.swarms_adapter import analyze_external_topology
+        from operon_ai.core.certificate import certificate_from_dict
+
+        org = _make_organism()
+        compiled = organism_to_deerflow(org)
+        topology = deerflow_to_topology(compiled)
+
+        # Analyze decompiled topology
+        result = analyze_external_topology(topology)
+        assert result.risk_score < 1.0
+
+        # Verify certificates survive round-trip
+        certs = topology.metadata.get("certificates", [])
+        for cd in certs:
+            restored = certificate_from_dict(cd)
+            verification = restored.verify()
+            assert verification.holds, (
+                f"Certificate {restored.theorem} failed after DeerFlow round-trip"
+            )
+
+    def test_swarms_roundtrip_certificates_verified(self):
+        """Swarms: compile → decompile → certificates still verify."""
+        from operon_ai.convergence.swarms_compiler import (
+            organism_to_swarms,
+            swarms_to_topology,
+        )
+        from operon_ai.convergence.swarms_adapter import analyze_external_topology
+        from operon_ai.core.certificate import certificate_from_dict
+
+        org = _make_organism()
+        compiled = organism_to_swarms(org)
+        topology = swarms_to_topology(compiled)
+
+        result = analyze_external_topology(topology)
+        assert result.risk_score < 1.0
+
+        certs = topology.metadata.get("certificates", [])
+        for cd in certs:
+            restored = certificate_from_dict(cd)
+            verification = restored.verify()
+            assert verification.holds, (
+                f"Certificate {restored.theorem} failed after Swarms round-trip"
+            )
+
+    def test_swarms_roundtrip_graph_preserved(self):
+        """Swarms 1:1 compiler preserves exact graph topology."""
+        from operon_ai.convergence.swarms_compiler import (
+            organism_to_swarms,
+            swarms_to_topology,
+        )
+
+        org = _make_organism()
+        source_arch = extract_architecture(org)
+        compiled = organism_to_swarms(org)
+        topology = swarms_to_topology(compiled)
+
+        # Swarms should preserve exact stage names
+        decompiled_agents = {a["name"] for a in topology.agents}
+        source_stages = set(source_arch.stage_names)
+        assert source_stages == decompiled_agents, (
+            f"Stage names diverged: source={source_stages}, decompiled={decompiled_agents}"
+        )
+
+        # Swarms should preserve exact edges
+        source_edges = set(source_arch.edges)
+        decompiled_edges = set(topology.edges)
+        assert source_edges == decompiled_edges, (
+            f"Edges diverged: source={source_edges}, decompiled={decompiled_edges}"
+        )
+
+    def test_deerflow_roundtrip_stage_names_preserved(self):
+        """DeerFlow: all source stage names appear in decompiled topology."""
+        from operon_ai.convergence.deerflow_compiler import (
+            organism_to_deerflow,
+            deerflow_to_topology,
+        )
+
+        org = _make_organism()
+        source_arch = extract_architecture(org)
+        compiled = organism_to_deerflow(org)
+        topology = deerflow_to_topology(compiled)
+
+        decompiled_agents = {a["name"] for a in topology.agents}
+        source_stages = set(source_arch.stage_names)
+
+        # All source stages should be present (DeerFlow may reshape topology
+        # but should not lose stages)
+        assert source_stages.issubset(decompiled_agents), (
+            f"Lost stages: {source_stages - decompiled_agents}"
+        )
+
+    def test_prop_5_1_certificate_set_embedding(self):
+        """Prop 5.1 core: source certificate theorems ⊆ target theorems."""
+        org = _make_organism()
+        source_certs = org.collect_certificates()
+        source_theorems = {c.theorem for c in source_certs}
+
+        for functor in [swarms_functor, deerflow_functor]:
+            result = functor.compile(org)
+            assert result.preservation.certificate_preserved, (
+                f"{functor.name}: certificates not preserved"
+            )
+            # Target theorems should contain all source theorems
+            target_theorems = {
+                c["theorem"] for c in result.target_architecture.certificates
+            }
+            assert source_theorems.issubset(target_theorems), (
+                f"{functor.name}: source theorems {source_theorems} "
+                f"not subset of target {target_theorems}"
+            )

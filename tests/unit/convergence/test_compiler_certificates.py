@@ -261,3 +261,110 @@ class TestVerifyCompiledEdgeCases:
         assert restored.theorem == "no_oscillation"
         result = restored.verify()
         assert result.holds is True
+
+
+class TestCertificatePreservationMeasurement:
+    """Quantitative measurement of certificate preservation across all 4 compilers.
+
+    Compiles organisms with multiple certificates, counts preserved and
+    verified fractions per compiler.
+    """
+
+    def _make_multi_cert_organism(self):
+        """Build organism with ATP + QuorumSensing + mTOR certificates."""
+        from operon_ai.coordination.quorum_sensing import QuorumSensingBio
+        from operon_ai.state.mtor import MTORScaler
+
+        provider = MockProvider()
+        nucleus = Nucleus(provider=provider)
+        budget = ATP_Store(budget=1000)
+
+        org = skill_organism(
+            stages=[
+                SkillStage(name="reader", role="reader", instructions="Read"),
+                SkillStage(name="analyzer", role="analyzer", instructions="Analyze"),
+                SkillStage(name="writer", role="writer", instructions="Write"),
+            ],
+            fast_nucleus=nucleus,
+            deep_nucleus=nucleus,
+            budget=budget,
+        )
+
+        # Attach additional certifiable components
+        qs = QuorumSensingBio(population_size=10)
+        qs.calibrate()
+        mtor = MTORScaler(atp_store=budget)
+
+        return org, [qs.certify(), mtor.certify()]
+
+    def _measure_preservation(self, compiler_fn, org, extra_certs, **kwargs):
+        """Compile, count preserved and verified certificates."""
+        compiled = compiler_fn(org, **kwargs)
+        compiled_certs = compiled.get("certificates", [])
+
+        # Source certificates
+        source_certs = org.collect_certificates() + extra_certs
+        source_count = len(source_certs)
+
+        # Count preserved (present in compiled output)
+        source_theorems = {c.theorem for c in source_certs}
+        compiled_theorems = {c.get("theorem") for c in compiled_certs}
+        preserved = source_theorems & compiled_theorems
+
+        # Count verified (still hold after serialization)
+        verified = 0
+        for cd in compiled_certs:
+            try:
+                restored = certificate_from_dict(cd)
+                result = restored.verify()
+                if result.holds:
+                    verified += 1
+            except Exception:
+                pass
+
+        return {
+            "source_count": source_count,
+            "compiled_count": len(compiled_certs),
+            "preserved_theorems": len(preserved),
+            "verified_count": verified,
+        }
+
+    def test_deerflow_preservation(self):
+        org, extra = self._make_multi_cert_organism()
+        result = self._measure_preservation(organism_to_deerflow, org, extra)
+        assert result["compiled_count"] >= 1
+        assert result["verified_count"] == result["compiled_count"]
+
+    def test_swarms_preservation(self):
+        org, extra = self._make_multi_cert_organism()
+        result = self._measure_preservation(organism_to_swarms, org, extra)
+        assert result["compiled_count"] >= 1
+        assert result["verified_count"] == result["compiled_count"]
+
+    def test_ralph_preservation(self):
+        org, extra = self._make_multi_cert_organism()
+        result = self._measure_preservation(organism_to_ralph, org, extra)
+        assert result["compiled_count"] >= 1
+        assert result["verified_count"] == result["compiled_count"]
+
+    def test_scion_preservation(self):
+        org, extra = self._make_multi_cert_organism()
+        result = self._measure_preservation(organism_to_scion, org, extra)
+        assert result["compiled_count"] >= 1
+        assert result["verified_count"] == result["compiled_count"]
+
+    def test_all_compilers_100_percent_verification(self):
+        """All 4 compilers must achieve 100% certificate verification rate."""
+        org, extra = self._make_multi_cert_organism()
+        compilers = {
+            "deerflow": organism_to_deerflow,
+            "swarms": organism_to_swarms,
+            "ralph": organism_to_ralph,
+            "scion": organism_to_scion,
+        }
+        for name, compiler_fn in compilers.items():
+            result = self._measure_preservation(compiler_fn, org, extra)
+            assert result["verified_count"] == result["compiled_count"], (
+                f"{name}: {result['verified_count']}/{result['compiled_count']} "
+                f"certificates verified (expected 100%)"
+            )

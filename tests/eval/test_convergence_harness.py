@@ -44,7 +44,7 @@ from eval.convergence.tasks import (
 class TestTasks:
     def test_benchmark_tasks_count(self):
         tasks = get_benchmark_tasks()
-        assert len(tasks) == 20
+        assert len(tasks) == 21
 
     def test_task_ids_unique(self):
         tasks = get_benchmark_tasks()
@@ -58,7 +58,7 @@ class TestTasks:
         hard = [t for t in tasks if t.difficulty == "hard"]
         assert len(easy) == 5
         assert len(medium) == 8
-        assert len(hard) == 7
+        assert len(hard) == 8
 
     def test_shape_distribution(self):
         tasks = get_benchmark_tasks()
@@ -67,7 +67,7 @@ class TestTasks:
         par = [t for t in tasks if t.task_shape == "parallel"]
         assert len(seq) == 5
         assert len(mixed) == 8
-        assert len(par) == 7
+        assert len(par) == 8
 
     def test_task_to_fingerprint(self):
         task = get_benchmark_tasks()[0]

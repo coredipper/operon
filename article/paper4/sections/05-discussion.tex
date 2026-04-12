@@ -166,7 +166,13 @@ conservative: requiring both Signal~1 (baseline violation) and
 Signal~2 (canary failure or repeated anomaly) prevents false alarms
 at the cost of delayed detection.  This is appropriate for sustained
 agent monitoring where observations accumulate over time, less so for
-one-shot prompt classification.
+one-shot prompt classification.  The VerifierComponent extends this
+layer with rubric-based quality evaluation---analogous to \emph{adaptive
+immunity} (B-cell antigen recognition) complementing the innate
+detection of ImmuneSystem.  When quality falls below threshold on a
+fast model, the watcher escalates to the deep model, providing a
+quality-sensitive escalation path that the novelty-based epiplexity
+signal cannot.
 
 \paragraph{Output layer (stochastic).}
 The epiplexity monitor detects output \emph{repetition}, not output
@@ -177,7 +183,21 @@ stagnation signal measures novelty, not quality.  The wrapper tax
 justified for state integrity but not yet for output quality
 improvement with capable models.
 
+\paragraph{Developmental layer (preventive).}
+The CertificateGateComponent implements the G1/S DNA damage checkpoint
+analogy: before each stage executes its LLM call, the gate scans the
+genome against a DNARepair checkpoint.  If corruption is detected, a
+HALT intervention prevents the corrupted state from reaching the model.
+Unlike the state layer's reactive repair (detect corruption after
+execution, then restore), this is a \emph{preventive} gate---corruption
+is blocked before it can affect output.  The guarantee is deterministic:
+the gate checks structural integrity of the genome datastructure, not
+model output quality.  This completes the cell cycle analogy alongside
+CellCycleController, with CertificateGate enforcing the G1/S transition
+that guards against propagation of damaged state.
+
 The pattern mirrors the mechanism benchmarks: structural guarantees
-that enforce invariants (state checksums, signal thresholds) deliver
-unconditionally, while guarantees that depend on information quality
-(embedding novelty, behavioral baselines) deliver conditionally.
+that enforce invariants (state checksums, signal thresholds, integrity
+gates) deliver unconditionally, while guarantees that depend on
+information quality (embedding novelty, behavioral baselines) deliver
+conditionally.

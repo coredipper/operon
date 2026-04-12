@@ -23,6 +23,10 @@ ChainFilter---wire-level anti-injection sanitization.
 ParallelCoalgebra, SequentialCoalgebra, finite-trace observational checking.
 \item \textbf{Surveillance} (\texttt{surveillance/}): The immune system implementation with MHCDisplay,
 TCell, Thymus, and ImmuneMemory components.
+\item \textbf{Adaptive Immune} (\texttt{patterns/verifier.py}): VerifierComponent---rubric-based
+quality evaluation that emits signals to WatcherComponent for quality-based model escalation.
+\item \textbf{Developmental Gate} (\texttt{patterns/certificate\_gate.py}):
+CertificateGateComponent---pre-execution genome integrity check implementing the G1/S checkpoint.
 \item \textbf{Healing} (\texttt{healing/}): ChaperoneLoop implementing the structural self-healing pattern.
 \item \textbf{Quality} (\texttt{quality/}): Chaperone protein with multi-strategy folding.
 \item \textbf{Topology} (\texttt{topology/}): Network motifs including Quorum, Cascade, and Oscillator.
@@ -72,6 +76,57 @@ class Signal2(Enum):
 An agent is only flagged when \texttt{Signal1 == NON\_SELF} \textbf{and} \texttt{Signal2 != NONE}.
 This prevents false positives from transient anomalies, implementing the immunological requirement
 for costimulation.
+
+\subsection{Adaptive Immune Layer: VerifierComponent}
+
+The ImmuneSystem above implements \emph{innate} immunity---generic anomaly detection via baseline
+deviations.  The VerifierComponent completes the immune analogy with \emph{adaptive} immunity:
+rubric-based quality evaluation tailored to each task type, analogous to B-cells producing
+antibodies specific to a particular antigen.
+
+\begin{verbatim}
+@dataclass
+class VerifierComponent:
+    rubric: Rubric | None = None       # (output, stage) -> quality 0.0-1.0
+    config: VerifierConfig = ...       # quality_low_threshold = 0.5
+
+    def on_stage_result(self, stage, result, shared_state, ...):
+        quality = self.rubric(output, stage_name)
+        severity = 1.0 - quality
+        signal = WatcherSignal(
+            category=SignalCategory.EPISTEMIC,
+            source="verifier", value=severity, ...)
+        shared_state["_verifier_signals"].append(signal)
+\end{verbatim}
+
+The WatcherComponent collects these signals and, when quality falls below threshold on a fast model,
+escalates to the deep model.  This provides quality-sensitive escalation that the novelty-based
+epiplexity signal cannot: a weaker model producing \emph{varied but mediocre} output will not
+trigger epiplexity stagnation but will trigger verifier escalation.
+
+\subsection{G1/S Checkpoint: CertificateGateComponent}
+
+The CertificateGateComponent implements the G1/S DNA damage checkpoint: before each stage
+executes its LLM call, the gate scans the genome against a DNARepair checkpoint.  If corruption
+is detected, a HALT intervention prevents the corrupted state from reaching the model.
+
+\begin{verbatim}
+@dataclass
+class CertificateGateComponent:
+    genome: Genome
+    repair: DNARepair
+    checkpoint: StateCheckpoint
+
+    def on_stage_start(self, stage, shared_state, ...):
+        damage = self.repair.scan(self.genome, self.checkpoint)
+        if damage:
+            shared_state[WATCHER_STATE_KEY] = WatcherIntervention(
+                kind=InterventionKind.HALT,
+                reason=f"genome corruption: {len(damage)} damage(s)")
+\end{verbatim}
+
+This moves DNARepair from reactive (detect-after-corrupt) to preventive (block-before-execute),
+completing the cell cycle analogy alongside CellCycleController.
 
 \subsection{Chaperone Implementation}
 

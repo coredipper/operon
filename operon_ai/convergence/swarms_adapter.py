@@ -161,10 +161,16 @@ def _build_wiring_diagram(topology: ExternalTopology) -> WiringDiagram:
         outputs = {"out": _DEFAULT_PORT}
 
         # Propagate capabilities/skills onto the ModuleSpec.
-        # Only convert recognized Capability enum values; skip unknown tool names.
+        # Resolve external tool names via EXTERNAL_CAPABILITY_MAP, then
+        # keep only values matching the Capability enum.
         _cap_values = {c.value for c in Capability}
         agent_caps = _get_agent_capabilities(spec)
-        caps = {Capability(c) for c in agent_caps if c in _cap_values}
+        # Also check topology.capabilities for structured annotations
+        for agent_name, cap_tuple in topology.capabilities:
+            if agent_name == name:
+                agent_caps.extend(cap_tuple)
+        resolved = [_resolve_capability(c) for c in agent_caps]
+        caps = {Capability(c) for c in resolved if c in _cap_values}
 
         # Assign unit cost so critical-path and speedup analyses are non-degenerate.
         diagram.add_module(ModuleSpec(
@@ -223,6 +229,40 @@ def _classify_task_shape(topology: ExternalTopology) -> str:
     return "mixed"
 
 
+# Map common external framework tool names to Operon Capability values.
+# Unknown names that don't appear here are silently dropped when building
+# the WiringDiagram but preserved in ExternalTopology.capabilities for
+# round-trip fidelity.
+EXTERNAL_CAPABILITY_MAP: dict[str, str] = {
+    # Network / web
+    "web_search": "net",
+    "http_request": "net",
+    "api_call": "net",
+    "browse": "net",
+    "fetch_url": "net",
+    # Filesystem
+    "file_io": "read_fs",
+    "read_file": "read_fs",
+    "write_file": "write_fs",
+    "file_write": "write_fs",
+    "file_read": "read_fs",
+    # Code execution
+    "code_execution": "exec_code",
+    "run_code": "exec_code",
+    "execute": "exec_code",
+    "shell": "exec_code",
+    "python": "exec_code",
+    # Financial
+    "payment": "money",
+    "billing": "money",
+    "charge": "money",
+    # Communication
+    "send_email": "email_send",
+    "email": "email_send",
+    "notify": "email_send",
+}
+
+
 def _get_agent_capabilities(spec: dict[str, Any]) -> list[str]:
     """Extract capabilities from an agent spec, normalizing skills/capabilities."""
     caps = spec.get("capabilities") or spec.get("skills") or []
@@ -231,8 +271,20 @@ def _get_agent_capabilities(spec: dict[str, Any]) -> list[str]:
     return []
 
 
+def _resolve_capability(name: str) -> str:
+    """Resolve an external tool name to a Capability value string.
+
+    Returns the mapped value if found in EXTERNAL_CAPABILITY_MAP,
+    otherwise returns the original name (which may or may not match
+    a Capability enum value).
+    """
+    return EXTERNAL_CAPABILITY_MAP.get(name.lower().strip(), name)
+
+
 def _has_capabilities(topology: ExternalTopology) -> bool:
     """Return ``True`` if any agent spec declares capabilities or skills."""
+    if topology.capabilities:
+        return True
     return any(_get_agent_capabilities(spec) for spec in topology.agents)
 
 
@@ -241,6 +293,8 @@ def _count_tools(topology: ExternalTopology) -> int:
     tools: set[str] = set()
     for spec in topology.agents:
         tools.update(_get_agent_capabilities(spec))
+    for _, cap_tuple in topology.capabilities:
+        tools.update(cap_tuple)
     return len(tools)
 
 

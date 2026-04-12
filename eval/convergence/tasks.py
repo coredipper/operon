@@ -1,9 +1,9 @@
 """Benchmark task definitions for the C6 convergence evaluation harness.
 
-Provides 20 tasks across three difficulty levels and three task shapes:
+Provides 21 tasks across three difficulty levels and three task shapes:
   - 5 easy sequential tasks
   - 8 medium mixed tasks
-  - 7 hard parallel tasks
+  - 8 hard parallel tasks
 
 Each task specifies required roles, tool counts, and subtask counts that
 drive organism construction in the mock evaluator.
@@ -283,9 +283,20 @@ _HARD_PARALLEL: list[TaskDefinition] = [
         required_roles=("entity_extractor", "relation_extractor", "resolver", "graph_builder", "validator"),
         tags=("knowledge", "graph"),
     ),
+    TaskDefinition(
+        task_id="hard_par_08",
+        name="Subtle Bug Detection",
+        description="Review production-quality code with non-obvious bugs: off-by-one, race condition, float precision, exception handling.",
+        difficulty="hard",
+        task_shape="parallel",
+        tool_count=4,
+        subtask_count=6,
+        required_roles=("logic_auditor", "concurrency_auditor", "edge_case_finder", "type_safety_auditor", "integration_reviewer", "reporter"),
+        tags=("code", "review", "subtle"),
+    ),
 ]
 
 
 def get_benchmark_tasks() -> list[TaskDefinition]:
-    """Return all 20 benchmark tasks."""
+    """Return all 21 benchmark tasks."""
     return list(_EASY_SEQUENTIAL + _MEDIUM_MIXED + _HARD_PARALLEL)

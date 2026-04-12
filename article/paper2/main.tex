@@ -51,8 +51,8 @@ common representation; four epistemic bounds serve as a structural linter;
 four TLA+ specifications verify safety invariants; and a co-design
 fixed-point proof (following Zardini) establishes that the adaptive assembly
 loop converges within $\varepsilon$.  The architecture is implemented in 23
-convergence modules with 308 convergence-specific unit tests as part of a broader
-suite of 1{,}530 tests and 107 worked examples.
+convergence modules with 356 convergence-specific unit tests as part of a broader
+suite of 1{,}813 tests and 116 worked examples.
 \end{abstract}
 
 %% ============================================================================
@@ -462,8 +462,8 @@ described above.
 \section{Implementation}\label{sec:impl}
 
 The convergence architecture is implemented in 23 Python modules under
-\texttt{operon\_ai/convergence/}, tested by 308 convergence-specific unit
-tests as part of a broader suite of 1{,}530 tests across the entire Operon
+\texttt{operon\_ai/convergence/}, tested by 356 convergence-specific unit
+tests as part of a broader suite of 1{,}813 tests across the entire Operon
 codebase.  Table~\ref{tab:adapters} summarizes the six adapters.
 
 \begin{table}[ht]
@@ -525,6 +525,22 @@ Three modules extend the cognitive layer:
     Fork/Join execution within individual stages, inspired by the
     AsyncThink~\cite{chi2025asyncthink} observation that intra-stage
     parallel reasoning can reduce latency without increasing token cost.
+  \item \textbf{VerifierComponent} (in \texttt{patterns/verifier.py}):
+    Rubric-based stage output quality evaluation, analogous to
+    \emph{adaptive immunity} (B-cell antigen recognition).  Evaluates
+    each stage's output against a task-specific rubric and emits
+    quality signals to the WatcherComponent.  When quality falls below
+    threshold on a fast model, the watcher escalates to the deep model---
+    completing the innate/adaptive immune layering alongside
+    EpiplexityMonitor (innate) and ImmuneSystem (species-specific).
+  \item \textbf{CertificateGateComponent} (in \texttt{patterns/certificate\_gate.py}):
+    Pre-execution genome integrity verification, analogous to the
+    \emph{G1/S DNA damage checkpoint} in cell biology.  Scans the
+    genome against a DNARepair checkpoint before each stage executes;
+    if corruption is detected, emits a HALT intervention that prevents
+    the corrupted state from reaching the LLM.  This moves integrity
+    checking from reactive (detect-after-corrupt) to preventive
+    (block-before-execute).
 \end{itemize}
 
 \subsection{Catalog Seeding}
@@ -600,7 +616,10 @@ LangGraph watcher node (\texttt{operon\_watcher\_node}) that provides
 real-time structural monitoring inside DeerFlow's execution loop.
 A Ralph compiler (\texttt{organism\_to\_ralph}) would emit hat
 configurations with backpressure constraints derived from the epistemic
-analysis.
+analysis.  The CertificateGateComponent provides a structural mechanism
+that compilers can embed as a mandatory pre-execution gate: any compiled
+target that preserves the G1/S checkpoint semantics inherits the
+integrity guarantee without reimplementation.
 
 \paragraph{Cross-target evaluation.}
 A systematic evaluation harness running identical tasks across Operon,
@@ -643,8 +662,8 @@ that the adaptive assembly loop stabilizes within $\varepsilon$.  By
 operating on serializable dicts with zero external imports, the adapter
 architecture achieves framework-agnostic analysis while preserving a
 structured interchange format with top-level frozen dataclass fields
-(nested dicts remain mutable by Python convention).  The 23 convergence modules, 308 convergence unit tests, 4 TLA+
-specifications, and 107 worked examples provide a concrete, verifiable
+(nested dicts remain mutable by Python convention).  The 23 convergence modules, 356 convergence unit tests, 4 TLA+
+specifications, and 116 worked examples provide a concrete, verifiable
 foundation for multi-agent system integration.
 
 %% ============================================================================
@@ -747,7 +766,12 @@ can accelerate during deep recursion.
 Genome immutability provides configuration audit (a structural
 guarantee by construction, not requiring benchmarking).  The immune
 system's role-manipulation detection relates to quorum sensing's
-adversarial consensus problem.
+adversarial consensus problem.  The VerifierComponent adds rubric-based
+quality evaluation that can trigger model escalation when output quality
+degrades---relevant for AnimaWorks' supervisor-worker topology where
+worker output quality directly affects supervisor decisions.
+CertificateGateComponent provides pre-execution integrity checks that
+prevent corrupted genome state from propagating through the pipeline.
 
 \paragraph{Ralph.}
 Metabolic budgets map to backpressure enforcement in Ralph's

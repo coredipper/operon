@@ -207,3 +207,61 @@ class TestManagedToDeerflow:
         managed = ManagedOrganism()
         with pytest.raises(ValueError, match="no inner SkillOrganism"):
             managed_to_deerflow(managed)
+
+
+# ---------------------------------------------------------------------------
+# Round-trip: compile -> decompile
+# ---------------------------------------------------------------------------
+
+
+class TestDeerflowDecompile:
+    """Tests for deerflow_to_topology() round-trip."""
+
+    def test_roundtrip_agents_preserved(self) -> None:
+        from operon_ai.convergence.deerflow_compiler import deerflow_to_topology
+
+        org = _make_organism()
+        compiled = organism_to_deerflow(org)
+        topology = deerflow_to_topology(compiled)
+
+        # Lead + sub_agents should produce matching agent names
+        agent_names = {a["name"] for a in topology.agents}
+        assert "coordinator" in agent_names
+        assert "researcher" in agent_names
+        assert "writer" in agent_names
+
+    def test_roundtrip_edges_preserved(self) -> None:
+        from operon_ai.convergence.deerflow_compiler import deerflow_to_topology
+
+        org = _make_organism()
+        compiled = organism_to_deerflow(org)
+        topology = deerflow_to_topology(compiled)
+
+        # DeerFlow uses hub-and-spoke: lead -> each sub_agent
+        assert ("coordinator", "researcher") in topology.edges
+        assert ("coordinator", "writer") in topology.edges
+
+    def test_roundtrip_certificates_preserved(self) -> None:
+        from operon_ai.convergence.deerflow_compiler import deerflow_to_topology
+
+        org = _make_organism()
+        compiled = organism_to_deerflow(org)
+
+        # Certificates should survive the round trip
+        topology = deerflow_to_topology(compiled)
+        certs = topology.metadata.get("certificates", [])
+
+        # Source certificates match decompiled certificates
+        assert certs == compiled.get("certificates", [])
+
+    def test_roundtrip_capabilities_populated(self) -> None:
+        from operon_ai.convergence.deerflow_compiler import deerflow_to_topology
+
+        org = _make_organism()
+        compiled = organism_to_deerflow(org)
+        topology = deerflow_to_topology(compiled)
+
+        # Skills from compiled dict should populate capabilities
+        if compiled.get("skills"):
+            cap_agents = {name for name, _ in topology.capabilities}
+            assert compiled["assistant_id"] in cap_agents

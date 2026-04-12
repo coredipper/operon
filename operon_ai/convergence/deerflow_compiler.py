@@ -16,7 +16,7 @@ from typing import Any
 from ..patterns.managed import ManagedOrganism
 from ..patterns.organism import SkillOrganism
 from ..patterns.types import CognitiveMode, SkillStage, resolve_cognitive_mode
-from .types import RuntimeConfig
+from .types import ExternalTopology, RuntimeConfig
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -143,6 +143,44 @@ def organism_to_deerflow(
         },
         "certificates": certificates,
     }
+
+
+def deerflow_to_topology(compiled: dict[str, Any]) -> ExternalTopology:
+    """Decompile a DeerFlow session config dict back to an :class:`ExternalTopology`.
+
+    This is the inverse of :func:`organism_to_deerflow`.  It calls
+    :func:`parse_deerflow_session` and enriches the result with
+    certificates from the compiled dict's ``"certificates"`` key.
+
+    Parameters
+    ----------
+    compiled:
+        A dict produced by :func:`organism_to_deerflow`.
+
+    Returns
+    -------
+    ExternalTopology
+        Topology with agents, edges, capabilities, and certificate metadata.
+    """
+    from .deerflow_adapter import parse_deerflow_session
+
+    topology = parse_deerflow_session(compiled)
+
+    # Enrich metadata with certificates if present.
+    certs = compiled.get("certificates", [])
+    if certs:
+        enriched_meta = dict(topology.metadata)
+        enriched_meta["certificates"] = certs
+        topology = ExternalTopology(
+            source=topology.source,
+            pattern_name=topology.pattern_name,
+            agents=topology.agents,
+            edges=topology.edges,
+            capabilities=topology.capabilities,
+            metadata=enriched_meta,
+        )
+
+    return topology
 
 
 def managed_to_deerflow(

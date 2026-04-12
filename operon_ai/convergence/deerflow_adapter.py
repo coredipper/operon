@@ -102,11 +102,21 @@ def parse_deerflow_session(session_config: dict) -> ExternalTopology:
         (lead_id, sa.get("name", "unnamed")) for sa in sub_agents
     ]
 
+    # Build per-agent capability annotations from skills lists.
+    cap_annotations: list[tuple[str, tuple[str, ...]]] = []
+    if skills:
+        cap_annotations.append((lead_id, tuple(skills)))
+    for sa in sub_agents:
+        sa_skills = sa.get("skills", [])
+        if sa_skills:
+            cap_annotations.append((sa.get("name", "unnamed"), tuple(sa_skills)))
+
     return ExternalTopology(
         source="deerflow",
         pattern_name="HierarchicalDeerFlow",
         agents=tuple(agents),
         edges=tuple(edges),
+        capabilities=tuple(cap_annotations),
         metadata={
             "sandbox": sandbox,
             "recursion_limit": recursion_limit,

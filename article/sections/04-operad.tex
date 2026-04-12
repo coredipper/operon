@@ -338,7 +338,7 @@ A topology generates periodic behavior via delayed negative feedback. Node $A$ a
 \begin{itemize}
 \item \textbf{Heartbeat Oscillator} $\to$ Health checks that verify system liveness at regular intervals
 \item \textbf{Circadian Oscillator} $\to$ Daily maintenance tasks (log rotation, cache clearing, model refresh)
-\item \textbf{Cell Cycle Oscillator} $\to$ Phased workflows with distinct stages (G1: gather, S: synthesize, G2: validate, M: execute)
+\item \textbf{Cell Cycle Oscillator} $\to$ Phased workflows with distinct stages (G1: gather, S: synthesize, G2: validate, M: execute).  The G1/S transition is gated by the CertificateGateComponent, which checks genome integrity before allowing synthesis to proceed---analogous to the biological G1/S checkpoint where CDK4/6-cyclin~D must phosphorylate Rb before DNA replication begins.  See Section~\ref{sec:implementation} for the implementation.
 \end{itemize}
 \item \textbf{Formal Structure:} An oscillator is a Trace operation with a built-in delay element $\delta$:
 \begin{equation}
