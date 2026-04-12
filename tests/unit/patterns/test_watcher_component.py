@@ -447,14 +447,34 @@ def test_organism_resolves_custom_watcher_key():
         def on_stage_result(self, stage, result, shared_state, stage_outputs): pass
         def on_run_complete(self, result, shared_state): pass
 
+    # HaltInjector writes a HALT under the custom key on the first stage,
+    # so the second stage should never execute.
+    from operon_ai.patterns.types import InterventionKind, WatcherIntervention
+
+    class HaltInjector:
+        def on_run_start(self, task, shared_state): pass
+        def on_stage_start(self, stage, shared_state, stage_outputs):
+            if getattr(stage, "name", "") == "s1":
+                shared_state[custom_key] = WatcherIntervention(
+                    kind=InterventionKind.HALT, stage_name="s1", reason="test halt",
+                )
+        def on_stage_result(self, stage, result, shared_state, stage_outputs): pass
+        def on_run_complete(self, result, shared_state): pass
+
     org = skill_organism(
-        stages=[SkillStage(name="s", role="r", instructions="do it")],
-        fast_nucleus=Nucleus(provider=MockProvider(responses={"do it": "done"})),
-        deep_nucleus=Nucleus(provider=MockProvider(responses={"do it": "done"})),
-        components=[watcher, KeySpy()],
+        stages=[
+            SkillStage(name="s1", role="r1", instructions="do step 1"),
+            SkillStage(name="s2", role="r2", instructions="do step 2"),
+        ],
+        fast_nucleus=Nucleus(provider=MockProvider(responses={"do step 1": "done1", "do step 2": "done2"})),
+        deep_nucleus=Nucleus(provider=MockProvider(responses={"do step 1": "done1", "do step 2": "done2"})),
+        components=[watcher, KeySpy(), HaltInjector()],
     )
-    org.run("test")
+    result = org.run("test")
     assert captured["watcher_key"] == custom_key
+    # HALT on s1 should prevent s2 from executing
+    executed_stages = [sr.stage_name for sr in result.stage_results]
+    assert "s2" not in executed_stages, f"s2 should be halted but ran: {executed_stages}"
 
 
 def test_certificate_gate_uses_custom_watcher_key():
@@ -488,5 +508,8 @@ def test_certificate_gate_uses_custom_watcher_key():
     gate.on_stage_start(FakeStage(), ctx, {})
 
     # HALT should be written to the custom key, not the default
+    from operon_ai.patterns.types import InterventionKind, WATCHER_STATE_KEY
     assert custom_key in ctx, f"Expected HALT under {custom_key}, got keys: {list(ctx.keys())}"
     assert isinstance(ctx[custom_key], WatcherIntervention)
+    assert ctx[custom_key].kind == InterventionKind.HALT
+    assert WATCHER_STATE_KEY not in ctx, "Default key should not be written when custom key is set"
