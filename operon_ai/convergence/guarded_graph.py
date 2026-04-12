@@ -305,17 +305,24 @@ def compile_guarded_graph(
         already_escalated: bool,
         model_alias: str,
     ) -> str:
-        """Decide routing: 'accept', 'escalate', or 'halt'.
+        """Decide routing: 'accept', 'escalate', 'retry', or 'halt'.
 
         Priority order:
-        1. Watcher says escalate/retry → 'escalate'
-        2. Quality-based escalation (fast model, quality < 0.5) → 'escalate'
-        3. Stage FAILURE with no retry available → 'halt'
-        4. Otherwise → 'accept'
+        1. Already on deep model + watcher says escalate → 'halt' (nowhere to go)
+        2. Watcher says retry (same model) → 'retry'
+        3. Watcher says escalate → 'escalate' (switch to deep)
+        4. Quality-based escalation (fast model, quality < 0.5) → 'escalate'
+        5. Stage FAILURE with no watcher retry → 'halt'
+        6. Otherwise → 'accept'
         """
-        # Watcher intervention takes priority (it knows the retry budget)
-        if stage_intervention in ("escalate", "retry"):
-            return "escalate"
+        if stage_intervention:
+            # Already on deep model — can't escalate further
+            if already_escalated and stage_intervention == "escalate":
+                return "halt"
+            if stage_intervention == "retry":
+                return "retry"
+            if stage_intervention == "escalate":
+                return "escalate"
         # Quality-based escalation (only on fast model, only once)
         if quality < 0.5 and model_alias == "fast" and not already_escalated:
             return "escalate"
@@ -360,16 +367,29 @@ def compile_guarded_graph(
                 stage_intervention, already_escalated, model_alias,
             )
 
+            if decision == "retry":
+                # Retry with same model — route back through pre_guard
+                # but don't switch to deep model
+                return {
+                    "use_deep": state.get("use_deep", False),  # keep current model
+                    "intervention_log": [{
+                        "stage": stage_name, "kind": "retry",
+                        "reason": f"watcher retry",
+                        "phase": "post_guard",
+                    }],
+                    "watcher_state": ws,
+                }
+
             if decision == "escalate":
-                reason = (
-                    f"watcher {stage_intervention}" if stage_intervention
-                    else f"low quality ({quality:.2f}) on {model_alias}"
-                )
                 return {
                     "use_deep": True,
                     "intervention_log": [{
                         "stage": stage_name, "kind": "escalate",
-                        "reason": reason, "phase": "post_guard",
+                        "reason": (
+                            f"watcher {stage_intervention}" if stage_intervention
+                            else f"low quality ({quality:.2f}) on {model_alias}"
+                        ),
+                        "phase": "post_guard",
                     }],
                     "watcher_state": ws,
                 }
@@ -424,9 +444,9 @@ def compile_guarded_graph(
         # Wire: agent → post_guard
         builder.add_edge(agent_name, post_name)
 
-        # Wire: post_guard → conditional (halt/escalate/next)
-        # Escalation routes back through pre_guard so the certificate
-        # gate runs before every LLM call, not just the first attempt.
+        # Wire: post_guard → conditional (halt/retry/escalate/next)
+        # Both retry and escalate route through pre_guard so CertificateGate
+        # runs before every LLM call.
         if i < len(stages) - 1:
             next_pre = f"pre_guard_{stages[i + 1]['name']}"
 
@@ -434,31 +454,37 @@ def compile_guarded_graph(
                 def route(state: GuardedState) -> str:
                     if state.get("halted"):
                         return "halt"
-                    if state.get("use_deep"):
-                        return "escalate"
+                    # Check if post_guard requested retry or escalate
+                    log = state.get("intervention_log", [])
+                    if log:
+                        last_kind = log[-1].get("kind") if log else None
+                        if last_kind in ("retry", "escalate"):
+                            return "retry"  # Both go through pre_guard
                     return "next"
                 return route
 
             builder.add_conditional_edges(
                 post_name,
                 make_post_route(pre_name, next_pre),
-                {"next": next_pre, "escalate": pre_name, "halt": END},
+                {"next": next_pre, "retry": pre_name, "halt": END},
             )
         else:
-            # Last stage: halt or done
             def make_final_route(pn: str):
                 def route(state: GuardedState) -> str:
                     if state.get("halted"):
                         return "halt"
-                    if state.get("use_deep"):
-                        return "escalate"
+                    log = state.get("intervention_log", [])
+                    if log:
+                        last_kind = log[-1].get("kind") if log else None
+                        if last_kind in ("retry", "escalate"):
+                            return "retry"
                     return "done"
                 return route
 
             builder.add_conditional_edges(
                 post_name,
                 make_final_route(pre_name),
-                {"done": END, "escalate": pre_name, "halt": END},
+                {"done": END, "retry": pre_name, "halt": END},
             )
 
     # Entry edge: START → first pre_guard
