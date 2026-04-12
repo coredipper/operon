@@ -76,6 +76,7 @@ from .workflow_generation import (
     generate_and_register,
 )
 from .deerflow_compiler import (
+    deerflow_to_topology,
     managed_to_deerflow,
     organism_to_deerflow,
 )
@@ -104,6 +105,7 @@ from .scion_compiler import (
 from .swarms_compiler import (
     managed_to_swarms,
     organism_to_swarms,
+    swarms_to_topology,
 )
 from .categorical import (
     Architecture,
@@ -199,6 +201,9 @@ __all__ = [
     "managed_to_ralph",
     "organism_to_scion",
     "managed_to_scion",
+    # Decompilers (C5)
+    "deerflow_to_topology",
+    "swarms_to_topology",
     # Distributed watcher (C5)
     "DistributedWatcher",
     "InMemoryTransport",

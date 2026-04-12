@@ -271,13 +271,21 @@ class TestCertificatePreservationMeasurement:
     """
 
     def _make_multi_cert_organism(self):
-        """Build organism with ATP + QuorumSensing + mTOR certificates."""
+        """Build organism with ATP + QuorumSensing + mTOR certificates.
+
+        Attaches QS and mTOR to the organism's components list so that
+        collect_certificates() includes all three certificate sources.
+        """
         from operon_ai.coordination.quorum_sensing import QuorumSensingBio
         from operon_ai.state.mtor import MTORScaler
 
         provider = MockProvider()
         nucleus = Nucleus(provider=provider)
         budget = ATP_Store(budget=1000)
+
+        qs = QuorumSensingBio(population_size=10)
+        qs.calibrate()
+        mtor = MTORScaler(atp_store=budget)
 
         org = skill_organism(
             stages=[
@@ -290,12 +298,13 @@ class TestCertificatePreservationMeasurement:
             budget=budget,
         )
 
-        # Attach additional certifiable components
-        qs = QuorumSensingBio(population_size=10)
-        qs.calibrate()
-        mtor = MTORScaler(atp_store=budget)
+        # Attach certifiable components so collect_certificates() finds them.
+        # QS and mTOR have certify() but don't implement the full
+        # SkillRuntimeComponent protocol — that's fine, collect_certificates()
+        # only checks for certify().
+        org.components = (*org.components, qs, mtor)  # type: ignore[assignment]
 
-        return org, [qs.certify(), mtor.certify()]
+        return org, []
 
     def _measure_preservation(self, compiler_fn, org, extra_certs, **kwargs):
         """Compile, count preserved and verified certificates."""
@@ -332,25 +341,25 @@ class TestCertificatePreservationMeasurement:
     def test_deerflow_preservation(self):
         org, extra = self._make_multi_cert_organism()
         result = self._measure_preservation(organism_to_deerflow, org, extra)
-        assert result["compiled_count"] >= 1
+        assert result["compiled_count"] >= 3, f"Expected >=3 certs, got {result['compiled_count']}"
         assert result["verified_count"] == result["compiled_count"]
 
     def test_swarms_preservation(self):
         org, extra = self._make_multi_cert_organism()
         result = self._measure_preservation(organism_to_swarms, org, extra)
-        assert result["compiled_count"] >= 1
+        assert result["compiled_count"] >= 3, f"Expected >=3 certs, got {result['compiled_count']}"
         assert result["verified_count"] == result["compiled_count"]
 
     def test_ralph_preservation(self):
         org, extra = self._make_multi_cert_organism()
         result = self._measure_preservation(organism_to_ralph, org, extra)
-        assert result["compiled_count"] >= 1
+        assert result["compiled_count"] >= 3, f"Expected >=3 certs, got {result['compiled_count']}"
         assert result["verified_count"] == result["compiled_count"]
 
     def test_scion_preservation(self):
         org, extra = self._make_multi_cert_organism()
         result = self._measure_preservation(organism_to_scion, org, extra)
-        assert result["compiled_count"] >= 1
+        assert result["compiled_count"] >= 3, f"Expected >=3 certs, got {result['compiled_count']}"
         assert result["verified_count"] == result["compiled_count"]
 
     def test_all_compilers_100_percent_verification(self):

@@ -364,7 +364,12 @@ def analyze_external_topology(topology: ExternalTopology) -> AdapterResult:
     density = tool_density(diagram)
     raw_tool_count = _count_tools(topology)
     effective_tools = max(density.total_tools, raw_tool_count)
-    modules_with_tools = sum(1 for s in topology.agents if _get_agent_capabilities(s))
+    # Count capability-bearing modules from both agent dicts and structured field.
+    cap_field_agents = {name for name, _ in topology.capabilities}
+    modules_with_tools = sum(
+        1 for s in topology.agents
+        if _get_agent_capabilities(s) or s.get("name") in cap_field_agents
+    )
     effective_modules = max(density.num_modules, modules_with_tools)
     # planning_cost_ratio = number of capability-bearing modules (per tool_density()).
     effective_planning_ratio = max(density.planning_cost_ratio, float(effective_modules))
