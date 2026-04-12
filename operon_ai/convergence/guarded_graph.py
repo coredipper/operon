@@ -310,16 +310,23 @@ def compile_guarded_graph(
                     "watcher_state": ws,
                 }
 
-            # Read the watcher's latest intervention (retry/escalate)
-            watcher_interventions = ws.get("watcher_interventions", [])
-            if watcher_interventions:
-                latest = watcher_interventions[-1]
-                action = latest.get("action", "")
-                if action == "escalate" and not already_escalated:
+            # Read NEW watcher interventions for THIS stage only.
+            # Compare against pre-call count to avoid reacting to prior stages.
+            old_interventions = state.get("watcher_state", {}).get(
+                "watcher_interventions", []
+            )
+            new_watcher_interventions = ws.get("watcher_interventions", [])[
+                len(old_interventions):
+            ]
+            for wi in new_watcher_interventions:
+                if wi.get("stage_name") != stage_name:
+                    continue
+                action = wi.get("action", "")
+                if action in ("escalate", "retry") and not already_escalated:
                     interventions.append({
                         "stage": stage_name,
                         "kind": "escalate",
-                        "reason": latest.get("reason", "watcher escalation"),
+                        "reason": wi.get("reason", "watcher escalation"),
                         "phase": "post_guard",
                     })
                     return {
@@ -327,18 +334,21 @@ def compile_guarded_graph(
                         "intervention_log": interventions,
                         "watcher_state": ws,
                     }
-                if action == "retry" and not already_escalated:
-                    interventions.append({
-                        "stage": stage_name,
-                        "kind": "escalate",  # retry → escalate to deep model
-                        "reason": latest.get("reason", "watcher retry → escalate"),
-                        "phase": "post_guard",
-                    })
-                    return {
-                        "use_deep": True,
-                        "intervention_log": interventions,
-                        "watcher_state": ws,
-                    }
+
+            # If already escalated and still failing, halt — don't accept
+            # error output into the pipeline.
+            if already_escalated and action_type == "FAILURE":
+                interventions.append({
+                    "stage": stage_name,
+                    "kind": "halt",
+                    "reason": "stage failed on both fast and deep models",
+                    "phase": "post_guard",
+                })
+                return {
+                    "halted": True,
+                    "intervention_log": interventions,
+                    "watcher_state": ws,
+                }
 
             # --- Accept output: move from pending to stage_outputs ---
             new_outputs = dict(state.get("stage_outputs", {}))
