@@ -268,11 +268,19 @@ class SkillOrganism:
         shared_state: dict[str, Any] | None = None,
     ) -> SkillRunResult:
         # Preserve an incoming RunContext (keeps custom key configuration);
-        # otherwise wrap in a new RunContext with defaults.
+        # otherwise wrap in a new RunContext, resolving the watcher key from
+        # any configured WatcherComponent so custom state_key works end-to-end.
         if isinstance(shared_state, RunContext):
             state = shared_state
         else:
-            state = RunContext(shared_state or {})
+            watcher_key = WATCHER_STATE_KEY
+            for component in self.components:
+                cfg = getattr(component, "config", None)
+                sk = getattr(cfg, "state_key", None)
+                if sk is not None:
+                    watcher_key = sk
+                    break
+            state = RunContext(shared_state or {}, watcher_key=watcher_key)
         state.pop("_blocked_by", None)  # Clear stale pre-stage halt marker
         stage_outputs: dict[str, Any] = {}
         stage_results: list[SkillStageResult] = []

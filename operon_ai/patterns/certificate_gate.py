@@ -85,8 +85,12 @@ class CertificateGateComponent:
             self.blocked_stages.append(stage_name)
             self.damage_reports.extend(damage)
 
-            # Emit HALT intervention via shared_state
-            shared_state[WATCHER_STATE_KEY] = WatcherIntervention(
+            # Emit HALT intervention via shared_state.
+            # Use the RunContext's dynamic watcher key when available,
+            # falling back to the default WATCHER_STATE_KEY.
+            from .types import RunContext
+            key = shared_state._watcher_key if isinstance(shared_state, RunContext) else WATCHER_STATE_KEY
+            shared_state[key] = WatcherIntervention(
                 kind=InterventionKind.HALT,
                 stage_name=stage_name,
                 reason=f"genome corruption detected before stage: {len(damage)} damage(s)",
