@@ -223,3 +223,35 @@ class CognitiveMode(Enum):
 
     OBSERVATIONAL = "observational"      # System A: passive sensing
     ACTION_ORIENTED = "action_oriented"  # System B: active decision-making
+
+
+# --- RunContext: typed shared_state wrapper ---
+
+_VERIFIER_SIGNALS_KEY = "_verifier_signals"
+_TELEMETRY_KEY = "_operon_telemetry"
+
+
+class RunContext(dict):
+    """Typed wrapper around the ``shared_state`` dict.
+
+    Subclasses ``dict`` so it's a drop-in replacement everywhere
+    ``dict[str, Any]`` is expected.  Provides typed property accessors
+    for the three well-known keys used by WatcherComponent,
+    VerifierComponent, and TelemetryProbe.
+    """
+
+    @property
+    def watcher_intervention(self) -> WatcherIntervention | None:
+        """Current watcher intervention, or ``None``."""
+        v = self.get(WATCHER_STATE_KEY)
+        return v if isinstance(v, WatcherIntervention) else None
+
+    @property
+    def verifier_signals(self) -> list:
+        """Verifier quality signals deposited by VerifierComponent."""
+        return self.get(_VERIFIER_SIGNALS_KEY, [])
+
+    @property
+    def telemetry_events(self) -> list:
+        """Telemetry events deposited by TelemetryProbe."""
+        return self.get(_TELEMETRY_KEY, [])

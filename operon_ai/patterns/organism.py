@@ -14,6 +14,7 @@ from ..organelles.nucleus import Nucleus
 from ..state.metabolism import ATP_Store
 from .types import (
     InterventionKind,
+    RunContext,
     SkillRunResult,
     SkillRuntimeComponent,
     SkillStage,
@@ -266,7 +267,7 @@ class SkillOrganism:
         task: str,
         shared_state: dict[str, Any] | None = None,
     ) -> SkillRunResult:
-        state = dict(shared_state or {})
+        state = RunContext(shared_state or {})
         state.pop("_blocked_by", None)  # Clear stale pre-stage halt marker
         stage_outputs: dict[str, Any] = {}
         stage_results: list[SkillStageResult] = []

@@ -316,3 +316,78 @@ def test_on_run_start_clears_signals_and_interventions():
     assert mb["observational"] == 0
     assert mb["action_oriented"] == 0
     assert mb["mismatches"] == 0
+
+
+# ---------------------------------------------------------------------------
+# RunContext typed accessors
+# ---------------------------------------------------------------------------
+
+
+def test_run_context_is_dict_subclass():
+    """RunContext is a drop-in replacement for dict."""
+    from operon_ai.patterns.types import RunContext
+    ctx = RunContext({"key": "value"})
+    assert isinstance(ctx, dict)
+    assert ctx["key"] == "value"
+    ctx["new"] = 42
+    assert ctx.get("new") == 42
+
+
+def test_run_context_watcher_intervention_none():
+    from operon_ai.patterns.types import RunContext
+    ctx = RunContext()
+    assert ctx.watcher_intervention is None
+
+
+def test_run_context_watcher_intervention_present():
+    from operon_ai.patterns.types import (
+        RunContext, InterventionKind, WatcherIntervention, WATCHER_STATE_KEY,
+    )
+    intervention = WatcherIntervention(
+        kind=InterventionKind.HALT, stage_name="s1", reason="test",
+    )
+    ctx = RunContext({WATCHER_STATE_KEY: intervention})
+    assert ctx.watcher_intervention is intervention
+
+
+def test_run_context_verifier_signals_empty():
+    from operon_ai.patterns.types import RunContext
+    ctx = RunContext()
+    assert ctx.verifier_signals == []
+
+
+def test_run_context_verifier_signals_populated():
+    from operon_ai.patterns.types import RunContext, _VERIFIER_SIGNALS_KEY
+    ctx = RunContext({_VERIFIER_SIGNALS_KEY: ["sig1", "sig2"]})
+    assert ctx.verifier_signals == ["sig1", "sig2"]
+
+
+def test_run_context_telemetry_empty():
+    from operon_ai.patterns.types import RunContext
+    ctx = RunContext()
+    assert ctx.telemetry_events == []
+
+
+def test_run_context_used_by_organism():
+    """SkillOrganism.run() wraps shared_state in RunContext."""
+    from operon_ai.patterns.types import RunContext
+    from operon_ai import MockProvider, Nucleus, SkillStage, skill_organism
+
+    org = skill_organism(
+        stages=[SkillStage(name="s", role="r", instructions="do it")],
+        fast_nucleus=Nucleus(provider=MockProvider(responses={"do it": "done"})),
+        deep_nucleus=Nucleus(provider=MockProvider(responses={"do it": "done"})),
+    )
+    # Capture shared_state via a component
+    captured = {}
+
+    class Spy:
+        def on_run_start(self, task, shared_state):
+            captured["type"] = type(shared_state).__name__
+        def on_stage_start(self, stage, shared_state, stage_outputs): pass
+        def on_stage_result(self, stage, result, shared_state, stage_outputs): pass
+        def on_run_complete(self, result, shared_state): pass
+
+    org.components = (*org.components, Spy())  # type: ignore[assignment]
+    org.run("test")
+    assert captured["type"] == "RunContext"
