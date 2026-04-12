@@ -121,7 +121,7 @@ def organism_to_langgraph(
     """
     try:
         from langgraph.graph import END, START, StateGraph
-        from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+        from langchain_core.messages import AIMessage, HumanMessage
     except ImportError as e:
         raise ImportError(
             "LangGraph is required. Install with: pip install operon-ai[deerflow]"
@@ -185,55 +185,58 @@ def organism_to_langgraph(
         return pre_guard
 
     def make_agent(stage):
-        """Call the LLM with stage instructions."""
-        def agent(state: LangGraphState) -> dict:
-            model = deep_model if state.get("use_deep") else fast_model
-            sys_msg = SystemMessage(
-                content=f"Role: {stage.role}. {stage.instructions}"
-            )
+        """Execute stage via organism._run_stage (or _run_stage_escalated).
 
-            input_msgs = [sys_msg]
+        Delegates to the organism's existing execution path so handlers,
+        tools, provider config, and metadata flow are all respected.
+        """
+        def agent(state: LangGraphState) -> dict:
+            ctx = RunContext(state.get("shared_state", {}), watcher_key=watcher_key)
+            outputs = state.get("stage_outputs", {})
+            use_deep = state.get("use_deep", False)
+
+            # Extract task from first human message
+            task_str = ""
             for m in state.get("messages", []):
                 if isinstance(m, HumanMessage):
-                    input_msgs.append(m)
+                    task_str = m.content
                     break
-            # Prior stage outputs as context
-            for prev_name, prev_output in state.get("stage_outputs", {}).items():
-                input_msgs.append(AIMessage(content=f"[{prev_name}]: {prev_output}"))
 
+            # Delegate to organism's stage execution
             try:
-                response = model.invoke(input_msgs)
-                output_text = response.content if hasattr(response, "content") else str(response)
-                action_type = "EXECUTE"
+                if use_deep:
+                    result = organism._run_stage_escalated(
+                        stage, task_str, ctx, outputs, None,
+                    )
+                else:
+                    result = organism._run_stage(
+                        stage, task_str, ctx, outputs, None,
+                    )
             except Exception as exc:
-                output_text = f"Error: {exc}"
-                action_type = "FAILURE"
-                response = AIMessage(content=output_text)
+                result = SkillStageResult(
+                    stage_name=stage.name,
+                    role=stage.role,
+                    output=f"Error: {exc}",
+                    model_alias="deep" if use_deep else "fast",
+                    provider="langgraph",
+                    model="error",
+                    tokens_used=0,
+                    latency_ms=0.0,
+                    action_type="FAILURE",
+                    metadata={},
+                )
 
-            # Build a SkillStageResult for the components
-            model_alias = "deep" if state.get("use_deep") else "fast"
-            result = SkillStageResult(
-                stage_name=stage.name,
-                role=stage.role,
-                output=output_text,
-                model_alias=model_alias,
-                provider="langgraph",
-                model=getattr(model, "model_name", model_alias),
-                tokens_used=0,
-                latency_ms=0.0,
-                action_type=action_type,
-                metadata={},
-            )
+            output_text = result.output if isinstance(result.output, str) else str(result.output)
+            response = AIMessage(content=output_text)
 
-            # Store result in shared_state for post_guard to use
-            ctx = RunContext(state.get("shared_state", {}), watcher_key=watcher_key)
+            # Store result for post_guard and track model used
             ctx["_lg_stage_result"] = result
-            ctx["_lg_response"] = response
+            ctx["_lg_was_deep"] = use_deep
 
             return {
                 "messages": [response],
                 "shared_state": dict(ctx),
-                "use_deep": False,  # Reset
+                "use_deep": False,  # Reset — post_guard decides next model
             }
         return agent
 
@@ -243,7 +246,7 @@ def organism_to_langgraph(
             ctx = RunContext(state.get("shared_state", {}), watcher_key=watcher_key)
             outputs = state.get("stage_outputs", {})
             result = ctx.pop("_lg_stage_result", None)
-            ctx.pop("_lg_response", None)
+            was_deep = ctx.pop("_lg_was_deep", False)
 
             if result is None:
                 return {"shared_state": dict(ctx)}
@@ -262,10 +265,12 @@ def organism_to_langgraph(
 
             if isinstance(intervention, WatcherIntervention):
                 kind = intervention.kind.value
+                # Retry preserves the model tier that produced the result
+                use_deep = was_deep if kind == "retry" else (kind == "escalate")
                 return {
                     "halted": kind == "halt",
-                    "use_deep": kind == "escalate",
-                    "_routing": kind,  # "halt" / "escalate" / "retry"
+                    "use_deep": use_deep,
+                    "_routing": kind,
                     "shared_state": dict(ctx),
                     "intervention_log": [{
                         "stage": stage.name, "kind": kind,
@@ -273,12 +278,27 @@ def organism_to_langgraph(
                     }],
                 }
 
-            # No intervention — accept output
+            # No watcher intervention — check halt_on_block
+            action_type = getattr(result, "action_type", "")
+            if organism.halt_on_block and action_type in ("BLOCK", "FAILURE"):
+                return {
+                    "halted": True,
+                    "_routing": "halt",
+                    "shared_state": dict(ctx),
+                    "intervention_log": [{
+                        "stage": stage.name, "kind": "halt",
+                        "reason": f"stage {action_type}, halt_on_block enabled",
+                    }],
+                }
+
+            # Accept output
             new_outputs = dict(outputs)
             new_outputs[stage.name] = result.output
+            # Accumulate stage results for on_run_complete
+            ctx.setdefault("_lg_stage_results", []).append(result)
             return {
                 "stage_outputs": new_outputs,
-                "_routing": "",  # Clear — no intervention
+                "_routing": "",
                 "shared_state": dict(ctx),
                 "intervention_log": [],
             }
@@ -391,12 +411,13 @@ def run_organism_langgraph(
     stage_outputs = result.get("stage_outputs", {})
     final_output = list(stage_outputs.values())[-1] if stage_outputs else ""
 
-    # Build a minimal SkillRunResult for on_run_complete
+    # Build SkillRunResult with accumulated stage results
     from ..patterns.types import SkillRunResult
+    accumulated = final_ctx.pop("_lg_stage_results", [])
     run_result = SkillRunResult(
         task=task,
         final_output=final_output,
-        stage_results=(),
+        stage_results=tuple(accumulated),
         shared_state=dict(final_ctx),
     )
     for component in organism.components:
