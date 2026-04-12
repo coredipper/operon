@@ -28,6 +28,9 @@ llm = [
   "anthropic>=0.18.0",
   "google-genai>=1.0.0",
 ]
+deerflow = [
+  "deerflow-harness @ git+https://github.com/bytedance/deer-flow.git#subdirectory=backend/packages/harness",
+]
 dev = [
   "pytest>=7.0",
 ]
