@@ -238,20 +238,53 @@ class RunContext(dict):
     ``dict[str, Any]`` is expected.  Provides typed property accessors
     for the three well-known keys used by WatcherComponent,
     VerifierComponent, and TelemetryProbe.
+
+    Parameters
+    ----------
+    *args, **kwargs:
+        Forwarded to ``dict.__init__``.
+    watcher_key:
+        Key for watcher interventions (default: ``WATCHER_STATE_KEY``).
+        Override when ``WatcherConfig.state_key`` is customized.
+    verifier_key:
+        Key for verifier signals (default: ``_VERIFIER_SIGNALS_KEY``).
+    telemetry_key:
+        Key for telemetry events (default: ``_TELEMETRY_KEY``).
     """
+
+    def __init__(
+        self,
+        *args,
+        watcher_key: str = WATCHER_STATE_KEY,
+        verifier_key: str = _VERIFIER_SIGNALS_KEY,
+        telemetry_key: str = _TELEMETRY_KEY,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self._watcher_key = watcher_key
+        self._verifier_key = verifier_key
+        self._telemetry_key = telemetry_key
 
     @property
     def watcher_intervention(self) -> WatcherIntervention | None:
         """Current watcher intervention, or ``None``."""
-        v = self.get(WATCHER_STATE_KEY)
+        v = self.get(self._watcher_key)
         return v if isinstance(v, WatcherIntervention) else None
 
     @property
     def verifier_signals(self) -> list:
-        """Verifier quality signals deposited by VerifierComponent."""
-        return self.get(_VERIFIER_SIGNALS_KEY, [])
+        """Verifier quality signals deposited by VerifierComponent.
+
+        Returns the persisted list (via ``setdefault``), so appending
+        through this accessor updates the underlying context.
+        """
+        return self.setdefault(self._verifier_key, [])
 
     @property
     def telemetry_events(self) -> list:
-        """Telemetry events deposited by TelemetryProbe."""
-        return self.get(_TELEMETRY_KEY, [])
+        """Telemetry events deposited by TelemetryProbe.
+
+        Returns the persisted list (via ``setdefault``), so appending
+        through this accessor updates the underlying context.
+        """
+        return self.setdefault(self._telemetry_key, [])

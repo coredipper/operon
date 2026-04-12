@@ -391,3 +391,38 @@ def test_run_context_used_by_organism():
     org.components = (*org.components, Spy())  # type: ignore[assignment]
     org.run("test")
     assert captured["type"] == "RunContext"
+
+
+def test_run_context_custom_watcher_key():
+    """RunContext respects custom watcher key from WatcherConfig."""
+    from operon_ai.patterns.types import (
+        RunContext, InterventionKind, WatcherIntervention,
+    )
+    custom_key = "_my_watcher"
+    intervention = WatcherIntervention(
+        kind=InterventionKind.HALT, stage_name="s1", reason="test",
+    )
+    ctx = RunContext({custom_key: intervention}, watcher_key=custom_key)
+    assert ctx.watcher_intervention is intervention
+
+    # Default key should not find it
+    ctx2 = RunContext({custom_key: intervention})
+    assert ctx2.watcher_intervention is None
+
+
+def test_run_context_append_persists():
+    """Appending through verifier_signals accessor persists in the dict."""
+    from operon_ai.patterns.types import RunContext, _VERIFIER_SIGNALS_KEY
+    ctx = RunContext()
+    ctx.verifier_signals.append("signal_1")
+    ctx.verifier_signals.append("signal_2")
+    assert ctx[_VERIFIER_SIGNALS_KEY] == ["signal_1", "signal_2"]
+    assert ctx.verifier_signals == ["signal_1", "signal_2"]
+
+
+def test_run_context_telemetry_append_persists():
+    """Appending through telemetry_events accessor persists in the dict."""
+    from operon_ai.patterns.types import RunContext, _TELEMETRY_KEY
+    ctx = RunContext()
+    ctx.telemetry_events.append("event_1")
+    assert ctx[_TELEMETRY_KEY] == ["event_1"]
