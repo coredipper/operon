@@ -240,6 +240,9 @@ def organism_to_langgraph(
             }
         return agent
 
+    # Check if escalation is possible (same guard as SkillOrganism.run)
+    can_escalate = (organism.deep_alias in organism.nuclei)
+
     def make_post_guard(stage):
         """Call all component.on_stage_result hooks. Read intervention."""
         def post_guard(state: LangGraphState) -> dict:
@@ -250,6 +253,9 @@ def organism_to_langgraph(
 
             if result is None:
                 return {"shared_state": dict(ctx)}
+
+            # Always record the stage result (even on halt/block paths)
+            ctx.setdefault("_lg_stage_results", []).append(result)
 
             # Call components in the same order as SkillOrganism.run():
             # non-watcher first, then watcher last
@@ -265,7 +271,14 @@ def organism_to_langgraph(
 
             if isinstance(intervention, WatcherIntervention):
                 kind = intervention.kind.value
-                # Retry preserves the model tier that produced the result
+
+                # Guard escalation: only when handler is None and deep
+                # nucleus exists (same as SkillOrganism.run)
+                if kind == "escalate" and (
+                    stage.handler is not None or not can_escalate
+                ):
+                    kind = "halt"  # Can't escalate — treat as halt
+
                 use_deep = was_deep if kind == "retry" else (kind == "escalate")
                 return {
                     "halted": kind == "halt",
@@ -294,8 +307,6 @@ def organism_to_langgraph(
             # Accept output
             new_outputs = dict(outputs)
             new_outputs[stage.name] = result.output
-            # Accumulate stage results for on_run_complete
-            ctx.setdefault("_lg_stage_results", []).append(result)
             return {
                 "stage_outputs": new_outputs,
                 "_routing": "",
@@ -409,11 +420,12 @@ def run_organism_langgraph(
     # Call on_run_complete for all components
     final_ctx = RunContext(result.get("shared_state", {}), watcher_key=watcher_key)
     stage_outputs = result.get("stage_outputs", {})
-    final_output = list(stage_outputs.values())[-1] if stage_outputs else ""
-
-    # Build SkillRunResult with accumulated stage results
-    from ..patterns.types import SkillRunResult
     accumulated = final_ctx.pop("_lg_stage_results", [])
+
+    # Derive final_output from last stage result (same as SkillOrganism.run)
+    final_output = accumulated[-1].output if accumulated else ""
+
+    from ..patterns.types import SkillRunResult
     run_result = SkillRunResult(
         task=task,
         final_output=final_output,
