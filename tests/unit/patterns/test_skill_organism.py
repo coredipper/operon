@@ -3,7 +3,7 @@
 import pytest
 from datetime import datetime, timedelta
 
-from operon_ai import BiTemporalMemory, SkillStage, SubstrateView, TelemetryProbe, skill_organism
+from operon_ai import ATP_Store, BiTemporalMemory, SkillStage, SubstrateView, TelemetryProbe, skill_organism
 from operon_ai.memory.bitemporal import BiTemporalQuery
 from operon_ai.organelles.nucleus import Nucleus
 from operon_ai.providers import MockProvider
@@ -113,6 +113,45 @@ def test_skill_organism_telemetry_component_updates_shared_state():
         "run_complete",
     ]
     assert probe.summary()["total_tokens"] >= 0
+
+
+def test_telemetry_captures_organism_config():
+    """TelemetryProbe run_start event includes organism config metadata."""
+    probe = TelemetryProbe()
+    fast = Nucleus(provider=MockProvider(responses={
+        "do step 1": "EXECUTE: done1",
+        "do step 2": "EXECUTE: done2",
+    }))
+
+    organism = skill_organism(
+        stages=[
+            SkillStage(name="reader", role="Reader", instructions="do step 1", mode="fixed"),
+            SkillStage(name="writer", role="Writer", instructions="do step 2", mode="fuzzy"),
+        ],
+        fast_nucleus=fast,
+        deep_nucleus=fast,
+        components=[probe],
+        budget=ATP_Store(budget=1000),
+    )
+
+    result = organism.run("test")
+
+    # Find the run_start event
+    run_start = next(
+        e for e in result.shared_state["_operon_telemetry"]
+        if e["kind"] == "run_start"
+    )
+    assert "organism_config" in run_start, "run_start should contain organism_config"
+    config = run_start["organism_config"]
+    assert config["stage_count"] == 2
+    assert config["stage_names"] == ["reader", "writer"]
+    assert config["mode_assignments"] == {"reader": "fixed", "writer": "fuzzy"}
+    assert "priority_gating" in config["certificate_theorems"]
+
+    # _organism_config must not leak into returned shared_state
+    assert "_organism_config" not in result.shared_state, (
+        "_organism_config should be removed after on_run_start"
+    )
 
 
 def test_skill_organism_halts_on_blocking_stage_by_default():

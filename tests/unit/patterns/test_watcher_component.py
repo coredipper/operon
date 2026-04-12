@@ -316,3 +316,200 @@ def test_on_run_start_clears_signals_and_interventions():
     assert mb["observational"] == 0
     assert mb["action_oriented"] == 0
     assert mb["mismatches"] == 0
+
+
+# ---------------------------------------------------------------------------
+# RunContext typed accessors
+# ---------------------------------------------------------------------------
+
+
+def test_run_context_is_dict_subclass():
+    """RunContext is a drop-in replacement for dict."""
+    from operon_ai.patterns.types import RunContext
+    ctx = RunContext({"key": "value"})
+    assert isinstance(ctx, dict)
+    assert ctx["key"] == "value"
+    ctx["new"] = 42
+    assert ctx.get("new") == 42
+
+
+def test_run_context_watcher_intervention_none():
+    from operon_ai.patterns.types import RunContext
+    ctx = RunContext()
+    assert ctx.watcher_intervention is None
+
+
+def test_run_context_watcher_intervention_present():
+    from operon_ai.patterns.types import (
+        RunContext, InterventionKind, WatcherIntervention, WATCHER_STATE_KEY,
+    )
+    intervention = WatcherIntervention(
+        kind=InterventionKind.HALT, stage_name="s1", reason="test",
+    )
+    ctx = RunContext({WATCHER_STATE_KEY: intervention})
+    assert ctx.watcher_intervention is intervention
+
+
+def test_run_context_verifier_signals_empty():
+    from operon_ai.patterns.types import RunContext
+    ctx = RunContext()
+    assert ctx.verifier_signals == []
+
+
+def test_run_context_verifier_signals_populated():
+    from operon_ai.patterns.types import RunContext, _VERIFIER_SIGNALS_KEY
+    ctx = RunContext({_VERIFIER_SIGNALS_KEY: ["sig1", "sig2"]})
+    assert ctx.verifier_signals == ["sig1", "sig2"]
+
+
+def test_run_context_telemetry_empty():
+    from operon_ai.patterns.types import RunContext
+    ctx = RunContext()
+    assert ctx.telemetry_events == []
+
+
+def test_run_context_used_by_organism():
+    """SkillOrganism.run() wraps shared_state in RunContext."""
+    from operon_ai.patterns.types import RunContext
+    from operon_ai import MockProvider, Nucleus, SkillStage, skill_organism
+
+    org = skill_organism(
+        stages=[SkillStage(name="s", role="r", instructions="do it")],
+        fast_nucleus=Nucleus(provider=MockProvider(responses={"do it": "done"})),
+        deep_nucleus=Nucleus(provider=MockProvider(responses={"do it": "done"})),
+    )
+    # Capture shared_state via a component
+    captured = {}
+
+    class Spy:
+        def on_run_start(self, task, shared_state):
+            captured["type"] = type(shared_state).__name__
+        def on_stage_start(self, stage, shared_state, stage_outputs): pass
+        def on_stage_result(self, stage, result, shared_state, stage_outputs): pass
+        def on_run_complete(self, result, shared_state): pass
+
+    org.components = (*org.components, Spy())  # type: ignore[assignment]
+    org.run("test")
+    assert captured["type"] == "RunContext"
+
+
+def test_run_context_custom_watcher_key():
+    """RunContext respects custom watcher key from WatcherConfig."""
+    from operon_ai.patterns.types import (
+        RunContext, InterventionKind, WatcherIntervention,
+    )
+    custom_key = "_my_watcher"
+    intervention = WatcherIntervention(
+        kind=InterventionKind.HALT, stage_name="s1", reason="test",
+    )
+    ctx = RunContext({custom_key: intervention}, watcher_key=custom_key)
+    assert ctx.watcher_intervention is intervention
+
+    # Default key should not find it
+    ctx2 = RunContext({custom_key: intervention})
+    assert ctx2.watcher_intervention is None
+
+
+def test_run_context_append_persists():
+    """Appending through verifier_signals accessor persists in the dict."""
+    from operon_ai.patterns.types import RunContext, _VERIFIER_SIGNALS_KEY
+    ctx = RunContext()
+    ctx.verifier_signals.append("signal_1")
+    ctx.verifier_signals.append("signal_2")
+    assert ctx[_VERIFIER_SIGNALS_KEY] == ["signal_1", "signal_2"]
+    assert ctx.verifier_signals == ["signal_1", "signal_2"]
+
+
+def test_run_context_telemetry_append_persists():
+    """Appending through telemetry_events accessor persists in the dict."""
+    from operon_ai.patterns.types import RunContext, _TELEMETRY_KEY
+    ctx = RunContext()
+    ctx.telemetry_events.append("event_1")
+    assert ctx[_TELEMETRY_KEY] == ["event_1"]
+
+
+def test_organism_resolves_custom_watcher_key():
+    """SkillOrganism.run() picks up WatcherConfig.state_key for RunContext."""
+    from operon_ai import MockProvider, Nucleus, SkillStage, skill_organism
+    from operon_ai.patterns.watcher import WatcherComponent, WatcherConfig
+    from operon_ai.patterns.types import RunContext
+
+    custom_key = "_custom_intervention"
+    watcher = WatcherComponent(config=WatcherConfig(state_key=custom_key))
+
+    captured = {}
+
+    class KeySpy:
+        def on_run_start(self, task, shared_state):
+            if isinstance(shared_state, RunContext):
+                captured["watcher_key"] = shared_state._watcher_key
+        def on_stage_start(self, stage, shared_state, stage_outputs): pass
+        def on_stage_result(self, stage, result, shared_state, stage_outputs): pass
+        def on_run_complete(self, result, shared_state): pass
+
+    # HaltInjector writes a HALT under the custom key on the first stage,
+    # so the second stage should never execute.
+    from operon_ai.patterns.types import InterventionKind, WatcherIntervention
+
+    class HaltInjector:
+        def on_run_start(self, task, shared_state): pass
+        def on_stage_start(self, stage, shared_state, stage_outputs):
+            if getattr(stage, "name", "") == "s1":
+                shared_state[custom_key] = WatcherIntervention(
+                    kind=InterventionKind.HALT, stage_name="s1", reason="test halt",
+                )
+        def on_stage_result(self, stage, result, shared_state, stage_outputs): pass
+        def on_run_complete(self, result, shared_state): pass
+
+    org = skill_organism(
+        stages=[
+            SkillStage(name="s1", role="r1", instructions="do step 1"),
+            SkillStage(name="s2", role="r2", instructions="do step 2"),
+        ],
+        fast_nucleus=Nucleus(provider=MockProvider(responses={"do step 1": "done1", "do step 2": "done2"})),
+        deep_nucleus=Nucleus(provider=MockProvider(responses={"do step 1": "done1", "do step 2": "done2"})),
+        components=[watcher, KeySpy(), HaltInjector()],
+    )
+    result = org.run("test")
+    assert captured["watcher_key"] == custom_key
+    # HALT on s1 should prevent s2 from executing
+    executed_stages = [sr.stage_name for sr in result.stage_results]
+    assert "s2" not in executed_stages, f"s2 should be halted but ran: {executed_stages}"
+
+
+def test_certificate_gate_uses_custom_watcher_key():
+    """CertificateGateComponent writes HALT to RunContext._watcher_key."""
+    from operon_ai.patterns.certificate_gate import CertificateGateComponent
+    from operon_ai.patterns.types import RunContext, WatcherIntervention
+    from operon_ai.state.genome import Genome, Gene, GeneType
+    from operon_ai.state.dna_repair import DNARepair
+
+    genome = Genome(
+        genes=[Gene(name="g1", gene_type=GeneType.REGULATORY, value="ok")],
+        allow_mutations=True,
+    )
+    repair = DNARepair(silent=True)
+    checkpoint = repair.checkpoint(genome)
+
+    # Corrupt the genome after checkpoint
+    genome.mutate("g1", "corrupted")
+
+    custom_key = "_my_gate_key"
+    ctx = RunContext({}, watcher_key=custom_key)
+
+    gate = CertificateGateComponent(
+        genome=genome, repair=repair, checkpoint=checkpoint,
+    )
+    gate.on_run_start("test", ctx)
+
+    class FakeStage:
+        name = "s1"
+
+    gate.on_stage_start(FakeStage(), ctx, {})
+
+    # HALT should be written to the custom key, not the default
+    from operon_ai.patterns.types import InterventionKind, WATCHER_STATE_KEY
+    assert custom_key in ctx, f"Expected HALT under {custom_key}, got keys: {list(ctx.keys())}"
+    assert isinstance(ctx[custom_key], WatcherIntervention)
+    assert ctx[custom_key].kind == InterventionKind.HALT
+    assert WATCHER_STATE_KEY not in ctx, "Default key should not be written when custom key is set"

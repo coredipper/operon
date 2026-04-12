@@ -14,6 +14,7 @@ from ..organelles.nucleus import Nucleus
 from ..state.metabolism import ATP_Store
 from .types import (
     InterventionKind,
+    RunContext,
     SkillRunResult,
     SkillRuntimeComponent,
     SkillStage,
@@ -133,12 +134,19 @@ class TelemetryProbe:
         )
 
     def on_run_start(self, task: str, shared_state: dict[str, Any]) -> None:
+        import copy
+        payload: dict[str, Any] = {"task": task}
+        # Capture organism config if injected by SkillOrganism.run().
+        # Deep-copy to make the telemetry record immutable.
+        org_config = shared_state.get("_organism_config")
+        if isinstance(org_config, dict):
+            payload["organism_config"] = copy.deepcopy(org_config)
         self._append(
             shared_state,
             TelemetryEvent(
                 kind="run_start",
                 stage_name=None,
-                payload={"task": task},
+                payload=payload,
             ),
         )
 
@@ -266,20 +274,47 @@ class SkillOrganism:
         task: str,
         shared_state: dict[str, Any] | None = None,
     ) -> SkillRunResult:
-        state = dict(shared_state or {})
+        # Preserve an incoming RunContext (keeps custom key configuration);
+        # otherwise wrap in a new RunContext, resolving the watcher key from
+        # any configured WatcherComponent so custom state_key works end-to-end.
+        if isinstance(shared_state, RunContext):
+            state = shared_state
+        else:
+            watcher_key = WATCHER_STATE_KEY
+            for component in self.components:
+                cfg = getattr(component, "config", None)
+                sk = getattr(cfg, "state_key", None)
+                if sk is not None:
+                    watcher_key = sk
+                    break
+            state = RunContext(shared_state or {}, watcher_key=watcher_key)
         state.pop("_blocked_by", None)  # Clear stale pre-stage halt marker
         stage_outputs: dict[str, Any] = {}
         stage_results: list[SkillStageResult] = []
 
+        # Inject organism metadata temporarily so TelemetryProbe can capture
+        # it during on_run_start, then remove it to avoid leaking into
+        # stage-visible shared_state or the returned SkillRunResult.
+        state["_organism_config"] = {
+            "stage_count": len(self.stages),
+            "stage_names": [s.name for s in self.stages],
+            "mode_assignments": {s.name: s.mode for s in self.stages},
+            "certificate_theorems": [
+                c.theorem for c in self.collect_certificates()
+            ],
+        }
+
         for component in self.components:
             component.on_run_start(task, state)
+
+        state.pop("_organism_config", None)
 
         for stage in self.stages:
             for component in self.components:
                 component.on_stage_start(stage, state, stage_outputs)
 
             # --- Pre-stage intervention check (e.g. CertificateGate) ---
-            _pre = state.pop(WATCHER_STATE_KEY, None)
+            _pre = state.pop(state._watcher_key, None)
             if isinstance(_pre, WatcherIntervention) and _pre.kind == InterventionKind.HALT:
                 state["_blocked_by"] = _pre
                 break
@@ -320,7 +355,7 @@ class SkillOrganism:
                     component.on_stage_result(stage, result, state, stage_outputs)
 
             # --- Watcher intervention check ---
-            _intervention = state.pop(WATCHER_STATE_KEY, None)
+            _intervention = state.pop(state._watcher_key, None)
             if isinstance(_intervention, WatcherIntervention):
                 if _intervention.kind == InterventionKind.RETRY:
                     retry_result = self._run_stage(

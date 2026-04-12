@@ -271,13 +271,21 @@ class TestCertificatePreservationMeasurement:
     """
 
     def _make_multi_cert_organism(self):
-        """Build organism with ATP + QuorumSensing + mTOR certificates."""
+        """Build organism with ATP + QuorumSensing + mTOR certificates.
+
+        Attaches QS and mTOR to the organism's components list so that
+        collect_certificates() includes all three certificate sources.
+        """
         from operon_ai.coordination.quorum_sensing import QuorumSensingBio
         from operon_ai.state.mtor import MTORScaler
 
         provider = MockProvider()
         nucleus = Nucleus(provider=provider)
         budget = ATP_Store(budget=1000)
+
+        qs = QuorumSensingBio(population_size=10)
+        qs.calibrate()
+        mtor = MTORScaler(atp_store=budget)
 
         org = skill_organism(
             stages=[
@@ -290,26 +298,41 @@ class TestCertificatePreservationMeasurement:
             budget=budget,
         )
 
-        # Attach additional certifiable components
-        qs = QuorumSensingBio(population_size=10)
-        qs.calibrate()
-        mtor = MTORScaler(atp_store=budget)
+        # Attach certifiable components so collect_certificates() finds them.
+        # QS and mTOR have certify() but don't implement the full
+        # SkillRuntimeComponent protocol — that's fine, collect_certificates()
+        # only checks for certify().
+        org.components = (*org.components, qs, mtor)  # type: ignore[assignment]
 
-        return org, [qs.certify(), mtor.certify()]
+        return org, []
+
+    @staticmethod
+    def _cert_identity(d: dict) -> tuple:
+        """Normalize a certificate dict to a hashable identity tuple."""
+        params = d.get("parameters", {})
+        # Sort nested dict to ensure stable comparison
+        param_key = tuple(sorted(params.items())) if isinstance(params, dict) else ()
+        return (d.get("theorem"), param_key, d.get("source"))
 
     def _measure_preservation(self, compiler_fn, org, extra_certs, **kwargs):
         """Compile, count preserved and verified certificates."""
         compiled = compiler_fn(org, **kwargs)
         compiled_certs = compiled.get("certificates", [])
 
-        # Source certificates
+        # Source certificates — serialize to dicts for identity comparison
         source_certs = org.collect_certificates() + extra_certs
+        source_dicts = [certificate_to_dict(c) for c in source_certs]
         source_count = len(source_certs)
 
-        # Count preserved (present in compiled output)
+        # Full identity preservation (theorem + parameters + source)
+        source_ids = {self._cert_identity(d) for d in source_dicts}
+        compiled_ids = {self._cert_identity(d) for d in compiled_certs}
+        preserved_ids = source_ids & compiled_ids
+
+        # Theorem-name preservation (weaker check, kept for diagnostics)
         source_theorems = {c.theorem for c in source_certs}
         compiled_theorems = {c.get("theorem") for c in compiled_certs}
-        preserved = source_theorems & compiled_theorems
+        preserved_theorems = source_theorems & compiled_theorems
 
         # Count verified (still hold after serialization)
         verified = 0
@@ -325,32 +348,37 @@ class TestCertificatePreservationMeasurement:
         return {
             "source_count": source_count,
             "compiled_count": len(compiled_certs),
-            "preserved_theorems": len(preserved),
+            "preserved_theorems": len(preserved_theorems),
+            "preserved_identities": len(preserved_ids),
             "verified_count": verified,
         }
 
     def test_deerflow_preservation(self):
         org, extra = self._make_multi_cert_organism()
         result = self._measure_preservation(organism_to_deerflow, org, extra)
-        assert result["compiled_count"] >= 1
+        assert result["compiled_count"] >= 3, f"Expected >=3 certs, got {result['compiled_count']}"
+        assert result["preserved_identities"] == result["source_count"], "Not all source certificates survived (full identity check)"
         assert result["verified_count"] == result["compiled_count"]
 
     def test_swarms_preservation(self):
         org, extra = self._make_multi_cert_organism()
         result = self._measure_preservation(organism_to_swarms, org, extra)
-        assert result["compiled_count"] >= 1
+        assert result["compiled_count"] >= 3, f"Expected >=3 certs, got {result['compiled_count']}"
+        assert result["preserved_identities"] == result["source_count"], "Not all source certificates survived (full identity check)"
         assert result["verified_count"] == result["compiled_count"]
 
     def test_ralph_preservation(self):
         org, extra = self._make_multi_cert_organism()
         result = self._measure_preservation(organism_to_ralph, org, extra)
-        assert result["compiled_count"] >= 1
+        assert result["compiled_count"] >= 3, f"Expected >=3 certs, got {result['compiled_count']}"
+        assert result["preserved_identities"] == result["source_count"], "Not all source certificates survived (full identity check)"
         assert result["verified_count"] == result["compiled_count"]
 
     def test_scion_preservation(self):
         org, extra = self._make_multi_cert_organism()
         result = self._measure_preservation(organism_to_scion, org, extra)
-        assert result["compiled_count"] >= 1
+        assert result["compiled_count"] >= 3, f"Expected >=3 certs, got {result['compiled_count']}"
+        assert result["preserved_identities"] == result["source_count"], "Not all source certificates survived (full identity check)"
         assert result["verified_count"] == result["compiled_count"]
 
     def test_all_compilers_100_percent_verification(self):
@@ -364,6 +392,10 @@ class TestCertificatePreservationMeasurement:
         }
         for name, compiler_fn in compilers.items():
             result = self._measure_preservation(compiler_fn, org, extra)
+            assert result["preserved_identities"] == result["source_count"], (
+                f"{name}: {result['preserved_identities']}/{result['source_count']} "
+                f"certificate identities preserved (expected 100%)"
+            )
             assert result["verified_count"] == result["compiled_count"], (
                 f"{name}: {result['verified_count']}/{result['compiled_count']} "
                 f"certificates verified (expected 100%)"
