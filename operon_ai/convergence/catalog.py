@@ -1,7 +1,8 @@
 """Convergence catalog -- seed a PatternLibrary from external frameworks.
 
 Provides functions to populate an Operon :class:`PatternLibrary` with
-templates derived from Swarms, DeerFlow, and the ACG survey taxonomy.
+templates derived from Swarms, DeerFlow, the ACG survey taxonomy, and
+the atomic coding skills taxonomy (Ma et al., arXiv:2604.05013).
 Each seeder follows a common pipeline:
 
 1. Parse external config into :class:`ExternalTopology`.
@@ -22,6 +23,7 @@ from ..patterns.repository import PatternLibrary, PatternTemplate, TaskFingerpri
 from .deerflow_adapter import deerflow_to_template, parse_deerflow_session
 from .ralph_adapter import parse_ralph_config, ralph_to_template
 from .swarms_adapter import (
+    _shape_to_topology,
     analyze_external_topology,
     parse_swarm_topology,
     topology_to_template,
@@ -131,6 +133,127 @@ def seed_library_from_ralph(
         result = analyze_external_topology(topology)
 
         template = result.suggested_template if result.suggested_template is not None else ralph_to_template(config)
+        library.register_template(template)
+        count += 1
+
+    return count
+
+
+# ---------------------------------------------------------------------------
+# Atomic coding skills (Ma et al., arXiv:2604.05013)
+# ---------------------------------------------------------------------------
+
+# Five atomic skills that compose without negative interference.
+# Each maps to a sequential or parallel SkillStage pipeline.
+_ATOMIC_SKILLS: list[dict[str, Any]] = [
+    {
+        "name": "localize",
+        "description": "Find relevant code locations for a given issue or task.",
+        "task_shape": "sequential",
+        "tool_count": 2,
+        "subtask_count": 2,
+        "roles": ("searcher", "ranker"),
+        "tags": ("code", "localization", "atomic_skill"),
+    },
+    {
+        "name": "edit",
+        "description": "Modify source code to implement a change or fix.",
+        "task_shape": "sequential",
+        "tool_count": 2,
+        "subtask_count": 2,
+        "roles": ("editor", "validator"),
+        "tags": ("code", "editing", "atomic_skill"),
+    },
+    {
+        "name": "test",
+        "description": "Generate and run unit tests for code changes.",
+        "task_shape": "sequential",
+        "tool_count": 3,
+        "subtask_count": 3,
+        "roles": ("analyzer", "generator", "runner"),
+        "tags": ("code", "testing", "atomic_skill"),
+    },
+    {
+        "name": "reproduce",
+        "description": "Reproduce a reported issue to confirm its existence.",
+        "task_shape": "sequential",
+        "tool_count": 2,
+        "subtask_count": 3,
+        "roles": ("reader", "executor", "verifier"),
+        "tags": ("code", "reproduction", "atomic_skill"),
+    },
+    {
+        "name": "review",
+        "description": "Review code for correctness, style, security, and performance.",
+        "task_shape": "parallel",
+        "tool_count": 4,
+        "subtask_count": 4,
+        "roles": ("logic_auditor", "style_checker", "security_auditor", "reporter"),
+        "tags": ("code", "review", "atomic_skill"),
+    },
+]
+
+
+def get_atomic_skill_patterns() -> list[dict[str, Any]]:
+    """Return the 5 atomic coding skill patterns (Ma et al. 2604.05013).
+
+    These skills are composable basis vectors for software engineering
+    tasks: localize, edit, test, reproduce, review.
+
+    Returns deep copies so the built-in catalog cannot be mutated.
+    """
+    import copy
+    return copy.deepcopy(_ATOMIC_SKILLS)
+
+
+def seed_library_from_atomic_skills(
+    library: PatternLibrary,
+    patterns: list[dict[str, Any]] | None = None,
+) -> int:
+    """Seed *library* with atomic coding skill patterns.
+
+    Uses the built-in 5-skill catalog by default.  Pass *patterns*
+    to override with custom skill definitions.
+
+    Parameters
+    ----------
+    library:
+        Target :class:`PatternLibrary` to populate.
+    patterns:
+        Override skill definitions.  If ``None``, uses the built-in
+        catalog from Ma et al. (arXiv:2604.05013).
+
+    Returns
+    -------
+    int
+        Number of templates successfully registered.
+    """
+    skills = patterns if patterns is not None else _ATOMIC_SKILLS
+    count = 0
+    for skill in skills:
+        fingerprint = TaskFingerprint(
+            task_shape=skill["task_shape"],
+            tool_count=skill["tool_count"],
+            subtask_count=skill["subtask_count"],
+            required_roles=tuple(skill["roles"]),
+            tags=tuple(skill["tags"]),
+        )
+
+        stage_specs = tuple(
+            {"name": role, "role": role, "mode": "fuzzy"}
+            for role in skill["roles"]
+        )
+
+        template = PatternTemplate(
+            template_id=uuid4().hex[:8],
+            name=f"atomic_{skill['name']}",
+            topology=_shape_to_topology(skill["task_shape"], len(skill["roles"])),
+            stage_specs=stage_specs,
+            intervention_policy={"mode": "default"},
+            fingerprint=fingerprint,
+            tags=tuple(skill["tags"]),
+        )
+
         library.register_template(template)
         count += 1
 

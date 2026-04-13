@@ -86,6 +86,59 @@ class TestSeedFromDeerflow:
 
 
 # ---------------------------------------------------------------------------
+# Atomic skills seeder tests
+# ---------------------------------------------------------------------------
+
+
+class TestSeedFromAtomicSkills:
+    def test_seed_registers_all_five(self, library: PatternLibrary) -> None:
+        from operon_ai.convergence.catalog import seed_library_from_atomic_skills
+        count = seed_library_from_atomic_skills(library)
+        assert count == 5
+        assert library.summary()["template_count"] == 5
+
+    def test_seed_returns_count(self, library: PatternLibrary) -> None:
+        from operon_ai.convergence.catalog import seed_library_from_atomic_skills
+        count = seed_library_from_atomic_skills(library)
+        assert count == 5
+
+    def test_seed_empty_override(self, library: PatternLibrary) -> None:
+        from operon_ai.convergence.catalog import seed_library_from_atomic_skills
+        count = seed_library_from_atomic_skills(library, patterns=[])
+        assert count == 0
+
+    def test_templates_have_atomic_skill_tag(self, library: PatternLibrary) -> None:
+        from operon_ai.convergence.catalog import seed_library_from_atomic_skills
+        seed_library_from_atomic_skills(library)
+        templates = library.retrieve_templates(tags=("atomic_skill",))
+        assert len(templates) == 5
+        assert all("atomic_skill" in t.tags for t in templates)
+
+    def test_get_atomic_skill_patterns(self) -> None:
+        from operon_ai.convergence.catalog import get_atomic_skill_patterns
+        patterns = get_atomic_skill_patterns()
+        assert len(patterns) == 5
+        names = {p["name"] for p in patterns}
+        assert names == {"localize", "edit", "test", "reproduce", "review"}
+
+    def test_review_topology_is_specialist_swarm(self, library: PatternLibrary) -> None:
+        """Parallel review skill must map to specialist_swarm, not skill_organism."""
+        from operon_ai.convergence.catalog import seed_library_from_atomic_skills
+        seed_library_from_atomic_skills(library)
+        reviews = library.retrieve_templates(tags=("review", "atomic_skill"))
+        assert len(reviews) == 1
+        assert reviews[0].topology == "specialist_swarm"
+
+    def test_sequential_skills_are_skill_organism(self, library: PatternLibrary) -> None:
+        """Sequential atomic skills must map to skill_organism."""
+        from operon_ai.convergence.catalog import seed_library_from_atomic_skills
+        seed_library_from_atomic_skills(library)
+        seq = library.retrieve_templates(tags=("localization", "atomic_skill"))
+        assert len(seq) == 1
+        assert seq[0].topology == "skill_organism"
+
+
+# ---------------------------------------------------------------------------
 # ACG survey seeder tests
 # ---------------------------------------------------------------------------
 

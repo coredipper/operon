@@ -30,8 +30,10 @@ from .aevolve_skills import (
     seed_library_from_aevolve,
 )
 from .catalog import (
+    get_atomic_skill_patterns,
     get_builtin_swarms_patterns,
     seed_library_from_acg_survey,
+    seed_library_from_atomic_skills,
     seed_library_from_deerflow,
     seed_library_from_ralph,
     seed_library_from_swarms,
@@ -174,6 +176,9 @@ __all__ = [
     "seed_library_from_ralph",
     "seed_library_from_acg_survey",
     "get_builtin_swarms_patterns",
+    # Atomic skills (C2)
+    "seed_library_from_atomic_skills",
+    "get_atomic_skill_patterns",
     # A-Evolve skill bridge (C2)
     "import_aevolve_skills",
     "seed_library_from_aevolve",
