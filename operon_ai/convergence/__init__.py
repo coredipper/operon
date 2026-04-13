@@ -123,6 +123,7 @@ from .categorical import (
     deerflow_functor,
     ralph_functor,
     scion_functor,
+    langgraph_functor,
 )
 from .memory_bridge import (
     bridge_animaworks_memory,
@@ -231,6 +232,7 @@ __all__ = [
     "deerflow_functor",
     "ralph_functor",
     "scion_functor",
+    "langgraph_functor",
     # Prompt optimization (C7)
     "PromptOptimizer",
     "EvolutionaryOptimizer",

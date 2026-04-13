@@ -386,3 +386,33 @@ swarms_functor = _lazy_functor("swarms", "operon_ai.convergence.swarms_compiler"
 deerflow_functor = _lazy_functor("deerflow", "operon_ai.convergence.deerflow_compiler", "organism_to_deerflow")
 ralph_functor = _lazy_functor("ralph", "operon_ai.convergence.ralph_compiler", "organism_to_ralph")
 scion_functor = _lazy_functor("scion", "operon_ai.convergence.scion_compiler", "organism_to_scion")
+
+
+def _compile_langgraph(organism: SkillOrganism, *, config: RuntimeConfig | None = None) -> dict[str, Any]:
+    """Compile organism to a LangGraph-compatible dict for categorical verification.
+
+    Since ``organism_to_langgraph`` wraps ``organism.run()`` without
+    transforming the architecture, this is an identity-like morphism.
+    The compiled dict mirrors the organism's own structure so
+    ``extract_compiled_architecture()`` and ``verify_compiled()`` work.
+    """
+    stages = organism.stages
+    agents = [
+        {"name": s.name, "role": s.role, "model": s.mode}
+        for s in stages
+    ]
+    edges = [
+        (stages[i].name, stages[i + 1].name)
+        for i in range(len(stages) - 1)
+    ]
+    certificates = [certificate_to_dict(c) for c in organism.collect_certificates()]
+
+    return {
+        "agents": agents,
+        "edges": edges,
+        "certificates": certificates,
+        "config": {"runtime": "langgraph"},
+    }
+
+
+langgraph_functor = CompilerFunctor("langgraph", _compile_langgraph)

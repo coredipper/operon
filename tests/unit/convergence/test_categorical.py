@@ -18,6 +18,7 @@ from operon_ai.convergence.categorical import (
     deerflow_functor,
     ralph_functor,
     scion_functor,
+    langgraph_functor,
 )
 
 
@@ -359,3 +360,58 @@ class TestRoundTripPreservation:
                 f"{functor.name}: source theorems {source_theorems} "
                 f"not subset of target {target_theorems}"
             )
+
+
+# ---------------------------------------------------------------------------
+# TestLangGraphFunctor
+# ---------------------------------------------------------------------------
+
+
+class TestLangGraphFunctor:
+    """Tests for the LangGraph identity-like functor."""
+
+    def test_all_preserved(self):
+        """LangGraph functor preserves all architectural properties."""
+        org = _make_organism()
+        result = langgraph_functor.compile(org)
+        assert result.preservation.all_preserved, (
+            f"LangGraph functor failed preservation: {result.preservation.details}"
+        )
+
+    def test_graph_identity(self):
+        """LangGraph functor produces identical graph topology."""
+        org = _make_organism()
+        source = extract_architecture(org)
+        result = langgraph_functor.compile(org)
+        target = result.target_architecture
+
+        assert set(source.stage_names) == set(target.stage_names)
+        assert set(source.edges) == set(target.edges)
+
+    def test_certificate_identity(self):
+        """LangGraph functor preserves exact certificate set."""
+        org = _make_organism()
+        source = extract_architecture(org)
+        result = langgraph_functor.compile(org)
+
+        assert source.certificate_theorems == result.target_architecture.certificate_theorems
+
+    def test_certificates_verify(self):
+        """All certificates verify after LangGraph compilation."""
+        org = _make_organism()
+        result = langgraph_functor.compile(org)
+
+        for v in result.preservation.certificate_verifications:
+            assert v.holds, f"Certificate {v.certificate.theorem} failed after LangGraph compile"
+
+    def test_prop_5_1_strongest_form(self):
+        """LangGraph functor achieves architectural identity (strongest Prop 5.1)."""
+        org = _make_organism()
+        source = extract_architecture(org)
+        result = langgraph_functor.compile(org)
+        target = result.target_architecture
+
+        # Identity: source == target (not just subset)
+        assert source.stage_names == target.stage_names
+        assert source.edges == target.edges
+        assert source.certificate_theorems == target.certificate_theorems
