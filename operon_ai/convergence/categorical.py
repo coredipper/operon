@@ -389,13 +389,28 @@ scion_functor = _lazy_functor("scion", "operon_ai.convergence.scion_compiler", "
 
 
 def _compile_langgraph(organism: SkillOrganism, *, config: RuntimeConfig | None = None) -> dict[str, Any]:
-    """Compile organism to a LangGraph-compatible dict for categorical verification.
+    """Produce a categorical representation of the LangGraph compile target.
 
-    Since ``organism_to_langgraph`` wraps ``organism.run()`` without
-    transforming the architecture, this is an identity-like morphism.
-    The compiled dict mirrors the organism's own structure so
-    ``extract_compiled_architecture()`` and ``verify_compiled()`` work.
+    ``organism_to_langgraph()`` wraps ``organism.run()`` as a single
+    LangGraph node — the architecture is structurally identical to the
+    source organism.  This function produces a dict representation of
+    that identity for categorical verification (certificate preservation,
+    graph embedding, interface embedding).
+
+    The dict is NOT the LangGraph ``CompiledStateGraph`` itself — it is
+    the categorical representation used by ``extract_compiled_architecture()``
+    and ``verify_compiled()``.  To get the actual LangGraph graph, use
+    ``organism_to_langgraph()`` directly.
+
+    This is intentionally an identity morphism: the strongest form of
+    Prop 5.1 (architectural identity, not just certificate subset).
     """
+    if config is not None:
+        raise ValueError(
+            "RuntimeConfig is not supported for the LangGraph target. "
+            "Use organism_to_langgraph() directly for runtime configuration."
+        )
+
     stages = organism.stages
     agents = [
         {"name": s.name, "role": s.role, "model": s.mode}
