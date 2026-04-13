@@ -23,6 +23,7 @@ from ..patterns.repository import PatternLibrary, PatternTemplate, TaskFingerpri
 from .deerflow_adapter import deerflow_to_template, parse_deerflow_session
 from .ralph_adapter import parse_ralph_config, ralph_to_template
 from .swarms_adapter import (
+    _shape_to_topology,
     analyze_external_topology,
     parse_swarm_topology,
     topology_to_template,
@@ -246,7 +247,7 @@ def seed_library_from_atomic_skills(
         template = PatternTemplate(
             template_id=uuid4().hex[:8],
             name=f"atomic_{skill['name']}",
-            topology="specialist_swarm" if skill["task_shape"] == "parallel" else "skill_organism",
+            topology=_shape_to_topology(skill["task_shape"], len(skill["roles"])),
             stage_specs=stage_specs,
             intervention_policy={"mode": "default"},
             fingerprint=fingerprint,
