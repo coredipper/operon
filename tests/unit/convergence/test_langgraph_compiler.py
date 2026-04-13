@@ -83,29 +83,40 @@ class TestCertificateGateHalt:
 
 
 class TestWatcherHalt:
-    def test_halt_on_final_stage(self):
-        """Watcher HALT on the final stage must set halted=True."""
-        from operon_ai.patterns.watcher import WatcherComponent, WatcherConfig
-
-        # Watcher with very low intervention rate → halts quickly
-        watcher = WatcherComponent(
-            config=WatcherConfig(max_intervention_rate=0.0),
+    def test_halt_on_mid_stage(self):
+        """Watcher HALT on a mid-pipeline stage must set halted=True."""
+        from operon_ai.patterns.types import (
+            InterventionKind, WatcherIntervention, WATCHER_STATE_KEY,
         )
 
-        # Stage that produces a FAILURE result to trigger watcher
-        def failing_handler(task):
-            raise ValueError("intentional failure")
+        # Inject HALT on s1 (before s2 runs) via a watcher-like component
+        class HaltOnFirst:
+            def on_run_start(self, task, shared_state): pass
+            def on_stage_start(self, stage, shared_state, stage_outputs): pass
+            def on_stage_result(self, stage, result, shared_state, stage_outputs):
+                if stage.name == "s1":
+                    shared_state[WATCHER_STATE_KEY] = WatcherIntervention(
+                        kind=InterventionKind.HALT,
+                        stage_name="s1",
+                        reason="test: forced halt on mid stage",
+                    )
+            def on_run_complete(self, result, shared_state): pass
+            def _decide_intervention(self): pass
+            interventions = []
 
         org = _make_organism(
             stages=[
                 SkillStage(name="s1", role="R", handler=lambda task: "ok"),
-                SkillStage(name="s2", role="W", handler=failing_handler),
+                SkillStage(name="s2", role="W", handler=lambda task: "done"),
+                SkillStage(name="s3", role="X", handler=lambda task: "final"),
             ],
-            components=[watcher],
+            components=[HaltOnFirst()],
         )
         r = run_organism_langgraph(org, task="test")
-        # Should be halted — either by halt_on_block or watcher
+        # s1 ran, watcher halted → s2 and s3 never ran → halted=True
         assert r.metadata["halted"] is True
+        assert "s2" not in r.metadata["stages_completed"]
+        assert "s3" not in r.metadata["stages_completed"]
 
 
 class TestExceptionHandling:
