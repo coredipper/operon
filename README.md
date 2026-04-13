@@ -5,7 +5,7 @@
 > *From agent heuristics toward structural guarantees.*
 
 ![Status](https://img.shields.io/badge/status-experimental-orange)
-![Version](https://img.shields.io/badge/pypi-v0.28.1-blue)
+![Version](https://img.shields.io/badge/pypi-v0.32.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![Publish to PyPI](https://github.com/coredipper/operon/actions/workflows/publish.yml/badge.svg)](https://github.com/coredipper/operon/actions/workflows/publish.yml)
 
@@ -191,6 +191,16 @@ swarms_config = organism_to_swarms(organism)
 scion_config = organism_to_scion(organism, runtime="docker")
 ```
 
+Compile to LangGraph with all structural guarantees enforced natively (requires `pip install operon-ai[langgraph]`):
+
+```python
+from operon_ai.convergence.langgraph_compiler import run_organism_langgraph
+
+# Works with any organism — multi-stage pipelines included
+result = run_organism_langgraph(organism, task="Review this code")
+print(result.output, result.interventions, result.certificates_verified)
+```
+
 See [examples 86–108](examples/) and the [Convergence docs](https://banu.be/operon/convergence/).
 
 ## Learn More
@@ -211,7 +221,7 @@ Public docs now live at [banu.be/operon](https://banu.be/operon/). The tracked s
 
 Direct links:
 
-- [Examples index](https://github.com/coredipper/operon/blob/main/examples/README.md) (108 runnable examples)
+- [Examples index](https://github.com/coredipper/operon/blob/main/examples/README.md) (116 runnable examples)
 - [Wiring diagrams](https://github.com/coredipper/operon/blob/main/examples/wiring_diagrams.md) (63 architecture diagrams)
 - [Main whitepaper](https://github.com/coredipper/operon/blob/main/article/main.pdf)
 - [Epistemic topology paper](https://github.com/coredipper/operon/blob/main/article/paper1/main.pdf)

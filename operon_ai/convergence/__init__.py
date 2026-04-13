@@ -80,6 +80,11 @@ from .deerflow_compiler import (
     managed_to_deerflow,
     organism_to_deerflow,
 )
+from .deerflow_executor import (
+    DeerFlowResult,
+    HAS_DEERFLOW,
+    execute_deerflow,
+)
 from .distributed_watcher import (
     DistributedWatcher,
     HttpTransport,
@@ -204,6 +209,10 @@ __all__ = [
     # Decompilers (C5)
     "deerflow_to_topology",
     "swarms_to_topology",
+    # DeerFlow executor (C5)
+    "DeerFlowResult",
+    "HAS_DEERFLOW",
+    "execute_deerflow",
     # Distributed watcher (C5)
     "DistributedWatcher",
     "InMemoryTransport",
