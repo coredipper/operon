@@ -420,5 +420,6 @@ class TestLangGraphFunctor:
         """LangGraph functor rejects RuntimeConfig."""
         from operon_ai.convergence.types import RuntimeConfig
         org = _make_organism()
-        with pytest.raises(ValueError, match="RuntimeConfig is not supported"):
+        with pytest.raises(ValueError, match="RuntimeConfig is not supported") as exc_info:
             langgraph_functor.compile(org, config=RuntimeConfig())
+        assert "organism_to_langgraph" not in str(exc_info.value)
