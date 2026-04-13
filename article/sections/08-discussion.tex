@@ -199,4 +199,28 @@ The honest conclusion is that security is a process, not a product. The Operon f
 \textit{architecture} for defense-in-depth, but the \textit{content} of that defense (specific patterns,
 behavioral baselines, trust policies) must evolve with the threat landscape.
 
+\subsection{Harness Engineering as Architecture}
+
+Recent work in the LangChain ecosystem has converged on the concept of the \emph{harness}---the system layer comprising prompts, tools, memory, and orchestration logic that surrounds the model~\cite{zhou2026externalization}.  Zhou et al.\ identify four pillars of agent externalization: Memory (state across time), Skills (procedural expertise), Protocols (interaction structure), and Harness Engineering (the coordination layer).
+
+This four-pillar framework maps directly onto Operon's categorical Architecture triple $(G, \mathrm{Know}, \Phi)$:
+
+\begin{center}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Externalization Pillar} & \textbf{Operon Component} & \textbf{Categorical Role} \\
+\midrule
+Memory & BiTemporalMemory, RunContext & State in the coalgebra \\
+Skills & SkillStage, PatternTemplate & Objects composed via operad \\
+Protocols & WiringDiagram, typed ports & Syntactic wiring $G$ \\
+Harness & SkillOrganism + components & Full Architecture $(G, \mathrm{Know}, \Phi)$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The key insight is that structural guarantees---CertificateGate, VerifierComponent, WatcherComponent---are \emph{harness-level properties}, not model-level ones.  The LangGraph functor demonstrates this concretely: wrapping \texttt{organism.run()} as a single LangGraph node transfers all structural guarantees because they reside in the harness, not in the model.  This is the operational meaning of Prop~5.1: architectural properties preserved under compilation are exactly those that the harness enforces independently of the model.
+
+Ma et al.~\cite{ma2026atomic} provide empirical validation from a different angle: their five atomic coding skills (localize, edit, test, reproduce, review) compose without negative interference under joint training.  This is the behavior our operad composition (\S\ref{sec:operad}) is designed to guarantee structurally---serial and parallel composition preserve component properties.  That their result holds empirically, across diverse software engineering tasks, supports the claim that typed composition is a sound foundation for skill engineering.
+
 The preceding discussion identifies structural and epistemic principles that guide agent architecture design. In the next section, we show that the wiring diagrams themselves admit systematic optimization via categorical rewriting, making resource utilization a first-class compositional concern.
