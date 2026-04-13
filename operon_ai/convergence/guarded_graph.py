@@ -22,7 +22,7 @@ on an opaque execution.
 
 Requires ``langgraph`` and ``langchain-openai`` (installed with DeerFlow)::
 
-    pip install operon-ai[deerflow]
+    pip install operon-ai[langgraph]
 
 All external imports are lazy — the module is importable without LangGraph.
 """
@@ -136,7 +136,7 @@ def compile_guarded_graph(
         from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
     except ImportError as e:
         raise ImportError(
-            "LangGraph is required. Install with: pip install operon-ai[deerflow]"
+            "LangGraph is required. Install with: pip install operon-ai[langgraph]"
         ) from e
 
     from .langgraph_watcher import operon_watcher_node
@@ -518,7 +518,7 @@ def run_guarded_graph(
         from langchain_core.messages import HumanMessage
     except ImportError as e:
         raise ImportError(
-            "LangGraph is required. Install with: pip install operon-ai[deerflow]"
+            "LangGraph is required. Install with: pip install operon-ai[langgraph]"
         ) from e
 
     graph = compile_guarded_graph(
