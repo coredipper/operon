@@ -1,0 +1,4 @@
+# DeerFlow harness — pinned to commit for local development.
+# Not in pyproject.toml extras because PyPI rejects direct VCS URLs.
+# Install: pip install -r requirements-deerflow.txt
+deerflow-harness @ git+https://github.com/bytedance/deer-flow.git@5db71cb68ce58bbcb221493ee6008adffc286c55#subdirectory=backend/packages/harness
