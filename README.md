@@ -191,21 +191,14 @@ swarms_config = organism_to_swarms(organism)
 scion_config = organism_to_scion(organism, runtime="docker")
 ```
 
-Compile to LangGraph with all structural guarantees enforced natively:
+Compile to LangGraph with all structural guarantees enforced natively (requires `pip install operon-ai[deerflow]`):
 
 ```python
 from operon_ai.convergence.langgraph_compiler import run_organism_langgraph
 
+# Works with any organism — multi-stage pipelines included
 result = run_organism_langgraph(organism, task="Review this code")
 print(result.output, result.interventions, result.certificates_verified)
-```
-
-Execute in DeerFlow (requires `pip install operon-ai[deerflow]`):
-
-```python
-from operon_ai.convergence import execute_deerflow, organism_to_deerflow
-compiled = organism_to_deerflow(organism)
-result = execute_deerflow(compiled, task="Summarize this")
 ```
 
 See [examples 86–108](examples/) and the [Convergence docs](https://banu.be/operon/convergence/).
