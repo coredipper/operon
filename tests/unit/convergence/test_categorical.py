@@ -368,58 +368,39 @@ class TestRoundTripPreservation:
 
 
 class TestLangGraphFunctor:
-    """Tests for the LangGraph identity-like functor."""
+    """Tests for the LangGraph functor modeling the real single-node graph."""
 
-    def test_all_preserved(self):
-        """LangGraph functor preserves all architectural properties."""
+    def test_certificate_preserved(self):
+        """Certificates survive the LangGraph functor."""
         org = _make_organism()
         result = langgraph_functor.compile(org)
-        assert result.preservation.all_preserved, (
-            f"LangGraph functor failed preservation: {result.preservation.details}"
-        )
-
-    def test_graph_identity(self):
-        """LangGraph functor produces identical graph topology."""
-        org = _make_organism()
-        source = extract_architecture(org)
-        result = langgraph_functor.compile(org)
-        target = result.target_architecture
-
-        assert set(source.stage_names) == set(target.stage_names)
-        assert set(source.edges) == set(target.edges)
-
-    def test_certificate_identity(self):
-        """LangGraph functor preserves exact certificate set."""
-        org = _make_organism()
-        source = extract_architecture(org)
-        result = langgraph_functor.compile(org)
-
-        assert source.certificate_theorems == result.target_architecture.certificate_theorems
+        assert result.preservation.certificate_preserved
 
     def test_certificates_verify(self):
         """All certificates verify after LangGraph compilation."""
         org = _make_organism()
         result = langgraph_functor.compile(org)
-
         for v in result.preservation.certificate_verifications:
-            assert v.holds, f"Certificate {v.certificate.theorem} failed after LangGraph compile"
+            assert v.holds, f"Certificate {v.certificate.theorem} failed"
 
-    def test_prop_5_1_strongest_form(self):
-        """LangGraph functor achieves architectural identity (strongest Prop 5.1)."""
+    def test_real_graph_shape(self):
+        """Target models the real LangGraph graph: single 'organism' node."""
+        org = _make_organism()
+        result = langgraph_functor.compile(org)
+        target = result.target_architecture
+        assert target.stage_names == ("organism",)
+        assert target.edges == ()
+
+    def test_source_theorems_subset_of_target(self):
+        """Source certificate theorems are preserved in target (Prop 5.1)."""
         org = _make_organism()
         source = extract_architecture(org)
         result = langgraph_functor.compile(org)
-        target = result.target_architecture
-
-        # Identity: source == target (not just subset)
-        assert source.stage_names == target.stage_names
-        assert source.edges == target.edges
-        assert source.certificate_theorems == target.certificate_theorems
+        assert source.certificate_theorems <= result.target_architecture.certificate_theorems
 
     def test_rejects_runtime_config(self):
         """LangGraph functor rejects RuntimeConfig."""
         from operon_ai.convergence.types import RuntimeConfig
         org = _make_organism()
-        with pytest.raises(ValueError, match="RuntimeConfig is not supported") as exc_info:
+        with pytest.raises(ValueError, match="RuntimeConfig is not supported"):
             langgraph_functor.compile(org, config=RuntimeConfig())
-        assert "organism_to_langgraph" not in str(exc_info.value)

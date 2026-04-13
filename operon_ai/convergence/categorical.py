@@ -389,45 +389,30 @@ scion_functor = _lazy_functor("scion", "operon_ai.convergence.scion_compiler", "
 
 
 def _compile_langgraph(organism: SkillOrganism, *, config: RuntimeConfig | None = None) -> dict[str, Any]:
-    """Produce a categorical representation of the LangGraph compile target.
+    """Compile organism to the LangGraph target's real graph shape.
 
     ``organism_to_langgraph()`` wraps ``organism.run()`` as a single
-    LangGraph node — the architecture is structurally identical to the
-    source organism.  This function produces a dict representation of
-    that identity for categorical verification (certificate preservation,
-    graph embedding, interface embedding).
+    LangGraph node named ``"organism"``.  This function models that
+    real graph shape — one node, no internal edges — for categorical
+    verification.
 
-    The dict is NOT the LangGraph ``CompiledStateGraph`` itself — it is
-    the categorical representation used by ``extract_compiled_architecture()``
-    and ``verify_compiled()``.  To get the actual LangGraph graph, use
-    ``organism_to_langgraph()`` directly.
-
-    This is intentionally an identity morphism: the strongest form of
-    Prop 5.1 (architectural identity, not just certificate subset).
+    The certificates are the organism's own (identity morphism).
     """
     if config is not None:
         raise ValueError(
             "RuntimeConfig is not supported for the LangGraph categorical "
-            "functor. The LangGraph compile target does not transform the "
-            "architecture, so runtime hints have no effect."
+            "functor. The LangGraph compile target wraps organism.run() "
+            "as a single node, so runtime hints have no effect."
         )
 
-    stages = organism.stages
-    agents = [
-        {"name": s.name, "role": s.role, "model": s.mode}
-        for s in stages
-    ]
-    edges = [
-        (stages[i].name, stages[i + 1].name)
-        for i in range(len(stages) - 1)
-    ]
+    # Model the REAL graph shape: single "organism" node, no edges
     certificates = [certificate_to_dict(c) for c in organism.collect_certificates()]
 
     return {
-        "agents": agents,
-        "edges": edges,
+        "agents": [{"name": "organism", "role": "wrapper"}],
+        "edges": [],
         "certificates": certificates,
-        "config": {"runtime": "langgraph"},
+        "config": {"runtime": "langgraph", "node_count": 1},
     }
 
 
