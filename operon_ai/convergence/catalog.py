@@ -246,7 +246,7 @@ def seed_library_from_atomic_skills(
         template = PatternTemplate(
             template_id=uuid4().hex[:8],
             name=f"atomic_{skill['name']}",
-            topology="skill_organism",
+            topology="specialist_swarm" if skill["task_shape"] == "parallel" else "skill_organism",
             stage_specs=stage_specs,
             intervention_policy={"mode": "default"},
             fingerprint=fingerprint,
