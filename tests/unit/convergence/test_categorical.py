@@ -367,6 +367,9 @@ class TestRoundTripPreservation:
 # ---------------------------------------------------------------------------
 
 
+from operon_ai.convergence.langgraph_compiler import HAS_LANGGRAPH
+
+@pytest.mark.skipif(not HAS_LANGGRAPH, reason="LangGraph not installed")
 class TestLangGraphFunctor:
     """Tests for the LangGraph functor modeling the real single-node graph."""
 
