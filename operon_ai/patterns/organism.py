@@ -371,17 +371,14 @@ class SkillOrganism:
                             escalated = self._run_stage_escalated(
                                 stage, task, state, stage_outputs, substrate_view,
                             )
+                        except Exception as exc:
+                            state["_escalation_error"] = str(exc)
+                            escalated = None
+                        if escalated is not None:
                             stage_results[-1] = escalated
                             stage_outputs[stage.name] = escalated.output
                             state[stage.name] = escalated.output
                             result = escalated
-                            # Re-run component hooks with the escalated result
-                            for component in self.components:
-                                if not hasattr(component, '_decide_intervention'):
-                                    component.on_stage_result(stage, result, state, stage_outputs)
-                        except Exception as exc:
-                            # Surface failure in state rather than silent pass
-                            state["_escalation_error"] = str(exc)
                 elif _intervention.kind == InterventionKind.HALT:
                     break
 
