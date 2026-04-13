@@ -375,8 +375,13 @@ class SkillOrganism:
                             stage_outputs[stage.name] = escalated.output
                             state[stage.name] = escalated.output
                             result = escalated
-                        except Exception:
-                            pass  # Keep original result on escalation failure
+                            # Re-run component hooks with the escalated result
+                            for component in self.components:
+                                if not hasattr(component, '_decide_intervention'):
+                                    component.on_stage_result(stage, result, state, stage_outputs)
+                        except Exception as exc:
+                            # Surface failure in state rather than silent pass
+                            state["_escalation_error"] = str(exc)
                 elif _intervention.kind == InterventionKind.HALT:
                     break
 
