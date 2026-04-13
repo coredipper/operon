@@ -198,8 +198,11 @@ def get_atomic_skill_patterns() -> list[dict[str, Any]]:
 
     These skills are composable basis vectors for software engineering
     tasks: localize, edit, test, reproduce, review.
+
+    Returns deep copies so the built-in catalog cannot be mutated.
     """
-    return list(_ATOMIC_SKILLS)
+    import copy
+    return copy.deepcopy(_ATOMIC_SKILLS)
 
 
 def seed_library_from_atomic_skills(
@@ -243,7 +246,7 @@ def seed_library_from_atomic_skills(
         template = PatternTemplate(
             template_id=uuid4().hex[:8],
             name=f"atomic_{skill['name']}",
-            topology=skill["task_shape"],
+            topology="skill_organism",
             stage_specs=stage_specs,
             intervention_policy={"mode": "default"},
             fingerprint=fingerprint,
