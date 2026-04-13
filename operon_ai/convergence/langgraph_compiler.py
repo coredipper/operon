@@ -143,10 +143,11 @@ def organism_to_langgraph(organism: Any) -> Any:
                         "reason": intv.reason,
                     })
 
-        # Detect halted: pre-stage block, watcher halt, or incomplete pipeline
+        # Detect halted: pre-stage block, incomplete pipeline, or watcher halt
         halted = (
             bool(result.shared_state.get("_blocked_by"))
             or len(result.stage_results) < len(organism.stages)
+            or any(i.get("kind") == "halt" for i in interventions)
         )
 
         return {
