@@ -407,8 +407,9 @@ def _compile_langgraph(organism: SkillOrganism, *, config: RuntimeConfig | None 
     """
     if config is not None:
         raise ValueError(
-            "RuntimeConfig is not supported for the LangGraph target. "
-            "Use organism_to_langgraph() directly for runtime configuration."
+            "RuntimeConfig is not supported for the LangGraph categorical "
+            "functor. The LangGraph compile target does not transform the "
+            "architecture, so runtime hints have no effect."
         )
 
     stages = organism.stages
