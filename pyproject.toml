@@ -36,7 +36,7 @@ langgraph = [
   "langchain-openai>=0.1.0",
 ]
 deerflow = [
-  "deerflow-harness @ git+https://github.com/bytedance/deer-flow.git@5db71cb#subdirectory=backend/packages/harness",
+  "deerflow-harness @ git+https://github.com/bytedance/deer-flow.git@5db71cb68ce58bbcb221493ee6008adffc286c55#subdirectory=backend/packages/harness",
 ]
 dev = [
   "pytest>=7.0",
