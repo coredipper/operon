@@ -91,18 +91,21 @@ class TestWatcherHalt:
 
         # Inject HALT on s1 (before s2 runs) via a watcher-like component
         class HaltOnFirst:
+            def __init__(self):
+                self.interventions = []
             def on_run_start(self, task, shared_state): pass
             def on_stage_start(self, stage, shared_state, stage_outputs): pass
             def on_stage_result(self, stage, result, shared_state, stage_outputs):
                 if stage.name == "s1":
-                    shared_state[WATCHER_STATE_KEY] = WatcherIntervention(
+                    intv = WatcherIntervention(
                         kind=InterventionKind.HALT,
                         stage_name="s1",
                         reason="test: forced halt on mid stage",
                     )
+                    shared_state[WATCHER_STATE_KEY] = intv
+                    self.interventions.append(intv)
             def on_run_complete(self, result, shared_state): pass
             def _decide_intervention(self): pass
-            interventions = []
 
         org = _make_organism(
             stages=[
@@ -113,10 +116,12 @@ class TestWatcherHalt:
             components=[HaltOnFirst()],
         )
         r = run_organism_langgraph(org, task="test")
-        # s1 ran, watcher halted → s2 and s3 never ran → halted=True
         assert r.metadata["halted"] is True
         assert "s2" not in r.metadata["stages_completed"]
         assert "s3" not in r.metadata["stages_completed"]
+        assert any(i.get("kind") == "halt" for i in r.interventions), (
+            f"Expected halt in interventions, got: {r.interventions}"
+        )
 
 
 class TestExceptionHandling:
