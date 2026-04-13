@@ -367,13 +367,16 @@ class SkillOrganism:
                     result = retry_result
                 elif _intervention.kind == InterventionKind.ESCALATE:
                     if stage.handler is None and self.deep_alias in self.nuclei:
-                        escalated = self._run_stage_escalated(
-                            stage, task, state, stage_outputs, substrate_view,
-                        )
-                        stage_results[-1] = escalated
-                        stage_outputs[stage.name] = escalated.output
-                        state[stage.name] = escalated.output
-                        result = escalated
+                        try:
+                            escalated = self._run_stage_escalated(
+                                stage, task, state, stage_outputs, substrate_view,
+                            )
+                            stage_results[-1] = escalated
+                            stage_outputs[stage.name] = escalated.output
+                            state[stage.name] = escalated.output
+                            result = escalated
+                        except Exception:
+                            pass  # Keep original result on escalation failure
                 elif _intervention.kind == InterventionKind.HALT:
                     break
 
@@ -495,7 +498,21 @@ class SkillOrganism:
             silent=True,
         )
         try:
-            return self._run_stage(stage, task, shared_state, stage_outputs, substrate_view)
+            result = self._run_stage(stage, task, shared_state, stage_outputs, substrate_view)
+            # Override model_alias — _run_stage resolves from stage.mode
+            # which is still "fixed"/"fast", but we used the deep nucleus.
+            return SkillStageResult(
+                stage_name=result.stage_name,
+                role=result.role,
+                output=result.output,
+                model_alias=self.deep_alias,
+                provider=result.provider,
+                model=result.model,
+                tokens_used=result.tokens_used,
+                latency_ms=result.latency_ms,
+                action_type=result.action_type,
+                metadata=result.metadata,
+            )
         finally:
             # Restore original agent
             if original_agent is not None:
