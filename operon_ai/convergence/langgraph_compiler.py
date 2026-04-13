@@ -11,7 +11,7 @@ provides the structural guarantees.
 
 Requires ``langgraph`` and ``langchain-openai``::
 
-    pip install operon-ai[deerflow]
+    pip install operon-ai[langgraph]
 
 All external imports are lazy.
 """
@@ -94,7 +94,7 @@ def organism_to_langgraph(organism: Any) -> Any:
         from langchain_core.messages import HumanMessage
     except ImportError as e:
         raise ImportError(
-            "LangGraph is required. Install with: pip install operon-ai[deerflow]"
+            "LangGraph is required. Install with: pip install operon-ai[langgraph]"
         ) from e
 
     def run_organism(state: LangGraphState) -> dict:
@@ -187,7 +187,7 @@ def run_organism_langgraph(
         from langchain_core.messages import HumanMessage
     except ImportError as e:
         raise ImportError(
-            "LangGraph is required. Install with: pip install operon-ai[deerflow]"
+            "LangGraph is required. Install with: pip install operon-ai[langgraph]"
         ) from e
 
     graph = organism_to_langgraph(organism)
