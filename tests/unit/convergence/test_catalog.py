@@ -121,6 +121,22 @@ class TestSeedFromAtomicSkills:
         names = {p["name"] for p in patterns}
         assert names == {"localize", "edit", "test", "reproduce", "review"}
 
+    def test_review_topology_is_specialist_swarm(self, library: PatternLibrary) -> None:
+        """Parallel review skill must map to specialist_swarm, not skill_organism."""
+        from operon_ai.convergence.catalog import seed_library_from_atomic_skills
+        seed_library_from_atomic_skills(library)
+        reviews = library.retrieve_templates(tags=("review", "atomic_skill"))
+        assert len(reviews) == 1
+        assert reviews[0].topology == "specialist_swarm"
+
+    def test_sequential_skills_are_skill_organism(self, library: PatternLibrary) -> None:
+        """Sequential atomic skills must map to skill_organism."""
+        from operon_ai.convergence.catalog import seed_library_from_atomic_skills
+        seed_library_from_atomic_skills(library)
+        seq = library.retrieve_templates(tags=("localization", "atomic_skill"))
+        assert len(seq) == 1
+        assert seq[0].topology == "skill_organism"
+
 
 # ---------------------------------------------------------------------------
 # ACG survey seeder tests
