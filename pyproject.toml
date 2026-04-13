@@ -31,6 +31,10 @@ llm = [
   "anthropic>=0.18.0",
   "google-genai>=1.0.0",
 ]
+langgraph = [
+  "langgraph>=0.2.0",
+  "langchain-openai>=0.1.0",
+]
 deerflow = [
   "deerflow-harness @ git+https://github.com/bytedance/deer-flow.git#subdirectory=backend/packages/harness",
 ]

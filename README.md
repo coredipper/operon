@@ -191,7 +191,7 @@ swarms_config = organism_to_swarms(organism)
 scion_config = organism_to_scion(organism, runtime="docker")
 ```
 
-Compile to LangGraph with all structural guarantees enforced natively (requires `pip install operon-ai[deerflow]`):
+Compile to LangGraph with all structural guarantees enforced natively (requires `pip install operon-ai[langgraph]`):
 
 ```python
 from operon_ai.convergence.langgraph_compiler import run_organism_langgraph
