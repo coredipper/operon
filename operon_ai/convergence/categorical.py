@@ -398,13 +398,6 @@ def _compile_langgraph(organism: SkillOrganism, *, config: RuntimeConfig | None 
 
     The certificates are the organism's own (identity morphism).
     """
-    # Check LangGraph availability (same as organism_to_langgraph)
-    from .langgraph_compiler import HAS_LANGGRAPH
-    if not HAS_LANGGRAPH:
-        raise ImportError(
-            "LangGraph is required. Install with: pip install operon-ai[langgraph]"
-        )
-
     if config is not None:
         raise ValueError(
             "RuntimeConfig is not supported for the LangGraph categorical "
