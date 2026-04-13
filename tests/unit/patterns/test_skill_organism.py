@@ -637,3 +637,45 @@ def test_halt_on_block_does_not_write_facts_for_skipped_stages():
     assert result.stage_results[0].action_type == "BLOCK"
     # Recorder stage was skipped, so no facts
     assert mem.retrieve_valid_at(at=datetime.now()) == []
+
+
+def test_escalation_overrides_block_on_fast_model():
+    """Verifier-triggered escalation should re-run with deep model even if fast produced BLOCK."""
+    from operon_ai.patterns.verifier import VerifierComponent, VerifierConfig
+    from operon_ai.patterns.watcher import WatcherComponent, WatcherConfig
+
+    # Fast model produces BLOCK, deep model produces EXECUTE
+    fast = Nucleus(provider=MockProvider(responses={
+        "review code": "BLOCK: insufficient context",
+    }))
+    deep = Nucleus(provider=MockProvider(responses={
+        "review code": "EXECUTE: found 4 bugs: off-by-one, race condition, float precision, exception handling",
+    }))
+
+    # Verifier always scores below threshold → triggers ESCALATE
+    verifier = VerifierComponent(
+        rubric=lambda output, stage: 0.3,
+        config=VerifierConfig(quality_low_threshold=0.5),
+    )
+    watcher = WatcherComponent(config=WatcherConfig())
+
+    org = skill_organism(
+        stages=[
+            SkillStage(name="reviewer", role="Reviewer", instructions="review code", mode="fixed"),
+        ],
+        fast_nucleus=fast,
+        deep_nucleus=deep,
+        components=[verifier, watcher],
+        budget=ATP_Store(budget=10000),
+    )
+
+    result = org.run("review code")
+
+    # Escalation should have fired
+    assert len(watcher.interventions) >= 1
+    assert any(i.kind.value == "escalate" for i in watcher.interventions)
+
+    # Final result should be from the deep model (EXECUTE), not fast (BLOCK)
+    final = result.stage_results[-1]
+    assert final.model_alias == "deep", f"Expected deep model, got {final.model_alias}"
+    assert final.action_type == "EXECUTE", f"Expected EXECUTE, got {final.action_type}"
