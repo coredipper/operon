@@ -1,0 +1,58 @@
+\section{The Correspondence}\label{sec:correspondence}
+
+We now develop the formal mapping between the externalization pillars and the Architecture triple. The correspondence is not a loose analogy---each pillar maps to a specific categorical component with concrete implementation.
+
+\subsection{Memory as Coalgebraic State}
+
+Agent memory is state that persists across interactions. In the categorical framework, state is modeled as a \textbf{coalgebra} for a polynomial functor: a pair $(S, \phi)$ where $S$ is the state space and $\phi: S \to P(S)$ is the transition function.
+
+In practice, this means memory is not just ``stored data'' but a dynamical system with update rules. Our implementation uses \textbf{bi-temporal memory}~\cite{snodgrass2000temporal}: every fact carries both a \emph{valid time} (when it was true in the world) and a \emph{record time} (when the system learned it). This dual-time structure enables belief-state reconstruction: ``what did the agent know at decision point $t$?''
+
+The \texttt{RunContext} class wraps the shared state dict with typed property accessors, providing the coalgebraic state interface that components read from and write to during execution.
+
+\subsection{Skills as Operad-Composed Objects}
+
+Skills are procedural capabilities. In the categorical framework, they are \textbf{objects composed via an operad}---a structure that defines how components can be wired together.
+
+Three composition operations are available:
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Serial} ($B \circ A$): The output of stage $A$ feeds into stage $B$. Sequential pipelines.
+\item \textbf{Parallel} ($A \otimes B$): Stages $A$ and $B$ execute independently with disjoint state. Specialist decomposition.
+\item \textbf{Trace} ($\mathrm{Tr}(A)$): A feedback loop where some outputs feed back as inputs. Homeostatic control.
+\end{itemize}
+
+Ma et al.~\cite{ma2026atomic} demonstrate empirically that five atomic coding skills---localize, edit, test, reproduce, review---compose without negative interference under joint training. This is precisely the behavior the operad is designed to guarantee structurally: typed composition preserves component properties.
+
+\subsection{Protocols as Syntactic Wiring $G$}
+
+Protocols define how agents communicate. In the Architecture triple, this is $G$---the syntactic wiring graph. Each module has typed input and output ports; wires connect outputs to inputs with type compatibility checks.
+
+The wiring diagram is not just a topology---it carries \textbf{integrity labels} on each port (validated, raw, sanitized) and supports three optical types at the wire level: lenses (constitutional access), prisms (conditional routing), and traversals (batch processing). These wire-level optics formalize the ``interaction structure'' that Zhou et al.\ identify as the Protocols pillar.
+
+\subsection{Harness as Full Architecture $(G, \mathrm{Know}, \Phi)$}
+
+The harness is not one component of the Architecture---it \emph{is} the Architecture. The $\mathrm{Know}$ component deserves special attention: it encodes the structural guarantees that make the harness more than a bag of parts.
+
+\begin{definition}[Structural Guarantee as Certificate]
+A \textbf{certificate} is a triple $(\tau, \sigma, \mathrm{evds})$ where $\tau$ is a theorem statement, $\sigma$ maps theorem symbols to architecture parameters, and $\mathrm{evds}$ is a derivation that can be mechanically replayed to verify $\tau$ holds.
+\end{definition}
+
+Examples of certificates in our implementation:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Priority gating}: ``Critical operations are served under any load'' (from metabolic state machine parameters).
+\item \textbf{No false activation}: ``Normal traffic never triggers quorum sensing'' (from steady-state dynamics).
+\item \textbf{No oscillation}: ``mTOR scaling converges'' (from feedback gain bounds).
+\end{itemize}
+
+These certificates are attached to $\mathrm{Know}$, not to any specific model. When the model changes---or when the architecture is compiled to a different framework---the certificates remain valid because they depend on harness structure, not model behavior.
+
+\subsection{The Profunctor Interface $\Phi$}
+
+The interface $\Phi$ maps abstract capability slots to concrete implementations. In practice, this is the \textbf{mode-to-model mapping}: each stage declares a cognitive mode (observational/action-oriented), and the harness resolves this to a specific model tier (fast/deep).
+
+\begin{definition}[Profunctor Interface]
+$\Phi: \mathrm{Stages} \to \mathrm{Models}$ assigns each stage a model tier. The interface is a \textbf{parameter} of the architecture, not a fixed constant---different deployments can use different $\Phi$ while preserving the same $(G, \mathrm{Know})$.
+\end{definition}
+
+This separation is what makes the harness model-agnostic. The same harness (same $G$, same $\mathrm{Know}$) can run on different models by changing $\Phi$. The structural guarantees in $\mathrm{Know}$ are preserved because they depend on $(G, \mathrm{Know})$, not on $\Phi$.

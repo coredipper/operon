@@ -1,0 +1,68 @@
+\section{Implementation and Experiments}\label{sec:experiments}
+
+\subsection{Reference Implementation}
+
+The correspondence is implemented in the Operon framework (\texttt{operon-ai}, MIT license). Key components:
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Architecture extraction}: \texttt{extract\_architecture(organism)} produces the $(G, \mathrm{Know}, \Phi)$ triple from any \texttt{SkillOrganism}.
+\item \textbf{Compiler functors}: Five \texttt{CompilerFunctor} instances with automatic preservation verification.
+\item \textbf{Certificate framework}: Self-verifying certificates with \texttt{certify()} and \texttt{verify()} methods on certifiable components (ATP budget, quorum sensing, mTOR scaling).
+\item \textbf{Atomic skills catalog}: \texttt{seed\_library\_from\_atomic\_skills()} registers the five skills with correct topology mapping.
+\item \textbf{LangGraph compiler}: \texttt{organism\_to\_langgraph()} wraps \texttt{organism.run()} as a LangGraph node.
+\end{itemize}
+
+\subsection{Escalation Experiment}
+
+To test whether structural guarantees are genuinely harness-level, we designed an experiment that changes the model while keeping the harness constant.
+
+\paragraph{Setup.} A single-stage code review organism with:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Fast model}: Phi-3 Mini (3.8B parameters) via Ollama
+\item \textbf{Deep model}: Gemma 4 (27B MoE, 4B active) via Ollama
+\item \textbf{VerifierComponent}: Rubric-based quality evaluation using Gemma~4 as judge
+\item \textbf{WatcherComponent}: Convergence detection with quality-based escalation
+\item \textbf{Quality threshold}: 0.6 (below this, the watcher fires ESCALATE)
+\end{itemize}
+
+The task is \texttt{hard\_par\_08}: a code review containing four subtle bugs (off-by-one pagination, TOCTOU cache race, float precision in financial math, \texttt{except Exception} swallowing \texttt{KeyboardInterrupt}).
+
+\paragraph{Results.}
+
+\begin{center}
+\small
+\begin{tabular}{@{}lccl@{}}
+\toprule
+\textbf{Phase} & \textbf{Model} & \textbf{Quality} & \textbf{Action} \\
+\midrule
+Initial execution & Phi-3 Mini (fast) & 0.50 & EXECUTE \\
+Verifier evaluation & Gemma 4 (judge) & --- & Score = 0.50 \\
+Watcher decision & --- & $0.50 < 0.60$ & ESCALATE \\
+Escalated execution & Gemma 4 (deep) & --- & EXECUTE \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The escalation fires correctly: Phi-3 Mini produces a review that the judge scores below threshold, the watcher escalates to Gemma~4, and the deep model re-executes the stage. The structural guarantee (quality-based escalation) operates independently of which model executes---it is a property of the harness ($\mathrm{Know}$), not the model ($\Phi$).
+
+\paragraph{Discrimination.} Independent validation of the task confirms discrimination between weak and strong models: Phi-3 Mini scores 0.72 (identifies bug classes but not concrete failure scenarios), Gemma~4 scores 1.00 (explains each failure scenario in detail). Quality delta = 0.28, exceeding the 0.20 threshold.
+
+\subsection{Certificate Preservation Measurement}
+
+We compile organisms with multiple certificates (ATP priority gating + quorum sensing no-false-activation + mTOR no-oscillation) across all four non-identity compilers and measure preservation:
+
+\begin{center}
+\small
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Compiler} & \textbf{Certificates Preserved} & \textbf{Verified} \\
+\midrule
+Swarms & 3/3 (100\%) & 3/3 \\
+DeerFlow & 3/3 (100\%) & 3/3 \\
+Ralph & 3/3 (100\%) & 3/3 \\
+Scion & 3/3 (100\%) & 3/3 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Full certificate identity (theorem + parameters + source) is preserved across all four measured compilers, confirming Proposition~5.1 empirically. The LangGraph wrapper additionally preserves all certificates via internal enforcement (Section~\ref{sec:preservation}).
