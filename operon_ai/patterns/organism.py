@@ -312,12 +312,25 @@ class SkillOrganism:
                     watcher_key = sk
                     break
             state = RunContext(state, watcher_key=watcher_key)
-        def _sync_back():
-            """If caller passed a plain dict, sync RunContext mutations back."""
+        try:
+            return self._execute_single_stage(
+                stage, task, state, stage_outputs, stage_results,
+            )
+        finally:
+            # Sync RunContext mutations back to the caller's original dict
             if _original_dict is not None:
                 _original_dict.clear()
                 _original_dict.update(state)
 
+    def _execute_single_stage(
+        self,
+        stage: SkillStage,
+        task: str,
+        state: RunContext,
+        stage_outputs: dict[str, Any],
+        stage_results: list[SkillStageResult],
+    ) -> str:
+        """Inner implementation of run_single_stage (no dict sync)."""
         for component in self.components:
             component.on_stage_start(stage, state, stage_outputs)
 
@@ -325,7 +338,6 @@ class SkillOrganism:
         _pre = state.pop(state._watcher_key, None)
         if isinstance(_pre, WatcherIntervention) and _pre.kind == InterventionKind.HALT:
             state["_blocked_by"] = _pre
-            _sync_back()
             return "blocked"
 
         # --- Substrate read ---
@@ -389,14 +401,11 @@ class SkillOrganism:
                         state[stage.name] = escalated.output
                         result = escalated
             elif _intervention.kind == InterventionKind.HALT:
-                _sync_back()
                 return "halt"
 
         if self.halt_on_block and result.action_type in {"BLOCK", "FAILURE"}:
-            _sync_back()
             return "halt"
 
-        _sync_back()
         return "continue"
 
     def run(
