@@ -269,6 +269,105 @@ class SkillOrganism:
                     pass
         return certs
 
+    def run_single_stage(
+        self,
+        stage: SkillStage,
+        task: str,
+        state: RunContext,
+        stage_outputs: dict[str, Any],
+        stage_results: list[SkillStageResult],
+    ) -> str:
+        """Execute one stage with full component hooks and intervention handling.
+
+        This is the core per-stage logic extracted from :meth:`run`. Both
+        ``run()`` and the LangGraph compiler call this method, ensuring
+        identical behavior.
+
+        Returns
+        -------
+        str
+            ``"continue"`` if the pipeline should proceed to the next stage,
+            ``"halt"`` if the pipeline should stop (watcher HALT or
+            halt_on_block), or ``"blocked"`` if a pre-stage gate blocked
+            execution.
+        """
+        for component in self.components:
+            component.on_stage_start(stage, state, stage_outputs)
+
+        # --- Pre-stage intervention check (e.g. CertificateGate) ---
+        _pre = state.pop(state._watcher_key, None)
+        if isinstance(_pre, WatcherIntervention) and _pre.kind == InterventionKind.HALT:
+            state["_blocked_by"] = _pre
+            return "blocked"
+
+        # --- Substrate read ---
+        substrate_view: SubstrateView | None = None
+        now: datetime | None = None
+        if self.substrate is not None and stage.read_query is not None:
+            now = datetime.now()
+            substrate_view = self._build_substrate_view(
+                stage, task, state, stage_outputs, now,
+            )
+
+        result = self._run_stage(stage, task, state, stage_outputs, substrate_view)
+        stage_results.append(result)
+        stage_outputs[stage.name] = result.output
+        state[stage.name] = result.output
+        state["last_stage"] = stage.name
+
+        # --- Substrate write ---
+        if self.substrate is not None and (
+            stage.emit_output_fact or stage.fact_extractor
+        ):
+            if now is None:
+                now = datetime.now()
+            self._write_substrate_facts(
+                stage, task, result, state, stage_outputs, now,
+            )
+
+        # Run non-watcher components first (e.g. VerifierComponent deposits
+        # signals), then watcher last so it can collect all signals before
+        # deciding interventions.
+        for component in self.components:
+            if not hasattr(component, '_decide_intervention'):
+                component.on_stage_result(stage, result, state, stage_outputs)
+        for component in self.components:
+            if hasattr(component, '_decide_intervention'):
+                component.on_stage_result(stage, result, state, stage_outputs)
+
+        # --- Watcher intervention check ---
+        _intervention = state.pop(state._watcher_key, None)
+        if isinstance(_intervention, WatcherIntervention):
+            if _intervention.kind == InterventionKind.RETRY:
+                retry_result = self._run_stage(
+                    stage, task, state, stage_outputs, substrate_view,
+                )
+                stage_results[-1] = retry_result
+                stage_outputs[stage.name] = retry_result.output
+                state[stage.name] = retry_result.output
+                result = retry_result
+            elif _intervention.kind == InterventionKind.ESCALATE:
+                if stage.handler is None and self.deep_alias in self.nuclei:
+                    try:
+                        escalated = self._run_stage_escalated(
+                            stage, task, state, stage_outputs, substrate_view,
+                        )
+                    except Exception as exc:
+                        state["_escalation_error"] = str(exc)
+                        escalated = None
+                    if escalated is not None:
+                        stage_results[-1] = escalated
+                        stage_outputs[stage.name] = escalated.output
+                        state[stage.name] = escalated.output
+                        result = escalated
+            elif _intervention.kind == InterventionKind.HALT:
+                return "halt"
+
+        if self.halt_on_block and result.action_type in {"BLOCK", "FAILURE"}:
+            return "halt"
+
+        return "continue"
+
     def run(
         self,
         task: str,
@@ -310,79 +409,10 @@ class SkillOrganism:
         state.pop("_organism_config", None)
 
         for stage in self.stages:
-            for component in self.components:
-                component.on_stage_start(stage, state, stage_outputs)
-
-            # --- Pre-stage intervention check (e.g. CertificateGate) ---
-            _pre = state.pop(state._watcher_key, None)
-            if isinstance(_pre, WatcherIntervention) and _pre.kind == InterventionKind.HALT:
-                state["_blocked_by"] = _pre
-                break
-
-            # --- Substrate read ---
-            substrate_view: SubstrateView | None = None
-            now: datetime | None = None
-            if self.substrate is not None and stage.read_query is not None:
-                now = datetime.now()
-                substrate_view = self._build_substrate_view(
-                    stage, task, state, stage_outputs, now,
-                )
-
-            result = self._run_stage(stage, task, state, stage_outputs, substrate_view)
-            stage_results.append(result)
-            stage_outputs[stage.name] = result.output
-            state[stage.name] = result.output
-            state["last_stage"] = stage.name
-
-            # --- Substrate write ---
-            if self.substrate is not None and (
-                stage.emit_output_fact or stage.fact_extractor
-            ):
-                if now is None:
-                    now = datetime.now()
-                self._write_substrate_facts(
-                    stage, task, result, state, stage_outputs, now,
-                )
-
-            # Run non-watcher components first (e.g. VerifierComponent deposits
-            # signals), then watcher last so it can collect all signals before
-            # deciding interventions.
-            for component in self.components:
-                if not hasattr(component, '_decide_intervention'):
-                    component.on_stage_result(stage, result, state, stage_outputs)
-            for component in self.components:
-                if hasattr(component, '_decide_intervention'):
-                    component.on_stage_result(stage, result, state, stage_outputs)
-
-            # --- Watcher intervention check ---
-            _intervention = state.pop(state._watcher_key, None)
-            if isinstance(_intervention, WatcherIntervention):
-                if _intervention.kind == InterventionKind.RETRY:
-                    retry_result = self._run_stage(
-                        stage, task, state, stage_outputs, substrate_view,
-                    )
-                    stage_results[-1] = retry_result
-                    stage_outputs[stage.name] = retry_result.output
-                    state[stage.name] = retry_result.output
-                    result = retry_result
-                elif _intervention.kind == InterventionKind.ESCALATE:
-                    if stage.handler is None and self.deep_alias in self.nuclei:
-                        try:
-                            escalated = self._run_stage_escalated(
-                                stage, task, state, stage_outputs, substrate_view,
-                            )
-                        except Exception as exc:
-                            state["_escalation_error"] = str(exc)
-                            escalated = None
-                        if escalated is not None:
-                            stage_results[-1] = escalated
-                            stage_outputs[stage.name] = escalated.output
-                            state[stage.name] = escalated.output
-                            result = escalated
-                elif _intervention.kind == InterventionKind.HALT:
-                    break
-
-            if self.halt_on_block and result.action_type in {"BLOCK", "FAILURE"}:
+            decision = self.run_single_stage(
+                stage, task, state, stage_outputs, stage_results,
+            )
+            if decision != "continue":
                 break
 
         final_output = stage_results[-1].output if stage_results else None
