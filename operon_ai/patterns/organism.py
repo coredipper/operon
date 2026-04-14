@@ -298,8 +298,12 @@ class SkillOrganism:
             halt_on_block), or ``"blocked"`` if a pre-stage gate blocked
             execution.
         """
-        # Normalize to RunContext if caller passed a plain dict
+        # Normalize to RunContext if caller passed a plain dict.
+        # We update the original dict in-place so mutations are visible
+        # to the caller.
+        _original_dict = None
         if not isinstance(state, RunContext):
+            _original_dict = state
             watcher_key = WATCHER_STATE_KEY
             for component in self.components:
                 cfg = getattr(component, "config", None)
@@ -308,6 +312,12 @@ class SkillOrganism:
                     watcher_key = sk
                     break
             state = RunContext(state, watcher_key=watcher_key)
+        def _sync_back():
+            """If caller passed a plain dict, sync RunContext mutations back."""
+            if _original_dict is not None:
+                _original_dict.clear()
+                _original_dict.update(state)
+
         for component in self.components:
             component.on_stage_start(stage, state, stage_outputs)
 
@@ -315,6 +325,7 @@ class SkillOrganism:
         _pre = state.pop(state._watcher_key, None)
         if isinstance(_pre, WatcherIntervention) and _pre.kind == InterventionKind.HALT:
             state["_blocked_by"] = _pre
+            _sync_back()
             return "blocked"
 
         # --- Substrate read ---
@@ -378,11 +389,14 @@ class SkillOrganism:
                         state[stage.name] = escalated.output
                         result = escalated
             elif _intervention.kind == InterventionKind.HALT:
+                _sync_back()
                 return "halt"
 
         if self.halt_on_block and result.action_type in {"BLOCK", "FAILURE"}:
+            _sync_back()
             return "halt"
 
+        _sync_back()
         return "continue"
 
     def run(

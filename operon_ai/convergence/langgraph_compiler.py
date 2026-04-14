@@ -88,6 +88,15 @@ def organism_to_langgraph(organism: Any) -> Any:
     ``organism.run_single_stage()``. Conditional edges route based
     on the return value.
 
+    The compiled graph requires ``task`` and ``shared_state`` in its
+    input state. Use :func:`run_organism_langgraph` for the full
+    lifecycle (``on_run_start``/``on_run_complete`` + certificate
+    verification).
+
+    Note: LangGraph checkpointing between stages does not persist
+    component instance state (watcher counters, telemetry buffers).
+    For resumable execution, use ``organism.run()`` directly.
+
     Parameters
     ----------
     organism:
