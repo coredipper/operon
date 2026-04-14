@@ -109,9 +109,10 @@ def inspect_architecture(
     s3_name, s3_role, s3_mode,
     budget_val,
 ):
-    names = [s.strip() for s in (s1_name, s2_name, s3_name)]
-    roles = [s.strip() for s in (s1_role, s2_role, s3_role)]
-    modes = [s1_mode, s2_mode, s3_mode]
+    names = [str(s).strip() for s in (s1_name, s2_name, s3_name)]
+    roles = [str(s).strip() for s in (s1_role, s2_role, s3_role)]
+    _valid_modes = {"fixed", "fuzzy", "deep"}
+    modes = [m if m in _valid_modes else "fixed" for m in (s1_mode, s2_mode, s3_mode)]
 
     if not all(names) or not all(roles):
         return "<p>Please fill in all stage names and roles.</p>", "{}", ""
