@@ -389,30 +389,34 @@ scion_functor = _lazy_functor("scion", "operon_ai.convergence.scion_compiler", "
 
 
 def _compile_langgraph(organism: SkillOrganism, *, config: RuntimeConfig | None = None) -> dict[str, Any]:
-    """Compile organism to the LangGraph target's real graph shape.
+    """Compile organism to the LangGraph target's per-stage graph shape.
 
-    ``organism_to_langgraph()`` wraps ``organism.run()`` as a single
-    LangGraph node named ``"organism"``.  This function models that
-    real graph shape — one node, no internal edges — for categorical
-    verification.
-
-    The certificates are the organism's own (identity morphism).
+    ``organism_to_langgraph()`` creates one LangGraph node per stage,
+    each calling ``organism.run_single_stage()``.  This function models
+    that per-stage graph shape for categorical verification.
     """
     if config is not None:
         raise ValueError(
             "RuntimeConfig is not supported for the LangGraph categorical "
-            "functor. The LangGraph compile target wraps organism.run() "
-            "as a single node, so runtime hints have no effect."
+            "functor. Use organism_to_langgraph() directly."
         )
 
-    # Model the REAL graph shape: single "organism" node, no edges
+    stages = organism.stages
+    agents = [
+        {"name": s.name, "role": s.role, "model": s.mode}
+        for s in stages
+    ]
+    edges = [
+        (stages[i].name, stages[i + 1].name)
+        for i in range(len(stages) - 1)
+    ]
     certificates = [certificate_to_dict(c) for c in organism.collect_certificates()]
 
     return {
-        "agents": [{"name": "organism", "role": "wrapper"}],
-        "edges": [],
+        "agents": agents,
+        "edges": edges,
         "certificates": certificates,
-        "config": {"runtime": "langgraph", "node_count": 1},
+        "config": {"runtime": "langgraph", "node_count": len(stages)},
     }
 
 

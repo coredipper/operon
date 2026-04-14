@@ -1,15 +1,16 @@
-"""LangGraph compiler — wrap SkillOrganism.run() as a LangGraph node.
+"""LangGraph compiler — per-stage nodes calling organism.run_single_stage().
 
-Instead of reimplementing the organism's execution logic as LangGraph
-nodes, this compiler wraps ``organism.run()`` directly. All structural
-guarantees (CertificateGate, VerifierComponent, WatcherComponent,
-halt_on_block, retry, escalation) are handled by the organism's own
-run loop — the same code path tested by 1856+ unit tests.
+Each organism stage becomes a LangGraph node that calls
+``organism.run_single_stage()``. Conditional edges route based on
+the return value: ``"continue"`` → next stage, ``"halt"``/``"blocked"``
+→ END. All structural guarantees (CertificateGate, VerifierComponent,
+WatcherComponent, halt_on_block, retry, escalation) are handled by
+the organism's own per-stage logic — no reimplementation.
 
-LangGraph provides the execution host and graph topology. The organism
-provides the structural guarantees.
+LangGraph provides the execution host, graph topology, observability,
+and checkpointing. The organism provides the structural guarantees.
 
-Requires ``langgraph`` and ``langchain-openai``::
+Requires ``langgraph``::
 
     pip install operon-ai[langgraph]
 
@@ -22,6 +23,12 @@ import operator
 import time
 from dataclasses import dataclass, field
 from typing import Annotated, Any, TypedDict
+
+from ..patterns.types import (
+    RunContext,
+    SkillStageResult,
+    WATCHER_STATE_KEY,
+)
 
 # ---------------------------------------------------------------------------
 # Availability guard
@@ -41,14 +48,15 @@ except ImportError:
 
 
 class LangGraphState(TypedDict):
-    """LangGraph state for the organism wrapper."""
+    """LangGraph state flowing through the per-stage graph."""
 
     messages: Annotated[list, operator.add]
-    output: str
+    task: str
     stage_outputs: dict[str, str]
+    stage_results: Annotated[list, operator.add]
+    shared_state: dict[str, Any]
     halted: bool
-    intervention_log: list[dict[str, Any]]
-    run_complete: bool
+    _routing: str  # "continue" / "halt" / "blocked"
 
 
 # ---------------------------------------------------------------------------
@@ -74,10 +82,20 @@ class LangGraphResult:
 
 
 def organism_to_langgraph(organism: Any) -> Any:
-    """Compile a SkillOrganism into a LangGraph StateGraph.
+    """Compile a SkillOrganism into a per-stage LangGraph StateGraph.
 
-    The graph has a single node that calls ``organism.run()``.
-    All structural guarantees run inside the organism's own run loop.
+    Each stage becomes a LangGraph node that calls
+    ``organism.run_single_stage()``. Conditional edges route based
+    on the return value.
+
+    The compiled graph requires ``task`` and ``shared_state`` in its
+    input state. Use :func:`run_organism_langgraph` for the full
+    lifecycle (``on_run_start``/``on_run_complete`` + certificate
+    verification).
+
+    Note: LangGraph checkpointing between stages does not persist
+    component instance state (watcher counters, telemetry buffers).
+    For resumable execution, use ``organism.run()`` directly.
 
     Parameters
     ----------
@@ -87,82 +105,94 @@ def organism_to_langgraph(organism: Any) -> Any:
     Returns
     -------
     CompiledStateGraph
-        A LangGraph graph that can be invoked or streamed.
+        A LangGraph graph with one node per stage.
     """
     try:
         from langgraph.graph import END, START, StateGraph
-        from langchain_core.messages import HumanMessage
     except ImportError as e:
         raise ImportError(
             "LangGraph is required. Install with: pip install operon-ai[langgraph]"
         ) from e
 
-    def run_organism(state: LangGraphState) -> dict:
-        """Execute the full organism pipeline."""
-        from langchain_core.messages import AIMessage
+    stages = organism.stages
+    components = organism.components
 
-        # Extract task from messages
-        task = ""
-        for m in state.get("messages", []):
-            if isinstance(m, HumanMessage):
-                task = m.content
-                break
+    # Resolve watcher key
+    watcher_key = WATCHER_STATE_KEY
+    for component in components:
+        cfg = getattr(component, "config", None)
+        sk = getattr(cfg, "state_key", None)
+        if sk is not None:
+            watcher_key = sk
+            break
 
-        # Run the organism — catch exceptions so the graph returns a
-        # stable result instead of aborting.
-        halted = False
-        try:
-            result = organism.run(task)
-        except Exception as exc:
+    def make_stage_node(stage):
+        """Create a LangGraph node that calls organism.run_single_stage()."""
+        def node(state: LangGraphState) -> dict:
+            ctx = RunContext(state.get("shared_state", {}), watcher_key=watcher_key)
+            outputs = state.get("stage_outputs", {})
+            results_dicts = state.get("stage_results", [])
+
+            # Reconstruct mutable lists for run_single_stage
+            results: list[SkillStageResult] = []
+
+            try:
+                decision = organism.run_single_stage(
+                    stage, state["task"], ctx, outputs, results,
+                )
+            except Exception as exc:
+                return {
+                    "halted": True,
+                    "_routing": "halt",
+                    "shared_state": dict(ctx),
+                    "stage_results": [{
+                        "stage": stage.name, "output": f"Error: {exc}",
+                        "error": str(exc),
+                    }],
+                }
+
+            # Serialize the new stage result
+            new_results = []
+            for sr in results:
+                out = sr.output if isinstance(sr.output, str) else str(sr.output)
+                new_results.append({
+                    "stage": sr.stage_name,
+                    "model": sr.model_alias,
+                    "action": sr.action_type,
+                    "output": out,
+                })
+                outputs[sr.stage_name] = out
+
             return {
-                "output": f"Error: {exc}",
-                "messages": [AIMessage(content=f"Error: {exc}")],
-                "stage_outputs": {},
-                "halted": True,
-                "intervention_log": [{"stage": "organism", "kind": "halt", "reason": str(exc)}],
-                "run_complete": True,
+                "stage_outputs": outputs,
+                "stage_results": new_results,
+                "shared_state": dict(ctx),
+                "halted": decision != "continue",
+                "_routing": decision,
             }
 
-        # Extract outputs
-        stage_outputs = {
-            sr.stage_name: (sr.output if isinstance(sr.output, str) else str(sr.output))
-            for sr in result.stage_results
-        }
-        final_output = result.final_output
-        if not isinstance(final_output, str):
-            final_output = str(final_output) if final_output is not None else ""
+        return node
 
-        # Extract intervention history from watcher (if present)
-        interventions = []
-        for component in organism.components:
-            if hasattr(component, "interventions"):
-                for intv in component.interventions:
-                    interventions.append({
-                        "stage": intv.stage_name,
-                        "kind": intv.kind.value,
-                        "reason": intv.reason,
-                    })
-
-        # Detect halted: pre-stage block, incomplete pipeline, or watcher halt
-        halted = (
-            bool(result.shared_state.get("_blocked_by"))
-            or len(result.stage_results) < len(organism.stages)
-            or any(i.get("kind") == "halt" for i in interventions)
-        )
-
-        return {
-            "output": final_output,
-            "messages": [AIMessage(content=final_output)],
-            "stage_outputs": stage_outputs,
-            "halted": halted,
-            "intervention_log": interventions,
-            "run_complete": True,
-        }
-
+    # Build the graph
     builder = StateGraph(LangGraphState)
-    builder.add_node("organism", run_organism)
-    builder.add_edge(START, "organism")
-    builder.add_edge("organism", END)
+
+    for stage in stages:
+        builder.add_node(stage.name, make_stage_node(stage))
+
+    # Routing: each stage → next or END
+    def route(state: LangGraphState) -> str:
+        return "halt" if state.get("_routing") != "continue" else "next"
+
+    for i, stage in enumerate(stages):
+        if i < len(stages) - 1:
+            builder.add_conditional_edges(
+                stage.name, route,
+                {"next": stages[i + 1].name, "halt": END},
+            )
+        else:
+            builder.add_edge(stage.name, END)
+
+    builder.add_edge(START, stages[0].name)
     return builder.compile()
 
 
@@ -172,17 +202,7 @@ def run_organism_langgraph(
     task: str,
     verify_certificates: bool = True,
 ) -> LangGraphResult:
-    """Compile and execute an organism in LangGraph in one call.
-
-    Parameters
-    ----------
-    organism:
-        A ``SkillOrganism`` with stages and components attached.
-    task:
-        The user task / prompt to execute.
-    verify_certificates:
-        If ``True``, verify certificates post-execution.
-    """
+    """Compile and execute an organism in LangGraph in one call."""
     try:
         from langchain_core.messages import HumanMessage
     except ImportError as e:
@@ -190,18 +210,63 @@ def run_organism_langgraph(
             "LangGraph is required. Install with: pip install operon-ai[langgraph]"
         ) from e
 
+    # Call on_run_start for all components
+    watcher_key = WATCHER_STATE_KEY
+    for component in organism.components:
+        cfg = getattr(component, "config", None)
+        sk = getattr(cfg, "state_key", None)
+        if sk is not None:
+            watcher_key = sk
+            break
+
+    ctx = RunContext({}, watcher_key=watcher_key)
+    for component in organism.components:
+        component.on_run_start(task, ctx)
+
     graph = organism_to_langgraph(organism)
 
     t0 = time.monotonic()
     result = graph.invoke({
         "messages": [HumanMessage(content=task)],
-        "output": "",
+        "task": task,
         "stage_outputs": {},
+        "stage_results": [],
+        "shared_state": dict(ctx),
         "halted": False,
-        "intervention_log": [],
-        "run_complete": False,
+        "_routing": "continue",
     })
     elapsed_ms = (time.monotonic() - t0) * 1000
+
+    # Call on_run_complete for all components
+    final_ctx = RunContext(result.get("shared_state", {}), watcher_key=watcher_key)
+    stage_outputs = result.get("stage_outputs", {})
+    stage_results_dicts = result.get("stage_results", [])
+
+    final_output = ""
+    if stage_results_dicts:
+        last = stage_results_dicts[-1]
+        final_output = last.get("output", "")
+
+    from ..patterns.types import SkillRunResult
+    run_result = SkillRunResult(
+        task=task,
+        final_output=final_output,
+        stage_results=(),
+        shared_state=dict(final_ctx),
+    )
+    for component in organism.components:
+        component.on_run_complete(run_result, final_ctx)
+
+    # Extract interventions
+    interventions = []
+    for component in organism.components:
+        if hasattr(component, "interventions"):
+            for intv in component.interventions:
+                interventions.append({
+                    "stage": intv.stage_name,
+                    "kind": intv.kind.value,
+                    "reason": intv.reason,
+                })
 
     # Certificate verification
     cert_results: list[dict[str, Any]] = []
@@ -213,15 +278,17 @@ def run_organism_langgraph(
                 "holds": verification.holds,
             })
 
+    stages_completed = [d.get("stage", "") for d in stage_results_dicts]
+
     return LangGraphResult(
-        output=result.get("output", ""),
-        stage_outputs=result.get("stage_outputs", {}),
-        interventions=result.get("intervention_log", []),
+        output=final_output,
+        stage_outputs=stage_outputs,
+        interventions=interventions,
         timing_ms=elapsed_ms,
         certificates_verified=cert_results,
         metadata={
             "halted": result.get("halted", False),
-            "stages_completed": list(result.get("stage_outputs", {}).keys()),
-            "run_complete": result.get("run_complete", False),
+            "stages_completed": stages_completed,
+            "run_complete": True,
         },
     )
