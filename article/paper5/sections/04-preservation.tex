@@ -22,17 +22,17 @@ Each compiler is wrapped in a \texttt{CompilerFunctor} class that automatically 
 \item \textbf{Interface preservation}: source stage names present in target (mode mapping may differ).
 \end{enumerate}
 
-\subsection{The LangGraph Wrapper}
+\subsection{The LangGraph Compiler}
 
-The LangGraph functor is special. \texttt{organism\_to\_langgraph()} wraps \texttt{organism.run()} as a \emph{single LangGraph node}. The organism's stages, components, and guarantees execute inside the node---LangGraph provides the execution host, Operon provides the structural control flow.
+The LangGraph compiler \texttt{organism\_to\_langgraph()} creates one LangGraph node per organism stage. Each node calls \texttt{organism.run\_single\_stage()}---the same per-stage method that \texttt{organism.run()} uses internally. Conditional edges route based on the return value: \texttt{"continue"} proceeds to the next stage, \texttt{"halt"} or \texttt{"blocked"} routes to the graph's terminal node.
 
-This makes the LangGraph functor a \textbf{certificate-preserving wrapper}: the compiled graph collapses the multi-stage topology into a single node, so graph structure ($G$) and interface ($\Phi$) are not preserved in the target representation. However, all certificates in $\mathrm{Know}$ are preserved because they are evaluated inside the wrapped \texttt{run()} call---the organism's own run loop enforces every structural guarantee internally.
+This design avoids the reimplementation trap: an earlier attempt that encoded component logic directly as LangGraph nodes required 10 rounds of code review to achieve behavioral parity with \texttt{organism.run()}.  By extracting \texttt{run\_single\_stage()} from the run loop and calling it from both paths, the LangGraph graph uses the \emph{same code path} as the native runtime---zero reimplementation.
 
-\begin{proposition}[Certificate-Only Preservation]
-The LangGraph functor preserves $\mathrm{Know}$ completely: for any organism $A$, all certificates attached to $A$ verify successfully after compilation. Graph topology and interface are collapsed into the single-node wrapper but remain enforced internally by \texttt{organism.run()}.
+\begin{proposition}[Per-Stage Certificate Preservation]
+The LangGraph compiler preserves $\mathrm{Know}$ completely: for any organism $A$, all certificates attached to $A$ verify successfully after compilation. Each stage node executes with full component hooks (CertificateGate, VerifierComponent, WatcherComponent), and interventions (RETRY, ESCALATE, HALT) are handled within the node before routing.
 \end{proposition}
 
-The operational meaning: wrapping a harness in a different execution framework transfers all structural guarantees because the guarantees reside in $\mathrm{Know}$, not in $G$ or $\Phi$. The certificates hold because they depend on harness logic, not graph shape.
+The per-stage graph also provides LangGraph-native observability: each stage appears as a visible node in LangGraph Studio, enabling inspection of individual stage execution, timing, and intervention decisions.  The certificates hold because \texttt{run\_single\_stage()} enforces every structural guarantee independently of graph topology.
 
 \subsection{Empirical Verification}
 
@@ -48,9 +48,9 @@ Swarms & $\checkmark$ (1:1) & $\checkmark$ (100\%) & $\checkmark$ \\
 DeerFlow & $\times$ (hub-spoke) & $\checkmark$ (100\%) & $\checkmark$ \\
 Ralph & $\times$ (hats) & $\checkmark$ (100\%) & $\checkmark$ \\
 Scion & $\checkmark$ (+watcher) & $\checkmark$ (100\%) & $\checkmark$ \\
-LangGraph & $\times$ (collapsed) & $\checkmark$ (100\%) & $\times$ (collapsed) \\
+LangGraph & $\checkmark$ (per-stage) & $\checkmark$ (100\%) & $\checkmark$ \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-All five compilers achieve 100\% certificate preservation and verification, despite varying degrees of graph topology change. Swarms preserves the exact graph (1:1 mapping). DeerFlow reshapes to hub-and-spoke. Ralph converts to hat patterns. Scion adds a watcher agent. LangGraph collapses to a single node. Yet in every case, the structural guarantees survive because they are $\mathrm{Know}$-level properties, independent of $G$.
+All five compilers achieve 100\% certificate preservation and verification, despite varying degrees of graph topology change. Swarms and LangGraph preserve per-stage structure. DeerFlow reshapes to hub-and-spoke. Ralph converts to hat patterns. Scion adds a watcher agent. In every case, the structural guarantees survive because they are $\mathrm{Know}$-level properties, independent of $G$.
