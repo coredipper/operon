@@ -53,4 +53,4 @@ LangGraph & $\times$ (collapsed) & $\checkmark$ (100\%) & $\times$ (collapsed) \
 \end{tabular}
 \end{center}
 
-All four topology-preserving compilers achieve 100\% certificate preservation and verification. Graph topology varies---DeerFlow reshapes to hub-and-spoke, Ralph uses hat patterns---but the structural guarantees survive because they are $\mathrm{Know}$-level properties, not $G$-level properties. The LangGraph wrapper collapses topology into a single node but still preserves all certificates, since they are enforced internally by \texttt{organism.run()}.
+All five compilers achieve 100\% certificate preservation and verification, despite varying degrees of graph topology change. Swarms preserves the exact graph (1:1 mapping). DeerFlow reshapes to hub-and-spoke. Ralph converts to hat patterns. Scion adds a watcher agent. LangGraph collapses to a single node. Yet in every case, the structural guarantees survive because they are $\mathrm{Know}$-level properties, independent of $G$.
