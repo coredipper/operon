@@ -2,7 +2,7 @@
 
 \subsection{Reference Implementation}
 
-The correspondence is implemented in the Operon framework (\texttt{operon-ai}, MIT license), with 1{,}875 unit tests across the full stack. Key components:
+The correspondence is implemented in the Operon framework (\texttt{operon-ai}, MIT license). Key components:
 
 \begin{itemize}[leftmargin=*]
 \item \textbf{Architecture extraction}: \texttt{extract\_architecture(organism)} produces the $(G, \mathrm{Know}, \Phi)$ triple from any \texttt{SkillOrganism}.
@@ -65,4 +65,4 @@ Scion & 3/3 (100\%) & 3/3 \\
 \end{tabular}
 \end{center}
 
-Full certificate identity (theorem + parameters + source) is preserved across all compilers, confirming Proposition~5.1 empirically.
+Full certificate identity (theorem + parameters + source) is preserved across all four topology-preserving compilers, confirming Proposition~5.1 empirically. The LangGraph wrapper additionally preserves all certificates via internal enforcement (Section~\ref{sec:preservation}).

@@ -22,7 +22,7 @@ Each compiler is wrapped in a \texttt{CompilerFunctor} class that automatically 
 \item \textbf{Interface preservation}: source stage names present in target (mode mapping may differ).
 \end{enumerate}
 
-\subsection{The LangGraph Identity}
+\subsection{The LangGraph Wrapper}
 
 The LangGraph functor is special. \texttt{organism\_to\_langgraph()} wraps \texttt{organism.run()} as a \emph{single LangGraph node}. The organism's stages, components, and guarantees execute inside the node---LangGraph provides the execution host, Operon provides the structural control flow.
 
@@ -53,4 +53,4 @@ LangGraph & $\times$ (collapsed) & $\checkmark$ (100\%) & $\times$ (collapsed) \
 \end{tabular}
 \end{center}
 
-All five compilers achieve 100\% certificate preservation and verification. Graph topology varies---DeerFlow reshapes to hub-and-spoke, Ralph uses hat patterns---but the structural guarantees survive because they are $\mathrm{Know}$-level properties, not $G$-level properties.
+All four topology-preserving compilers achieve 100\% certificate preservation and verification. Graph topology varies---DeerFlow reshapes to hub-and-spoke, Ralph uses hat patterns---but the structural guarantees survive because they are $\mathrm{Know}$-level properties, not $G$-level properties. The LangGraph wrapper collapses topology into a single node but still preserves all certificates, since they are enforced internally by \texttt{organism.run()}.
