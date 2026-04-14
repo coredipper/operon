@@ -384,12 +384,13 @@ class TestLangGraphFunctor:
             assert v.holds, f"Certificate {v.certificate.theorem} failed"
 
     def test_real_graph_shape(self):
-        """Target models the real LangGraph graph: single 'organism' node."""
+        """Target models the real LangGraph graph: one node per stage."""
         org = _make_organism()
+        source = extract_architecture(org)
         result = langgraph_functor.compile(org)
         target = result.target_architecture
-        assert target.stage_names == ("organism",)
-        assert target.edges == ()
+        assert target.stage_names == source.stage_names
+        assert target.edges == source.edges
 
     def test_source_theorems_subset_of_target(self):
         """Source certificate theorems are preserved in target (Prop 5.1)."""
