@@ -14,9 +14,12 @@ from pathlib import Path
 
 import gradio as gr
 
-_repo_root = Path(__file__).resolve().parents[2]
-if str(_repo_root) not in sys.path:
-    sys.path.insert(0, str(_repo_root))
+try:
+    _repo_root = Path(__file__).resolve().parents[2]
+    if str(_repo_root) not in sys.path:
+        sys.path.insert(0, str(_repo_root))
+except IndexError:
+    pass  # Running on HF — operon-ai installed via requirements.txt
 
 from operon_ai import ATP_Store, MockProvider, Nucleus, SkillStage, skill_organism
 from operon_ai.convergence.langgraph_compiler import (
