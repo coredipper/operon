@@ -9,7 +9,7 @@ The correspondence is implemented in the Operon framework (\texttt{operon-ai}, M
 \item \textbf{Compiler functors}: Five \texttt{CompilerFunctor} instances with automatic preservation verification.
 \item \textbf{Certificate framework}: Self-verifying certificates with \texttt{certify()} and \texttt{verify()} methods on certifiable components (ATP budget, quorum sensing, mTOR scaling).
 \item \textbf{Atomic skills catalog}: \texttt{seed\_library\_from\_atomic\_skills()} registers the five skills with correct topology mapping.
-\item \textbf{LangGraph compiler}: \texttt{organism\_to\_langgraph()} wraps \texttt{organism.run()} as a LangGraph node.
+\item \textbf{LangGraph compiler}: \texttt{organism\_to\_langgraph()} creates one LangGraph node per stage, each calling \texttt{run\_single\_stage()}.
 \end{itemize}
 
 \subsection{Escalation Experiment}
@@ -49,7 +49,7 @@ The escalation fires correctly: Phi-3 Mini produces a review that the judge scor
 
 \subsection{Certificate Preservation Measurement}
 
-We compile organisms with multiple certificates (ATP priority gating + quorum sensing no-false-activation + mTOR no-oscillation) across all four non-identity compilers and measure preservation:
+We compile organisms with multiple certificates (ATP priority gating + quorum sensing no-false-activation + mTOR no-oscillation) across all four non-LangGraph compilers and measure preservation:
 
 \begin{center}
 \small
@@ -65,4 +65,4 @@ Scion & 3/3 (100\%) & 3/3 \\
 \end{tabular}
 \end{center}
 
-Full certificate identity (theorem + parameters + source) is preserved across all four measured compilers, confirming Proposition~5.1 empirically. The LangGraph wrapper additionally preserves all certificates via internal enforcement (Section~\ref{sec:preservation}).
+Full certificate identity (theorem + parameters + source) is preserved across all four measured compilers, confirming Proposition~5.1 empirically. The LangGraph compiler preserves certificates via per-stage execution of \texttt{run\_single\_stage()} (Section~\ref{sec:preservation}).
