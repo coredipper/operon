@@ -65,12 +65,14 @@ def main():
     # ------------------------------------------------------------------
     # 1. Build organism with verifier + watcher
     # ------------------------------------------------------------------
+    # Use unique markers in instructions to avoid MockProvider
+    # substring collisions across stages.
     fast = Nucleus(provider=MockProvider(responses={
-        "diagnose": "Likely a session bug",
-        "fix": FAST_RESPONSE,
+        "xdiag7": "Likely a session bug",
+        "xpatch9": FAST_RESPONSE,
     }))
     deep = Nucleus(provider=MockProvider(responses={
-        "fix": DEEP_RESPONSE,
+        "xpatch9": DEEP_RESPONSE,
     }))
 
     watcher = WatcherComponent(config=WatcherConfig())
@@ -84,13 +86,13 @@ def main():
             SkillStage(
                 name="diagnose",
                 role="Diagnostician",
-                instructions="Diagnose the reported issue.",
+                instructions="[xdiag7] Diagnose the reported issue.",
                 mode="fixed",
             ),
             SkillStage(
                 name="fix",
                 role="Engineer",
-                instructions="Fix the diagnosed issue with a thorough solution.",
+                instructions="[xpatch9] Fix the diagnosed issue with a thorough solution.",
                 mode="fixed",   # starts on fast model
             ),
         ],

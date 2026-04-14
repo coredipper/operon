@@ -8,6 +8,7 @@ visualize the graph topology, and run it to see which stages execute.
 Run locally:  pip install gradio && python space-langgraph-visualizer/app.py
 """
 
+import html as html_mod
 import sys
 from pathlib import Path
 
@@ -93,8 +94,8 @@ def _node_html(name, mode, index, total, executed=False, is_start=False, is_end=
         f'<div style="border:3px solid {border_color};border-radius:10px;'
         f'padding:12px 20px;background:{bg};min-width:120px;text-align:center;'
         f'{"box-shadow:0 0 12px " + border_color + "40;" if executed else ""}">'
-        f'<div style="font-weight:700;font-size:1.05em;">{name}{check}</div>'
-        f'<div style="font-size:0.85em;color:#6b7280;">mode: {mode}</div>'
+        f'<div style="font-weight:700;font-size:1.05em;">{html_mod.escape(name)}{check}</div>'
+        f'<div style="font-size:0.85em;color:#6b7280;">mode: {html_mod.escape(mode)}</div>'
         f'</div></div>')
 
 
@@ -179,18 +180,20 @@ def visualize_and_run(stages_text, task, do_run):
     if not stages_info:
         return "<p>Could not parse stages. Use format: name, role, mode</p>", ""
 
-    # Build organism
-    responses = {}
-    for name, role, _ in stages_info:
-        responses[name[:4]] = f"[{role}] Processed: task complete."
+    # Build organism with deterministic handlers (avoids MockProvider
+    # substring-matching collisions across stages)
+    def _make_handler(stage_name, stage_role):
+        def handler(task, state, outputs, stage):
+            return f"[{stage_role}] Processed: task complete."
+        return handler
 
-    fast = Nucleus(provider=MockProvider(responses=responses))
-    deep = Nucleus(provider=MockProvider(responses=responses))
+    fast = Nucleus(provider=MockProvider(responses={}))
+    deep = Nucleus(provider=MockProvider(responses={}))
 
     org = skill_organism(
         stages=[
             SkillStage(name=name, role=role,
-                       instructions=f"{role}: process the task.",
+                       handler=_make_handler(name, role),
                        mode=mode)
             for name, role, mode in stages_info
         ],
@@ -229,9 +232,9 @@ def visualize_and_run(stages_text, task, do_run):
             preview = str(output)[:60]
             rows += (
                 f'<tr style="border-bottom:1px solid #f3f4f6;">'
-                f'<td style="padding:6px 8px;font-weight:600;">{name}</td>'
+                f'<td style="padding:6px 8px;font-weight:600;">{html_mod.escape(name)}</td>'
                 f'<td style="padding:6px 8px;font-family:monospace;'
-                f'font-size:0.9em;">{preview}</td></tr>')
+                f'font-size:0.9em;">{html_mod.escape(preview)}</td></tr>')
 
         cert_rows = ""
         for cv in result.certificates_verified:

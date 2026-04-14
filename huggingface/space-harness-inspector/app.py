@@ -10,6 +10,7 @@ external targets, and verify certificate preservation.
 Run locally:  pip install gradio && python space-harness-inspector/app.py
 """
 
+import html
 import sys
 from pathlib import Path
 
@@ -117,21 +118,22 @@ def inspect_architecture(
 
     budget = int(budget_val)
     org = _build_organism(names, roles, modes, budget)
+    _esc = html.escape  # shorthand for escaping user input in HTML
     arch = extract_architecture(org)
 
     # --- Architecture Triple ---
     # G (graph)
-    edges_html = " &rarr; ".join(arch.stage_names)
+    edges_html = " &rarr; ".join(_esc(s) for s in arch.stage_names)
     g_content = (
         f'<div style="font-family:monospace;font-size:1.1em;margin-bottom:8px;">'
         f'{edges_html}</div>'
         f'<table style="width:100%;border-collapse:collapse;">'
         f'<tr style="border-bottom:1px solid #e5e7eb;">'
         f'<td style="padding:4px 8px;color:#6b7280;">Stages</td>'
-        f'<td style="padding:4px 8px;">{list(arch.stage_names)}</td></tr>'
+        f'<td style="padding:4px 8px;">{[_esc(s) for s in arch.stage_names]}</td></tr>'
         f'<tr style="border-bottom:1px solid #e5e7eb;">'
         f'<td style="padding:4px 8px;color:#6b7280;">Edges</td>'
-        f'<td style="padding:4px 8px;">{list(arch.edges)}</td></tr>'
+        f'<td style="padding:4px 8px;">{[(_esc(a), _esc(b)) for a, b in arch.edges]}</td></tr>'
         f'<tr>'
         f'<td style="padding:4px 8px;color:#6b7280;">Sequential</td>'
         f'<td style="padding:4px 8px;">{arch.is_sequential}</td></tr>'
@@ -159,7 +161,7 @@ def inspect_architecture(
         tier = tier_map.get(mode, mode)
         phi_rows += (
             f'<tr style="border-bottom:1px solid #f3f4f6;">'
-            f'<td style="padding:4px 8px;font-family:monospace;">{stage_name}</td>'
+            f'<td style="padding:4px 8px;font-family:monospace;">{_esc(stage_name)}</td>'
             f'<td style="padding:4px 8px;">{mode}</td>'
             f'<td style="padding:4px 8px;">{tier}</td></tr>')
     phi_content = (

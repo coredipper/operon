@@ -53,29 +53,39 @@ class CheckpointState(TypedDict):
     _routing: str
 
 
+_STAGE_OUTPUTS = {
+    "triage": "Priority: P1 (production crash)",
+    "classify": "Category: authentication",
+    "investigate": "Root cause: expired JWT not caught by middleware",
+    "fix": "Fix: added JWT expiry check in auth middleware with 5-min grace period",
+}
+
+
 def build_organism():
-    """Build a 4-stage pipeline."""
-    fast = Nucleus(provider=MockProvider(responses={
-        "triage": "Priority: P1 (production crash)",
-        "classify": "Category: authentication",
-        "investig": "Root cause: expired JWT not caught by middleware",
-        "implement": "Fix: added JWT expiry check in auth middleware with 5-min grace period",
-    }))
+    """Build a 4-stage pipeline with deterministic handlers."""
+    # Use handlers instead of MockProvider to avoid substring-matching
+    # collisions when prior stage outputs appear in later prompts.
+    def _make_handler(stage_name):
+        def handler(task, state, outputs, stage):
+            return _STAGE_OUTPUTS[stage_name]
+        return handler
+
+    fast = Nucleus(provider=MockProvider(responses={}))
     deep = Nucleus(provider=MockProvider(responses={}))
 
     return skill_organism(
         stages=[
             SkillStage(name="triage", role="Triager",
-                       instructions="Triage the incident.",
+                       handler=_make_handler("triage"),
                        mode="fixed"),
             SkillStage(name="classify", role="Classifier",
-                       instructions="Classify the issue type.",
+                       handler=_make_handler("classify"),
                        mode="fixed"),
             SkillStage(name="investigate", role="Investigator",
-                       instructions="Investigate root cause.",
+                       handler=_make_handler("investigate"),
                        mode="fixed"),
             SkillStage(name="fix", role="Engineer",
-                       instructions="Implement the fix.",
+                       handler=_make_handler("fix"),
                        mode="fuzzy"),
         ],
         fast_nucleus=fast,
