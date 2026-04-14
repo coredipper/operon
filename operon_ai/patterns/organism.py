@@ -273,7 +273,7 @@ class SkillOrganism:
         self,
         stage: SkillStage,
         task: str,
-        state: RunContext,
+        state: dict[str, Any] | RunContext,
         stage_outputs: dict[str, Any],
         stage_results: list[SkillStageResult],
     ) -> str:
@@ -283,6 +283,13 @@ class SkillOrganism:
         ``run()`` and the LangGraph compiler call this method, ensuring
         identical behavior.
 
+        Parameters
+        ----------
+        state:
+            Accepts ``dict`` or ``RunContext``.  A plain dict is
+            automatically wrapped in a ``RunContext`` with the watcher
+            key resolved from the organism's components.
+
         Returns
         -------
         str
@@ -291,6 +298,16 @@ class SkillOrganism:
             halt_on_block), or ``"blocked"`` if a pre-stage gate blocked
             execution.
         """
+        # Normalize to RunContext if caller passed a plain dict
+        if not isinstance(state, RunContext):
+            watcher_key = WATCHER_STATE_KEY
+            for component in self.components:
+                cfg = getattr(component, "config", None)
+                sk = getattr(cfg, "state_key", None)
+                if sk is not None:
+                    watcher_key = sk
+                    break
+            state = RunContext(state, watcher_key=watcher_key)
         for component in self.components:
             component.on_stage_start(stage, state, stage_outputs)
 
