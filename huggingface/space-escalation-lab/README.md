@@ -1,7 +1,7 @@
 ---
 title: Operon Escalation Lab
 emoji: "\U0001F9EA"
-colorFrom: orange
+colorFrom: yellow
 colorTo: red
 sdk: gradio
 sdk_version: "6.5.1"
