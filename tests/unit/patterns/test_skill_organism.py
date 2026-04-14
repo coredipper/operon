@@ -679,3 +679,23 @@ def test_escalation_overrides_block_on_fast_model():
     final = result.stage_results[-1]
     assert final.model_alias == "deep", f"Expected deep model, got {final.model_alias}"
     assert final.action_type == "EXECUTE", f"Expected EXECUTE, got {final.action_type}"
+
+
+def test_run_single_stage_syncs_plain_dict():
+    """run_single_stage with a plain dict syncs mutations back."""
+    fast = Nucleus(provider=MockProvider(responses={
+        "do work": "EXECUTE: done",
+    }))
+    org = skill_organism(
+        stages=[SkillStage(name="s", role="R", instructions="do work", mode="fixed")],
+        fast_nucleus=fast,
+        deep_nucleus=fast,
+        budget=ATP_Store(budget=1000),
+    )
+    state = {}  # plain dict, not RunContext
+    outputs = {}
+    results = []
+    decision = org.run_single_stage(org.stages[0], "do work", state, outputs, results)
+    assert decision == "continue"
+    assert "s" in state, "Stage output should be synced back to the plain dict"
+    assert len(results) == 1
