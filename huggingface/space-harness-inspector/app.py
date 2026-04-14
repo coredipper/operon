@@ -158,11 +158,11 @@ def inspect_architecture(
     tier_map = {"fixed": "fast", "fuzzy": "fast&rarr;deep", "deep": "deep"}
     phi_rows = ""
     for stage_name, mode in arch.interface:
-        tier = tier_map.get(mode, mode)
+        tier = tier_map.get(mode, _esc(mode))
         phi_rows += (
             f'<tr style="border-bottom:1px solid #f3f4f6;">'
             f'<td style="padding:4px 8px;font-family:monospace;">{_esc(stage_name)}</td>'
-            f'<td style="padding:4px 8px;">{mode}</td>'
+            f'<td style="padding:4px 8px;">{_esc(mode)}</td>'
             f'<td style="padding:4px 8px;">{tier}</td></tr>')
     phi_content = (
         f'<table style="width:100%;border-collapse:collapse;">'
