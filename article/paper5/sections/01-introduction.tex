@@ -1,0 +1,27 @@
+\section{Introduction}
+
+``If you're not the model, you're the harness.'' This observation, now widespread in the LangChain ecosystem, captures a shift in how practitioners think about LLM-based agent systems. The model provides intelligence; the \emph{harness}---prompts, tool selection, memory management, orchestration logic, safety checks---makes that intelligence actionable. Increasingly, the harness determines whether an agent system is reliable, not the model.
+
+Yet harness engineering remains ad~hoc. Practitioners build harnesses by trial and error, guided by blog posts and example repositories rather than formal theory. There is no standard way to state what properties a harness guarantees, whether those properties survive when the harness is compiled to a different framework, or how to compose harnesses without losing guarantees.
+
+We argue that a formal theory already exists, but under a different name. De~los~Riscos, Corbacho, and Arbib~\cite{delosriscos2026categorical} introduce the \textbf{ArchAgents} category, where objects are Architecture triples $(G, \mathrm{Know}, \Phi)$ encoding syntactic wiring, structural knowledge, and profunctor interfaces. Morphisms are structure-preserving translations. Agents are monoidal functors interpreting architectures in concrete systems. Separately, Zhou et al.~\cite{zhou2026externalization} identify four pillars of agent externalization: Memory, Skills, Protocols, and Harness Engineering.
+
+Our contribution is the observation that these two frameworks describe the same thing. The four pillars of externalization map directly onto the Architecture triple:
+
+\begin{center}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Externalization Pillar} & \textbf{Categorical Role} & \textbf{Concrete Component} \\
+\midrule
+Memory & State in the coalgebra & BiTemporalMemory, RunContext \\
+Skills & Objects composed via operad & SkillStage, PatternTemplate \\
+Protocols & Syntactic wiring $G$ & WiringDiagram, typed ports \\
+Harness & Full Architecture $(G, \mathrm{Know}, \Phi)$ & SkillOrganism + components \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The key insight is that structural guarantees---pre-execution integrity checks, quality-based model escalation, convergence detection---are properties of $\mathrm{Know}$, not of the model. When a compiler maps an Architecture to a different framework, Proposition~5.1 (certificate preservation) ensures these guarantees transfer. We validate this with five compiler functors and an end-to-end escalation experiment showing that quality-based escalation operates independently of which model executes.
+
+The rest of this paper is organized as follows. Section~\ref{sec:background} reviews the externalization and categorical frameworks. Section~\ref{sec:correspondence} develops the formal correspondence. Section~\ref{sec:preservation} proves certificate preservation and introduces the LangGraph identity functor. Section~\ref{sec:atomic} connects atomic skill composition to the operad. Section~\ref{sec:experiments} presents implementation and experimental validation. Section~\ref{sec:conclusion} discusses implications and limitations.

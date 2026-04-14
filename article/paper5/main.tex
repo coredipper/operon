@@ -1,0 +1,51 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage[hypertexnames=false]{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\newtheorem{definition}{Definition}
+\newtheorem{proposition}{Proposition}
+\newtheorem{theorem}{Theorem}
+
+\lstset{
+  language=Python,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue!70!black},
+  commentstyle=\color{green!50!black},
+  stringstyle=\color{red!60!black},
+  showstringspaces=false,
+  frame=single,
+  breaklines=true,
+  columns=fullflexible,
+}
+
+\title{\textbf{Harness Engineering as Categorical Architecture}\\
+\large Structural Guarantees Are Harness-Level Properties\\[0.5em]
+\normalsize Preprint -- Feedback Welcome}
+
+\author{Bogdan Banu\\\texttt{bogdan@banu.be}}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\input{sections/00-abstract}
+\input{sections/01-introduction}
+\input{sections/02-background}
+\input{sections/03-correspondence}
+\input{sections/04-preservation}
+\input{sections/05-atomic-skills}
+\input{sections/06-experiments}
+\input{sections/07-conclusion}
+
+\bibliographystyle{plainnat}
+\bibliography{../references}
+
+\end{document}

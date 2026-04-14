@@ -1,0 +1,31 @@
+\section{Discussion and Conclusion}\label{sec:conclusion}
+
+\subsection{What the Correspondence Provides}
+
+The mapping between externalization pillars and the Architecture triple is not a metaphor---it is a formal correspondence with executable implementation and verified properties. Concretely, it provides:
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{A language for harness design}: Instead of ad~hoc descriptions (``add a safety check''), engineers can specify certificates in $\mathrm{Know}$ with verifiable semantics.
+\item \textbf{Preservation guarantees}: When compiling a harness to a different framework, the functor laws guarantee that certificates transfer. This is not aspirational---it is mechanically verified for five targets.
+\item \textbf{Composition rules}: The operad defines how skills combine (serial, parallel, trace) with type safety. Ma et al.'s empirical finding that atomic skills compose without interference validates this structural claim.
+\item \textbf{Model independence}: Structural guarantees reside in $\mathrm{Know}$, not in $\Phi$. Changing the model changes the interface, not the guarantees. The escalation experiment demonstrates this concretely.
+\end{enumerate}
+
+\subsection{Limitations}
+
+This work has several honest limitations:
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Static framework}: The Architecture triple is a snapshot. We do not model how harnesses evolve over time (e.g., learning from experience, adapting to distribution shift). Dynamic harness evolution is an open problem.
+\item \textbf{Single reference implementation}: All validation uses one codebase (Operon). The correspondence needs independent implementations to confirm generality.
+\item \textbf{Certificate scope}: Current certificates cover structural invariants (priority gating, convergence bounds) but not behavioral properties (``the agent never hallucinates''). Extending $\mathrm{Know}$ to behavioral certificates is future work.
+\item \textbf{Escalation experiment scale}: The escalation experiment uses two models on one task. Scaling to diverse tasks and model families would strengthen the claim.
+\end{itemize}
+
+\subsection{Conclusion}
+
+Harness engineering is not ad~hoc---it has a categorical formalization. The Architecture triple $(G, \mathrm{Know}, \Phi)$ from the ArchAgents framework is the formal theory behind the harness concept that the LangChain ecosystem has converged on empirically. Structural guarantees are $\mathrm{Know}$-level properties preserved under compilation via functor laws. Atomic skills compose via the operad without losing properties. The model is $\Phi$---it can change without affecting the guarantees in $\mathrm{Know}$.
+
+The practical implication: before building a harness, define its certificates. Before compiling to a new framework, verify preservation. Before composing skills, check type compatibility. The categorical machinery provides the tools; the correspondence provides the vocabulary.
+
+\paragraph{Availability.} The reference implementation is open source at \url{https://github.com/coredipper/operon} (\texttt{operon-ai} on PyPI, MIT license). The five compiler functors, atomic skills catalog, and certificate framework are all included.

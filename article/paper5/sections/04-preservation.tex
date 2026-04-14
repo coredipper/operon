@@ -1,0 +1,56 @@
+\section{Certificate Preservation}\label{sec:preservation}
+
+The correspondence in Section~\ref{sec:correspondence} would be merely descriptive if structural guarantees could not survive compilation. This section shows they can.
+
+\subsection{Compiler Functors}
+
+A \textbf{compiler functor} $F: \mathrm{Arch}(\text{Source}) \to \mathrm{Arch}(\text{Target})$ maps one architecture to another. In our implementation, each compiler produces a serializable configuration dict for a specific orchestration framework:
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{organism\_to\_swarms}: Operon $\to$ Swarms graph workflow
+\item \texttt{organism\_to\_deerflow}: Operon $\to$ DeerFlow LangGraph session
+\item \texttt{organism\_to\_ralph}: Operon $\to$ Ralph hat configuration
+\item \texttt{organism\_to\_scion}: Operon $\to$ Scion grove deployment
+\item \texttt{organism\_to\_langgraph}: Operon $\to$ LangGraph StateGraph
+\end{itemize}
+
+Each compiler is wrapped in a \texttt{CompilerFunctor} class that automatically extracts source and target architectures, verifies the functor laws, and produces a \texttt{PreservationResult} with three checks:
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Graph preservation}: source stage names $\subseteq$ target stage names, source edges $\subseteq$ target edges.
+\item \textbf{Certificate preservation} (Prop~5.1): source certificate theorems $\subseteq$ target certificate theorems, and all certificates \texttt{verify()} $\to$ \texttt{holds=True}.
+\item \textbf{Interface preservation}: source stage names present in target (mode mapping may differ).
+\end{enumerate}
+
+\subsection{The LangGraph Identity}
+
+The LangGraph functor is special. \texttt{organism\_to\_langgraph()} wraps \texttt{organism.run()} as a \emph{single LangGraph node}. The organism's stages, components, and guarantees execute inside the node---LangGraph provides the execution host, Operon provides the structural control flow.
+
+This makes the LangGraph functor an \textbf{identity-like morphism}: the source and target architectures are structurally identical. The compiled graph has one node (``organism'') with no internal edges, but all certificates from the source architecture are preserved because they are evaluated inside the wrapped \texttt{run()} call.
+
+\begin{proposition}[Identity Preservation]
+The LangGraph functor achieves \textbf{architectural identity}: for any organism $A$, $F_{\text{LG}}(A)$ preserves not just the certificate set but the complete $(G, \mathrm{Know}, \Phi)$ triple. This is the strongest form of Proposition~5.1.
+\end{proposition}
+
+The operational meaning: wrapping a harness in a different execution framework transfers all structural guarantees because the guarantees reside in the harness, not in the framework. The model can change, the framework can change---the certificates hold because they depend on $\mathrm{Know}$.
+
+\subsection{Empirical Verification}
+
+We verify certificate preservation across all five targets:
+
+\begin{center}
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Compiler} & \textbf{Graph} & \textbf{Certificates} & \textbf{Interface} \\
+\midrule
+Swarms & $\checkmark$ (1:1) & $\checkmark$ (100\%) & $\checkmark$ \\
+DeerFlow & $\times$ (hub-spoke) & $\checkmark$ (100\%) & $\checkmark$ \\
+Ralph & $\times$ (hats) & $\checkmark$ (100\%) & $\checkmark$ \\
+Scion & $\checkmark$ (+watcher) & $\checkmark$ (100\%) & $\checkmark$ \\
+LangGraph & identity & $\checkmark$ (100\%) & $\checkmark$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+All five compilers achieve 100\% certificate preservation and verification. Graph topology varies---DeerFlow reshapes to hub-and-spoke, Ralph uses hat patterns---but the structural guarantees survive because they are $\mathrm{Know}$-level properties, not $G$-level properties.

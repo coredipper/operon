@@ -1,0 +1,26 @@
+\section{Atomic Skills as Operad Composition}\label{sec:atomic}
+
+Ma et al.~\cite{ma2026atomic} identify five atomic coding skills that serve as ``basis vectors for complex software engineering tasks'': code localization, code editing, unit-test generation, issue reproduction, and code review. Under joint reinforcement learning, these skills compose without negative interference---improving one does not degrade another---achieving 18.7\% average improvement over task-specific optimization.
+
+This result has a categorical interpretation. Each atomic skill is an \textbf{object in the agentic operad}: a typed module with input ports, output ports, and a capability annotation. The operad's composition operations (serial, parallel, trace) define how skills can be combined. Ma et al.'s finding that skills compose without interference is precisely the claim that operad composition \textbf{preserves component properties}---the categorical equivalent of non-interference.
+
+Our implementation registers the five atomic skills as \texttt{PatternTemplate} objects with typed \texttt{TaskFingerprint}s:
+
+\begin{center}
+\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Skill} & \textbf{Shape} & \textbf{Topology} & \textbf{Roles} \\
+\midrule
+Localize & sequential & \texttt{skill\_organism} & searcher, ranker \\
+Edit & sequential & \texttt{skill\_organism} & editor, validator \\
+Test & sequential & \texttt{skill\_organism} & analyzer, generator, runner \\
+Reproduce & sequential & \texttt{skill\_organism} & reader, executor, verifier \\
+Review & parallel & \texttt{specialist\_swarm} & logic, style, security, reporter \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The distinction between sequential skills (pipeline topology) and the parallel review skill (swarm topology) is automatically resolved by the shared \texttt{\_shape\_to\_topology()} function used across all convergence adapters.
+
+The connection to harness engineering: atomic skills are the $G$ component of a harness---the wiring that defines how work flows. The certificates attached to a skill-based harness (e.g., ``all review axes are covered'') are $\mathrm{Know}$-level properties that survive composition and compilation.

@@ -1,0 +1,32 @@
+\section{Background}\label{sec:background}
+
+\subsection{Agent Externalization}
+
+Zhou et al.~\cite{zhou2026externalization} survey the shift from weights-based to harness-centric agent design. They identify four pillars of \emph{externalization}---the process by which cognitive burdens are moved from model parameters to external infrastructure:
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Memory}: State across time. Session memory, vector stores, structured knowledge bases. The harness decides what persists, how it is retrieved, and when it expires.
+\item \textbf{Skills}: Procedural expertise. Tool definitions, workflow templates, progressive skill loading. Skills encode \emph{what} the agent can do, independent of model capability.
+\item \textbf{Protocols}: Interaction structure. Message formats, turn-taking rules, sub-agent delegation patterns. Protocols govern \emph{how} agents communicate.
+\item \textbf{Harness Engineering}: The coordination layer itself. Prompt assembly, context management, compaction strategies, evaluation-driven refinement. The harness is the system that orchestrates memory, skills, and protocols into coherent agent behavior.
+\end{enumerate}
+
+Their key observation: ``agent infrastructure matters not merely because it adds auxiliary components, but because it transforms hard cognitive burdens into manageable forms.'' This transformation is exactly what formalization should capture.
+
+\subsection{The ArchAgents Category}
+
+De~los~Riscos, Corbacho, and Arbib~\cite{delosriscos2026categorical} introduce a category-theoretic framework for comparing agent architectures. An \textbf{Architecture} is a triple $A = (G_A, \mathrm{Know}_A, \Phi_A)$ where:
+
+\begin{itemize}[leftmargin=*]
+\item $G_A$ is the \textbf{syntactic wiring}---a graph of modules, ports, and directed edges describing how information flows.
+\item $\mathrm{Know}_A$ is the \textbf{knowledge structure}---the set of structural properties, invariants, and certificates the architecture maintains.
+\item $\Phi_A$ is the \textbf{profunctor interface}---the mapping between abstract capability slots and concrete model/tool implementations.
+\end{itemize}
+
+A \textbf{morphism} $f: A \to B$ is a structure-preserving translation: it maps modules in $G_A$ to modules in $G_B$, knowledge in $\mathrm{Know}_A$ to knowledge in $\mathrm{Know}_B$, and interfaces in $\Phi_A$ to interfaces in $\Phi_B$. In practice, a morphism is a \emph{compiler}---a function that transforms one agent architecture into another while preserving structural properties.
+
+\textbf{Proposition 5.1} (Certificate Preservation): If a morphism $f$ satisfies the functor laws ($f(\mathrm{id}) = \mathrm{id}$, $f(g \circ h) = f(g) \circ f(h)$), then any certificate attached to the source architecture is faithfully represented in the target. The guarantee \emph{transfers}; it is not re-derived.
+
+\subsection{The Gap}
+
+These two frameworks describe the same phenomenon from different angles. Zhou et al.\ provide the \emph{engineering} vocabulary (Memory, Skills, Protocols, Harness). De~los~Riscos et al.\ provide the \emph{mathematical} structure (objects, morphisms, functors). Neither paper connects the two. The result is that harness engineers build without formal guarantees, and category theorists formalize without grounding in practice. This paper bridges the gap.
