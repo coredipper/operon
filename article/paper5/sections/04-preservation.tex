@@ -26,13 +26,13 @@ Each compiler is wrapped in a \texttt{CompilerFunctor} class that automatically 
 
 The LangGraph functor is special. \texttt{organism\_to\_langgraph()} wraps \texttt{organism.run()} as a \emph{single LangGraph node}. The organism's stages, components, and guarantees execute inside the node---LangGraph provides the execution host, Operon provides the structural control flow.
 
-This makes the LangGraph functor an \textbf{identity-like morphism}: the source and target architectures are structurally identical. The compiled graph has one node (``organism'') with no internal edges, but all certificates from the source architecture are preserved because they are evaluated inside the wrapped \texttt{run()} call.
+This makes the LangGraph functor a \textbf{certificate-preserving wrapper}: the compiled graph collapses the multi-stage topology into a single node, so graph structure ($G$) and interface ($\Phi$) are not preserved in the target representation. However, all certificates in $\mathrm{Know}$ are preserved because they are evaluated inside the wrapped \texttt{run()} call---the organism's own run loop enforces every structural guarantee internally.
 
-\begin{proposition}[Identity Preservation]
-The LangGraph functor achieves \textbf{architectural identity}: for any organism $A$, $F_{\text{LG}}(A)$ preserves not just the certificate set but the complete $(G, \mathrm{Know}, \Phi)$ triple. This is the strongest form of Proposition~5.1.
+\begin{proposition}[Certificate-Only Preservation]
+The LangGraph functor preserves $\mathrm{Know}$ completely: for any organism $A$, all certificates attached to $A$ verify successfully after compilation. Graph topology and interface are collapsed into the single-node wrapper but remain enforced internally by \texttt{organism.run()}.
 \end{proposition}
 
-The operational meaning: wrapping a harness in a different execution framework transfers all structural guarantees because the guarantees reside in the harness, not in the framework. The model can change, the framework can change---the certificates hold because they depend on $\mathrm{Know}$.
+The operational meaning: wrapping a harness in a different execution framework transfers all structural guarantees because the guarantees reside in $\mathrm{Know}$, not in $G$ or $\Phi$. The certificates hold because they depend on harness logic, not graph shape.
 
 \subsection{Empirical Verification}
 
@@ -48,7 +48,7 @@ Swarms & $\checkmark$ (1:1) & $\checkmark$ (100\%) & $\checkmark$ \\
 DeerFlow & $\times$ (hub-spoke) & $\checkmark$ (100\%) & $\checkmark$ \\
 Ralph & $\times$ (hats) & $\checkmark$ (100\%) & $\checkmark$ \\
 Scion & $\checkmark$ (+watcher) & $\checkmark$ (100\%) & $\checkmark$ \\
-LangGraph & identity & $\checkmark$ (100\%) & $\checkmark$ \\
+LangGraph & $\times$ (collapsed) & $\checkmark$ (100\%) & $\times$ (collapsed) \\
 \bottomrule
 \end{tabular}
 \end{center}
