@@ -27,6 +27,14 @@ A \textbf{morphism} $f: A \to B$ is a structure-preserving translation: it maps 
 
 \textbf{Proposition 5.1} (Certificate Preservation): If a morphism $f$ satisfies the functor laws ($f(\mathrm{id}) = \mathrm{id}$, $f(g \circ h) = f(g) \circ f(h)$), then any certificate attached to the source architecture is faithfully represented in the target. The guarantee \emph{transfers}; it is not re-derived.
 
+\subsection{Alternative Formalizations}
+
+Liu~\cite{liu2026lambda} independently develops a typed lambda calculus ($\lambda_A$) for agent composition, extending the simply-typed lambda calculus with oracle calls, bounded fixpoints, probabilistic choice, and mutable environments. The work demonstrates that five mainstream frameworks (LangGraph, CrewAI, AutoGen, OpenAI SDK, Dify) embed as typed $\lambda_A$ fragments, and finds that 94.1\% of 835 real-world GitHub agent configurations are structurally incomplete under this formalization. Where $\lambda_A$ provides type-theoretic guarantees (type safety, termination), our categorical approach provides \emph{property preservation under compilation}---a complementary guarantee.
+
+Willstr{\"o}m et al.~\cite{willstro2026nlah} propose Natural-Language Agent Harnesses (NLAH), externalizing harness behavior as portable, editable natural-language artifacts with explicit contracts. Their Intelligent Harness Runtime (IHR) executes these artifacts through durable contracts and lightweight adapters. This validates a key assumption of our work: that harnesses are portable objects with algebraic structure, not implementation-specific code. Our Architecture triple $(G, \mathrm{Know}, \Phi)$ provides the categorical formalization that NLAH's natural-language artifacts implicitly require.
+
+Chen et al.~\cite{chen2026skilltester} introduce SkillTester, a comparative quality-assurance harness for agent skills that benchmarks both utility and security. Their rubric-based skill evaluation parallels our VerifierComponent, which scores stage outputs against task-specific rubrics and triggers model escalation when quality falls below threshold.
+
 \subsection{The Gap}
 
-These two frameworks describe the same phenomenon from different angles. Zhou et al.\ provide the \emph{engineering} vocabulary (Memory, Skills, Protocols, Harness). De~los~Riscos et al.\ provide the \emph{mathematical} structure (objects, morphisms, functors). Neither paper connects the two. The result is that harness engineers build without formal guarantees, and category theorists formalize without grounding in practice. This paper bridges the gap.
+These frameworks describe the same phenomenon from different angles. Zhou et al.\ provide the \emph{engineering} vocabulary (Memory, Skills, Protocols, Harness). De~los~Riscos et al.\ provide the \emph{mathematical} structure (objects, morphisms, functors). Liu provides \emph{type-theoretic} guarantees. Willstr{\"o}m et al.\ validate \emph{portability}. None connect all four. The result is that harness engineers build without formal guarantees, and theorists formalize without grounding in practice. This paper bridges the gap.
