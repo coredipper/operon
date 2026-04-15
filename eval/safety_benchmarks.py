@@ -198,17 +198,17 @@ def _run_escalation(fast_provider, deep_provider, rep: int, guarded: bool) -> Es
 
     escalation_fired = False
     escalation_reason = ""
-    initial_quality = 0.0
+    final_quality = quality_rubric(result.final_output, "solve")
 
     if guarded and verifier and watcher:
-        if verifier.quality_scores:
-            initial_quality = verifier.quality_scores[0][1]
+        initial_quality = verifier.quality_scores[0][1] if verifier.quality_scores else final_quality
         for intv in watcher.interventions:
             if intv.kind.value == "escalate":
                 escalation_fired = True
                 escalation_reason = intv.reason
-
-    final_quality = quality_rubric(result.final_output, "solve")
+    else:
+        # Naive: no verifier, so initial = final (same model, no escalation)
+        initial_quality = final_quality
 
     return EscalationResult(
         mode="guarded" if guarded else "naive",
@@ -412,10 +412,12 @@ def main():
     # Save
     out_path = Path("eval/results/safety_benchmarks.json")
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    import datetime
     out_data = {
         "fast_model": args.fast_model,
         "deep_model": args.deep_model,
         "reps": args.reps,
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "integrity": [
             {"mode": r.mode, "rep": r.rep, "halted": r.gate_halted,
              "damages": r.damage_count, "stages": r.stages_completed}

@@ -392,12 +392,36 @@ def main():
         print("  Ma et al. claim HOLDS for this model/task set.")
         print("  Composition does not degrade quality.")
 
+    # Per-task summaries
+    task_summaries = []
+    for task in tasks:
+        task_results = [r for r in results if r.task_id == task["id"]]
+        individual_q = [r.quality for r in task_results
+                        if r.condition.startswith("individual_")]
+        composed_q = [r.quality for r in task_results if r.condition == "composed"]
+        mi = sum(individual_q) / len(individual_q) if individual_q else 0
+        mc = sum(composed_q) / len(composed_q) if composed_q else 0
+        d = mc - mi
+        task_summaries.append({
+            "task_id": task["id"],
+            "mean_individual": round(mi, 3),
+            "composed": round(mc, 3),
+            "delta": round(d, 3),
+            "interference": "NEGATIVE" if d < -0.1 else "NONE" if abs(d) <= 0.1 else "POSITIVE",
+        })
+
+    worst_delta = min(ts["delta"] for ts in task_summaries)
+    worst_task = next(ts["task_id"] for ts in task_summaries if ts["delta"] == worst_delta)
+
     # Save results
+    import datetime
     out_path = Path("eval/results/composition_interference.json")
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_data = {
         "model": args.model,
         "reps": args.reps,
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "judge": {"model": args.model, "temperature": 0.0, "rubric": "unified_end_to_end"},
         "results": [
             {
                 "condition": r.condition,
@@ -409,12 +433,15 @@ def main():
             }
             for r in results
         ],
+        "per_task": task_summaries,
         "summary": {
             "baseline": mean_all_b,
             "mean_individual": mean_all_i,
             "composed": mean_all_c,
             "delta": delta_all,
             "interference": interference_all,
+            "worst_task": worst_task,
+            "worst_task_delta": worst_delta,
         },
     }
     out_path.write_text(json.dumps(out_data, indent=2))

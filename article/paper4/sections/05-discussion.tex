@@ -91,10 +91,12 @@ Lighter benefits: genome immutability for configuration audit
 
 Ma et~al.~\cite{ma2026atomic} show that five atomic coding skills
 (localize, edit, test, reproduce, review) compose without negative
-interference under joint RL training.  We tested this claim using
-Operon's skill composition machinery with a real LLM (Gemma~4 27B
-via Ollama) on three bug-fix tasks (SQL injection, off-by-one
-pagination, TOCTOU race condition), 3 repetitions each.
+interference under joint RL training.  We ran a limited comparison
+using Operon's skill composition machinery with a real LLM (Gemma~4
+27B via Ollama) on three bug-fix tasks (SQL injection, off-by-one
+pagination, TOCTOU race condition), 3 repetitions each.  This tests
+3 of 5 skills via prompt composition (not joint RL), so the comparison
+is narrower than Ma et~al.'s original setting.
 
 \begin{table}[h]
 \caption{Composition non-interference: individual skill quality vs
@@ -117,21 +119,25 @@ Overall & 0.741 & 0.770 & $+0.029$ & none \\
 \end{tabular}
 \end{table}
 
-The overall result supports Ma et~al.: composition does not degrade
-quality ($\Delta = +0.029$).  However, the race\_condition task shows
-negative interference ($\Delta = -0.167$), suggesting that composition
-can hurt on genuinely hard problems where intermediate stage outputs
-mislead later stages.  The baseline (raw LLM call, quality 0.961)
-still dominates in absolute terms---a single capable model answering
-the full task outperforms a three-stage pipeline---consistent with
+The overall result matches the direction of Ma et~al.'s finding:
+composition does not degrade quality on average ($\Delta = +0.029$).
+However, the race\_condition task shows negative interference
+($\Delta = -0.167$), suggesting that composition can hurt on
+genuinely hard problems where intermediate stage outputs mislead
+later stages.  The baseline (raw LLM call, quality 0.961) still
+dominates in absolute terms---a single capable model answering the
+full task outperforms a three-stage pipeline---consistent with
 the Ao et~al. finding~\cite{ao2026delegation} that delegation cannot
 beat a centralized baseline without exogenous signals.
 
-The individual ``test'' skill scored lower (0.42--0.70) than
-``localize'' or ``edit'' (0.77--1.00) because test-writing in
-isolation lacks the context of what was found and fixed.  This is
-an expected consequence of skill decomposition: some skills are
-context-dependent and perform better when composed than in isolation.
+Individual skill quality varies by task difficulty.  On easier tasks
+(SQL injection, off-by-one), ``localize'' and ``edit'' score
+0.80--1.00, while on the harder race\_condition task, ``edit'' drops
+to 0.37 and ``test'' to 0.00 in the worst repetition.  ``test''
+consistently scores lowest (0.00--0.90 across tasks) because
+test-writing in isolation lacks the context of what was found and
+fixed---an expected consequence of skill decomposition where some
+skills are context-dependent.
 
 \subsection{Relationship to Epistemic Topology}
 
