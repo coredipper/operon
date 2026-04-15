@@ -89,13 +89,40 @@ def _extract_score(content: str) -> float:
     return 0.5
 
 
+def _prioritize_patch(output: str) -> str:
+    """Extract and prioritize the patch/diff portion of multi-stage output.
+
+    For organism/langgraph conditions, the output contains localization,
+    patch, and review stages concatenated. The judge needs to see the
+    actual patch (edit stage) — not have it truncated away by the char limit.
+    """
+    # Try to extract the [edit] stage specifically
+    edit_match = re.search(r'\[edit\]\n(.*?)(?=\n\[|\Z)', output, re.DOTALL)
+    if edit_match:
+        patch = edit_match.group(1).strip()
+        # Include other stages as context, but patch first
+        other = output.replace(edit_match.group(0), "").strip()
+        return f"PATCH:\n{patch[:4000]}\n\nCONTEXT:\n{other[:2000]}"
+
+    # Fallback: look for unified diff markers
+    diff_match = re.search(r'(---\s+a/.*?\n\+\+\+\s+b/.*?\n(?:@@.*?\n(?:[+ \-].*?\n)*)*)' , output, re.DOTALL)
+    if diff_match:
+        patch = diff_match.group(1).strip()
+        other = output.replace(patch, "").strip()
+        return f"PATCH:\n{patch[:4000]}\n\nCONTEXT:\n{other[:2000]}"
+
+    return output[:6000]
+
+
 def _judge(provider, task_prompt: str, output: str, condition: str) -> float:
     context = _CONDITION_CONTEXT.get(condition, "")
+    # Prioritize patch content to avoid truncation bias
+    judged_output = _prioritize_patch(output) if condition != "baseline" else output[:6000]
     judge_prompt = (
         f"{_JUDGE_RUBRIC}"
         f"CONDITION: {context}\n\n"
         f"ISSUE:\n{task_prompt[:1500]}\n\n"
-        f"OUTPUT:\n{output[:6000]}\n"
+        f"OUTPUT:\n{judged_output}\n"
     )
     config = ProviderConfig(max_tokens=2048, temperature=0.0)
     resp = provider.complete(judge_prompt, config)
@@ -259,12 +286,21 @@ def main():
     parser.add_argument("--model", default="gemma4:latest", help="Ollama model")
     parser.add_argument("--n", type=int, default=10, help="Number of instances")
     parser.add_argument("--offset", type=int, default=0, help="Skip first N instances")
-    parser.add_argument("--conditions", default="baseline,organism,langgraph",
-                        help="Comma-separated conditions to run")
+    parser.add_argument("--conditions", default="baseline,organism",
+                        help="Comma-separated conditions (langgraph requires pip install operon-ai[langgraph])")
     args = parser.parse_args()
 
     provider = _make_provider(args.model)
     conditions = [c.strip() for c in args.conditions.split(",")]
+
+    # Check langgraph availability if requested
+    if "langgraph" in conditions:
+        try:
+            from operon_ai.convergence.langgraph_compiler import run_organism_langgraph as _  # noqa: F401
+        except ImportError:
+            print("WARNING: langgraph not installed, skipping langgraph condition")
+            print("  Install with: pip install operon-ai[langgraph]")
+            conditions = [c for c in conditions if c != "langgraph"]
 
     print(f"Model:      {args.model}")
     print(f"Instances:  {args.n} (offset {args.offset})")
