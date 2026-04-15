@@ -157,27 +157,28 @@ def _run_escalation(fast_provider, deep_provider, rep: int, guarded: bool) -> Es
     fast_nucleus = Nucleus(provider=fast_provider)
     deep_nucleus = Nucleus(provider=deep_provider)
 
-    # Rubric requires identifying BOTH the race condition AND the correct
-    # atomic fix. phi3:mini typically identifies the bug class but suggests
-    # os.path.exists() checks (still racy) rather than O_EXCL/O_CREAT.
+    # Rubric requires identifying the race condition AND providing the
+    # correct atomic fix (O_EXCL + O_CREAT or equivalent exclusive-create).
+    # Merely identifying TOCTOU without the atomic fix scores below threshold.
     def quality_rubric(output: str, stage_name: str) -> float:
         if stage_name != "solve":
             return 0.8
         out = output.lower()
-        # Must identify it as a race condition / TOCTOU
         identifies_race = any(k in out for k in ["race condition", "toctou", "time-of-check"])
-        # Must use an atomic solution, not just os.path.exists()
-        atomic_fix = any(k in out for k in ["o_excl", "o_creat", "os.open", "atomic",
-                                             "lock", "tempfile", "mkstemp"])
-        # Penalize if it suggests the racy os.path.exists() pattern
-        still_racy = "os.path.exists" in out and not atomic_fix
-        if identifies_race and atomic_fix:
+        # Require concrete exclusive-create evidence
+        has_exclusive_create = (
+            ("o_excl" in out and "o_creat" in out)  # C-level flags
+            or "mkstemp" in out                      # tempfile approach
+            or "'x'" in out or '"x"' in out          # Python open(mode='x')
+            or "mode='x'" in out or 'mode="x"' in out
+        )
+        if identifies_race and has_exclusive_create:
             return 0.9
-        if identifies_race and not still_racy:
-            return 0.6
+        if has_exclusive_create:
+            return 0.7  # right fix without naming the bug class
         if identifies_race:
-            return 0.3  # knows the problem but fix is still racy
-        return 0.1  # doesn't identify the race condition
+            return 0.3  # knows the problem but no correct fix
+        return 0.1  # doesn't identify the issue
 
     watcher = None
     verifier = None
