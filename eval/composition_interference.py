@@ -142,14 +142,27 @@ def _extract_score(content: str) -> float:
     return 0.5
 
 
-def _judge(provider, task_prompt: str, output: str) -> float:
-    """Score output 0.0-1.0 using the SAME rubric for all conditions.
+_CONDITION_CONTEXT = {
+    "baseline": "This is a BASELINE run: the model was asked to do the full task (find + fix + test) in one shot.",
+    "composed": "This is a COMPOSED run: the model ran a 3-stage pipeline (localize → edit → test). All stage outputs are shown.",
+    "individual_localize": "This is a LOCALIZE-ONLY run: the model was only asked to find the bug. Score only bug identification — do not penalize missing fix or test.",
+    "individual_edit": "This is an EDIT-ONLY run: the model was only asked to fix the bug. Score only the fix — do not penalize missing localization or test.",
+    "individual_test": "This is a TEST-ONLY run: the model was only asked to write a test. Score only the test — do not penalize missing localization or fix.",
+}
 
+
+def _judge(provider, task_prompt: str, output: str, condition: str = "baseline") -> float:
+    """Score output 0.0-1.0 using a unified rubric with condition context.
+
+    The rubric scale is the same for all conditions, but condition context
+    tells the judge what scope to evaluate (full task vs single skill).
     Uses temperature=0.0 for reproducibility and a 6000-char output
     limit to avoid truncating composed pipeline outputs.
     """
+    context = _CONDITION_CONTEXT.get(condition, "")
     judge_prompt = (
         f"{_JUDGE_RUBRIC}"
+        f"CONDITION: {context}\n\n"
         f"TASK: {task_prompt[:800]}\n"
         f"OUTPUT: {output[:6000]}\n"
     )
@@ -179,7 +192,7 @@ def run_baseline(provider, task: dict, rep: int) -> RunResult:
     t0 = time.monotonic()
     output = _llm_call(provider, prompt)
     elapsed = (time.monotonic() - t0) * 1000
-    quality = _judge(provider, task["prompt"], output)
+    quality = _judge(provider, task["prompt"], output, "baseline")
     return RunResult("baseline", task["id"], rep, quality, output, ["raw"], elapsed)
 
 
@@ -206,10 +219,11 @@ def run_individual(provider, task: dict, rep: int, skill: str) -> RunResult:
     t0 = time.monotonic()
     result = org.run(task["prompt"])
     elapsed = (time.monotonic() - t0) * 1000
-    # Use the SAME end-to-end rubric as baseline and composed
-    # so the interference comparison is apples-to-apples.
-    quality = _judge(provider, task["prompt"], result.final_output)
-    return RunResult(f"individual_{skill}", task["id"], rep, quality,
+    # Same rubric scale as baseline/composed, but with condition context
+    # so the judge knows to score only this skill's scope.
+    condition = f"individual_{skill}"
+    quality = _judge(provider, task["prompt"], result.final_output, condition)
+    return RunResult(condition, task["id"], rep, quality,
                      result.final_output, [skill], elapsed)
 
 
@@ -253,7 +267,7 @@ def run_composed(provider, task: dict, rep: int) -> RunResult:
         f"[{sr.stage_name}]\n{sr.output}"
         for sr in result.stage_results
     )
-    quality = _judge(provider, task["prompt"], full_output)
+    quality = _judge(provider, task["prompt"], full_output, "composed")
     stages = [sr.stage_name for sr in result.stage_results]
     return RunResult("composed", task["id"], rep, quality,
                      full_output, stages, elapsed)
