@@ -41,9 +41,6 @@ def _merge_parallel_results(
     conflicts when two stages wrote different values to the same key.
     """
     mutations: dict[str, list[tuple[str, Any]]] = {}
-    # Keys written by run_single_stage for every stage — expected to conflict
-    _internal_keys = {"last_stage", WATCHER_STATE_KEY, "_blocked_by",
-                      "_escalation_error", "_verifier_signals"}
 
     for stage_name, (s_state, s_outputs, s_results, _) in per_stage.items():
         # Collect stage outputs (no conflicts — each stage writes its own name)
@@ -53,10 +50,13 @@ def _merge_parallel_results(
 
         # Track state mutations (keys that changed vs snapshot)
         for key, value in s_state.items():
-            if key in _internal_keys:
-                continue  # handled separately below
-            # Each stage writes state[stage.name] = output — skip these too
-            if key in per_stage:
+            # Skip framework-internal keys (prefixed with _) — these are
+            # written by run_single_stage, components, or telemetry for
+            # every stage and are expected to "conflict" in parallel.
+            if key.startswith("_"):
+                continue
+            # Each stage writes state[stage.name] = output — skip these
+            if key == "last_stage" or key in per_stage:
                 continue
             if key not in snap or snap[key] != value:
                 mutations.setdefault(key, []).append((stage_name, value))
@@ -73,12 +73,12 @@ def _merge_parallel_results(
                 )
         state[key] = writers[0][1]
 
-    # Merge per-stage output keys (state[stage.name] = output)
+    # Merge per-stage output keys in declared order (deterministic)
     for stage_name, (s_state, _, _, _) in per_stage.items():
         if stage_name in s_state:
             state[stage_name] = s_state[stage_name]
 
-    # Set last_stage to the last stage in the group (deterministic order)
+    # Set last_stage to the last declared stage in the group
     state["last_stage"] = list(per_stage.keys())[-1]
 
 
@@ -505,30 +505,45 @@ class SkillOrganism:
                 group[0], task, state, stage_outputs, stage_results,
             )
 
-        from concurrent.futures import ThreadPoolExecutor, as_completed
+        import copy
+        from concurrent.futures import ThreadPoolExecutor
 
-        # Snapshot state before parallel execution
-        snap = dict(state)
-        snap_outputs = dict(stage_outputs)
+        # Deep-copy state to isolate parallel stages from shared mutable objects
+        snap = copy.deepcopy(dict(state))
+        snap_outputs = copy.deepcopy(dict(stage_outputs))
 
+        # Dispatch in declared order, collect in declared order
+        stage_futures: list[tuple[SkillStage, dict, dict, list]] = []
         per_stage: dict[str, tuple[dict, dict, list, str]] = {}
 
         with ThreadPoolExecutor(max_workers=len(group)) as pool:
-            futures = {}
+            futures_map = {}
             for stage in group:
-                s_state: dict[str, Any] = dict(snap)
-                s_outputs: dict[str, Any] = dict(snap_outputs)
+                s_state: dict[str, Any] = copy.deepcopy(snap)
+                s_outputs: dict[str, Any] = copy.deepcopy(snap_outputs)
                 s_results: list[SkillStageResult] = []
                 future = pool.submit(
                     self.run_single_stage,
                     stage, task, s_state, s_outputs, s_results,
                 )
-                futures[future] = (stage, s_state, s_outputs, s_results)
+                futures_map[future] = (stage, s_state, s_outputs, s_results)
+                stage_futures.append((stage, s_state, s_outputs, s_results))
 
-            for future in as_completed(futures):
-                stage, s_state, s_outputs, s_results = futures[future]
-                decision = future.result()
-                per_stage[stage.name] = (s_state, s_outputs, s_results, decision)
+            # Wait for all futures (order doesn't matter for waiting)
+            for future in futures_map:
+                future.result()  # raises if stage threw
+
+        # Record results in declared group order (deterministic)
+        for stage, s_state, s_outputs, s_results in stage_futures:
+            decision = "continue"  # already waited above
+            # Re-derive decision from stage result
+            if s_results and hasattr(s_results[-1], 'action_type'):
+                if s_results[-1].action_type in {"BLOCK", "FAILURE"} and self.halt_on_block:
+                    decision = "halt"
+            # Check if watcher halted this stage
+            if s_state.get("_blocked_by") is not None:
+                decision = "blocked"
+            per_stage[stage.name] = (s_state, s_outputs, s_results, decision)
 
         # Merge results back
         _merge_parallel_results(
