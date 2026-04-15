@@ -295,12 +295,15 @@ def main():
 
     # Check langgraph availability if requested
     if "langgraph" in conditions:
-        try:
-            from operon_ai.convergence.langgraph_compiler import run_organism_langgraph as _  # noqa: F401
-        except ImportError:
+        from operon_ai.convergence.langgraph_compiler import HAS_LANGGRAPH
+        if not HAS_LANGGRAPH:
             print("WARNING: langgraph not installed, skipping langgraph condition")
             print("  Install with: pip install operon-ai[langgraph]")
             conditions = [c for c in conditions if c != "langgraph"]
+
+    if not conditions:
+        print("ERROR: no runnable conditions remain")
+        sys.exit(1)
 
     print(f"Model:      {args.model}")
     print(f"Instances:  {args.n} (offset {args.offset})")
