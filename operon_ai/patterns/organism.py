@@ -50,13 +50,20 @@ def _merge_parallel_results(
 
         # Track state mutations (keys that changed vs snapshot)
         for key, value in s_state.items():
-            # Skip framework-internal keys (prefixed with _) — these are
-            # written by run_single_stage, components, or telemetry for
-            # every stage and are expected to "conflict" in parallel.
-            if key.startswith("_"):
-                continue
-            # Each stage writes state[stage.name] = output — skip these
+            # Each stage writes state[stage.name] = output — handled below
             if key == "last_stage" or key in per_stage:
+                continue
+            # Framework-internal keys (_-prefixed): merge lists by
+            # concatenation, take last value for scalars. No conflict error.
+            if key.startswith("_"):
+                if isinstance(value, list):
+                    existing = state.get(key, [])
+                    if isinstance(existing, list):
+                        state[key] = existing + value
+                    else:
+                        state[key] = value
+                else:
+                    state[key] = value  # last writer wins for scalars
                 continue
             if key not in snap or snap[key] != value:
                 mutations.setdefault(key, []).append((stage_name, value))
@@ -512,12 +519,10 @@ class SkillOrganism:
         snap = copy.deepcopy(dict(state))
         snap_outputs = copy.deepcopy(dict(stage_outputs))
 
-        # Dispatch in declared order, collect in declared order
-        stage_futures: list[tuple[SkillStage, dict, dict, list]] = []
         per_stage: dict[str, tuple[dict, dict, list, str]] = {}
 
         with ThreadPoolExecutor(max_workers=len(group)) as pool:
-            futures_map = {}
+            ordered_futures = []
             for stage in group:
                 s_state: dict[str, Any] = copy.deepcopy(snap)
                 s_outputs: dict[str, Any] = copy.deepcopy(snap_outputs)
@@ -526,24 +531,12 @@ class SkillOrganism:
                     self.run_single_stage,
                     stage, task, s_state, s_outputs, s_results,
                 )
-                futures_map[future] = (stage, s_state, s_outputs, s_results)
-                stage_futures.append((stage, s_state, s_outputs, s_results))
+                ordered_futures.append((future, stage, s_state, s_outputs, s_results))
 
-            # Wait for all futures (order doesn't matter for waiting)
-            for future in futures_map:
-                future.result()  # raises if stage threw
-
-        # Record results in declared group order (deterministic)
-        for stage, s_state, s_outputs, s_results in stage_futures:
-            decision = "continue"  # already waited above
-            # Re-derive decision from stage result
-            if s_results and hasattr(s_results[-1], 'action_type'):
-                if s_results[-1].action_type in {"BLOCK", "FAILURE"} and self.halt_on_block:
-                    decision = "halt"
-            # Check if watcher halted this stage
-            if s_state.get("_blocked_by") is not None:
-                decision = "blocked"
-            per_stage[stage.name] = (s_state, s_outputs, s_results, decision)
+            # Collect results in declared order, preserving actual decisions
+            for future, stage, s_state, s_outputs, s_results in ordered_futures:
+                decision = future.result()  # the real return from run_single_stage
+                per_stage[stage.name] = (s_state, s_outputs, s_results, decision)
 
         # Merge results back
         _merge_parallel_results(
