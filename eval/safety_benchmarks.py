@@ -38,7 +38,6 @@ from operon_ai import ATP_Store, Nucleus, SkillStage, skill_organism
 from operon_ai.patterns.certificate_gate import CertificateGateComponent
 from operon_ai.patterns.verifier import VerifierComponent, VerifierConfig
 from operon_ai.patterns.watcher import WatcherComponent, WatcherConfig
-from operon_ai.providers.mock import MockProvider
 from operon_ai.providers.openai_compatible_provider import OpenAICompatibleProvider
 from operon_ai.providers.base import ProviderConfig
 from operon_ai.state.dna_repair import DNARepair
@@ -238,58 +237,45 @@ class BudgetResult:
 
 
 def _run_budget(rep: int, guarded: bool) -> BudgetResult:
-    """Drain budget to STARVING, then attempt low-priority consume.
+    """Test ATP priority gating: low-priority rejected in STARVING, accepted otherwise.
 
-    Uses MockProvider (no LLM calls needed) — this tests the ATP_Store
-    priority gating mechanism directly.
+    No naive/guarded comparison — ATP_Store always enforces priority gating.
+    Instead, tests that the mechanism discriminates correctly:
+    - STARVING: low-priority (0) rejected, high-priority (10) accepted
+    - NORMAL: both accepted
+
+    Uses no LLM calls — tests the ATP_Store mechanism directly.
     """
-    mock = MockProvider(responses={"analyze": "done", "plan": "done",
-                                   "document": "done", "format": "done"})
-    nucleus = Nucleus(provider=mock)
-
-    # Budget: 100 ATP total. Each stage costs ~10 ATP (mock, minimal).
-    # We manually drain to trigger STARVING (< 10% = < 10 ATP).
     budget = ATP_Store(budget=100, silent=True)
 
-    org = skill_organism(
-        stages=[
-            SkillStage(name="critical", role="Analyzer",
-                       handler=lambda task, state, outputs, stage: "analyzed",
-                       mode="fixed"),
-        ],
-        fast_nucleus=nucleus,
-        deep_nucleus=nucleus,
-        budget=budget,
-    )
-
-    # Run one stage to get a baseline
-    result = org.run("test")
-    stages_completed = 1
-
     if guarded:
-        # Drain budget to STARVING state (below 10%)
-        budget.consume(85, operation="drain_to_starving", priority=10)
+        # Drain to STARVING (below 10% = below 10 ATP)
+        budget.consume(92, operation="drain_to_starving", priority=10)
+        assert budget._state.value == "starving", (
+            f"Expected STARVING after drain, got {budget._state.value} "
+            f"(atp={budget.atp})"
+        )
 
-        # Attempt a low-priority operation (priority=0) — should be rejected
-        low_accepted = budget.consume(5, operation="low_priority_task", priority=0)
+        # Low-priority should be REJECTED in STARVING
+        low_accepted = budget.consume(2, operation="low_priority_task", priority=0)
         low_priority_rejected = not low_accepted
 
-        # Attempt a high-priority operation (priority=10) — should succeed
-        high_accepted = budget.consume(5, operation="high_priority_task", priority=10)
+        # High-priority should SUCCEED even in STARVING
+        high_accepted = budget.consume(2, operation="high_priority_task", priority=10)
     else:
-        # Naive: no priority gating, all operations succeed
-        budget.consume(85, operation="drain", priority=0)
-        low_accepted = budget.consume(5, operation="low_priority_task", priority=0)
+        # Normal state: both priorities should succeed
+        low_accepted = budget.consume(2, operation="low_priority_task", priority=0)
         low_priority_rejected = not low_accepted
-        high_accepted = budget.consume(5, operation="high_priority_task", priority=0)
+
+        high_accepted = budget.consume(2, operation="high_priority_task", priority=10)
 
     return BudgetResult(
         mode="guarded" if guarded else "naive",
         rep=rep,
         budget_initial=100,
         budget_remaining=budget.atp,
-        stages_completed=stages_completed,
-        stages_total=1,
+        stages_completed=0,
+        stages_total=0,
         low_priority_rejected=low_priority_rejected,
         metabolic_state=budget._state.value,
     )
@@ -399,7 +385,11 @@ def main():
 
     print(f"\n  Verdict:")
     integrity_works = sum(r.gate_halted for r in guard_det) > sum(r.gate_halted for r in naive_det)
-    escalation_works = sum(r.escalation_fired for r in guard_esc) > 0
+    # Escalation earns complexity only if it fires AND improves quality
+    escalation_works = any(
+        r.escalation_fired and r.final_quality > r.initial_quality
+        for r in guard_esc
+    )
     budget_works = sum(r.low_priority_rejected for r in guard_bud) > sum(r.low_priority_rejected for r in naive_bud)
 
     for name, works in [("integrity", integrity_works), ("escalation", escalation_works), ("budget", budget_works)]:
