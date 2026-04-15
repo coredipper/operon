@@ -53,17 +53,22 @@ def _merge_parallel_results(
             # Each stage writes state[stage.name] = output — handled below
             if key == "last_stage" or key in per_stage:
                 continue
-            # Framework-internal keys (_-prefixed): merge lists by
-            # concatenation, take last value for scalars. No conflict error.
+            # Framework-internal keys (_-prefixed): merge deltas only.
+            # Lists: append only items added since snapshot.
+            # Scalars: apply only if changed from snapshot.
             if key.startswith("_"):
-                if isinstance(value, list):
-                    existing = state.get(key, [])
-                    if isinstance(existing, list):
-                        state[key] = existing + value
-                    else:
-                        state[key] = value
-                else:
-                    state[key] = value  # last writer wins for scalars
+                snap_val = snap.get(key)
+                if isinstance(value, list) and isinstance(snap_val, list):
+                    # Only append items beyond the snapshot length
+                    new_items = value[len(snap_val):]
+                    if new_items:
+                        current = state.get(key, [])
+                        if isinstance(current, list):
+                            state[key] = current + new_items
+                        else:
+                            state[key] = new_items
+                elif value != snap_val:
+                    state[key] = value  # changed from snapshot
                 continue
             if key not in snap or snap[key] != value:
                 mutations.setdefault(key, []).append((stage_name, value))
