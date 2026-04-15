@@ -291,9 +291,11 @@ def main():
     parser = argparse.ArgumentParser(description="Safety benchmark: do guarantees catch errors?")
     parser.add_argument("--fast-model", default="phi3:mini", help="Weak fast model")
     parser.add_argument("--deep-model", default="gemma4:latest", help="Strong deep model")
-    parser.add_argument("--reps", type=int, default=3, choices=range(1, 101),
-                        metavar="N", help="Repetitions per condition (1-100)")
+    parser.add_argument("--reps", type=int, default=3, metavar="N",
+                        help="Repetitions per condition (must be >= 1)")
     args = parser.parse_args()
+    if args.reps < 1:
+        parser.error("--reps must be >= 1")
 
     fast_provider = _make_provider(args.fast_model)
     deep_provider = _make_provider(args.deep_model)
