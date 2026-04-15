@@ -22,8 +22,7 @@ import json
 import re
 import sys
 import time
-import urllib.request
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -109,38 +108,54 @@ def _llm_call(provider, prompt: str, max_tokens: int = 2048) -> str:
 # Judge
 # ---------------------------------------------------------------------------
 
-def _judge(provider, task_prompt: str, output: str) -> float:
-    """Score output 0.0-1.0 using LLM-as-judge."""
-    judge_prompt = (
-        "You are an evaluation judge. Score the OUTPUT for the given TASK "
-        "on a 0.0-1.0 scale.\n"
-        "- Correctness (~50%): identifies the bug correctly, fix is correct\n"
-        "- Completeness (~30%): covers find + fix + test\n"
-        "- Clarity (~20%): well-organized, easy to understand\n\n"
-        "Return ONLY JSON: {\"score\": <float>}\n\n"
-        f"TASK: {task_prompt[:800]}\n"
-        f"OUTPUT: {output[:2000]}\n"
-    )
-    config = ProviderConfig(max_tokens=2048)
-    resp = provider.complete(judge_prompt, config)
-    content = resp.content.strip()
-    # Strip markdown fences if present
+_JUDGE_RUBRIC = (
+    "You are an evaluation judge. Score the OUTPUT for the given TASK "
+    "on a 0.0-1.0 scale using these criteria:\n"
+    "- Correctness (~50%): identifies the bug correctly, fix is correct\n"
+    "- Completeness (~30%): covers find + fix + test as applicable\n"
+    "- Clarity (~20%): well-organized, easy to understand\n\n"
+    "Score anchors:\n"
+    "  0.0-0.2: Wrong, off-topic, or refuses the task\n"
+    "  0.3-0.5: Partially correct but major gaps or errors\n"
+    "  0.6-0.7: Mostly correct, minor issues\n"
+    "  0.8-0.9: Strong, nearly complete and accurate\n"
+    "  1.0: Perfect — correct, complete, and clear\n\n"
+    "Return ONLY JSON: {\"score\": <float>}\n\n"
+)
+
+
+def _extract_score(content: str) -> float:
+    """Extract a 0.0-1.0 score from judge response text."""
+    content = content.strip()
     content = re.sub(r"^```(?:json)?\s*", "", content)
     content = re.sub(r"\s*```$", "", content)
-    # Try JSON parse
     try:
         return float(json.loads(content)["score"])
     except (json.JSONDecodeError, KeyError, TypeError):
         pass
-    # Regex fallback
     m = re.search(r'"score"\s*:\s*([\d.]+)', content)
     if m:
         return float(m.group(1))
-    # Last resort: find any float
     m = re.search(r'\b(0\.\d+|1\.0)\b', content)
     if m:
         return float(m.group(1))
-    return 0.5  # fallback
+    return 0.5
+
+
+def _judge(provider, task_prompt: str, output: str) -> float:
+    """Score output 0.0-1.0 using the SAME rubric for all conditions.
+
+    Uses temperature=0.0 for reproducibility and a 6000-char output
+    limit to avoid truncating composed pipeline outputs.
+    """
+    judge_prompt = (
+        f"{_JUDGE_RUBRIC}"
+        f"TASK: {task_prompt[:800]}\n"
+        f"OUTPUT: {output[:6000]}\n"
+    )
+    config = ProviderConfig(max_tokens=2048, temperature=0.0)
+    resp = provider.complete(judge_prompt, config)
+    return _extract_score(resp.content)
 
 
 # ---------------------------------------------------------------------------
@@ -168,57 +183,6 @@ def run_baseline(provider, task: dict, rep: int) -> RunResult:
     return RunResult("baseline", task["id"], rep, quality, output, ["raw"], elapsed)
 
 
-def _skill_judge_prompt(skill: str) -> str:
-    """Return a skill-specific judge rubric."""
-    rubrics = {
-        "localize": (
-            "Score how well the OUTPUT identifies the bug location and nature.\n"
-            "- Correctness (~60%): correctly identifies the bug type and location\n"
-            "- Specificity (~40%): pinpoints exact line/expression, not vague\n"
-        ),
-        "edit": (
-            "Score how well the OUTPUT fixes the bug.\n"
-            "- Correctness (~60%): fix is correct and addresses the actual bug\n"
-            "- Minimality (~20%): change is focused, not a rewrite\n"
-            "- Clarity (~20%): fixed code is readable\n"
-        ),
-        "test": (
-            "Score how well the OUTPUT tests for the bug.\n"
-            "- Correctness (~50%): test would catch the bug if unfixed\n"
-            "- Coverage (~30%): tests both the fix and edge cases\n"
-            "- Clarity (~20%): test is readable and well-structured\n"
-        ),
-    }
-    return rubrics.get(skill, "Score correctness, completeness, and clarity.\n")
-
-
-def _judge_skill(provider, task_prompt: str, output: str, skill: str) -> float:
-    """Score a single skill's output with a skill-appropriate rubric."""
-    judge_prompt = (
-        f"You are an evaluation judge for the '{skill}' step of a coding task. "
-        f"{_skill_judge_prompt(skill)}\n"
-        "Score 0.0-1.0. Return ONLY JSON: {\"score\": <float>}\n\n"
-        f"TASK: {task_prompt[:800]}\n"
-        f"OUTPUT: {output[:2000]}\n"
-    )
-    config = ProviderConfig(max_tokens=2048)
-    resp = provider.complete(judge_prompt, config)
-    content = resp.content.strip()
-    content = re.sub(r"^```(?:json)?\s*", "", content)
-    content = re.sub(r"\s*```$", "", content)
-    try:
-        return float(json.loads(content)["score"])
-    except (json.JSONDecodeError, KeyError, TypeError):
-        pass
-    m = re.search(r'"score"\s*:\s*([\d.]+)', content)
-    if m:
-        return float(m.group(1))
-    m = re.search(r'\b(0\.\d+|1\.0)\b', content)
-    if m:
-        return float(m.group(1))
-    return 0.5
-
-
 def run_individual(provider, task: dict, rep: int, skill: str) -> RunResult:
     """Single skill in an organism, judged with skill-specific rubric."""
     skill_instructions = {
@@ -242,7 +206,9 @@ def run_individual(provider, task: dict, rep: int, skill: str) -> RunResult:
     t0 = time.monotonic()
     result = org.run(task["prompt"])
     elapsed = (time.monotonic() - t0) * 1000
-    quality = _judge_skill(provider, task["prompt"], result.final_output, skill)
+    # Use the SAME end-to-end rubric as baseline and composed
+    # so the interference comparison is apples-to-apples.
+    quality = _judge(provider, task["prompt"], result.final_output)
     return RunResult(f"individual_{skill}", task["id"], rep, quality,
                      result.final_output, [skill], elapsed)
 
