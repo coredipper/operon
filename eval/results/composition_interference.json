@@ -1,6 +1,12 @@
 {
   "model": "gemma4:latest",
   "reps": 3,
+  "timestamp": "2026-04-15T10:16:30.839261+00:00",
+  "judge": {
+    "model": "gemma4:latest",
+    "temperature": 0.0,
+    "rubric": "unified_end_to_end"
+  },
   "results": [
     {
       "condition": "baseline",
@@ -471,11 +477,37 @@
       ]
     }
   ],
+  "per_task": [
+    {
+      "task_id": "sql_injection",
+      "mean_individual": 0.806,
+      "composed": 0.967,
+      "delta": 0.161,
+      "interference": "POSITIVE"
+    },
+    {
+      "task_id": "off_by_one",
+      "mean_individual": 0.9,
+      "composed": 0.993,
+      "delta": 0.093,
+      "interference": "NONE"
+    },
+    {
+      "task_id": "race_condition",
+      "mean_individual": 0.517,
+      "composed": 0.35,
+      "delta": -0.167,
+      "interference": "NEGATIVE"
+    }
+  ],
   "summary": {
-    "baseline": 0.9611111111111111,
-    "mean_individual": 0.7407407407407407,
-    "composed": 0.7700000000000001,
-    "delta": 0.02925925925925943,
-    "interference": "NONE"
+    "baseline": 0.961,
+    "mean_individual": 0.741,
+    "composed": 0.77,
+    "delta": 0.029,
+    "overall_interference": "NONE",
+    "worst_task": "race_condition",
+    "worst_task_delta": -0.167,
+    "worst_task_interference": "NEGATIVE"
   }
 }

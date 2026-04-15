@@ -132,12 +132,13 @@ beat a centralized baseline without exogenous signals.
 
 Individual skill quality varies by task difficulty.  On easier tasks
 (SQL injection, off-by-one), ``localize'' and ``edit'' score
-0.80--1.00, while on the harder race\_condition task, ``edit'' drops
-to 0.37 and ``test'' to 0.00 in the worst repetition.  ``test''
-consistently scores lowest (0.00--0.90 across tasks) because
-test-writing in isolation lacks the context of what was found and
-fixed---an expected consequence of skill decomposition where some
-skills are context-dependent.
+0.80--1.00 on average, while on the harder race\_condition task,
+mean ``edit'' quality drops to 0.37 and mean ``test'' to 0.42,
+with both reaching 0.0 in their worst repetitions.  ``test''
+consistently scores lowest across tasks because test-writing in
+isolation lacks the context of what was found and fixed---an
+expected consequence of skill decomposition where some skills
+are context-dependent.
 
 \subsection{Relationship to Epistemic Topology}
 

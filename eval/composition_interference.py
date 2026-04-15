@@ -439,9 +439,10 @@ def main():
             "mean_individual": mean_all_i,
             "composed": mean_all_c,
             "delta": delta_all,
-            "interference": interference_all,
+            "overall_interference": interference_all,
             "worst_task": worst_task,
             "worst_task_delta": worst_delta,
+            "worst_task_interference": "NEGATIVE" if worst_delta < -0.1 else "NONE" if abs(worst_delta) <= 0.1 else "POSITIVE",
         },
     }
     out_path.write_text(json.dumps(out_data, indent=2))
