@@ -19,11 +19,86 @@ from .types import (
     SkillRuntimeComponent,
     SkillStage,
     SkillStageResult,
+    StateConflictError,
     SubstrateView,
     TelemetryEvent,
     WATCHER_STATE_KEY,
     WatcherIntervention,
 )
+
+
+def _merge_parallel_results(
+    state: dict[str, Any],
+    stage_outputs: dict[str, Any],
+    stage_results: list[SkillStageResult],
+    snap: dict[str, Any],
+    per_stage: dict[str, tuple[dict, dict, list, str]],
+) -> None:
+    """Merge isolated parallel stage results back into shared state.
+
+    Each parallel stage ran with its own copy of ``state`` and
+    ``stage_outputs``. This function merges the results, detecting
+    conflicts when two stages wrote different values to the same key.
+    """
+    mutations: dict[str, list[tuple[str, Any]]] = {}
+    # Keys written by run_single_stage for every stage — expected to conflict
+    _internal_keys = {"last_stage", WATCHER_STATE_KEY, "_blocked_by",
+                      "_escalation_error", "_verifier_signals"}
+
+    for stage_name, (s_state, s_outputs, s_results, _) in per_stage.items():
+        # Collect stage outputs (no conflicts — each stage writes its own name)
+        if stage_name in s_outputs:
+            stage_outputs[stage_name] = s_outputs[stage_name]
+        stage_results.extend(s_results)
+
+        # Track state mutations (keys that changed vs snapshot)
+        for key, value in s_state.items():
+            if key in _internal_keys:
+                continue  # handled separately below
+            # Each stage writes state[stage.name] = output — skip these too
+            if key in per_stage:
+                continue
+            if key not in snap or snap[key] != value:
+                mutations.setdefault(key, []).append((stage_name, value))
+
+    # Apply mutations with conflict detection
+    for key, writers in mutations.items():
+        if len(writers) > 1:
+            values = {str(v) for _, v in writers}
+            if len(values) > 1:
+                names = [n for n, _ in writers]
+                raise StateConflictError(
+                    f"Parallel stages {names} wrote conflicting values "
+                    f"for key '{key}'"
+                )
+        state[key] = writers[0][1]
+
+    # Merge per-stage output keys (state[stage.name] = output)
+    for stage_name, (s_state, _, _, _) in per_stage.items():
+        if stage_name in s_state:
+            state[stage_name] = s_state[stage_name]
+
+    # Set last_stage to the last stage in the group (deterministic order)
+    state["last_stage"] = list(per_stage.keys())[-1]
+
+
+def _normalize_stage_groups(
+    stages: list | tuple,
+) -> tuple[tuple[SkillStage, ...], ...]:
+    """Normalize mixed flat/grouped stage specs to uniform groups.
+
+    Accepts:
+      - Flat list of stages: ``[s1, s2, s3]`` → ``((s1,), (s2,), (s3,))``
+      - Grouped list: ``[[s1, s2], [s3]]`` → ``((s1, s2), (s3,))``
+      - Mixed: ``[s1, [s2, s3], s4]`` → ``((s1,), (s2, s3), (s4,))``
+    """
+    groups: list[tuple[SkillStage, ...]] = []
+    for item in stages:
+        if isinstance(item, (list, tuple)) and not isinstance(item, SkillStage):
+            groups.append(tuple(item))
+        else:
+            groups.append((item,))
+    return tuple(groups)
 
 
 def _call_arity(fn, *args):
@@ -227,6 +302,7 @@ class SkillOrganism:
     components: tuple[SkillRuntimeComponent, ...] = ()
     halt_on_block: bool = True
     substrate: BiTemporalMemory | None = None
+    stage_groups: tuple[tuple[SkillStage, ...], ...] = ()
     _agents: dict[str, BioAgent] = field(default_factory=dict, init=False)
 
     def __post_init__(self) -> None:
@@ -408,6 +484,62 @@ class SkillOrganism:
 
         return "continue"
 
+    def _run_group(
+        self,
+        group: tuple[SkillStage, ...],
+        task: str,
+        state: dict[str, Any],
+        stage_outputs: dict[str, Any],
+        stage_results: list[SkillStageResult],
+    ) -> str:
+        """Execute a stage group — sequential if 1 stage, parallel if >1.
+
+        Parallel stages get isolated state snapshots. Results are merged
+        back with conflict detection after all stages complete.
+
+        Returns ``"continue"`` if all stages succeed, ``"halt"`` if any
+        stage halts (wait-and-cancel: running stages finish first).
+        """
+        if len(group) == 1:
+            return self.run_single_stage(
+                group[0], task, state, stage_outputs, stage_results,
+            )
+
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        # Snapshot state before parallel execution
+        snap = dict(state)
+        snap_outputs = dict(stage_outputs)
+
+        per_stage: dict[str, tuple[dict, dict, list, str]] = {}
+
+        with ThreadPoolExecutor(max_workers=len(group)) as pool:
+            futures = {}
+            for stage in group:
+                s_state: dict[str, Any] = dict(snap)
+                s_outputs: dict[str, Any] = dict(snap_outputs)
+                s_results: list[SkillStageResult] = []
+                future = pool.submit(
+                    self.run_single_stage,
+                    stage, task, s_state, s_outputs, s_results,
+                )
+                futures[future] = (stage, s_state, s_outputs, s_results)
+
+            for future in as_completed(futures):
+                stage, s_state, s_outputs, s_results = futures[future]
+                decision = future.result()
+                per_stage[stage.name] = (s_state, s_outputs, s_results, decision)
+
+        # Merge results back
+        _merge_parallel_results(
+            state, stage_outputs, stage_results, snap, per_stage,
+        )
+
+        # Any halt → stop pipeline
+        if any(d != "continue" for _, _, _, d in per_stage.values()):
+            return "halt"
+        return "continue"
+
     def run(
         self,
         task: str,
@@ -448,9 +580,10 @@ class SkillOrganism:
 
         state.pop("_organism_config", None)
 
-        for stage in self.stages:
-            decision = self.run_single_stage(
-                stage, task, state, stage_outputs, stage_results,
+        groups = self.stage_groups or tuple((s,) for s in self.stages)
+        for group in groups:
+            decision = self._run_group(
+                group, task, state, stage_outputs, stage_results,
             )
             if decision != "continue":
                 break
@@ -705,7 +838,7 @@ class SkillOrganism:
 
 def skill_organism(
     *,
-    stages: list[SkillStage] | tuple[SkillStage, ...],
+    stages: list | tuple,
     nuclei: dict[str, Nucleus] | None = None,
     fast_nucleus: Nucleus | None = None,
     deep_nucleus: Nucleus | None = None,
@@ -721,9 +854,23 @@ def skill_organism(
 
     Fixed stages default to ``fast_alias`` and fuzzy stages default to
     ``deep_alias`` unless a stage pins itself to a specific nucleus alias.
+
+    Stages can be flat (sequential) or grouped (parallel)::
+
+        # Sequential: each stage runs one after another
+        skill_organism(stages=[s1, s2, s3])
+
+        # Parallel: stages in a group run concurrently
+        skill_organism(stages=[[s1, s2], [s3], [s4, s5]])
+
+        # Mixed: some sequential, some parallel
+        skill_organism(stages=[s1, [s2, s3], s4])
     """
 
-    stage_tuple = tuple(stages)
+    stage_groups = _normalize_stage_groups(stages)
+    # Flatten groups into a flat tuple for backward compatibility
+    # (self.stages is used by LangGraph compiler, certificate extraction, etc.)
+    stage_tuple = tuple(s for group in stage_groups for s in group)
     if not stage_tuple:
         raise ValueError("skill_organism requires at least one stage")
 
@@ -768,4 +915,5 @@ def skill_organism(
         components=tuple(components),
         halt_on_block=halt_on_block,
         substrate=substrate,
+        stage_groups=stage_groups,
     )
