@@ -226,6 +226,9 @@ Direct links:
 - [Main whitepaper](https://github.com/coredipper/operon/blob/main/article/main.pdf)
 - [Epistemic topology paper](https://github.com/coredipper/operon/blob/main/article/paper1/main.pdf)
 - [PyPI package](https://pypi.org/project/operon-ai/)
+- [Harness Inspector](https://huggingface.co/spaces/coredipper/operon-harness-inspector) — explore the Architecture triple (G, Know, Φ)
+- [Escalation Lab](https://huggingface.co/spaces/coredipper/operon-escalation-lab) — quality-based model escalation demo
+- [LangGraph Visualizer](https://huggingface.co/spaces/coredipper/operon-langgraph-visualizer) — per-stage graph topology
 - [Epistemic Topology Explorer](https://huggingface.co/spaces/coredipper/operon-epistemic)
 - [Diagram Builder](https://huggingface.co/spaces/coredipper/operon-diagram-builder)
 - [Bi-Temporal Memory Explorer](https://huggingface.co/spaces/coredipper/operon-bitemporal)
