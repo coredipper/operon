@@ -1,0 +1,513 @@
+{
+  "model": "gemma4:latest",
+  "reps": 3,
+  "timestamp": "2026-04-15T10:16:30.839261+00:00",
+  "judge": {
+    "model": "gemma4:latest",
+    "temperature": 0.0,
+    "rubric": "unified_end_to_end"
+  },
+  "results": [
+    {
+      "condition": "baseline",
+      "task_id": "sql_injection",
+      "rep": 1,
+      "quality": 1.0,
+      "latency_ms": 49000.71829103399,
+      "stages": [
+        "raw"
+      ]
+    },
+    {
+      "condition": "individual_localize",
+      "task_id": "sql_injection",
+      "rep": 1,
+      "quality": 1.0,
+      "latency_ms": 31042.44354099501,
+      "stages": [
+        "localize"
+      ]
+    },
+    {
+      "condition": "individual_edit",
+      "task_id": "sql_injection",
+      "rep": 1,
+      "quality": 1.0,
+      "latency_ms": 25566.943708981853,
+      "stages": [
+        "edit"
+      ]
+    },
+    {
+      "condition": "individual_test",
+      "task_id": "sql_injection",
+      "rep": 1,
+      "quality": 0.3,
+      "latency_ms": 30331.905291997828,
+      "stages": [
+        "test"
+      ]
+    },
+    {
+      "condition": "composed",
+      "task_id": "sql_injection",
+      "rep": 1,
+      "quality": 0.95,
+      "latency_ms": 76412.66224998981,
+      "stages": [
+        "localize",
+        "edit",
+        "test"
+      ]
+    },
+    {
+      "condition": "baseline",
+      "task_id": "sql_injection",
+      "rep": 2,
+      "quality": 1.0,
+      "latency_ms": 61514.51020897366,
+      "stages": [
+        "raw"
+      ]
+    },
+    {
+      "condition": "individual_localize",
+      "task_id": "sql_injection",
+      "rep": 2,
+      "quality": 1.0,
+      "latency_ms": 31019.427374994848,
+      "stages": [
+        "localize"
+      ]
+    },
+    {
+      "condition": "individual_edit",
+      "task_id": "sql_injection",
+      "rep": 2,
+      "quality": 1.0,
+      "latency_ms": 30979.713750013616,
+      "stages": [
+        "edit"
+      ]
+    },
+    {
+      "condition": "individual_test",
+      "task_id": "sql_injection",
+      "rep": 2,
+      "quality": 0.3,
+      "latency_ms": 31017.72925001569,
+      "stages": [
+        "test"
+      ]
+    },
+    {
+      "condition": "composed",
+      "task_id": "sql_injection",
+      "rep": 2,
+      "quality": 0.95,
+      "latency_ms": 77596.76804195624,
+      "stages": [
+        "localize",
+        "edit",
+        "test"
+      ]
+    },
+    {
+      "condition": "baseline",
+      "task_id": "sql_injection",
+      "rep": 3,
+      "quality": 1.0,
+      "latency_ms": 52641.82179199997,
+      "stages": [
+        "raw"
+      ]
+    },
+    {
+      "condition": "individual_localize",
+      "task_id": "sql_injection",
+      "rep": 3,
+      "quality": 1.0,
+      "latency_ms": 30413.46299997531,
+      "stages": [
+        "localize"
+      ]
+    },
+    {
+      "condition": "individual_edit",
+      "task_id": "sql_injection",
+      "rep": 3,
+      "quality": 1.0,
+      "latency_ms": 22247.39304196555,
+      "stages": [
+        "edit"
+      ]
+    },
+    {
+      "condition": "individual_test",
+      "task_id": "sql_injection",
+      "rep": 3,
+      "quality": 0.65,
+      "latency_ms": 30132.47308396967,
+      "stages": [
+        "test"
+      ]
+    },
+    {
+      "condition": "composed",
+      "task_id": "sql_injection",
+      "rep": 3,
+      "quality": 1.0,
+      "latency_ms": 78095.69712501252,
+      "stages": [
+        "localize",
+        "edit",
+        "test"
+      ]
+    },
+    {
+      "condition": "baseline",
+      "task_id": "off_by_one",
+      "rep": 1,
+      "quality": 1.0,
+      "latency_ms": 53006.9619580172,
+      "stages": [
+        "raw"
+      ]
+    },
+    {
+      "condition": "individual_localize",
+      "task_id": "off_by_one",
+      "rep": 1,
+      "quality": 1.0,
+      "latency_ms": 31966.183083015494,
+      "stages": [
+        "localize"
+      ]
+    },
+    {
+      "condition": "individual_edit",
+      "task_id": "off_by_one",
+      "rep": 1,
+      "quality": 1.0,
+      "latency_ms": 29572.853624995332,
+      "stages": [
+        "edit"
+      ]
+    },
+    {
+      "condition": "individual_test",
+      "task_id": "off_by_one",
+      "rep": 1,
+      "quality": 0.4,
+      "latency_ms": 32075.575415976346,
+      "stages": [
+        "test"
+      ]
+    },
+    {
+      "condition": "composed",
+      "task_id": "off_by_one",
+      "rep": 1,
+      "quality": 1.0,
+      "latency_ms": 92752.03108298592,
+      "stages": [
+        "localize",
+        "edit",
+        "test"
+      ]
+    },
+    {
+      "condition": "baseline",
+      "task_id": "off_by_one",
+      "rep": 2,
+      "quality": 1.0,
+      "latency_ms": 54602.374082955066,
+      "stages": [
+        "raw"
+      ]
+    },
+    {
+      "condition": "individual_localize",
+      "task_id": "off_by_one",
+      "rep": 2,
+      "quality": 1.0,
+      "latency_ms": 31202.484707988333,
+      "stages": [
+        "localize"
+      ]
+    },
+    {
+      "condition": "individual_edit",
+      "task_id": "off_by_one",
+      "rep": 2,
+      "quality": 1.0,
+      "latency_ms": 21110.400667006616,
+      "stages": [
+        "edit"
+      ]
+    },
+    {
+      "condition": "individual_test",
+      "task_id": "off_by_one",
+      "rep": 2,
+      "quality": 0.8,
+      "latency_ms": 31234.395041014068,
+      "stages": [
+        "test"
+      ]
+    },
+    {
+      "condition": "composed",
+      "task_id": "off_by_one",
+      "rep": 2,
+      "quality": 1.0,
+      "latency_ms": 82949.487417005,
+      "stages": [
+        "localize",
+        "edit",
+        "test"
+      ]
+    },
+    {
+      "condition": "baseline",
+      "task_id": "off_by_one",
+      "rep": 3,
+      "quality": 1.0,
+      "latency_ms": 44541.716457984876,
+      "stages": [
+        "raw"
+      ]
+    },
+    {
+      "condition": "individual_localize",
+      "task_id": "off_by_one",
+      "rep": 3,
+      "quality": 1.0,
+      "latency_ms": 31069.212792033795,
+      "stages": [
+        "localize"
+      ]
+    },
+    {
+      "condition": "individual_edit",
+      "task_id": "off_by_one",
+      "rep": 3,
+      "quality": 1.0,
+      "latency_ms": 27241.294833016582,
+      "stages": [
+        "edit"
+      ]
+    },
+    {
+      "condition": "individual_test",
+      "task_id": "off_by_one",
+      "rep": 3,
+      "quality": 0.9,
+      "latency_ms": 30796.046292001847,
+      "stages": [
+        "test"
+      ]
+    },
+    {
+      "condition": "composed",
+      "task_id": "off_by_one",
+      "rep": 3,
+      "quality": 0.98,
+      "latency_ms": 75998.77904198365,
+      "stages": [
+        "localize",
+        "edit",
+        "test"
+      ]
+    },
+    {
+      "condition": "baseline",
+      "task_id": "race_condition",
+      "rep": 1,
+      "quality": 0.9,
+      "latency_ms": 60410.31916695647,
+      "stages": [
+        "raw"
+      ]
+    },
+    {
+      "condition": "individual_localize",
+      "task_id": "race_condition",
+      "rep": 1,
+      "quality": 1.0,
+      "latency_ms": 30459.046708012465,
+      "stages": [
+        "localize"
+      ]
+    },
+    {
+      "condition": "individual_edit",
+      "task_id": "race_condition",
+      "rep": 1,
+      "quality": 0.3,
+      "latency_ms": 31429.45704201702,
+      "stages": [
+        "edit"
+      ]
+    },
+    {
+      "condition": "individual_test",
+      "task_id": "race_condition",
+      "rep": 1,
+      "quality": 0.85,
+      "latency_ms": 32842.0749999932,
+      "stages": [
+        "test"
+      ]
+    },
+    {
+      "condition": "composed",
+      "task_id": "race_condition",
+      "rep": 1,
+      "quality": 0.2,
+      "latency_ms": 92776.95895801298,
+      "stages": [
+        "localize",
+        "edit",
+        "test"
+      ]
+    },
+    {
+      "condition": "baseline",
+      "task_id": "race_condition",
+      "rep": 2,
+      "quality": 0.85,
+      "latency_ms": 60389.30600002641,
+      "stages": [
+        "raw"
+      ]
+    },
+    {
+      "condition": "individual_localize",
+      "task_id": "race_condition",
+      "rep": 2,
+      "quality": 0.9,
+      "latency_ms": 31218.740915996023,
+      "stages": [
+        "localize"
+      ]
+    },
+    {
+      "condition": "individual_edit",
+      "task_id": "race_condition",
+      "rep": 2,
+      "quality": 0.8,
+      "latency_ms": 31255.235625023488,
+      "stages": [
+        "edit"
+      ]
+    },
+    {
+      "condition": "individual_test",
+      "task_id": "race_condition",
+      "rep": 2,
+      "quality": 0.4,
+      "latency_ms": 31018.735709018074,
+      "stages": [
+        "test"
+      ]
+    },
+    {
+      "condition": "composed",
+      "task_id": "race_condition",
+      "rep": 2,
+      "quality": 0.45,
+      "latency_ms": 94501.48937501945,
+      "stages": [
+        "localize",
+        "edit",
+        "test"
+      ]
+    },
+    {
+      "condition": "baseline",
+      "task_id": "race_condition",
+      "rep": 3,
+      "quality": 0.9,
+      "latency_ms": 60339.518124994356,
+      "stages": [
+        "raw"
+      ]
+    },
+    {
+      "condition": "individual_localize",
+      "task_id": "race_condition",
+      "rep": 3,
+      "quality": 0.4,
+      "latency_ms": 31158.360000001267,
+      "stages": [
+        "localize"
+      ]
+    },
+    {
+      "condition": "individual_edit",
+      "task_id": "race_condition",
+      "rep": 3,
+      "quality": 0.0,
+      "latency_ms": 30289.38700002618,
+      "stages": [
+        "edit"
+      ]
+    },
+    {
+      "condition": "individual_test",
+      "task_id": "race_condition",
+      "rep": 3,
+      "quality": 0.0,
+      "latency_ms": 30812.40804103436,
+      "stages": [
+        "test"
+      ]
+    },
+    {
+      "condition": "composed",
+      "task_id": "race_condition",
+      "rep": 3,
+      "quality": 0.4,
+      "latency_ms": 92359.63716701372,
+      "stages": [
+        "localize",
+        "edit",
+        "test"
+      ]
+    }
+  ],
+  "per_task": [
+    {
+      "task_id": "sql_injection",
+      "mean_individual": 0.806,
+      "composed": 0.967,
+      "delta": 0.161,
+      "interference": "POSITIVE"
+    },
+    {
+      "task_id": "off_by_one",
+      "mean_individual": 0.9,
+      "composed": 0.993,
+      "delta": 0.093,
+      "interference": "NONE"
+    },
+    {
+      "task_id": "race_condition",
+      "mean_individual": 0.517,
+      "composed": 0.35,
+      "delta": -0.167,
+      "interference": "NEGATIVE"
+    }
+  ],
+  "summary": {
+    "baseline": 0.961,
+    "mean_individual": 0.741,
+    "composed": 0.77,
+    "delta": 0.029,
+    "overall_interference": "NONE",
+    "worst_task": "race_condition",
+    "worst_task_delta": -0.167,
+    "worst_task_interference": "NEGATIVE"
+  }
+}
