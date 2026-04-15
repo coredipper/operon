@@ -157,13 +157,27 @@ def _run_escalation(fast_provider, deep_provider, rep: int, guarded: bool) -> Es
     fast_nucleus = Nucleus(provider=fast_provider)
     deep_nucleus = Nucleus(provider=deep_provider)
 
+    # Rubric requires identifying BOTH the race condition AND the correct
+    # atomic fix. phi3:mini typically identifies the bug class but suggests
+    # os.path.exists() checks (still racy) rather than O_EXCL/O_CREAT.
     def quality_rubric(output: str, stage_name: str) -> float:
         if stage_name != "solve":
             return 0.8
-        indicators = ["parameterized", "prepared statement", "placeholder",
-                      "sql injection", "sanitize", "escape", "bind"]
-        found = sum(1 for ind in indicators if ind.lower() in output.lower())
-        return min(1.0, found * 0.25)
+        out = output.lower()
+        # Must identify it as a race condition / TOCTOU
+        identifies_race = any(k in out for k in ["race condition", "toctou", "time-of-check"])
+        # Must use an atomic solution, not just os.path.exists()
+        atomic_fix = any(k in out for k in ["o_excl", "o_creat", "os.open", "atomic",
+                                             "lock", "tempfile", "mkstemp"])
+        # Penalize if it suggests the racy os.path.exists() pattern
+        still_racy = "os.path.exists" in out and not atomic_fix
+        if identifies_race and atomic_fix:
+            return 0.9
+        if identifies_race and not still_racy:
+            return 0.6
+        if identifies_race:
+            return 0.3  # knows the problem but fix is still racy
+        return 0.1  # doesn't identify the race condition
 
     watcher = None
     verifier = None
@@ -179,7 +193,7 @@ def _run_escalation(fast_provider, deep_provider, rep: int, guarded: bool) -> Es
     org = skill_organism(
         stages=[
             SkillStage(name="solve", role="Engineer",
-                       instructions="Fix this SQL injection vulnerability. Be specific.",
+                       instructions="Fix the concurrency bug in this code. Be specific about the fix.",
                        mode="fixed"),
         ],
         fast_nucleus=fast_nucleus,
@@ -189,9 +203,16 @@ def _run_escalation(fast_provider, deep_provider, rep: int, guarded: bool) -> Es
     )
 
     task = (
-        "Fix the SQL injection in this code:\n"
-        "def get_user(db, name):\n"
-        '    return db.execute(f"SELECT * FROM users WHERE name = \'{name}\'")\n'
+        "Fix the bug in this code:\n"
+        "```python\n"
+        "import os\n\n"
+        "def safe_write(path, content):\n"
+        "    if not os.path.exists(path):\n"
+        "        with open(path, 'w') as f:\n"
+        "            f.write(content)\n"
+        "    else:\n"
+        "        raise FileExistsError(path)\n"
+        "```\n"
     )
 
     result = org.run(task)
