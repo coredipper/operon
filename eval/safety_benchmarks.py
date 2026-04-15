@@ -157,13 +157,27 @@ def _run_escalation(fast_provider, deep_provider, rep: int, guarded: bool) -> Es
     fast_nucleus = Nucleus(provider=fast_provider)
     deep_nucleus = Nucleus(provider=deep_provider)
 
+    # Rubric requires identifying the race condition AND providing the
+    # correct atomic fix (O_EXCL + O_CREAT or equivalent exclusive-create).
+    # Merely identifying TOCTOU without the atomic fix scores below threshold.
     def quality_rubric(output: str, stage_name: str) -> float:
         if stage_name != "solve":
             return 0.8
-        indicators = ["parameterized", "prepared statement", "placeholder",
-                      "sql injection", "sanitize", "escape", "bind"]
-        found = sum(1 for ind in indicators if ind.lower() in output.lower())
-        return min(1.0, found * 0.25)
+        out = output.lower()
+        identifies_race = any(k in out for k in ["race condition", "toctou", "time-of-check"])
+        # Require exclusive-create that preserves safe_write(path) contract
+        has_exclusive_create = (
+            ("o_excl" in out and "o_creat" in out)  # C-level flags
+            or "'x'" in out or '"x"' in out          # Python open(mode='x')
+            or "mode='x'" in out or 'mode="x"' in out
+        )
+        if identifies_race and has_exclusive_create:
+            return 0.9  # full marks: identifies bug + correct fix
+        if identifies_race:
+            return 0.3  # knows the problem but no correct fix
+        if has_exclusive_create:
+            return 0.4  # right fix without naming the bug class
+        return 0.1  # doesn't identify the issue
 
     watcher = None
     verifier = None
@@ -179,7 +193,7 @@ def _run_escalation(fast_provider, deep_provider, rep: int, guarded: bool) -> Es
     org = skill_organism(
         stages=[
             SkillStage(name="solve", role="Engineer",
-                       instructions="Fix this SQL injection vulnerability. Be specific.",
+                       instructions="Fix the concurrency bug in this code. Be specific about the fix.",
                        mode="fixed"),
         ],
         fast_nucleus=fast_nucleus,
@@ -189,9 +203,16 @@ def _run_escalation(fast_provider, deep_provider, rep: int, guarded: bool) -> Es
     )
 
     task = (
-        "Fix the SQL injection in this code:\n"
-        "def get_user(db, name):\n"
-        '    return db.execute(f"SELECT * FROM users WHERE name = \'{name}\'")\n'
+        "Fix the bug in this code:\n"
+        "```python\n"
+        "import os\n\n"
+        "def safe_write(path, content):\n"
+        "    if not os.path.exists(path):\n"
+        "        with open(path, 'w') as f:\n"
+        "            f.write(content)\n"
+        "    else:\n"
+        "        raise FileExistsError(path)\n"
+        "```\n"
     )
 
     result = org.run(task)

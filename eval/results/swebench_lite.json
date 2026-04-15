@@ -1,0 +1,248 @@
+{
+  "model": "gemma4:latest",
+  "dataset": "SWE-bench/SWE-bench_Lite",
+  "n_instances": 10,
+  "offset": 0,
+  "conditions": [
+    "baseline",
+    "organism"
+  ],
+  "timestamp": "2026-04-15T11:57:21.387233+00:00",
+  "judge": {
+    "model": "gemma4:latest",
+    "temperature": 0.0,
+    "rubric": "swebench_patch_quality"
+  },
+  "results": [
+    {
+      "instance_id": "astropy__astropy-12907",
+      "repo": "astropy/astropy",
+      "condition": "baseline",
+      "quality": 0.6,
+      "latency_ms": 68094.46425002534,
+      "stages": [
+        "raw"
+      ]
+    },
+    {
+      "instance_id": "astropy__astropy-12907",
+      "repo": "astropy/astropy",
+      "condition": "organism",
+      "quality": 0.65,
+      "latency_ms": 101706.24166599009,
+      "stages": [
+        "localize",
+        "edit",
+        "verify"
+      ]
+    },
+    {
+      "instance_id": "astropy__astropy-14182",
+      "repo": "astropy/astropy",
+      "condition": "baseline",
+      "quality": 0.55,
+      "latency_ms": 50581.653416971676,
+      "stages": [
+        "raw"
+      ]
+    },
+    {
+      "instance_id": "astropy__astropy-14182",
+      "repo": "astropy/astropy",
+      "condition": "organism",
+      "quality": 0.9,
+      "latency_ms": 87507.86179199349,
+      "stages": [
+        "localize",
+        "edit",
+        "verify"
+      ]
+    },
+    {
+      "instance_id": "astropy__astropy-14365",
+      "repo": "astropy/astropy",
+      "condition": "baseline",
+      "quality": 0.98,
+      "latency_ms": 28025.520582974423,
+      "stages": [
+        "raw"
+      ]
+    },
+    {
+      "instance_id": "astropy__astropy-14365",
+      "repo": "astropy/astropy",
+      "condition": "organism",
+      "quality": 0.98,
+      "latency_ms": 82185.07808400318,
+      "stages": [
+        "localize",
+        "edit",
+        "verify"
+      ]
+    },
+    {
+      "instance_id": "astropy__astropy-14995",
+      "repo": "astropy/astropy",
+      "condition": "baseline",
+      "quality": 0.95,
+      "latency_ms": 57924.45454199333,
+      "stages": [
+        "raw"
+      ]
+    },
+    {
+      "instance_id": "astropy__astropy-14995",
+      "repo": "astropy/astropy",
+      "condition": "organism",
+      "quality": 0.1,
+      "latency_ms": 93346.74224996706,
+      "stages": [
+        "localize",
+        "edit",
+        "verify"
+      ]
+    },
+    {
+      "instance_id": "astropy__astropy-6938",
+      "repo": "astropy/astropy",
+      "condition": "baseline",
+      "quality": 1.0,
+      "latency_ms": 27369.632541027386,
+      "stages": [
+        "raw"
+      ]
+    },
+    {
+      "instance_id": "astropy__astropy-6938",
+      "repo": "astropy/astropy",
+      "condition": "organism",
+      "quality": 1.0,
+      "latency_ms": 60606.04616702767,
+      "stages": [
+        "localize",
+        "edit",
+        "verify"
+      ]
+    },
+    {
+      "instance_id": "astropy__astropy-7746",
+      "repo": "astropy/astropy",
+      "condition": "baseline",
+      "quality": 0.95,
+      "latency_ms": 77685.1984160021,
+      "stages": [
+        "raw"
+      ]
+    },
+    {
+      "instance_id": "astropy__astropy-7746",
+      "repo": "astropy/astropy",
+      "condition": "organism",
+      "quality": 0.85,
+      "latency_ms": 90458.43154203612,
+      "stages": [
+        "localize",
+        "edit",
+        "verify"
+      ]
+    },
+    {
+      "instance_id": "django__django-10914",
+      "repo": "django/django",
+      "condition": "baseline",
+      "quality": 0.95,
+      "latency_ms": 35445.49441704294,
+      "stages": [
+        "raw"
+      ]
+    },
+    {
+      "instance_id": "django__django-10914",
+      "repo": "django/django",
+      "condition": "organism",
+      "quality": 0.1,
+      "latency_ms": 84250.16816699645,
+      "stages": [
+        "localize",
+        "edit",
+        "verify"
+      ]
+    },
+    {
+      "instance_id": "django__django-10924",
+      "repo": "django/django",
+      "condition": "baseline",
+      "quality": 0.95,
+      "latency_ms": 31116.99549999321,
+      "stages": [
+        "raw"
+      ]
+    },
+    {
+      "instance_id": "django__django-10924",
+      "repo": "django/django",
+      "condition": "organism",
+      "quality": 0.95,
+      "latency_ms": 91432.73887498071,
+      "stages": [
+        "localize",
+        "edit",
+        "verify"
+      ]
+    },
+    {
+      "instance_id": "django__django-11001",
+      "repo": "django/django",
+      "condition": "baseline",
+      "quality": 0.95,
+      "latency_ms": 34854.629792040214,
+      "stages": [
+        "raw"
+      ]
+    },
+    {
+      "instance_id": "django__django-11001",
+      "repo": "django/django",
+      "condition": "organism",
+      "quality": 0.95,
+      "latency_ms": 72431.74900003942,
+      "stages": [
+        "localize",
+        "edit",
+        "verify"
+      ]
+    },
+    {
+      "instance_id": "django__django-11019",
+      "repo": "django/django",
+      "condition": "baseline",
+      "quality": 0.9,
+      "latency_ms": 54214.24362499965,
+      "stages": [
+        "raw"
+      ]
+    },
+    {
+      "instance_id": "django__django-11019",
+      "repo": "django/django",
+      "condition": "organism",
+      "quality": 0.1,
+      "latency_ms": 91884.78058297187,
+      "stages": [
+        "localize",
+        "edit",
+        "verify"
+      ]
+    }
+  ],
+  "summary": {
+    "baseline": {
+      "mean_quality": 0.878,
+      "n": 10
+    },
+    "organism": {
+      "mean_quality": 0.658,
+      "n": 10
+    }
+  }
+}

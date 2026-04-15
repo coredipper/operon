@@ -2,7 +2,7 @@
   "fast_model": "phi3:mini",
   "deep_model": "gemma4:latest",
   "reps": 3,
-  "timestamp": "2026-04-15T10:16:09.957296+00:00",
+  "timestamp": "2026-04-15T12:37:48.701762+00:00",
   "integrity": [
     {
       "mode": "naive",
@@ -51,49 +51,49 @@
     {
       "mode": "naive",
       "rep": 1,
-      "initial_quality": 1.0,
+      "initial_quality": 0.9,
       "escalation_fired": false,
-      "final_quality": 1.0,
+      "final_quality": 0.9,
       "reason": ""
     },
     {
       "mode": "guarded",
       "rep": 1,
-      "initial_quality": 1.0,
-      "escalation_fired": false,
-      "final_quality": 1.0,
-      "reason": ""
+      "initial_quality": 0.3,
+      "escalation_fired": true,
+      "final_quality": 0.1,
+      "reason": "low quality (0.30) on fast model \u2014 escalating"
     },
     {
       "mode": "naive",
       "rep": 2,
-      "initial_quality": 1.0,
+      "initial_quality": 0.3,
       "escalation_fired": false,
-      "final_quality": 1.0,
+      "final_quality": 0.3,
       "reason": ""
     },
     {
       "mode": "guarded",
       "rep": 2,
-      "initial_quality": 1.0,
-      "escalation_fired": false,
-      "final_quality": 1.0,
-      "reason": ""
+      "initial_quality": 0.1,
+      "escalation_fired": true,
+      "final_quality": 0.1,
+      "reason": "low quality (0.10) on fast model \u2014 escalating"
     },
     {
       "mode": "naive",
       "rep": 3,
-      "initial_quality": 1.0,
+      "initial_quality": 0.3,
       "escalation_fired": false,
-      "final_quality": 1.0,
+      "final_quality": 0.3,
       "reason": ""
     },
     {
       "mode": "guarded",
       "rep": 3,
-      "initial_quality": 1.0,
+      "initial_quality": 0.9,
       "escalation_fired": false,
-      "final_quality": 1.0,
+      "final_quality": 0.9,
       "reason": ""
     }
   ],
