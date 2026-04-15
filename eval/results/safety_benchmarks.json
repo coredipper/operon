@@ -1,0 +1,149 @@
+{
+  "fast_model": "phi3:mini",
+  "deep_model": "gemma4:latest",
+  "reps": 3,
+  "integrity": [
+    {
+      "mode": "naive",
+      "rep": 1,
+      "halted": false,
+      "damages": 0,
+      "stages": 2
+    },
+    {
+      "mode": "guarded",
+      "rep": 1,
+      "halted": true,
+      "damages": 3,
+      "stages": 1
+    },
+    {
+      "mode": "naive",
+      "rep": 2,
+      "halted": false,
+      "damages": 0,
+      "stages": 2
+    },
+    {
+      "mode": "guarded",
+      "rep": 2,
+      "halted": true,
+      "damages": 3,
+      "stages": 1
+    },
+    {
+      "mode": "naive",
+      "rep": 3,
+      "halted": false,
+      "damages": 0,
+      "stages": 2
+    },
+    {
+      "mode": "guarded",
+      "rep": 3,
+      "halted": true,
+      "damages": 3,
+      "stages": 1
+    }
+  ],
+  "escalation": [
+    {
+      "mode": "naive",
+      "rep": 1,
+      "initial_quality": 0.0,
+      "escalation_fired": false,
+      "final_quality": 1.0,
+      "reason": ""
+    },
+    {
+      "mode": "guarded",
+      "rep": 1,
+      "initial_quality": 0.75,
+      "escalation_fired": false,
+      "final_quality": 0.75,
+      "reason": ""
+    },
+    {
+      "mode": "naive",
+      "rep": 2,
+      "initial_quality": 0.0,
+      "escalation_fired": false,
+      "final_quality": 0.75,
+      "reason": ""
+    },
+    {
+      "mode": "guarded",
+      "rep": 2,
+      "initial_quality": 0.75,
+      "escalation_fired": false,
+      "final_quality": 0.75,
+      "reason": ""
+    },
+    {
+      "mode": "naive",
+      "rep": 3,
+      "initial_quality": 0.0,
+      "escalation_fired": false,
+      "final_quality": 1.0,
+      "reason": ""
+    },
+    {
+      "mode": "guarded",
+      "rep": 3,
+      "initial_quality": 0.75,
+      "escalation_fired": false,
+      "final_quality": 0.75,
+      "reason": ""
+    }
+  ],
+  "budget": [
+    {
+      "mode": "naive",
+      "rep": 1,
+      "remaining": 96,
+      "low_rejected": false,
+      "high_accepted": true,
+      "state": "feasting"
+    },
+    {
+      "mode": "guarded",
+      "rep": 1,
+      "remaining": 6,
+      "low_rejected": true,
+      "high_accepted": true,
+      "state": "starving"
+    },
+    {
+      "mode": "naive",
+      "rep": 2,
+      "remaining": 96,
+      "low_rejected": false,
+      "high_accepted": true,
+      "state": "feasting"
+    },
+    {
+      "mode": "guarded",
+      "rep": 2,
+      "remaining": 6,
+      "low_rejected": true,
+      "high_accepted": true,
+      "state": "starving"
+    },
+    {
+      "mode": "naive",
+      "rep": 3,
+      "remaining": 96,
+      "low_rejected": false,
+      "high_accepted": true,
+      "state": "feasting"
+    },
+    {
+      "mode": "guarded",
+      "rep": 3,
+      "remaining": 6,
+      "low_rejected": true,
+      "high_accepted": true,
+      "state": "starving"
+    }
+  ]
+}
