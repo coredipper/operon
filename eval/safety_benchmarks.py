@@ -165,19 +165,18 @@ def _run_escalation(fast_provider, deep_provider, rep: int, guarded: bool) -> Es
             return 0.8
         out = output.lower()
         identifies_race = any(k in out for k in ["race condition", "toctou", "time-of-check"])
-        # Require concrete exclusive-create evidence
+        # Require exclusive-create that preserves safe_write(path) contract
         has_exclusive_create = (
             ("o_excl" in out and "o_creat" in out)  # C-level flags
-            or "mkstemp" in out                      # tempfile approach
             or "'x'" in out or '"x"' in out          # Python open(mode='x')
             or "mode='x'" in out or 'mode="x"' in out
         )
         if identifies_race and has_exclusive_create:
-            return 0.9
-        if has_exclusive_create:
-            return 0.7  # right fix without naming the bug class
+            return 0.9  # full marks: identifies bug + correct fix
         if identifies_race:
             return 0.3  # knows the problem but no correct fix
+        if has_exclusive_create:
+            return 0.4  # right fix without naming the bug class
         return 0.1  # doesn't identify the issue
 
     watcher = None
