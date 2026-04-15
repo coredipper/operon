@@ -233,6 +233,7 @@ class BudgetResult:
     stages_completed: int
     stages_total: int
     low_priority_rejected: bool
+    high_priority_accepted: bool
     metabolic_state: str
 
 
@@ -277,6 +278,7 @@ def _run_budget(rep: int, guarded: bool) -> BudgetResult:
         stages_completed=0,
         stages_total=0,
         low_priority_rejected=low_priority_rejected,
+        high_priority_accepted=high_accepted,
         metabolic_state=budget._state.value,
     )
 
@@ -382,15 +384,22 @@ def main():
     print(f"\n  Budget (ATP priority gating):")
     print(f"    naive   low-priority rejected: {sum(r.low_priority_rejected for r in naive_bud)}/{len(naive_bud)}")
     print(f"    guarded low-priority rejected: {sum(r.low_priority_rejected for r in guard_bud)}/{len(guard_bud)}")
+    print(f"    guarded high-priority accepted: {sum(r.high_priority_accepted for r in guard_bud)}/{len(guard_bud)}")
 
     print(f"\n  Verdict:")
     integrity_works = sum(r.gate_halted for r in guard_det) > sum(r.gate_halted for r in naive_det)
-    # Escalation earns complexity only if it fires AND improves quality
-    escalation_works = any(
-        r.escalation_fired and r.final_quality > r.initial_quality
-        for r in guard_esc
+    # Escalation earns complexity if majority of runs fire AND improve quality
+    esc_successes = sum(
+        1 for r in guard_esc
+        if r.escalation_fired and r.final_quality > r.initial_quality
     )
-    budget_works = sum(r.low_priority_rejected for r in guard_bud) > sum(r.low_priority_rejected for r in naive_bud)
+    escalation_works = esc_successes > len(guard_esc) / 2 if guard_esc else False
+    # Budget earns complexity if guarded discriminates: low rejected AND high accepted
+    budget_works = (
+        all(r.low_priority_rejected for r in guard_bud)
+        and all(r.high_priority_accepted for r in guard_bud)
+        and not any(r.low_priority_rejected for r in naive_bud)
+    )
 
     for name, works in [("integrity", integrity_works), ("escalation", escalation_works), ("budget", budget_works)]:
         status = "EARNS COMPLEXITY" if works else "NO MEASURED BENEFIT"
@@ -416,7 +425,9 @@ def main():
         ],
         "budget": [
             {"mode": r.mode, "rep": r.rep, "remaining": r.budget_remaining,
-             "rejected": r.low_priority_rejected, "state": r.metabolic_state}
+             "low_rejected": r.low_priority_rejected,
+             "high_accepted": r.high_priority_accepted,
+             "state": r.metabolic_state}
             for r in budget_results
         ],
     }
