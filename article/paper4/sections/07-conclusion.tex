@@ -25,9 +25,16 @@ than through algorithmic sophistication alone.  Embedding quality
 determines whether the two-signal structure delivers its guarantee,
 just as metabolic state determines whether priority gating activates.
 
+A composition non-interference experiment validates Ma et~al.'s
+claim~\cite{ma2026atomic}: composing localize$\to$edit$\to$test as a
+serial pipeline does not degrade overall quality ($\Delta = +0.029$
+vs individual skills), though harder tasks (TOCTOU race conditions)
+show negative interference ($\Delta = -0.167$).
+
 \paragraph{Open problems.}
 Confirmation of the real-embedding result across additional models
 and larger sample sizes.  Auto-calibration of quorum sensing thresholds
-from population and signal statistics.  Empirical validation of
-epistemic topology bounds against measured performance.  End-to-end
-evaluation with actual LLM agents performing real tasks.
+from population and signal statistics.  Understanding when composition
+degrades quality on hard tasks---the race\_condition result suggests
+that intermediate stage outputs can mislead later stages, an effect
+that may be addressable through stage-specific context filtering.

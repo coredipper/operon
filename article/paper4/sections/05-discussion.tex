@@ -87,6 +87,52 @@ Lighter benefits: genome immutability for configuration audit
 (AnimaWorks), metabolic budgets mapping to backpressure enforcement
 (Ralph), and quorum sensing for cross-container consensus (Scion).
 
+\subsection{Composition Non-Interference}
+
+Ma et~al.~\cite{ma2026atomic} show that five atomic coding skills
+(localize, edit, test, reproduce, review) compose without negative
+interference under joint RL training.  We tested this claim using
+Operon's skill composition machinery with a real LLM (Gemma~4 27B
+via Ollama) on three bug-fix tasks (SQL injection, off-by-one
+pagination, TOCTOU race condition), 3 repetitions each.
+
+\begin{table}[h]
+\caption{Composition non-interference: individual skill quality vs
+composed localize$\to$edit$\to$test pipeline.  $\Delta$ =
+composed $-$ mean(individual).  Threshold: $|\Delta| \leq 0.1$
+= no interference.}
+\label{tab:composition}
+\centering
+\small
+\begin{tabular}{lcccl}
+\toprule
+Task & mean(indiv) & composed & $\Delta$ & Verdict \\
+\midrule
+sql\_injection & 0.806 & 0.967 & $+0.161$ & positive \\
+off\_by\_one & 0.900 & 0.993 & $+0.093$ & none \\
+race\_condition & 0.517 & 0.350 & $-0.167$ & \textbf{negative} \\
+\midrule
+Overall & 0.741 & 0.770 & $+0.029$ & none \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The overall result supports Ma et~al.: composition does not degrade
+quality ($\Delta = +0.029$).  However, the race\_condition task shows
+negative interference ($\Delta = -0.167$), suggesting that composition
+can hurt on genuinely hard problems where intermediate stage outputs
+mislead later stages.  The baseline (raw LLM call, quality 0.961)
+still dominates in absolute terms---a single capable model answering
+the full task outperforms a three-stage pipeline---consistent with
+the Ao et~al. finding~\cite{ao2026delegation} that delegation cannot
+beat a centralized baseline without exogenous signals.
+
+The individual ``test'' skill scored lower (0.42--0.70) than
+``localize'' or ``edit'' (0.77--1.00) because test-writing in
+isolation lacks the context of what was found and fixed.  This is
+an expected consequence of skill decomposition: some skills are
+context-dependent and perform better when composed than in isolation.
+
 \subsection{Relationship to Epistemic Topology}
 
 Operon's epistemic topology layer derives four bounds from wiring
