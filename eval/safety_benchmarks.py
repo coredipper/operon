@@ -291,7 +291,8 @@ def main():
     parser = argparse.ArgumentParser(description="Safety benchmark: do guarantees catch errors?")
     parser.add_argument("--fast-model", default="phi3:mini", help="Weak fast model")
     parser.add_argument("--deep-model", default="gemma4:latest", help="Strong deep model")
-    parser.add_argument("--reps", type=int, default=3, help="Repetitions per condition")
+    parser.add_argument("--reps", type=int, default=3, choices=range(1, 101),
+                        metavar="N", help="Repetitions per condition (1-100)")
     args = parser.parse_args()
 
     fast_provider = _make_provider(args.fast_model)
@@ -394,11 +395,12 @@ def main():
         if r.escalation_fired and r.final_quality > r.initial_quality
     )
     escalation_works = esc_successes > len(guard_esc) / 2 if guard_esc else False
-    # Budget earns complexity if guarded discriminates: low rejected AND high accepted
-    budget_works = (
+    # Budget earns complexity if guarded discriminates correctly AND naive doesn't
+    budget_works = bool(guard_bud) and bool(naive_bud) and (
         all(r.low_priority_rejected for r in guard_bud)
         and all(r.high_priority_accepted for r in guard_bud)
         and not any(r.low_priority_rejected for r in naive_bud)
+        and all(r.high_priority_accepted for r in naive_bud)
     )
 
     for name, works in [("integrity", integrity_works), ("escalation", escalation_works), ("budget", budget_works)]:
