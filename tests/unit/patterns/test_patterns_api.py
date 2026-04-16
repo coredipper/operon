@@ -210,9 +210,8 @@ class TestParallelStageGroups:
         _merge_parallel_results(state, stage_outputs, stage_results, snap, per_stage)
 
         signals = state.get("_test_signals", [])
-        assert "signal_a" in signals
-        assert "signal_b" in signals
-        assert len(signals) == 2
+        # Exact order: declared stage order (a before b)
+        assert signals == ["signal_a", "signal_b"]
 
     def test_state_conflict_raises(self):
         """Two parallel stages writing different values to the same
@@ -236,6 +235,50 @@ class TestParallelStageGroups:
 
         with pytest.raises(StateConflictError, match="user_key"):
             _merge_parallel_results(state, stage_outputs, stage_results, snap, per_stage)
+
+    def test_internal_list_key_e2e_with_component(self):
+        """E2E: a real component appends to an internal list key during
+        parallel execution via org.run(), not just the merge function."""
+        from dataclasses import dataclass, field
+        from operon_ai import SkillStage
+
+        @dataclass
+        class SignalCollector:
+            """Minimal component that appends to _test_signals."""
+            signals: list = field(default_factory=list)
+
+            def on_run_start(self, task, shared_state):
+                self.signals.clear()
+
+            def on_stage_start(self, stage, shared_state, stage_outputs):
+                pass
+
+            def on_stage_result(self, stage, result, shared_state, stage_outputs):
+                shared_state.setdefault("_test_signals", []).append(
+                    f"signal_{stage.name}"
+                )
+
+            def on_run_complete(self, result, shared_state):
+                pass
+
+        collector = SignalCollector()
+        from operon_ai import MockProvider, Nucleus, skill_organism
+        nucleus = Nucleus(provider=MockProvider())
+        org = skill_organism(
+            stages=[[
+                SkillStage(name="a", role="A", instructions="do A", mode="fixed"),
+                SkillStage(name="b", role="B", instructions="do B", mode="fixed"),
+            ]],
+            fast_nucleus=nucleus,
+            deep_nucleus=nucleus,
+            components=[collector],
+        )
+        result = org.run("test")
+        signals = result.shared_state.get("_test_signals", [])
+        # Both signals present, in declared order
+        assert "signal_a" in signals
+        assert "signal_b" in signals
+        assert len(signals) == 2
 
     def test_backward_compatible_run(self):
         """Flat-list organism produces identical results to pre-parallel behavior."""
