@@ -34,6 +34,11 @@ The LangGraph compiler preserves $\mathrm{Know}$ completely: for any organism $A
 
 The per-stage graph also provides LangGraph-native observability: each stage appears as a visible node in LangGraph Studio, enabling inspection of individual stage execution, timing, and intervention decisions.  The certificates hold because \texttt{run\_single\_stage()} enforces every structural guarantee independently of graph topology.
 
+\paragraph{Parallel stage groups.}
+Organisms with parallel stage groups compile to a fork/join topology using LangGraph's native \texttt{Send} API.  Each parallel group generates three types of infrastructure nodes: a \emph{fork} node that snapshots state and dispatches isolated copies to each stage via \texttt{Send}, the individual \emph{stage} nodes (one per parallel stage, calling \texttt{run\_single\_stage()} as usual), and a \emph{join} node that merges results using the same conflict-detecting merge logic as the native runtime.  Sequential organisms are unchanged---each stage maps to a single node as before.
+
+Certificate preservation holds for parallel groups because each stage node still calls \texttt{run\_single\_stage()} with full component hooks.  The fork/join infrastructure is purely topological---it manages state isolation and result aggregation, not structural guarantees.
+
 \subsection{Empirical Verification}
 
 We verify certificate preservation across all five targets:

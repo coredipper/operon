@@ -34,7 +34,7 @@ If you are new to Operon, start here rather than with the full biological vocabu
 - `advise_topology(...)` when you want architecture guidance
 - `reviewer_gate(...)` when you want one worker plus a review bottleneck
 - `specialist_swarm(...)` when you want centralized specialist decomposition
-- `skill_organism(...)` when you want a provider-bound workflow with cheap vs expensive stages and attachable telemetry
+- `skill_organism(...)` when you want a provider-bound workflow with cheap vs expensive stages and attachable telemetry — supports parallel stage groups via `stages=[[s1, s2], [s3]]`
 - `managed_organism(...)` when you want the full stack — adaptive assembly, watcher, substrate, development, social learning — in one call
 
 ### Get topology advice
@@ -104,6 +104,22 @@ organism = skill_organism(
 
 result = organism.run("Customer says the refund never posted.")
 print(result.final_output)
+```
+
+Stages can be grouped for parallel execution:
+
+```python
+organism = skill_organism(
+    stages=[
+        [  # These two run concurrently
+            SkillStage(name="research_a", role="Researcher", instructions="...", mode="fixed"),
+            SkillStage(name="research_b", role="Researcher", instructions="...", mode="fixed"),
+        ],
+        SkillStage(name="synthesize", role="Writer", instructions="...", mode="fuzzy"),
+    ],
+    fast_nucleus=fast,
+    deep_nucleus=deep,
+)
 ```
 
 ### Drop down a layer when you need to

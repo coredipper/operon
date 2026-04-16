@@ -56,6 +56,15 @@ PRESETS = {
         ],
         "task": "Summarize the quarterly report",
     },
+    "3-stage parallel": {
+        "stages": [
+            ("research_a", "Researcher A", "fixed"),
+            ("research_b", "Researcher B", "fixed"),
+            ("||", "", ""),  # parallel group marker
+            ("synthesize", "Writer", "fuzzy"),
+        ],
+        "task": "Research and synthesize findings from multiple sources",
+    },
     "5-stage deep": {
         "stages": [
             ("intake", "Normalizer", "fixed"),
