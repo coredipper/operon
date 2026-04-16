@@ -203,17 +203,25 @@ class WatcherComponent:
         result: Any,
         ep_result: Any = None,
     ) -> list[WatcherSignal]:
-        """Emit epistemic signals from pre-computed EpiplexityResult."""
+        """Emit epistemic signals from pre-computed EpiplexityResult.
+
+        Raw epiplexity is lower-is-worse (low = stagnation).  We normalize
+        to severity at signal creation so ``WatcherSignal.value`` always
+        means "higher = worse" across all sources, matching the convention
+        used by downstream consumers like the ``sig.value > 0.3`` gate.
+        Raw epiplexity is preserved in ``detail`` for inspection.
+        """
         if ep_result is None:
             return []
         return [WatcherSignal(
             category=SignalCategory.EPISTEMIC,
             source="epiplexity",
             stage_name=getattr(stage, "name", None),
-            value=ep_result.epiplexity,
+            value=1.0 - ep_result.epiplexity,
             detail={
                 "status": ep_result.status.value,
                 "integral": ep_result.epiplexic_integral,
+                "raw_epiplexity": ep_result.epiplexity,
             },
         )]
 
@@ -620,11 +628,10 @@ class WatcherComponent:
         certs = []
 
         # Stability: epiplexity signals only.
-        # Raw epiplexity is lower-is-worse (low = stagnant/critical),
-        # so convert to severity (1 - epiplexity) for consistent
-        # "higher = worse" semantics in the certificate.
+        # Signal values are already normalized to severity
+        # (higher = worse) at creation time.
         ep_values = [
-            1.0 - s.value for s in self.signals
+            s.value for s in self.signals
             if s.category.value == "epistemic" and s.source == "epiplexity"
         ]
         if ep_values:
