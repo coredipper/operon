@@ -598,33 +598,69 @@ class WatcherComponent:
 
     def certify_behavior(
         self,
-        category: str = "epistemic",
         threshold: float = 0.5,
     ):
-        """Produce a behavioral certificate from collected signal values.
+        """Produce behavioral certificates from collected signal evidence.
 
-        Returns a :class:`Certificate` asserting that mean signal severity
-        for *category* is below *threshold* (i.e., the system remained
-        stable and didn't stagnate or collapse).
+        Returns a list of :class:`Certificate` objects:
 
-        Returns ``None`` if no signals of the given category were collected.
+        - **behavioral_stability** from epiplexity signals only (consistent
+          severity semantics: higher = worse).  Excludes verifier and
+          cognitive_mode signals which use different scales.
+        - **behavioral_no_anomaly** from immune inspection signals, if any.
+
+        Returns an empty list if no relevant signals were collected.
         """
-        values = [s.value for s in self.signals if s.category.value == category]
-        if not values:
-            return None
-        from ..core.certificate import Certificate, _verify_behavioral_stability
-
-        return Certificate(
-            theorem="behavioral_stability",
-            parameters={
-                "signal_values": values,
-                "threshold": threshold,
-                "category": category,
-            },
-            conclusion=f"Mean {category} signal < {threshold} on {len(values)} observations",
-            source="WatcherComponent.certify_behavior",
-            _verify_fn=_verify_behavioral_stability,
+        from ..core.certificate import (
+            Certificate,
+            _verify_behavioral_stability,
+            _verify_behavioral_no_anomaly,
         )
+
+        certs = []
+
+        # Stability: epiplexity signals only (higher = worse, consistent scale)
+        ep_values = [
+            s.value for s in self.signals
+            if s.category.value == "epistemic" and s.source == "epiplexity"
+        ]
+        if ep_values:
+            certs.append(Certificate(
+                theorem="behavioral_stability",
+                parameters={
+                    "signal_values": ep_values,
+                    "threshold": threshold,
+                    "category": "epistemic",
+                },
+                conclusion=(
+                    f"Mean epiplexity severity < {threshold} "
+                    f"on {len(ep_values)} observations"
+                ),
+                source="WatcherComponent.certify_behavior",
+                _verify_fn=_verify_behavioral_stability,
+            ))
+
+        # No-anomaly: immune signals
+        threat_levels = [
+            s.detail.get("threat_level", "none")
+            for s in self.signals
+            if s.category.value == "species" and s.source == "immune_system"
+        ]
+        if threat_levels:
+            certs.append(Certificate(
+                theorem="behavioral_no_anomaly",
+                parameters={
+                    "threat_levels": threat_levels,
+                    "max_allowed": "suspicious",
+                },
+                conclusion=(
+                    f"No confirmed threats in {len(threat_levels)} inspections"
+                ),
+                source="WatcherComponent.certify_behavior",
+                _verify_fn=_verify_behavioral_no_anomaly,
+            ))
+
+        return certs
 
     def summary(self) -> dict[str, Any]:
         """Return watcher statistics."""

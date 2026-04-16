@@ -358,9 +358,13 @@ class SkillOrganism:
                     pass
             if hasattr(component, "certify_behavior"):
                 try:
-                    cert = component.certify_behavior()
-                    if cert is not None:
-                        certs.append(cert)
+                    result = component.certify_behavior()
+                    if result is None:
+                        pass
+                    elif isinstance(result, list):
+                        certs.extend(result)
+                    else:
+                        certs.append(result)
                 except (ValueError, TypeError):
                     pass
         return certs

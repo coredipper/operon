@@ -202,30 +202,55 @@ def test_verifier_certify_behavior_none_without_rubric():
     assert verifier.certify_behavior() is None
 
 
-def test_watcher_certify_behavior():
-    """WatcherComponent produces behavioral_stability certificate."""
+def test_watcher_certify_behavior_stability():
+    """WatcherComponent produces behavioral_stability from epiplexity signals."""
     from operon_ai.patterns.watcher import SignalCategory, WatcherSignal
 
     watcher = WatcherComponent()
-    # Simulate signals from a run
     watcher.signals = [
         WatcherSignal(category=SignalCategory.EPISTEMIC, source="epiplexity",
                       stage_name="s1", value=0.2),
         WatcherSignal(category=SignalCategory.EPISTEMIC, source="epiplexity",
                       stage_name="s2", value=0.3),
+        # verifier signal — should be excluded from stability cert
+        WatcherSignal(category=SignalCategory.EPISTEMIC, source="verifier",
+                      stage_name="s1", value=0.8),
     ]
-    cert = watcher.certify_behavior(category="epistemic", threshold=0.5)
-    assert cert is not None
-    assert cert.theorem == "behavioral_stability"
-    result = cert.verify()
+    certs = watcher.certify_behavior(threshold=0.5)
+    stability = [c for c in certs if c.theorem == "behavioral_stability"]
+    assert len(stability) == 1
+    result = stability[0].verify()
     assert result.holds is True
+    # Only epiplexity signals (0.2, 0.3), not verifier (0.8)
     assert result.evidence["mean"] == 0.25
+    assert result.evidence["n"] == 2
 
 
-def test_watcher_certify_behavior_none_without_signals():
-    """No certificate when no signals of the requested category exist."""
+def test_watcher_certify_behavior_no_anomaly():
+    """WatcherComponent produces behavioral_no_anomaly from immune signals."""
+    from operon_ai.patterns.watcher import SignalCategory, WatcherSignal
+
     watcher = WatcherComponent()
-    assert watcher.certify_behavior(category="epistemic") is None
+    watcher.signals = [
+        WatcherSignal(category=SignalCategory.SPECIES_SPECIFIC, source="immune_system",
+                      stage_name="s1", value=0.0,
+                      detail={"threat_level": "none", "action": "ignore"}),
+        WatcherSignal(category=SignalCategory.SPECIES_SPECIFIC, source="immune_system",
+                      stage_name="s2", value=0.3,
+                      detail={"threat_level": "suspicious", "action": "monitor"}),
+    ]
+    certs = watcher.certify_behavior()
+    anomaly = [c for c in certs if c.theorem == "behavioral_no_anomaly"]
+    assert len(anomaly) == 1
+    result = anomaly[0].verify()
+    assert result.holds is True
+    assert result.evidence["max_threat"] == "suspicious"
+
+
+def test_watcher_certify_behavior_empty_without_signals():
+    """Empty list when no relevant signals exist."""
+    watcher = WatcherComponent()
+    assert watcher.certify_behavior() == []
 
 
 def test_collect_certificates_includes_behavioral():
@@ -254,3 +279,6 @@ def test_collect_certificates_includes_behavioral():
     theorems = [c.theorem for c in certs]
     assert "priority_gating" in theorems  # structural (from ATP_Store)
     assert "behavioral_quality" in theorems  # from verifier
+    # watcher behavioral certs are lists — should be flattened in
+    for cert in certs:
+        assert cert.verify().holds is True

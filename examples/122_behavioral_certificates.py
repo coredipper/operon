@@ -90,17 +90,16 @@ def main():
               f"min={qv.evidence['min']}, n={qv.evidence['n']}")
         print(f"    conclusion: {quality_cert.conclusion}")
 
-    # 2. Stability certificate from watcher
-    stability_cert = watcher.certify_behavior(category="epistemic", threshold=0.5)
-    if stability_cert:
-        stv = stability_cert.verify()
-        print(f"\n  behavioral_stability:")
-        print(f"    holds={stv.holds}")
-        print(f"    evidence: mean={stv.evidence['mean']}, "
-              f"max={stv.evidence['max']}, n={stv.evidence['n']}")
-        print(f"    conclusion: {stability_cert.conclusion}")
-    else:
-        print("\n  behavioral_stability: no epistemic signals collected")
+    # 2. Behavioral certificates from watcher (stability + no_anomaly)
+    watcher_certs = watcher.certify_behavior(threshold=0.5)
+    for wcert in watcher_certs:
+        wv = wcert.verify()
+        print(f"\n  {wcert.theorem}:")
+        print(f"    holds={wv.holds}")
+        print(f"    evidence: {dict(wv.evidence)}")
+        print(f"    conclusion: {wcert.conclusion}")
+    if not watcher_certs:
+        print("\n  watcher: no epiplexity/immune signals collected")
 
     # -- All certificates via collect_certificates() -------------------------
 
