@@ -335,9 +335,15 @@ class CompilerFunctor:
             # (derived from source organism's stage_groups, stored in config)
             cfg = compiled.get("config", {})
             expected_names = cfg.get("expected_node_names", [])
+            # Derive expected edges from expected_node_names (independent
+            # of compiled["edges"] to avoid aliasing)
+            expected_edges = [
+                (expected_names[i], expected_names[i + 1])
+                for i in range(len(expected_names) - 1)
+            ]
             graph_ok = (
                 list(target.stage_names) == expected_names
-                and list(target.edges) == [tuple(e) for e in cfg.get("expected_edges", [])]
+                and list(target.edges) == expected_edges
             )
         else:
             graph_ok = stages_embedded and edges_embedded
@@ -460,7 +466,6 @@ def _compile_langgraph(organism: SkillOrganism, *, config: RuntimeConfig | None 
             "has_parallel_groups": has_parallel,
             # Independent expected topology for verification (from source organism)
             "expected_node_names": list(node_names),
-            "expected_edges": edges,
         },
     }
 
