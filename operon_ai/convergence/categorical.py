@@ -335,12 +335,9 @@ class CompilerFunctor:
             # (derived from source organism's stage_groups, stored in config)
             cfg = compiled.get("config", {})
             expected_names = cfg.get("expected_node_names", [])
-            expected_edges = frozenset(
-                tuple(e) for e in cfg.get("expected_edges", [])
-            )
             graph_ok = (
                 list(target.stage_names) == expected_names
-                and frozenset(target.edges) == expected_edges
+                and list(target.edges) == [tuple(e) for e in cfg.get("expected_edges", [])]
             )
         else:
             graph_ok = stages_embedded and edges_embedded

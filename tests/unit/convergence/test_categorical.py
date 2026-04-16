@@ -433,10 +433,13 @@ class TestLangGraphFunctor:
         assert p.interface_preserved
         assert p.all_preserved
 
-        # Target has 2 nodes: 1 parallel group (__parallel_0) + 1 sequential (c)
+        # Target has 2 nodes: 1 parallel group + 1 sequential (c)
+        from operon_ai.convergence.langgraph_compiler import compute_group_node_names
+        expected_names = compute_group_node_names(
+            org.stage_groups, {s.name for s in org.stages}
+        )
         t = result.target_architecture
         assert t.stage_count == 2
-        assert t.stage_names[0].startswith("__parallel_")
-        assert t.stage_names[1] == "c"
+        assert list(t.stage_names) == expected_names
         assert len(t.edges) == 1
-        assert t.edges[0] == (t.stage_names[0], "c")
+        assert t.edges[0] == (expected_names[0], expected_names[1])
