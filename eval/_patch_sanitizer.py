@@ -86,29 +86,35 @@ def sanitize(
 
 
 def _fuzzy_correct_paths(patch: str, tree_paths: frozenset[str]) -> str:
-    """Rewrite diff paths to exist in ``tree_paths``.
+    """Rewrite diff paths so each file-diff's source paths exist in
+    ``tree_paths``, while target paths of create / rename / copy
+    operations are left alone (those paths legitimately don't exist
+    at ``base_commit``).
 
-    For each ``--- a/<p>`` / ``+++ b/<p>`` / ``diff --git ...`` /
-    ``rename from/to`` / ``copy from/to`` line, check whether ``<p>``
-    exists in ``tree_paths``. If yes, leave it alone. If not:
+    Per file-diff (a block starting at ``diff --git`` or ``---``):
 
-      - If exactly one file in ``tree_paths`` has the same basename,
-        rewrite ``<p>`` to that file.
-      - Otherwise (zero or multiple basename matches), return ``""`` —
-        we know the patch targets a file that isn't there, and we
-        won't guess.
+    * Source-side paths must exist at base_commit. The source is
+      ``--- a/<p>`` (for modify/delete/rename-from), ``rename from``,
+      ``copy from``. If a source path is missing from the tree, try
+      to rewrite it to a unique basename match; if that fails, reject
+      the whole patch.
+    * Target-side paths of a creation (``--- /dev/null``), rename
+      (``rename to``), or copy (``copy to``) are passed through
+      unchanged — they are new paths by definition.
+    * For a plain modify, source == target, and the ``+++ b/<p>`` line
+      is rewritten to mirror any correction applied to ``--- a/<p>``.
+      The ``diff --git a/<X> b/<Y>`` line is rewritten the same way.
+    * ``/dev/null`` is always accepted.
 
-    ``/dev/null`` paths (add/delete markers) are always accepted.
+    Returns ``""`` when any source-side path cannot be resolved.
     """
-    # Precompute basename → full paths index for fast lookup.
     basename_index: dict[str, list[str]] = {}
     for p in tree_paths:
         base = p.rsplit("/", 1)[-1]
         basename_index.setdefault(base, []).append(p)
 
-    def _correct_or_none(path: str) -> str | None:
-        """Return the (possibly rewritten) path, or None to reject the
-        whole patch."""
+    def _resolve_source(path: str) -> str | None:
+        """Oracle check for a source-side path."""
         if path == "/dev/null":
             return path
         if path in tree_paths:
@@ -119,58 +125,158 @@ def _fuzzy_correct_paths(patch: str, tree_paths: frozenset[str]) -> str:
             return matches[0]
         return None
 
-    out: list[str] = []
-    for line in patch.splitlines():
-        rewritten = _rewrite_diff_line(line, _correct_or_none)
-        if rewritten is None:
+    blocks = _split_file_diffs(patch)
+    out_parts: list[str] = []
+    for block in blocks:
+        fixed = _correct_file_diff(block, _resolve_source)
+        if fixed is None:
             return ""
-        out.append(rewritten)
-    return "\n".join(out)
+        out_parts.append(fixed)
+    return "\n".join(out_parts)
 
 
-def _rewrite_diff_line(line: str, correct) -> str | None:
-    """Apply ``correct`` to any path-bearing diff-header line.
+def _split_file_diffs(patch: str) -> list[list[str]]:
+    """Split a patch into per-file blocks.
 
-    Returns the (possibly rewritten) line, or ``None`` if ``correct``
-    rejected a path — which propagates up as "reject the whole patch".
+    A block starts at ``diff --git`` or (for bare diffs with no
+    ``diff --git`` header) at ``--- `` following a non-diff line. Any
+    leading prelude before the first block is returned as an empty-
+    classification block so the caller can preserve it verbatim.
     """
-    # --- a/<path>
-    if line.startswith("--- a/"):
-        path = line[len("--- a/"):]
-        fixed = correct(path)
-        if fixed is None:
-            return None
-        return "--- a/" + fixed
-    # +++ b/<path>
-    if line.startswith("+++ b/"):
-        path = line[len("+++ b/"):]
-        fixed = correct(path)
-        if fixed is None:
-            return None
-        return "+++ b/" + fixed
-    # --- /dev/null, +++ /dev/null — no change
-    if line.startswith("--- ") or line.startswith("+++ "):
-        return line
-    # diff --git a/<p> b/<p>
-    if line.startswith("diff --git "):
-        m = re.match(r"^(diff --git )a/(\S+) b/(\S+)(.*)$", line)
-        if m:
-            prefix, a_path, b_path, rest = m.groups()
-            fa = correct(a_path)
-            fb = correct(b_path)
-            if fa is None or fb is None:
-                return None
-            return f"{prefix}a/{fa} b/{fb}{rest}"
-        return line
-    # rename from / rename to / copy from / copy to <path>
-    for meta in _BARE_PATH_PREFIXES:
-        if line.startswith(meta):
-            path = line[len(meta):]
-            fixed = correct(path)
+    lines = patch.splitlines()
+    blocks: list[list[str]] = []
+    current: list[str] = []
+    in_block = False
+
+    def _is_boundary(line: str, prev: str | None) -> bool:
+        if line.startswith("diff --git "):
+            return True
+        if line.startswith("--- ") and (prev is None or not prev.startswith("--- ")):
+            # Treat as a new block only if we're not already inside one.
+            return not in_block
+        return False
+
+    for i, line in enumerate(lines):
+        prev = lines[i - 1] if i > 0 else None
+        if _is_boundary(line, prev):
+            if current:
+                blocks.append(current)
+            current = [line]
+            in_block = True
+        else:
+            current.append(line)
+    if current:
+        blocks.append(current)
+    return blocks
+
+
+def _correct_file_diff(
+    block: list[str], resolve_source,
+) -> str | None:
+    """Apply source/target-aware path correction to a single file block.
+
+    Returns the rewritten block as a joined string, or ``None`` to
+    reject the whole patch.
+    """
+    # First pass: determine the file-diff's shape. A "target is new"
+    # block is one where the ``+++`` / rename-to / copy-to path does
+    # not have to exist at base_commit and therefore must not be
+    # oracle-checked.
+    source_is_devnull = False
+    is_rename = False
+    is_copy = False
+    for line in block:
+        if line.startswith("--- /dev/null"):
+            source_is_devnull = True
+        elif line.startswith("rename from ") or line.startswith("rename to "):
+            is_rename = True
+        elif line.startswith("copy from ") or line.startswith("copy to "):
+            is_copy = True
+
+    target_is_new = source_is_devnull or is_rename or is_copy
+
+    # Second pass: establish the source-side correction (if any) by
+    # looking at `--- a/<path>` first. For modify patches we need to
+    # apply the same correction to `+++ b/<path>` and `diff --git`.
+    source_rewrite: dict[str, str] = {}  # original path → corrected path
+    for line in block:
+        if line.startswith("--- a/"):
+            path = line[len("--- a/"):]
+            fixed = resolve_source(path)
             if fixed is None:
                 return None
-            return meta + fixed
-    return line
+            if fixed != path:
+                source_rewrite[path] = fixed
+            break
+
+    def _mirror(path: str) -> str:
+        """Apply the same correction to a target path if we rewrote
+        the source to a new file. Only used for plain modify (source
+        == target)."""
+        return source_rewrite.get(path, path)
+
+    # Third pass: rewrite each line using the classification.
+    out: list[str] = []
+    for line in block:
+        if line.startswith("diff --git "):
+            m = re.match(r"^(diff --git )a/(\S+) b/(\S+)(.*)$", line)
+            if not m:
+                out.append(line)
+                continue
+            prefix, a_path, b_path, rest = m.groups()
+            # `a/` side: always source-like; correct it. (For create
+            # patches, the diff --git line still carries a placeholder
+            # a/new.py b/new.py where "a/new.py" does not yet exist; in
+            # that case we still accept it without correction — the
+            # /dev/null marker on `--- /dev/null` is what actually
+            # declares a create.)
+            if source_is_devnull:
+                # Both sides are placeholders for the new path; pass through.
+                out.append(line)
+                continue
+            fa = resolve_source(a_path)
+            if fa is None:
+                return None
+            # `b/` side: if target is new (rename/copy to), pass through.
+            # Otherwise mirror the source correction.
+            if is_rename or is_copy:
+                fb = b_path
+            else:
+                fb = _mirror(b_path) if b_path == a_path else b_path
+            out.append(f"{prefix}a/{fa} b/{fb}{rest}")
+            continue
+        if line.startswith("--- a/"):
+            path = line[len("--- a/"):]
+            fixed = resolve_source(path)
+            if fixed is None:
+                return None
+            out.append("--- a/" + fixed)
+            continue
+        if line.startswith("--- ") or line.startswith("+++ /dev/null"):
+            out.append(line)
+            continue
+        if line.startswith("+++ b/"):
+            path = line[len("+++ b/"):]
+            if target_is_new:
+                out.append(line)  # new file / rename target / copy target
+            else:
+                # Plain modify: mirror the source correction.
+                out.append("+++ b/" + _mirror(path))
+            continue
+        if line.startswith("rename from ") or line.startswith("copy from "):
+            prefix = "rename from " if line.startswith("rename from ") else "copy from "
+            path = line[len(prefix):]
+            fixed = resolve_source(path)
+            if fixed is None:
+                return None
+            out.append(prefix + fixed)
+            continue
+        if line.startswith("rename to ") or line.startswith("copy to "):
+            # Target of rename/copy is new by definition — pass through.
+            out.append(line)
+            continue
+        out.append(line)
+    return "\n".join(out)
 
 
 def _repair_bare_empty_context(patch: str) -> str:

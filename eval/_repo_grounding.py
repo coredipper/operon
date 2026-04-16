@@ -109,6 +109,14 @@ def format_context_block(
 ) -> str:
     """Format candidate files as a prompt-ready context block.
 
+    The per-file fence delimiter length is chosen dynamically so it
+    exceeds any run of backticks present in the file (minimum 3). A
+    file containing its own triple-backticks (e.g. markdown in
+    docstrings) cannot close the fence early — which would otherwise
+    leak the remainder of the file back into the prompt as
+    instructions and open a prompt-injection vector against untrusted
+    repo content. Review #724.
+
     Shape::
 
         Top-level directories:
@@ -136,12 +144,27 @@ def format_context_block(
         except ValueError:
             continue
         content = _read_head(p, max_lines_per_file)
+        fence = _safe_fence(content)
         parts.append(f"## {rel}")
-        parts.append("```python")
+        parts.append(f"{fence}python")
         parts.append(content)
-        parts.append("```")
+        parts.append(fence)
         parts.append("")
     return "\n".join(parts)
+
+
+def _safe_fence(content: str) -> str:
+    """Return a backtick run longer than any backtick run in ``content``.
+
+    Markdown fenced blocks close on the first matching fence. If the
+    content contains ```` ``` ```` or more, we need a longer outer
+    fence to keep the content encapsulated.
+    """
+    import re as _re
+    longest = 0
+    for m in _re.finditer(r"`+", content):
+        longest = max(longest, len(m.group(0)))
+    return "`" * max(3, longest + 1)
 
 
 def walk_tree_paths(repo_path: Path) -> frozenset[str]:

@@ -151,6 +151,49 @@ def test_format_context_block_empty_when_no_candidates(tmp_path):
     assert format_context_block(tmp_path, [], max_lines_per_file=10) == ""
 
 
+def test_format_context_block_escapes_triple_backticks_in_file(tmp_path):
+    """A file whose content contains ``` must not close the outer fence
+    early — that would leak the rest of the file into the prompt as
+    plain instructions (prompt-injection surface). Review #724.
+
+    The outer fence is chosen to exceed any backtick run in the content.
+    """
+    # File content includes its own triple-backtick fenced block (as
+    # might appear in a docstring markdown example).
+    evil = "\n".join([
+        "def foo():",
+        '    """',
+        "    Example:",
+        "    ```python",
+        "    foo()",
+        "    ```",
+        '    """',
+        "    pass",
+    ])
+    repo = _build_repo(tmp_path, {"src/foo.py": evil})
+    cands = rank_candidate_files(repo, ["foo"], k=5)
+    block = format_context_block(repo, cands)
+
+    # The outer fence must be at least 4 backticks (since content has 3).
+    assert "````python" in block or "`````python" in block, (
+        f"outer fence must be longer than 3 backticks when content has "
+        f"```-runs; got:\n{block}"
+    )
+    # The full file content is preserved inside the outer fence.
+    assert "def foo():" in block
+    assert "foo()" in block
+
+
+def test_format_context_block_handles_quadruple_backticks(tmp_path):
+    """If a file contains even longer runs, the outer fence adapts."""
+    evil = "```````` quadruple-backtick run ````````"
+    repo = _build_repo(tmp_path, {"x.py": evil})
+    cands = rank_candidate_files(repo, ["x"], k=5)
+    block = format_context_block(repo, cands)
+    # Outer fence must have at least 9 backticks (content has 8).
+    assert "`" * 9 in block
+
+
 # --------------------------------------------------------------------------
 # walk_tree_paths
 # --------------------------------------------------------------------------

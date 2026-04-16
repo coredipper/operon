@@ -390,3 +390,159 @@ def test_fuzzy_accepts_dev_null_for_file_add_delete():
         "+line\n"
     )
     assert sanitize(patch, "django/django", tree_paths=tree)
+
+
+# --------------------------------------------------------------------------
+# Review #724 follow-up: new-file / rename / copy targets must not be
+# oracle-checked. They legitimately don't exist at base_commit.
+# --------------------------------------------------------------------------
+
+def test_fuzzy_accepts_new_file_target_even_when_absent_from_tree():
+    """A create patch's target path is new by definition. Review #724."""
+    tree = frozenset({"existing_a.py", "existing_b.py"})
+    patch = (
+        "diff --git a/brand_new.py b/brand_new.py\n"
+        "new file mode 100644\n"
+        "--- /dev/null\n"
+        "+++ b/brand_new.py\n"
+        "@@ -0,0 +1,1 @@\n"
+        "+hello\n"
+    )
+    # brand_new.py is not in tree — but it's a CREATE, so it must not
+    # be rewritten to "existing_a.py" or rejected.
+    cleaned = sanitize(patch, "owner/repo", tree_paths=tree)
+    assert cleaned, "create target should be accepted unchanged"
+    assert "+++ b/brand_new.py" in cleaned
+    # Must NOT have been rewritten to an unrelated unique basename match.
+    assert "existing_a.py" not in cleaned
+
+
+def test_fuzzy_rename_target_is_not_oracle_checked():
+    """Rename target is a new path — must not be oracle-corrected.
+
+    Source (rename from) must still be oracle-checked. Review #724.
+    """
+    tree = frozenset({"django/old_name.py", "django/unrelated.py"})
+    patch = (
+        "diff --git a/django/old_name.py b/django/new_name.py\n"
+        "similarity index 95%\n"
+        "rename from django/old_name.py\n"
+        "rename to django/new_name.py\n"
+        "--- a/django/old_name.py\n"
+        "+++ b/django/new_name.py\n"
+        "@@ -1,1 +1,1 @@\n"
+        "-a\n"
+        "+b\n"
+    )
+    cleaned = sanitize(patch, "django/django", tree_paths=tree)
+    assert cleaned
+    # Source paths (old_name.py) must have been verified against tree.
+    assert "rename from django/old_name.py" in cleaned
+    assert "--- a/django/old_name.py" in cleaned
+    # Target paths (new_name.py) must be preserved verbatim even though
+    # new_name.py is not in the tree.
+    assert "rename to django/new_name.py" in cleaned
+    assert "+++ b/django/new_name.py" in cleaned
+    # And it must NOT have been rewritten to the unrelated file.
+    assert "unrelated.py" not in cleaned
+
+
+def test_fuzzy_copy_target_is_not_oracle_checked():
+    """Copy target is a new path — same rule as rename. Review #724."""
+    tree = frozenset({"src/source.py", "src/other.py"})
+    patch = (
+        "diff --git a/src/source.py b/src/dest.py\n"
+        "similarity index 100%\n"
+        "copy from src/source.py\n"
+        "copy to src/dest.py\n"
+        "--- a/src/source.py\n"
+        "+++ b/src/dest.py\n"
+        "@@ -1,1 +1,1 @@\n"
+        "-a\n"
+        "+b\n"
+    )
+    cleaned = sanitize(patch, "pallets/flask", tree_paths=tree)
+    assert cleaned
+    assert "copy from src/source.py" in cleaned
+    assert "copy to src/dest.py" in cleaned
+    assert "+++ b/src/dest.py" in cleaned
+    # Not silently rewritten to src/other.py.
+    assert "other.py" not in cleaned
+
+
+def test_fuzzy_new_file_not_silently_rewritten_to_unrelated_match():
+    """Review #724: the worst case is a new file's path being silently
+    rewritten to some unrelated unique-basename match. Guard against
+    that regression explicitly.
+    """
+    # Tree has ONE file named brand_new.py in a totally unrelated dir.
+    # Without the fix, sanitize would rewrite the create's target to
+    # that path. With the fix, the create target passes through unchanged.
+    tree = frozenset({"totally/unrelated/brand_new.py"})
+    patch = (
+        "diff --git a/myapp/brand_new.py b/myapp/brand_new.py\n"
+        "new file mode 100644\n"
+        "--- /dev/null\n"
+        "+++ b/myapp/brand_new.py\n"
+        "@@ -0,0 +1,1 @@\n"
+        "+content\n"
+    )
+    cleaned = sanitize(patch, "owner/repo", tree_paths=tree)
+    assert cleaned
+    assert "+++ b/myapp/brand_new.py" in cleaned
+    assert "totally/unrelated" not in cleaned
+
+
+def test_fuzzy_delete_source_must_exist():
+    """A delete patch's source path must be in the tree (the file being
+    deleted exists at base_commit). Target is /dev/null.
+    """
+    tree = frozenset({"django/to_remove.py"})
+    patch = (
+        "diff --git a/django/to_remove.py b/django/to_remove.py\n"
+        "deleted file mode 100644\n"
+        "--- a/django/to_remove.py\n"
+        "+++ /dev/null\n"
+        "@@ -1,1 +0,0 @@\n"
+        "-byebye\n"
+    )
+    cleaned = sanitize(patch, "django/django", tree_paths=tree)
+    assert cleaned
+    assert "--- a/django/to_remove.py" in cleaned
+    assert "+++ /dev/null" in cleaned
+
+
+def test_fuzzy_delete_source_absent_still_rejected():
+    """Delete source must exist — if it doesn't, reject."""
+    tree = frozenset({"other_file.py"})
+    patch = (
+        "diff --git a/invented.py b/invented.py\n"
+        "deleted file mode 100644\n"
+        "--- a/invented.py\n"
+        "+++ /dev/null\n"
+        "@@ -1,1 +0,0 @@\n"
+        "-x\n"
+    )
+    assert sanitize(patch, "django/django", tree_paths=tree) == ""
+
+
+def test_fuzzy_modify_mirrors_source_correction_to_target():
+    """In a plain modify, +++ b/<X> must match --- a/<X>. If we corrected
+    the source, we must mirror the same correction on the target so the
+    patch stays internally consistent.
+    """
+    tree = frozenset({"django/core/files/storage.py"})
+    patch = (
+        "diff --git a/wrong/storage.py b/wrong/storage.py\n"
+        "--- a/wrong/storage.py\n"
+        "+++ b/wrong/storage.py\n"
+        "@@ -1,1 +1,1 @@\n"
+        "-a\n"
+        "+b\n"
+    )
+    cleaned = sanitize(patch, "django/django", tree_paths=tree)
+    assert cleaned
+    assert "--- a/django/core/files/storage.py" in cleaned
+    assert "+++ b/django/core/files/storage.py" in cleaned
+    # diff --git line also mirrors the correction on both sides.
+    assert "diff --git a/django/core/files/storage.py b/django/core/files/storage.py" in cleaned
