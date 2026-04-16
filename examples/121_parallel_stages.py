@@ -126,10 +126,11 @@ def main():
     # ------------------------------------------------------------------
     print("\n--- LangGraph Fan-Out/Fan-In ---")
 
-    try:
-        from operon_ai.convergence.langgraph_compiler import organism_to_langgraph, HAS_LANGGRAPH
-        if not HAS_LANGGRAPH:
-            raise ImportError("langgraph not installed")
+    from operon_ai.convergence.langgraph_compiler import HAS_LANGGRAPH
+    if not HAS_LANGGRAPH:
+        print("  (skipped — install operon-ai[langgraph] for this demo)")
+    else:
+        from operon_ai.convergence.langgraph_compiler import organism_to_langgraph
 
         graph = organism_to_langgraph(org2)
         all_nodes = list(graph.nodes.keys())
@@ -140,8 +141,6 @@ def main():
         print(f"  stage nodes: {stage_nodes}")
         print(f"  infra nodes: {infra_nodes}")
         print(f"  fork/join visible in LangGraph Studio!")
-    except ImportError:
-        print("  (skipped — install operon-ai[langgraph] for this demo)")
 
     # ------------------------------------------------------------------
     # 6. Backward compatibility: flat list = sequential
