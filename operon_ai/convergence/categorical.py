@@ -401,23 +401,20 @@ def _compile_langgraph(organism: SkillOrganism, *, config: RuntimeConfig | None 
             "functor. Use organism_to_langgraph() directly."
         )
 
+    from .langgraph_compiler import compute_group_node_names
+
     groups = organism.stage_groups or tuple((s,) for s in organism.stages)
+    all_stage_names = {s.name for s in organism.stages}
 
-    # Build agents list (all stages, regardless of grouping)
+    # Use the same node naming as the runtime compiler
+    node_names = compute_group_node_names(groups, all_stage_names)
+
+    # Agents use node-level names (matching the actual LangGraph nodes)
     agents = [
-        {"name": s.name, "role": s.role, "model": s.mode}
-        for s in organism.stages
+        {"name": node_names[i], "role": ",".join(s.role for s in group),
+         "model": ",".join(s.mode for s in group)}
+        for i, group in enumerate(groups)
     ]
-
-    # Build edges: sequential between groups, parallel within groups
-    # Within a parallel group, stages share a common predecessor/successor
-    node_names: list[str] = []
-    for group in groups:
-        if len(group) == 1:
-            node_names.append(group[0].name)
-        else:
-            # Parallel group modeled as a single composite node
-            node_names.append("+".join(s.name for s in group))
 
     edges = [
         (node_names[i], node_names[i + 1])

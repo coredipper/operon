@@ -81,6 +81,26 @@ class LangGraphResult:
 # ---------------------------------------------------------------------------
 
 
+def compute_group_node_names(groups, stage_names: set[str] | None = None) -> list[str]:
+    """Compute unique node names for stage groups.
+
+    Single-stage groups use the stage name. Multi-stage groups get a
+    generated name that cannot collide with any stage name.
+    """
+    all_stage_names = stage_names or set()
+    names: list[str] = []
+    for i, group in enumerate(groups):
+        if len(group) == 1:
+            names.append(group[0].name)
+        else:
+            # Generate a name that can't collide with user stage names
+            candidate = f"__parallel_{i}"
+            while candidate in all_stage_names:
+                candidate = f"__parallel_{i}_{id(group)}"
+            names.append(candidate)
+    return names
+
+
 def organism_to_langgraph(organism: Any) -> Any:
     """Compile a SkillOrganism into a per-stage LangGraph StateGraph.
 
@@ -176,8 +196,7 @@ def organism_to_langgraph(organism: Any) -> Any:
         Calls organism._run_group() which handles ThreadPoolExecutor
         dispatch, state isolation, and merge internally.
         """
-        # Use index-based unique ID to avoid collisions from stage names containing '+'
-        group_name = f"__parallel_{group_idx}"
+        group_name = f"__parallel_{group_idx}"  # overridden below by compute_group_node_names
 
         def node(state: LangGraphState) -> dict:
             ctx = RunContext(state.get("shared_state", {}), watcher_key=watcher_key)
@@ -223,16 +242,16 @@ def organism_to_langgraph(organism: Any) -> Any:
     # Build the graph — one node per group
     builder = StateGraph(LangGraphState)
 
-    node_names: list[str] = []
+    all_stage_names = {s.name for s in organism.stages}
+    node_names = compute_group_node_names(groups, all_stage_names)
+
     for i, group in enumerate(groups):
+        name = node_names[i]
         if len(group) == 1:
-            stage = group[0]
-            builder.add_node(stage.name, make_stage_node(stage))
-            node_names.append(stage.name)
+            builder.add_node(name, make_stage_node(group[0]))
         else:
-            node_fn, name = make_group_node(group, i)
+            node_fn, _ = make_group_node(group, i)
             builder.add_node(name, node_fn)
-            node_names.append(name)
 
     # Routing: each node → next or END
     def route(state: LangGraphState) -> str:
