@@ -389,11 +389,16 @@ scion_functor = _lazy_functor("scion", "operon_ai.convergence.scion_compiler", "
 
 
 def _compile_langgraph(organism: SkillOrganism, *, config: RuntimeConfig | None = None) -> dict[str, Any]:
-    """Compile organism to the LangGraph target's per-stage graph shape.
+    """Compile organism to the LangGraph target's graph shape.
 
-    ``organism_to_langgraph()`` creates one LangGraph node per stage,
-    each calling ``organism.run_single_stage()``.  This function models
-    that per-stage graph shape for categorical verification.
+    For sequential organisms, creates one node per stage.  For organisms
+    with parallel groups, parallel stages are collapsed into composite
+    group nodes (``__parallel_N``).
+
+    Note: ``graph_preserved`` will be ``False`` for grouped organisms
+    because the source Architecture uses per-stage nodes while the
+    LangGraph target uses group-level nodes.  This is correct —
+    the graph IS reshaped.  Certificate preservation still holds.
     """
     if config is not None:
         raise ValueError(
