@@ -475,13 +475,23 @@ class TestLangGraphFunctor:
         assert p.graph_preserved
         assert p.all_preserved
 
-        # User stages present in target
+        # 5 nodes: renamed_fork, __fork_0 (user), __join_0 (user), renamed_join, c
         t = result.target_architecture
+        assert t.stage_count == 5
         assert "__fork_0" in t.stage_names  # user stage
         assert "__join_0" in t.stage_names  # user stage
         assert "c" in t.stage_names
 
-        # Generated fork/join names are different from user stage names
-        fork_join = [n for n in t.stage_names
+        # Identify the generated fork/join names (renamed to avoid collision)
+        generated = [n for n in t.stage_names
                      if n not in {"__fork_0", "__join_0", "c"}]
-        assert len(fork_join) == 2  # renamed fork + join nodes
+        assert len(generated) == 2
+        fork_gen = next(n for n in generated if "fork" in n)
+        join_gen = next(n for n in generated if "join" in n)
+
+        # Verify exact fork/join edges
+        assert (fork_gen, "__fork_0") in t.edges   # fork → user stage A
+        assert (fork_gen, "__join_0") in t.edges   # fork → user stage B
+        assert ("__fork_0", join_gen) in t.edges   # user stage A → join
+        assert ("__join_0", join_gen) in t.edges   # user stage B → join
+        assert (join_gen, "c") in t.edges          # join → sequential stage
