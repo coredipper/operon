@@ -139,3 +139,26 @@ class VerifierComponent:
         if not self.quality_scores:
             return 0.0
         return sum(q for _, q in self.quality_scores) / len(self.quality_scores)
+
+    def certify_behavior(self, threshold: float = 0.8):
+        """Produce a behavioral certificate from collected rubric scores.
+
+        Returns a :class:`Certificate` asserting that mean rubric quality
+        meets or exceeds *threshold*.  Only meaningful after a run has
+        completed (i.e. ``quality_scores`` is non-empty).
+
+        Returns ``None`` if no quality scores have been collected.
+        """
+        if not self.quality_scores:
+            return None
+        from ..core.certificate import Certificate, _verify_behavioral_quality
+
+        scores = [q for _, q in self.quality_scores]
+        n = len(scores)
+        return Certificate(
+            theorem="behavioral_quality",
+            parameters={"scores": scores, "threshold": threshold},
+            conclusion=f"Mean rubric quality >= {threshold} on {n} stages",
+            source="VerifierComponent.certify_behavior",
+            _verify_fn=_verify_behavioral_quality,
+        )

@@ -339,8 +339,8 @@ class SkillOrganism:
         """Gather certificates from all certifiable components.
 
         Checks the budget (ATP_Store) and any components that expose
-        a ``certify()`` method.  Returns a list of :class:`Certificate`
-        objects.
+        ``certify()`` (structural) or ``certify_behavior()`` (behavioral)
+        methods.  Returns a list of :class:`Certificate` objects.
         """
         from ..core.certificate import Certificate
 
@@ -354,6 +354,17 @@ class SkillOrganism:
             if hasattr(component, "certify"):
                 try:
                     certs.append(component.certify())
+                except (ValueError, TypeError):
+                    pass
+            if hasattr(component, "certify_behavior"):
+                try:
+                    result = component.certify_behavior()
+                    if result is None:
+                        pass
+                    elif isinstance(result, list):
+                        certs.extend(result)
+                    else:
+                        certs.append(result)
                 except (ValueError, TypeError):
                     pass
         return certs
