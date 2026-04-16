@@ -39,6 +39,7 @@ from operon_ai.providers.base import ProviderConfig
 from operon_ai.providers.openai_compatible_provider import OpenAICompatibleProvider
 
 from eval._patch_extraction import extract_patch
+from eval._patch_sanitizer import sanitize as sanitize_patch
 
 
 # ---------------------------------------------------------------------------
@@ -190,9 +191,29 @@ def _build_organism(provider):
                 name="edit",
                 role="Patch Author",
                 instructions=(
-                    "Based on the bug localization, write a minimal fix. "
-                    "Output a unified diff (--- a/file\\n+++ b/file). "
-                    "Change only what's necessary."
+                    "Based on the bug localization, write a minimal fix "
+                    "as a unified diff.\n\n"
+                    "STRICT FORMAT — your ENTIRE response for this stage "
+                    "must be a single fenced diff block and nothing "
+                    "else:\n\n"
+                    "```diff\n"
+                    "--- a/<path-relative-to-repo-root>\n"
+                    "+++ b/<path-relative-to-repo-root>\n"
+                    "@@ -<real_old_start>,<real_old_count> "
+                    "+<real_new_start>,<real_new_count> @@\n"
+                    " <context line>\n"
+                    "-<removed line>\n"
+                    "+<added line>\n"
+                    "```\n\n"
+                    "Rules:\n"
+                    "- Do not prefix the path with the repo name.\n"
+                    "- Use REAL integer line numbers. Never use `XXX`, "
+                    "`N`, `?`, or single letters.\n"
+                    "- The body of each hunk must be complete: "
+                    "additions + context must equal the new_count; "
+                    "deletions + context must equal the old_count.\n"
+                    "- No prose, no explanation, no 'here is the fix' "
+                    "text — the fenced diff only."
                 ),
                 mode="fixed",
             ),
@@ -200,9 +221,12 @@ def _build_organism(provider):
                 name="verify",
                 role="Patch Reviewer",
                 instructions=(
-                    "Review the proposed patch. Check: (1) does it fix the "
-                    "reported issue? (2) any regressions? (3) diff format valid? "
-                    "If any problems, describe them."
+                    "Review the proposed patch from the edit stage. "
+                    "Do NOT re-emit the diff. Output at most three "
+                    "short bullet points: (1) does it fix the issue; "
+                    "(2) any regressions you see; (3) is the diff "
+                    "format valid. Never include a fenced diff block "
+                    "in this stage's output."
                 ),
                 mode="fixed",
             ),
@@ -228,16 +252,50 @@ class Prediction:
     extract_ok: bool
 
 
+_BASELINE_RULES = (
+    "\nRules for the diff:\n"
+    "- Use the path exactly as it appears in the repository, relative\n"
+    "  to the repo root. Never prefix the path with the repo name. For\n"
+    "  repository `{repo}`, the correct form is `a/<path>`, not\n"
+    "  `a/{repo}/<path>`.\n"
+    "- Every hunk header must contain real line numbers,\n"
+    "  e.g. `@@ -42,7 +42,9 @@`. Never use placeholders like `XXX`, `N`,\n"
+    "  `?`, or single letters.\n"
+    "- Every hunk body must be complete — context, additions, and\n"
+    "  deletions must match the counts declared in the header. Do not\n"
+    "  truncate mid-hunk.\n"
+)
+
+
+def _sanitize_for_submission(raw: str, repo_slug: str) -> str:
+    """Extract and sanitize a patch from raw model output.
+
+    A rejected-by-sanitizer submission is returned as ``""`` so the
+    harness counts it as ``empty_patch`` rather than a format-error
+    ``error`` — an honest categorization (we refused to submit a diff
+    we knew would fail to apply).
+    """
+    extracted = extract_patch(raw)
+    if not extracted:
+        return ""
+    cleaned = sanitize_patch(extracted, repo_slug)
+    if not cleaned:
+        print(f"  sanitizer: dropped patch for {repo_slug} "
+              "(placeholder hunk / malformed counts / bad paths)")
+    return cleaned
+
+
 def run_baseline(provider, instance: dict) -> Prediction:
     task = _format_task(instance)
     prompt = (
         f"{task}\nFix this bug. Output a unified diff "
         "(--- a/file, +++ b/file) with your fix. Be minimal."
+        + _BASELINE_RULES.format(repo=instance["repo"])
     )
     t0 = time.monotonic()
     raw = _llm_call(provider, prompt)
     elapsed = (time.monotonic() - t0) * 1000
-    patch = extract_patch(raw)
+    patch = _sanitize_for_submission(raw, instance["repo"])
     return Prediction(
         instance["instance_id"], instance["repo"], "baseline",
         raw, patch, elapsed, bool(patch),
@@ -253,7 +311,7 @@ def run_organism(provider, instance: dict) -> Prediction:
     full = "\n\n".join(
         f"[{sr.stage_name}]\n{sr.output}" for sr in result.stage_results
     )
-    patch = extract_patch(full)
+    patch = _sanitize_for_submission(full, instance["repo"])
     return Prediction(
         instance["instance_id"], instance["repo"], "organism",
         full, patch, elapsed, bool(patch),
@@ -268,7 +326,7 @@ def run_langgraph(provider, instance: dict) -> Prediction:
     elapsed = (time.monotonic() - t0) * 1000
     parts = [f"[{name}]\n{out}" for name, out in result.stage_outputs.items()]
     full = "\n\n".join(parts) if parts else result.output
-    patch = extract_patch(full)
+    patch = _sanitize_for_submission(full, instance["repo"])
     return Prediction(
         instance["instance_id"], instance["repo"], "langgraph",
         full, patch, elapsed, bool(patch),
