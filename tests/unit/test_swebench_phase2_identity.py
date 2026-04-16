@@ -114,11 +114,16 @@ def test_resolve_identity_raises_when_digest_not_in_list():
             _resolve_model_identity("gemma4:latest")
 
 
+_POST_RUN_CHECK_VALID_STATUSES = {"match", "mismatch", "error"}
+
+
 def test_committed_artifact_schema_matches_resolver():
     """The checked-in results file must match the resolver's output schema.
 
     If someone changes the resolver, they must regenerate the artifact
-    (or vice versa). This test fails if the two drift.
+    (or vice versa). This test fails if the two drift. It also covers
+    sibling fields that the writer always emits so a missing top-level
+    key cannot slip through (see review #700).
     """
     import json
 
@@ -126,9 +131,46 @@ def test_committed_artifact_schema_matches_resolver():
         (Path(__file__).resolve().parents[2]
          / "eval/results/swebench_phase2.json").read_text()
     )
+
+    # Nested identity keys.
     identity = artifact["model_identity"]
     for key in _IDENTITY_REQUIRED:
         assert key in identity, (
             f"committed artifact is missing required identity key {key!r}; "
             "regenerate eval/results/swebench_phase2.json"
         )
+
+    # Top-level keys that the writer in eval/swebench_phase2.py always
+    # emits alongside the summary. Extending this list is a deliberate
+    # contract change and must include a matching artifact regeneration.
+    required_top_level = {
+        "model",
+        "model_identity",
+        "model_identity_post_run_check",
+        "dataset",
+        "run_id",
+        "summary",
+        "results",
+    }
+    missing = required_top_level - artifact.keys()
+    assert not missing, (
+        f"committed artifact is missing top-level keys {missing}; "
+        "regenerate eval/results/swebench_phase2.json or update the writer"
+    )
+
+    check = artifact["model_identity_post_run_check"]
+    assert isinstance(check, dict), (
+        "model_identity_post_run_check must be a dict "
+        "{status: match|mismatch|error, ...}"
+    )
+    assert check.get("status") in _POST_RUN_CHECK_VALID_STATUSES, (
+        f"unexpected model_identity_post_run_check.status {check.get('status')!r}; "
+        f"expected one of {_POST_RUN_CHECK_VALID_STATUSES}"
+    )
+    if check["status"] == "mismatch":
+        for key in ("digest_now", "blob_sha256_now"):
+            assert key in check, (
+                f"mismatch status requires {key!r}"
+            )
+    elif check["status"] == "error":
+        assert "error" in check, "error status requires 'error' message"

@@ -9,6 +9,9 @@
     "quantization": "Q4_K_M",
     "source": "ollama list / ollama show / ollama show --modelfile"
   },
+  "model_identity_post_run_check": {
+    "status": "match"
+  },
   "dataset": "SWE-bench/SWE-bench_Lite",
   "run_id": "phase2_20260416_211049",
   "n_instances": 10,
