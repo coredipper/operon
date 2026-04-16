@@ -331,26 +331,14 @@ class CompilerFunctor:
         # group-level topology built from the organism's stage_groups.
         has_parallel = compiled.get("config", {}).get("has_parallel_groups", False)
         if has_parallel:
-            # Verify: all source stages present in target, target has
-            # fork/join infrastructure nodes, and fan-out/fan-in edges
-            # exist for each parallel stage
-            has_fork_join = any(
-                n.startswith("__fork_") for n in target.stage_names
-            ) and any(
-                n.startswith("__join_") for n in target.stage_names
-            )
-            # Each source stage should have at least one incoming and
-            # one outgoing edge in the target
-            target_edge_set = frozenset(target.edges)
-            all_stages_wired = all(
-                any(src == s for src, _ in target_edge_set)
-                or any(dst == s for _, dst in target_edge_set)
-                for s in source.stage_names
-            )
+            # Verify target matches the exact expected fork/join topology
+            # derived from the source organism's stage_groups
+            cfg = compiled.get("config", {})
+            exp_nodes = set(cfg.get("_expected_nodes", []))
+            exp_edges = {tuple(e) for e in cfg.get("_expected_edges", [])}
             graph_ok = (
-                source_stages <= target_stages
-                and has_fork_join
-                and all_stages_wired
+                set(target.stage_names) == exp_nodes
+                and set(target.edges) == exp_edges
             )
         else:
             graph_ok = stages_embedded and edges_embedded
@@ -486,7 +474,10 @@ def _compile_langgraph(organism: SkillOrganism, *, config: RuntimeConfig | None 
             "runtime": "langgraph",
             "node_count": len(agents),
             "has_parallel_groups": has_parallel,
-            "expected_node_names": agent_names,
+            # Store expected topology derived from source organism for
+            # independent verification (not used to build agents/edges)
+            "_expected_nodes": agent_names,
+            "_expected_edges": [list(e) for e in edges],
         },
     }
 
