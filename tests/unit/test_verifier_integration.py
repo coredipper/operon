@@ -202,16 +202,17 @@ def test_verifier_certify_behavior_none_without_rubric():
     assert verifier.certify_behavior() is None
 
 
-def test_watcher_certify_behavior_stability():
-    """WatcherComponent produces behavioral_stability from epiplexity signals."""
+def test_watcher_certify_behavior_stability_healthy():
+    """Stability cert holds when epiplexity is high (healthy = not stagnant)."""
     from operon_ai.patterns.watcher import SignalCategory, WatcherSignal
 
     watcher = WatcherComponent()
     watcher.signals = [
+        # High epiplexity = healthy (severity = 1 - 0.8 = 0.2)
         WatcherSignal(category=SignalCategory.EPISTEMIC, source="epiplexity",
-                      stage_name="s1", value=0.2),
+                      stage_name="s1", value=0.8),
         WatcherSignal(category=SignalCategory.EPISTEMIC, source="epiplexity",
-                      stage_name="s2", value=0.3),
+                      stage_name="s2", value=0.7),
         # verifier signal — should be excluded from stability cert
         WatcherSignal(category=SignalCategory.EPISTEMIC, source="verifier",
                       stage_name="s1", value=0.8),
@@ -221,9 +222,28 @@ def test_watcher_certify_behavior_stability():
     assert len(stability) == 1
     result = stability[0].verify()
     assert result.holds is True
-    # Only epiplexity signals (0.2, 0.3), not verifier (0.8)
+    # Severity = 1 - epiplexity: (0.2 + 0.3) / 2 = 0.25
     assert result.evidence["mean"] == 0.25
     assert result.evidence["n"] == 2
+
+
+def test_watcher_certify_behavior_stability_stagnant():
+    """Stability cert fails when epiplexity is low (stagnant)."""
+    from operon_ai.patterns.watcher import SignalCategory, WatcherSignal
+
+    watcher = WatcherComponent()
+    watcher.signals = [
+        # Low epiplexity = stagnant (severity = 1 - 0.1 = 0.9)
+        WatcherSignal(category=SignalCategory.EPISTEMIC, source="epiplexity",
+                      stage_name="s1", value=0.1),
+        WatcherSignal(category=SignalCategory.EPISTEMIC, source="epiplexity",
+                      stage_name="s2", value=0.15),
+    ]
+    certs = watcher.certify_behavior(threshold=0.5)
+    stability = [c for c in certs if c.theorem == "behavioral_stability"]
+    assert len(stability) == 1
+    result = stability[0].verify()
+    assert result.holds is False  # stagnant run should NOT get stability cert
 
 
 def test_watcher_certify_behavior_no_anomaly():

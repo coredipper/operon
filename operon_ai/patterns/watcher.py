@@ -619,9 +619,12 @@ class WatcherComponent:
 
         certs = []
 
-        # Stability: epiplexity signals only (higher = worse, consistent scale)
+        # Stability: epiplexity signals only.
+        # Raw epiplexity is lower-is-worse (low = stagnant/critical),
+        # so convert to severity (1 - epiplexity) for consistent
+        # "higher = worse" semantics in the certificate.
         ep_values = [
-            s.value for s in self.signals
+            1.0 - s.value for s in self.signals
             if s.category.value == "epistemic" and s.source == "epiplexity"
         ]
         if ep_values:
