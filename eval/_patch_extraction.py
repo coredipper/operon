@@ -76,7 +76,9 @@ def _extract_bare(text: str) -> str:
     current: list[str] = []
     in_diff = False
     for line in text.splitlines():
-        if line.startswith("diff --git ") or line.startswith("--- a/"):
+        if (line.startswith("diff --git ")
+                or line.startswith("--- a/")
+                or line.startswith("--- /dev/null")):
             if current and in_diff:
                 chunks.append("\n".join(current))
             current = [line]
@@ -104,9 +106,10 @@ def _looks_like_diff(text: str) -> bool:
     """A block is a valid diff only if it has file headers, not just hunks.
 
     Hunk-only snippets (just ``@@ -1 +1 @@`` lines) cannot be applied by
-    ``git apply``, so we reject them.
+    ``git apply``, so we reject them. Accepts ``---``/``+++`` pairs
+    including ``/dev/null`` headers used for file add/delete, and also
+    accepts ``diff --git`` as a standalone indicator.
     """
-    return (
-        ("--- a/" in text and "+++ b/" in text)
-        or "diff --git " in text
-    )
+    has_minus_header = "--- a/" in text or "--- /dev/null" in text
+    has_plus_header = "+++ b/" in text or "+++ /dev/null" in text
+    return (has_minus_header and has_plus_header) or "diff --git " in text

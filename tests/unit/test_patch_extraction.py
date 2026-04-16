@@ -172,6 +172,50 @@ index abc..0000000
     assert "-line1" in patch
 
 
+def test_fenced_add_file_via_dev_null():
+    """Fenced diff with '--- /dev/null' header (file add) is accepted.
+
+    Valid for git apply — should not be rejected as empty_patch.
+    """
+    output = """```diff
+--- /dev/null
++++ b/new.py
+@@ -0,0 +1,2 @@
++import os
++print("hello")
+```"""
+    patch = extract_patch(output)
+    assert "--- /dev/null" in patch
+    assert "+++ b/new.py" in patch
+    assert "+import os" in patch
+
+
+def test_fenced_delete_file_via_dev_null():
+    """Fenced diff with '+++ /dev/null' header (file delete) is accepted."""
+    output = """```diff
+--- a/old.py
++++ /dev/null
+@@ -1,2 +0,0 @@
+-line1
+-line2
+```"""
+    patch = extract_patch(output)
+    assert "--- a/old.py" in patch
+    assert "+++ /dev/null" in patch
+    assert "-line1" in patch
+
+
+def test_bare_add_file_via_dev_null():
+    """Bare diff starting with '--- /dev/null' (no diff --git) is accepted."""
+    output = """--- /dev/null
++++ b/created.py
+@@ -0,0 +1 @@
++pass"""
+    patch = extract_patch(output)
+    assert "--- /dev/null" in patch
+    assert "+pass" in patch
+
+
 def test_multi_file_diff():
     output = """--- a/a.py
 +++ b/a.py
