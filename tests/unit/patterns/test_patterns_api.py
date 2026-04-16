@@ -275,10 +275,8 @@ class TestParallelStageGroups:
         )
         result = org.run("test")
         signals = result.shared_state.get("_test_signals", [])
-        # Both signals present, in declared order
-        assert "signal_a" in signals
-        assert "signal_b" in signals
-        assert len(signals) == 2
+        # Exact declared order
+        assert signals == ["signal_a", "signal_b"]
 
     def test_backward_compatible_run(self):
         """Flat-list organism produces identical results to pre-parallel behavior."""
