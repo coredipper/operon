@@ -28,6 +28,11 @@ htmlcov/
 # Worktrees
 .worktrees/
 
+# SWE-bench harness logs (large, generated)
+logs/run_evaluation/
+eval/results/swebench_phase2_reports/
+eval/results/swebench_phase2_predictions/
+
 # Beads
 .beads/
 

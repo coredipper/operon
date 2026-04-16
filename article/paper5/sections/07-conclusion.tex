@@ -20,6 +20,7 @@ This work has several honest limitations:
 \item \textbf{Single reference implementation}: All validation uses one codebase (Operon). The correspondence needs independent implementations to confirm generality.
 \item \textbf{Certificate scope}: Current certificates cover structural invariants (priority gating, convergence bounds) but not behavioral properties (``the agent never hallucinates''). Extending $\mathrm{Know}$ to behavioral certificates is future work.
 \item \textbf{Escalation experiment scale}: The escalation experiment uses two models on one task. Scaling to diverse tasks and model families would strengthen the claim.
+\item \textbf{SWE-bench-lite null result}: Section~\ref{sec:swebench-phase2} reports zero resolved instances across baseline, organism, and LangGraph on 10 SWE-bench-lite instances with Gemma~4. This is a ceiling imposed by model capability, not by the harness --- but it means the harness's transfer value on hard mechanistic tasks is demonstrated by \emph{preservation} (Section~\ref{sec:preservation}) and \emph{primitive reuse} (the escalation experiment), not by independent task-resolution gains over direct prompting at small model scale.
 \end{itemize}
 
 \subsection{Conclusion}

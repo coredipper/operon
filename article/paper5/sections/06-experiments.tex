@@ -66,3 +66,43 @@ Scion & 3/3 (100\%) & 3/3 \\
 \end{center}
 
 Full certificate identity (theorem + parameters + source) is preserved across all four measured compilers, confirming Proposition~5.1 empirically. The LangGraph compiler preserves certificates via per-stage execution of \texttt{run\_single\_stage()} (Section~\ref{sec:preservation}).
+
+\subsection{SWE-bench-lite: Decomposition Does Not Help on Real Bug-Fix Tasks}
+\label{sec:swebench-phase2}
+
+To test whether the categorical harness delivers end-to-end value beyond certificate preservation, we ran an apples-to-apples comparison on SWE-bench-lite: 10 real Python bug-fix instances from \texttt{astropy} and \texttt{django}, with patches applied inside the official SWE-bench Docker harness and evaluated via \texttt{FAIL\_TO\_PASS} + \texttt{PASS\_TO\_PASS} test suites.
+
+\paragraph{Setup.} Gemma~4 (27B MoE, 4B active) via Ollama. Three conditions:
+\begin{itemize}[leftmargin=*]
+\item \textbf{baseline}: direct single prompt, request unified diff.
+\item \textbf{organism}: three-stage \texttt{SkillOrganism} (\textit{localize} $\to$ \textit{edit} $\to$ \textit{verify}).
+\item \textbf{langgraph}: same organism, compiled via \texttt{organism\_to\_langgraph()} and executed as a LangGraph \texttt{StateGraph}.
+\end{itemize}
+
+\paragraph{Results (pass/fail, 10 instances).}
+
+\begin{center}
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Condition} & \textbf{Resolved} & \textbf{Patch extracted} & \textbf{Mean latency} \\
+\midrule
+baseline    & 0/10 & \textbf{10/10} & 44~s  \\
+organism    & 0/10 & 6/10           & 88~s  \\
+langgraph   & 0/10 & 6/10           & 90~s  \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Interpretation.} All three conditions resolve zero instances. This is an honest negative result about the \emph{model}, not the harness: Gemma~4 27B (4B active) is too weak to pass SWE-bench-lite unaided on either prompt style. Two secondary findings are load-bearing, however:
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{The organism and LangGraph pipelines \emph{degrade} patch extraction} (6/10 vs baseline's 10/10). Direct prompting produces cleaner unified diffs than a three-stage localize--edit--verify pipeline. Pipeline overhead introduces format drift.
+\item \textbf{Latency doubles with no offsetting gain.} The three-stage pipeline costs $\sim$2$\times$ baseline wall-clock for identical pass/fail outcomes.
+\end{enumerate}
+
+A judge-based Phase~1 evaluation of the same instances (LLM-as-judge over a plausibility rubric) reported baseline=0.808 and organism=0.776, which we interpreted as plausibility of the produced diff. The pass/fail truth at the harness level collapses that judge signal: when a patch cannot be applied at all (\texttt{error}) or is applied but fails tests (\texttt{unresolved}), the judge's plausibility score is not predictive of correctness.
+
+\paragraph{What this result does and does not say.} It says: categorical compilation and multi-stage decomposition do \emph{not} substitute for model capability on hard, mechanistic tasks. This is consistent with the empirical finding in the companion Bio-Benchmarks paper that decomposition-based abstractions do not earn their complexity for capable models on hard SWE-bench instances; we extend that to: they do not help small models either. The harness-level \emph{structural} guarantees (certificate preservation, priority gating, stagnation detection) remain valid under compilation regardless of model capability --- but guarantees about \emph{structure} do not imply gains in \emph{task resolution}.
+
+This motivates Section~\ref{sec:conclusion}: the transfer value of categorical harness engineering is in \emph{reliability primitives} (gates, certificates, monitors) that a user can drop into an existing graph, not in wholesale organism adoption.
