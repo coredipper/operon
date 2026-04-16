@@ -303,6 +303,22 @@ class TestParallelStageGroups:
         # All 3 stages passed the barrier — proves concurrent execution
         assert set(reached) == {"a", "b", "c"}
 
+    def test_group_node_name_collision_avoided(self):
+        """Stage named __parallel_0 doesn't collide with generated group node."""
+        from operon_ai.convergence.langgraph_compiler import compute_group_node_names
+        from operon_ai import SkillStage
+
+        group = (
+            SkillStage(name="a", role="A", mode="fixed"),
+            SkillStage(name="b", role="B", mode="fixed"),
+        )
+        # Stage named __parallel_0 would collide with default group node
+        stage_names = {"__parallel_0", "a", "b"}
+        names = compute_group_node_names([group], stage_names)
+        # Generated name should NOT be __parallel_0
+        assert names[0] != "__parallel_0"
+        assert names[0] not in stage_names
+
     def test_backward_compatible_run(self):
         """Flat-list organism produces identical results to pre-parallel behavior."""
         from operon_ai import SkillStage
