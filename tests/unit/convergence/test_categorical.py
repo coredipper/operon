@@ -405,3 +405,41 @@ class TestLangGraphFunctor:
         org = _make_organism()
         with pytest.raises(ValueError, match="RuntimeConfig is not supported"):
             langgraph_functor.compile(org, config=RuntimeConfig())
+
+    def test_grouped_organism_preserves_certificates(self):
+        """Grouped organism: certificates preserved, graph reshaped."""
+        fast = Nucleus(provider=MockProvider(responses={"classify": "ROUTE: a"}))
+        deep = Nucleus(provider=MockProvider(responses={"a": "done"}))
+        org = skill_organism(
+            stages=[
+                [
+                    SkillStage(name="a", role="A", instructions="do A", mode="fixed"),
+                    SkillStage(name="b", role="B", instructions="do B", mode="fixed"),
+                ],
+                SkillStage(name="c", role="C", instructions="do C", mode="fuzzy"),
+            ],
+            fast_nucleus=fast,
+            deep_nucleus=deep,
+            budget=ATP_Store(budget=1000, silent=True),
+        )
+        result = langgraph_functor.compile(org)
+        p = result.preservation
+
+        # Certificates always preserved
+        assert p.certificate_preserved
+
+        # Graph and interface preserved (group-level verification)
+        assert p.graph_preserved
+        assert p.interface_preserved
+        assert p.all_preserved
+
+        # Target has 2 nodes: 1 parallel group + 1 sequential (c)
+        from operon_ai.convergence.langgraph_compiler import compute_group_node_names
+        expected_names = compute_group_node_names(
+            org.stage_groups, {s.name for s in org.stages}
+        )
+        t = result.target_architecture
+        assert t.stage_count == 2
+        assert list(t.stage_names) == expected_names
+        assert len(t.edges) == 1
+        assert t.edges[0] == (expected_names[0], expected_names[1])

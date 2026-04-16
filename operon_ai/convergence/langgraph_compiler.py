@@ -81,6 +81,26 @@ class LangGraphResult:
 # ---------------------------------------------------------------------------
 
 
+def compute_group_node_names(groups, stage_names: set[str] | None = None) -> list[str]:
+    """Compute unique node names for stage groups.
+
+    Single-stage groups use the stage name. Multi-stage groups get a
+    generated name that cannot collide with any stage name.
+    """
+    all_stage_names = stage_names or set()
+    names: list[str] = []
+    for i, group in enumerate(groups):
+        if len(group) == 1:
+            names.append(group[0].name)
+        else:
+            # Generate a name that can't collide with user stage names
+            candidate = f"__parallel_{i}"
+            while candidate in all_stage_names:
+                candidate = f"__parallel_{i}_{id(group)}"
+            names.append(candidate)
+    return names
+
+
 def organism_to_langgraph(organism: Any) -> Any:
     """Compile a SkillOrganism into a per-stage LangGraph StateGraph.
 
@@ -114,8 +134,8 @@ def organism_to_langgraph(organism: Any) -> Any:
             "LangGraph is required. Install with: pip install operon-ai[langgraph]"
         ) from e
 
-    stages = organism.stages
     components = organism.components
+    groups = organism.stage_groups or tuple((s,) for s in organism.stages)
 
     # Resolve watcher key
     watcher_key = WATCHER_STATE_KEY
@@ -131,9 +151,7 @@ def organism_to_langgraph(organism: Any) -> Any:
         def node(state: LangGraphState) -> dict:
             ctx = RunContext(state.get("shared_state", {}), watcher_key=watcher_key)
             outputs = state.get("stage_outputs", {})
-            results_dicts = state.get("stage_results", [])
 
-            # Reconstruct mutable lists for run_single_stage
             results: list[SkillStageResult] = []
 
             try:
@@ -151,7 +169,6 @@ def organism_to_langgraph(organism: Any) -> Any:
                     }],
                 }
 
-            # Serialize the new stage result
             new_results = []
             for sr in results:
                 out = sr.output if isinstance(sr.output, str) else str(sr.output)
@@ -173,26 +190,83 @@ def organism_to_langgraph(organism: Any) -> Any:
 
         return node
 
-    # Build the graph
+    def make_group_node(group, resolved_name):
+        """Create a LangGraph node for a parallel group.
+
+        Calls organism._run_group() which handles ThreadPoolExecutor
+        dispatch, state isolation, and merge internally.
+        """
+        group_name = resolved_name
+
+        def node(state: LangGraphState) -> dict:
+            ctx = RunContext(state.get("shared_state", {}), watcher_key=watcher_key)
+            outputs = state.get("stage_outputs", {})
+            results: list[SkillStageResult] = []
+
+            try:
+                decision = organism._run_group(
+                    group, state["task"], ctx, outputs, results,
+                )
+            except Exception as exc:
+                return {
+                    "halted": True,
+                    "_routing": "halt",
+                    "shared_state": dict(ctx),
+                    "stage_results": [{
+                        "stage": group_name, "output": f"Error: {exc}",
+                        "error": str(exc),
+                    }],
+                }
+
+            new_results = []
+            for sr in results:
+                out = sr.output if isinstance(sr.output, str) else str(sr.output)
+                new_results.append({
+                    "stage": sr.stage_name,
+                    "model": sr.model_alias,
+                    "action": sr.action_type,
+                    "output": out,
+                })
+                outputs[sr.stage_name] = out
+
+            return {
+                "stage_outputs": outputs,
+                "stage_results": new_results,
+                "shared_state": dict(ctx),
+                "halted": decision != "continue",
+                "_routing": decision,
+            }
+
+        return node, group_name
+
+    # Build the graph — one node per group
     builder = StateGraph(LangGraphState)
 
-    for stage in stages:
-        builder.add_node(stage.name, make_stage_node(stage))
+    all_stage_names = {s.name for s in organism.stages}
+    node_names = compute_group_node_names(groups, all_stage_names)
 
-    # Routing: each stage → next or END
+    for i, group in enumerate(groups):
+        name = node_names[i]
+        if len(group) == 1:
+            builder.add_node(name, make_stage_node(group[0]))
+        else:
+            node_fn, _ = make_group_node(group, name)
+            builder.add_node(name, node_fn)
+
+    # Routing: each node → next or END
     def route(state: LangGraphState) -> str:
         return "halt" if state.get("_routing") != "continue" else "next"
 
-    for i, stage in enumerate(stages):
-        if i < len(stages) - 1:
+    for i, name in enumerate(node_names):
+        if i < len(node_names) - 1:
             builder.add_conditional_edges(
-                stage.name, route,
-                {"next": stages[i + 1].name, "halt": END},
+                name, route,
+                {"next": node_names[i + 1], "halt": END},
             )
         else:
-            builder.add_edge(stage.name, END)
+            builder.add_edge(name, END)
 
-    builder.add_edge(START, stages[0].name)
+    builder.add_edge(START, node_names[0])
     return builder.compile()
 
 
