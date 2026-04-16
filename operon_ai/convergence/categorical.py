@@ -339,7 +339,7 @@ class CompilerFunctor:
                 tuple(e) for e in cfg.get("expected_edges", [])
             )
             graph_ok = (
-                frozenset(target.stage_names) == frozenset(expected_names)
+                list(target.stage_names) == expected_names
                 and frozenset(target.edges) == expected_edges
             )
         else:
@@ -371,8 +371,8 @@ class CompilerFunctor:
         # For parallel groups, verify interface names match expected group nodes
         if has_parallel:
             cfg = compiled.get("config", {})
-            expected_iface_names = frozenset(cfg.get("expected_node_names", []))
-            target_iface_names = frozenset(name for name, _ in target.interface)
+            expected_iface_names = list(cfg.get("expected_node_names", []))
+            target_iface_names = [name for name, _ in target.interface]
             interface_ok = target_iface_names == expected_iface_names
         else:
             interface_ok = source_stage_set <= target_stage_set
