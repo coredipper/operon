@@ -53,6 +53,42 @@ def _make_provider(model: str) -> OpenAICompatibleProvider:
     )
 
 
+def _resolve_model_identity(model_tag: str) -> dict[str, str]:
+    """Return an immutable identifier for *model_tag* from Ollama.
+
+    The human-readable tag (e.g. ``gemma4:latest``) is a floating pointer;
+    the digest and blob sha256 pin a specific set of weights so the result
+    can be correlated with a concrete model version later.
+    """
+    identity: dict[str, str] = {"tag": model_tag}
+    try:
+        result = subprocess.run(
+            ["ollama", "list"], check=True, capture_output=True, text=True,
+            timeout=5,
+        )
+        for line in result.stdout.splitlines():
+            parts = line.split()
+            if len(parts) >= 2 and parts[0] == model_tag:
+                identity["digest"] = parts[1]
+                break
+    except (subprocess.CalledProcessError, FileNotFoundError,
+            subprocess.TimeoutExpired):
+        pass
+    try:
+        result = subprocess.run(
+            ["ollama", "show", "--modelfile", model_tag],
+            check=True, capture_output=True, text=True, timeout=5,
+        )
+        for line in result.stdout.splitlines():
+            if line.startswith("FROM /") and "sha256-" in line:
+                identity["blob_sha256"] = line.split("sha256-", 1)[1].strip()
+                break
+    except (subprocess.CalledProcessError, FileNotFoundError,
+            subprocess.TimeoutExpired):
+        pass
+    return identity
+
+
 def _format_task(instance: dict) -> str:
     repo = instance["repo"]
     problem = instance["problem_statement"]
@@ -226,6 +262,11 @@ EVAL_ERROR = "error"                # patch failed to apply, timeout, etc.
 EVAL_EMPTY = "empty_patch"          # no patch produced
 EVAL_NOT_EVALUATED = "not_evaluated"  # harness did not report on this instance
 
+# Harness-run states (tri-state: not a bool, because "skipped" ≠ "failed")
+HARNESS_OK = "ok"
+HARNESS_FAILED = "failed"
+HARNESS_SKIPPED = "skipped"
+
 
 def _parse_reports(
     report_dir: Path, run_id: str, model_name: str
@@ -341,7 +382,11 @@ def main():
     # -- Phase B: write predictions & run harness ------------------------
     results_dir = Path("eval/results/swebench_phase2_predictions") / run_id
     status_by_cond: dict[str, dict[str, str]] = {c: {} for c in conditions}
-    harness_ok_by_cond: dict[str, bool] = {c: False for c in conditions}
+    # Tri-state per condition: "ok" | "failed" | "skipped". Default is
+    # "failed" so that unexpected paths (no report, crash before parse)
+    # are not silently treated as "ok"; the skip path explicitly sets
+    # HARNESS_SKIPPED so a skipped run is distinguishable from a crash.
+    harness_state_by_cond: dict[str, str] = {c: HARNESS_FAILED for c in conditions}
 
     for cond in conditions:
         model_name = f"operon-{cond}"
@@ -350,6 +395,7 @@ def main():
         print(f"\n  Wrote {len(preds_by_cond[cond])} predictions to {pred_path}")
 
         if args.skip_harness:
+            harness_state_by_cond[cond] = HARNESS_SKIPPED
             continue
 
         print(f"\n{'='*60}")
@@ -366,33 +412,46 @@ def main():
             report_dir, f"{run_id}_{cond}", model_name
         )
         status_by_cond[cond] = statuses
-        harness_ok_by_cond[cond] = report_found
+        harness_state_by_cond[cond] = HARNESS_OK if report_found else HARNESS_FAILED
 
     # -- Phase C: aggregate & save ---------------------------------------
     summary: dict[str, dict] = {}
     for cond in conditions:
         preds = preds_by_cond[cond]
         statuses = status_by_cond[cond]
-        harness_ok = harness_ok_by_cond[cond]
+        harness_state = harness_state_by_cond[cond]
         n = len(preds)
         extracted = sum(1 for p in preds if p.extract_ok)
 
-        # Only include instances with a real harness verdict in the denominator.
-        evaluated = [
-            p for p in preds
-            if statuses.get(p.instance_id, EVAL_NOT_EVALUATED) != EVAL_NOT_EVALUATED
-        ]
-        passed = sum(1 for p in evaluated if statuses.get(p.instance_id) == EVAL_RESOLVED)
+        # Per-status counts. "error" (patch didn't apply) and "empty_patch"
+        # (no diff produced) are not failures of the model under test — they
+        # are upstream problems. The "evaluated" denominator is therefore
+        # restricted to instances that actually reached a pass/fail harness
+        # verdict (resolved or unresolved).
+        status_counts = {
+            EVAL_RESOLVED: 0,
+            EVAL_UNRESOLVED: 0,
+            EVAL_ERROR: 0,
+            EVAL_EMPTY: 0,
+            EVAL_NOT_EVALUATED: 0,
+        }
+        for p in preds:
+            s = statuses.get(p.instance_id, EVAL_NOT_EVALUATED)
+            status_counts[s] = status_counts.get(s, 0) + 1
+
+        evaluated_n = status_counts[EVAL_RESOLVED] + status_counts[EVAL_UNRESOLVED]
+        passed = status_counts[EVAL_RESOLVED]
 
         summary[cond] = {
             "n": n,
             "patch_extracted": extracted,
-            "evaluated": len(evaluated),
+            "status_counts": status_counts,
+            "evaluated": evaluated_n,
             "resolved": passed,
             "resolved_rate": (
-                round(passed / len(evaluated), 3) if evaluated else None
+                round(passed / evaluated_n, 3) if evaluated_n else None
             ),
-            "harness_ran": harness_ok,
+            "harness_state": harness_state,
             "mean_latency_ms": round(
                 sum(p.latency_ms for p in preds) / n, 0
             ) if n else 0,
@@ -402,6 +461,7 @@ def main():
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_data = {
         "model": args.model,
+        "model_identity": _resolve_model_identity(args.model),
         "dataset": "SWE-bench/SWE-bench_Lite",
         "run_id": run_id,
         "n_instances": len(instances),
@@ -434,7 +494,7 @@ def main():
             f"{s['resolved_rate']:.1%}"
             if s["resolved_rate"] is not None else "N/A"
         )
-        harness_str = "ok" if s["harness_ran"] else "FAILED"
+        harness_str = s["harness_state"]
         print(
             f"  {cond:10s} resolved={s['resolved']}/{s['evaluated']} "
             f"({rate_str})  n={s['n']}  "
