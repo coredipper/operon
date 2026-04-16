@@ -331,12 +331,26 @@ class CompilerFunctor:
         # group-level topology built from the organism's stage_groups.
         has_parallel = compiled.get("config", {}).get("has_parallel_groups", False)
         if has_parallel:
-            # Verify target matches the fork/join topology expected from
-            # source stage_names (all stages + fork/join infrastructure
-            # nodes must be present, edges must match fan-out/fan-in)
+            # Verify: all source stages present in target, target has
+            # fork/join infrastructure nodes, and fan-out/fan-in edges
+            # exist for each parallel stage
+            has_fork_join = any(
+                n.startswith("__fork_") for n in target.stage_names
+            ) and any(
+                n.startswith("__join_") for n in target.stage_names
+            )
+            # Each source stage should have at least one incoming and
+            # one outgoing edge in the target
+            target_edge_set = frozenset(target.edges)
+            all_stages_wired = all(
+                any(src == s for src, _ in target_edge_set)
+                or any(dst == s for _, dst in target_edge_set)
+                for s in source.stage_names
+            )
             graph_ok = (
-                source_stages <= target_stages  # all source stages in target
-                and target.stage_count >= source.stage_count  # target has extra fork/join
+                source_stages <= target_stages
+                and has_fork_join
+                and all_stages_wired
             )
         else:
             graph_ok = stages_embedded and edges_embedded
@@ -428,16 +442,20 @@ def _compile_langgraph(organism: SkillOrganism, *, config: RuntimeConfig | None 
 
     # Model the actual LangGraph topology: fork → stages → join
     agents = []
-    all_node_names: list[str] = []
     edges: list[tuple[str, str]] = []
+    all_names = {s.name for s in organism.stages}
+
+    # Track entry/exit nodes per group for sequential wiring
+    group_entry_names: list[str] = []
+    group_exit_names: list[str] = []
 
     for i, group in enumerate(groups):
         if len(group) == 1:
             stage = group[0]
             agents.append({"name": stage.name, "role": stage.role, "model": stage.mode})
-            all_node_names.append(stage.name)
+            group_entry_names.append(stage.name)
+            group_exit_names.append(stage.name)
         else:
-            all_names = {s.name for s in organism.stages}
             fork_name = f"__fork_{i}"
             while fork_name in all_names:
                 fork_name = f"__fork_{i}_{id(group)}"
@@ -450,19 +468,10 @@ def _compile_langgraph(organism: SkillOrganism, *, config: RuntimeConfig | None 
                 edges.append((fork_name, stage.name))
                 edges.append((stage.name, join_name))
             agents.append({"name": join_name, "role": "join", "model": "internal"})
-            all_node_names.append(join_name)  # exit node for wiring to next group
+            group_entry_names.append(fork_name)
+            group_exit_names.append(join_name)
 
-    # Wire groups sequentially (exit of group i → entry of group i+1)
-    group_exit_names: list[str] = []
-    group_entry_names: list[str] = []
-    for i, group in enumerate(groups):
-        if len(group) == 1:
-            group_entry_names.append(group[0].name)
-            group_exit_names.append(group[0].name)
-        else:
-            group_entry_names.append(f"__fork_{i}")
-            group_exit_names.append(f"__join_{i}")
-
+    # Wire groups sequentially
     for i in range(len(group_exit_names) - 1):
         edges.append((group_exit_names[i], group_entry_names[i + 1]))
     certificates = [certificate_to_dict(c) for c in organism.collect_certificates()]
