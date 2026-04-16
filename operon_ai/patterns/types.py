@@ -193,6 +193,13 @@ class SkillRuntimeComponent(Protocol):
         """Called once after the full organism run completes."""
 
 
+# --- Parallel stage groups ---
+
+
+class StateConflictError(RuntimeError):
+    """Raised when parallel stages write conflicting values to the same key."""
+
+
 # --- Watcher intervention types (Phase 3: MASFly integration) ---
 
 WATCHER_STATE_KEY = "_watcher_intervention"
