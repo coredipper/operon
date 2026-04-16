@@ -245,6 +245,98 @@ def test_watcher_certify_behavior_stability_stagnant():
     assert result.holds is False  # stagnant run should NOT get stability cert
 
 
+def test_watcher_epistemic_signal_converging_is_healthy():
+    """CONVERGING (low epiplexity + task complete) is healthy, not severe.
+
+    Regression test for the status-vs-raw-value ambiguity: low epiplexity
+    can mean either CONVERGING (good) or STAGNANT/CRITICAL (bad).
+    Severity must come from status, not from the raw value.
+    """
+    from operon_ai.health.epiplexity import EpiplexityResult, HealthStatus
+    from operon_ai.patterns.watcher import SignalCategory
+
+    class FakeMonitor:
+        def measure(self, output_str):
+            # Low epiplexity but CONVERGING = task complete, healthy
+            return EpiplexityResult(
+                embedding_novelty=0.1,
+                normalized_perplexity=0.1,
+                epiplexity=0.1,
+                epiplexic_integral=0.1,
+                status=HealthStatus.CONVERGING,
+                window_size=10,
+                threshold=0.2,
+            )
+
+    watcher = WatcherComponent(epiplexity_monitor=FakeMonitor())
+
+    class _Stage:
+        name = "s1"
+
+    class _Result:
+        output = "done"
+
+    watcher.on_run_start("task", {})
+    watcher.on_stage_result(_Stage(), _Result(), {}, {})
+
+    ep_signals = [
+        s for s in watcher.signals
+        if s.category == SignalCategory.EPISTEMIC and s.source == "epiplexity"
+    ]
+    assert len(ep_signals) == 1
+    # Low severity: below the 0.3 experience-gate
+    assert ep_signals[0].value < 0.3
+    assert ep_signals[0].detail["status"] == "converging"
+
+    # Stability cert should hold (healthy convergence is not stagnation)
+    certs = watcher.certify_behavior(threshold=0.5)
+    stability = [c for c in certs if c.theorem == "behavioral_stability"]
+    assert len(stability) == 1
+    assert stability[0].verify().holds is True
+
+
+def test_watcher_epistemic_signal_stagnant_is_severe():
+    """STAGNANT (loop pathology) emits high severity signal."""
+    from operon_ai.health.epiplexity import EpiplexityResult, HealthStatus
+    from operon_ai.patterns.watcher import SignalCategory
+
+    class FakeMonitor:
+        def measure(self, output_str):
+            return EpiplexityResult(
+                embedding_novelty=0.1,
+                normalized_perplexity=0.6,
+                epiplexity=0.15,
+                epiplexic_integral=0.1,
+                status=HealthStatus.STAGNANT,
+                window_size=10,
+                threshold=0.2,
+            )
+
+    watcher = WatcherComponent(epiplexity_monitor=FakeMonitor())
+
+    class _Stage:
+        name = "s1"
+
+    class _Result:
+        output = "stuck"
+
+    watcher.on_run_start("task", {})
+    watcher.on_stage_result(_Stage(), _Result(), {}, {})
+
+    ep_signals = [
+        s for s in watcher.signals
+        if s.category == SignalCategory.EPISTEMIC and s.source == "epiplexity"
+    ]
+    assert len(ep_signals) == 1
+    assert ep_signals[0].value > 0.5  # high severity
+
+    # Stability cert should fail (stagnant)
+    certs = watcher.certify_behavior(threshold=0.5)
+    stability = [c for c in certs if c.theorem == "behavioral_stability"]
+    assert len(stability) == 1
+    assert stability[0].verify().holds is False
+
+
 def test_watcher_certify_behavior_no_anomaly():
     """WatcherComponent produces behavioral_no_anomaly from immune signals."""
     from operon_ai.patterns.watcher import SignalCategory, WatcherSignal

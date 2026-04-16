@@ -38,6 +38,18 @@ class SignalCategory(Enum):
     SPECIES_SPECIFIC = "species"
 
 
+# Map epiplexity HealthStatus to severity (higher = worse).
+# Healthy states stay below the 0.3 experience-gate; pathological
+# states stay above 0.5 to trigger the stability certificate failure.
+_STATUS_SEVERITY: dict[str, float] = {
+    "healthy": 0.0,
+    "converging": 0.0,  # low epiplexity + task complete = good
+    "exploring": 0.1,   # high novelty = making progress
+    "stagnant": 0.7,    # loop pathology
+    "critical": 1.0,    # sustained stagnation, intervention needed
+}
+
+
 @dataclass(frozen=True)
 class WatcherSignal:
     """A classified signal observation from the watcher."""
@@ -205,19 +217,24 @@ class WatcherComponent:
     ) -> list[WatcherSignal]:
         """Emit epistemic signals from pre-computed EpiplexityResult.
 
-        Raw epiplexity is lower-is-worse (low = stagnation).  We normalize
-        to severity at signal creation so ``WatcherSignal.value`` always
-        means "higher = worse" across all sources, matching the convention
-        used by downstream consumers like the ``sig.value > 0.3`` gate.
-        Raw epiplexity is preserved in ``detail`` for inspection.
+        Severity is derived from the monitor's ``status`` (not raw
+        epiplexity), because low epiplexity is ambiguous: it can mean
+        ``CONVERGING`` (task complete, healthy) or ``STAGNANT`` /
+        ``CRITICAL`` (loop pathology).  Status disambiguates these.
+
+        Severity mapping keeps healthy states (HEALTHY, CONVERGING,
+        EXPLORING) below the 0.3 experience-gate, and pathological
+        states (STAGNANT, CRITICAL) above it.  Raw epiplexity is
+        preserved in ``detail`` for inspection.
         """
         if ep_result is None:
             return []
+        severity = _STATUS_SEVERITY.get(ep_result.status.value, 0.0)
         return [WatcherSignal(
             category=SignalCategory.EPISTEMIC,
             source="epiplexity",
             stage_name=getattr(stage, "name", None),
-            value=1.0 - ep_result.epiplexity,
+            value=severity,
             detail={
                 "status": ep_result.status.value,
                 "integral": ep_result.epiplexic_integral,
