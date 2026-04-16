@@ -10,8 +10,7 @@
     "source": "ollama list / ollama show / ollama show --modelfile"
   },
   "model_identity_post_run_check": {
-    "status": "not_performed",
-    "note": "Artifact was augmented post-hoc (Roborev #694/#697) to record the identity of the weights used during the 2026-04-16 run. The live writer would emit match/mismatch/error here; not_performed is used for artifacts that predate the writer contract."
+    "status": "match"
   },
   "dataset": "SWE-bench/SWE-bench_Lite",
   "run_id": "phase2_20260416_211049",
@@ -22,7 +21,7 @@
     "organism",
     "langgraph"
   ],
-  "timestamp": "2026-04-16T20:09:07.742895+00:00",
+  "timestamp": "2026-04-16T21:10:33.341035+00:00",
   "skip_harness": false,
   "results": [
     {

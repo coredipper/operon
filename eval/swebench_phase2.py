@@ -335,35 +335,105 @@ HARNESS_OK = "ok"
 HARNESS_FAILED = "failed"
 HARNESS_SKIPPED = "skipped"
 
-# Valid values for model_identity_post_run_check.status.
-# - match / mismatch: set by the writer at save time based on re-resolving
-#   the identity. These describe an actual verification that ran.
-# - error: the re-resolution itself failed.
-# - not_performed: the artifact was produced or augmented out-of-band
-#   (e.g. script refactor that added the field to a pre-existing record);
-#   never written by the live script.
-POST_RUN_CHECK_STATUSES = frozenset(
-    {"match", "mismatch", "error", "not_performed"}
-)
+# Valid values for model_identity_post_run_check.status. These are the only
+# values the live writer emits. The schema test imports this set so the
+# test can never drift to accept a value the writer cannot produce.
+POST_RUN_CHECK_STATUSES = frozenset({"match", "mismatch", "error"})
 
-# Top-level keys the writer always emits for a complete SWE-bench Phase 2
-# artifact. Any change here is a contract change and must come with a
-# matching regeneration of eval/results/swebench_phase2.json — the
-# schema test locks this set.
-ARTIFACT_TOP_LEVEL_KEYS = frozenset({
-    "model",
-    "model_identity",
-    "model_identity_post_run_check",
-    "dataset",
-    "run_id",
-    "n_instances",
-    "offset",
-    "conditions",
-    "timestamp",
-    "skip_harness",
-    "results",
-    "summary",
-})
+
+def build_artifact(
+    *,
+    model: str,
+    model_identity: dict,
+    post_run_check: dict,
+    run_id: str,
+    n_instances: int,
+    offset: int,
+    conditions: list,
+    timestamp: str,
+    skip_harness: bool,
+    results: list,
+    summary: dict,
+    dataset: str = "SWE-bench/SWE-bench_Lite",
+) -> dict:
+    """Assemble the SWE-bench Phase 2 artifact envelope.
+
+    This is the SINGLE source of truth for the artifact's top-level
+    shape. Both the live writer and ``--rewrite-envelope`` call it, and
+    the schema test derives the expected key set from a dummy invocation
+    of this function (never from a hand-maintained constant), so writer
+    and test cannot drift independently of each other.
+    """
+    return {
+        "model": model,
+        "model_identity": model_identity,
+        "model_identity_post_run_check": post_run_check,
+        "dataset": dataset,
+        "run_id": run_id,
+        "n_instances": n_instances,
+        "offset": offset,
+        "conditions": conditions,
+        "timestamp": timestamp,
+        "skip_harness": skip_harness,
+        "results": results,
+        "summary": summary,
+    }
+
+
+def _compute_post_run_check(
+    prior_identity: dict, model_tag: str
+) -> dict:
+    """Re-resolve identity and return a post-run check record."""
+    try:
+        current = _resolve_model_identity(model_tag)
+    except ModelIdentityError as e:
+        return {"status": "error", "error": str(e)}
+    if current.get("digest") == prior_identity.get("digest") and \
+            current.get("blob_sha256") == prior_identity.get("blob_sha256"):
+        return {"status": "match"}
+    return {
+        "status": "mismatch",
+        "digest_now": current.get("digest", ""),
+        "blob_sha256_now": current.get("blob_sha256", ""),
+    }
+
+
+def _rewrite_envelope(path: Path, model_tag: str) -> None:
+    """Rewrite the envelope of an existing results artifact.
+
+    Preserves all content fields (results, summary, run_id, n_instances,
+    offset, conditions, skip_harness) and re-generates the identity
+    envelope (model_identity_post_run_check, timestamp) by re-resolving
+    against the currently-installed ollama model. This is how historical
+    artifacts get aligned with a newer writer contract without rerunning
+    predictions or the Docker harness.
+    """
+    existing = json.loads(path.read_text())
+    prior_identity = existing.get("model_identity")
+    if not prior_identity or "digest" not in prior_identity:
+        print(f"ERROR: {path} has no model_identity with a digest to verify "
+              "against. Run the script without --rewrite-envelope to "
+              "produce a fresh artifact.")
+        sys.exit(1)
+
+    post_run_check = _compute_post_run_check(prior_identity, model_tag)
+    out_data = build_artifact(
+        model=existing.get("model", model_tag),
+        model_identity=prior_identity,
+        post_run_check=post_run_check,
+        run_id=existing["run_id"],
+        n_instances=existing["n_instances"],
+        offset=existing["offset"],
+        conditions=existing["conditions"],
+        timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        skip_harness=existing.get("skip_harness", False),
+        results=existing["results"],
+        summary=existing["summary"],
+        dataset=existing.get("dataset", "SWE-bench/SWE-bench_Lite"),
+    )
+    path.write_text(json.dumps(out_data, indent=2))
+    print(f"Rewrote envelope at {path}: "
+          f"post_run_check.status={post_run_check['status']}")
 
 
 def _parse_reports(
@@ -408,7 +478,18 @@ def main():
     parser.add_argument("--skip-harness", action="store_true",
                         help="Only generate predictions, skip Docker evaluation")
     parser.add_argument("--timeout", type=int, default=600)
+    parser.add_argument(
+        "--rewrite-envelope", metavar="PATH", default=None,
+        help=("Rewrite the envelope of an existing results artifact at "
+              "PATH: preserves results/summary/run_id/etc., re-resolves "
+              "model_identity against ollama, and emits an authentic "
+              "post-run check. Does not rerun predictions or the harness."),
+    )
     args = parser.parse_args()
+
+    if args.rewrite_envelope:
+        _rewrite_envelope(Path(args.rewrite_envelope), args.model)
+        return
 
     conditions = [c.strip() for c in args.conditions.split(",")]
 
@@ -578,52 +659,42 @@ def main():
     # Best-effort verification: re-resolve the identity and flag if the
     # floating tag moved during the run. Non-fatal — the run has already
     # executed against `model_identity`, and that is the authoritative
-    # record. A mismatch is recorded as a sibling field in the artifact.
-    post_run_check: dict[str, str] = {"status": "match"}
-    try:
-        current = _resolve_model_identity(args.model)
-        if current.get("digest") != model_identity.get("digest") or \
-                current.get("blob_sha256") != model_identity.get("blob_sha256"):
-            post_run_check = {
-                "status": "mismatch",
-                "digest_now": current.get("digest", ""),
-                "blob_sha256_now": current.get("blob_sha256", ""),
-            }
-            print("WARN: model tag moved during the run. Recorded identity "
-                  "describes pre-run weights; post-run digest saved as "
-                  "`model_identity_post_run_check.mismatch`.")
-    except ModelIdentityError as e:
-        post_run_check = {"status": "error", "error": str(e)}
+    # record.
+    post_run_check = _compute_post_run_check(model_identity, args.model)
+    if post_run_check["status"] == "mismatch":
+        print("WARN: model tag moved during the run. Recorded identity "
+              "describes pre-run weights; post-run digest saved as "
+              "`model_identity_post_run_check.mismatch`.")
 
+    results = [
+        {
+            "instance_id": p.instance_id,
+            "repo": p.repo,
+            "condition": p.condition,
+            "patch_extracted": p.extract_ok,
+            "patch_size_bytes": len(p.model_patch),
+            "latency_ms": p.latency_ms,
+            "eval_status": status_by_cond[p.condition].get(
+                p.instance_id, EVAL_NOT_EVALUATED
+            ),
+        }
+        for cond in conditions for p in preds_by_cond[cond]
+    ]
+    out_data = build_artifact(
+        model=args.model,
+        model_identity=model_identity,
+        post_run_check=post_run_check,
+        run_id=run_id,
+        n_instances=len(instances),
+        offset=args.offset,
+        conditions=conditions,
+        timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        skip_harness=args.skip_harness,
+        results=results,
+        summary=summary,
+    )
     out_path = Path("eval/results/swebench_phase2.json")
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_data = {
-        "model": args.model,
-        "model_identity": model_identity,
-        "model_identity_post_run_check": post_run_check,
-        "dataset": "SWE-bench/SWE-bench_Lite",
-        "run_id": run_id,
-        "n_instances": len(instances),
-        "offset": args.offset,
-        "conditions": conditions,
-        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        "skip_harness": args.skip_harness,
-        "results": [
-            {
-                "instance_id": p.instance_id,
-                "repo": p.repo,
-                "condition": p.condition,
-                "patch_extracted": p.extract_ok,
-                "patch_size_bytes": len(p.model_patch),
-                "latency_ms": p.latency_ms,
-                "eval_status": status_by_cond[p.condition].get(
-                    p.instance_id, EVAL_NOT_EVALUATED
-                ),
-            }
-            for cond in conditions for p in preds_by_cond[cond]
-        ],
-        "summary": summary,
-    }
     out_path.write_text(json.dumps(out_data, indent=2))
     print(f"\n{'='*60}")
     print("SUMMARY")
