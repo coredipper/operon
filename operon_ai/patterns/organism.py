@@ -58,9 +58,10 @@ def _merge_parallel_results(
             # Scalars: apply only if changed from snapshot.
             if key.startswith("_"):
                 snap_val = snap.get(key)
-                if isinstance(value, list) and isinstance(snap_val, list):
-                    # Only append items beyond the snapshot length
-                    new_items = value[len(snap_val):]
+                if isinstance(value, list):
+                    # Treat missing snapshot as empty list baseline
+                    baseline = snap_val if isinstance(snap_val, list) else []
+                    new_items = value[len(baseline):]
                     if new_items:
                         current = state.get(key, [])
                         if isinstance(current, list):
