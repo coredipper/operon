@@ -331,11 +331,33 @@ class CompilerFunctor:
         # group-level topology built from the organism's stage_groups.
         has_parallel = compiled.get("config", {}).get("has_parallel_groups", False)
         if has_parallel:
-            # Verify target matches the exact expected fork/join topology
-            # derived from the source organism's stage_groups
+            # Reconstruct expected fork/join topology independently
+            # from _stage_groups metadata (not from compiled agents/edges)
             cfg = compiled.get("config", {})
-            exp_nodes = set(cfg.get("_expected_nodes", []))
-            exp_edges = {tuple(e) for e in cfg.get("_expected_edges", [])}
+            stage_groups = cfg.get("_stage_groups", [])
+            exp_nodes: set[str] = set()
+            exp_edges: set[tuple[str, str]] = set()
+            entry_names: list[str] = []
+            exit_names: list[str] = []
+            for i, grp in enumerate(stage_groups):
+                if len(grp) == 1:
+                    exp_nodes.add(grp[0])
+                    entry_names.append(grp[0])
+                    exit_names.append(grp[0])
+                else:
+                    fn = f"__fork_{i}"
+                    jn = f"__join_{i}"
+                    exp_nodes.add(fn)
+                    exp_nodes.add(jn)
+                    for sn in grp:
+                        exp_nodes.add(sn)
+                        exp_edges.add((fn, sn))
+                        exp_edges.add((sn, jn))
+                    entry_names.append(fn)
+                    exit_names.append(jn)
+            for i in range(len(exit_names) - 1):
+                exp_edges.add((exit_names[i], entry_names[i + 1]))
+
             graph_ok = (
                 set(target.stage_names) == exp_nodes
                 and set(target.edges) == exp_edges
@@ -465,7 +487,6 @@ def _compile_langgraph(organism: SkillOrganism, *, config: RuntimeConfig | None 
     certificates = [certificate_to_dict(c) for c in organism.collect_certificates()]
 
     has_parallel = any(len(g) > 1 for g in groups)
-    agent_names = [a["name"] for a in agents]
     return {
         "agents": agents,
         "edges": edges,
@@ -474,10 +495,11 @@ def _compile_langgraph(organism: SkillOrganism, *, config: RuntimeConfig | None 
             "runtime": "langgraph",
             "node_count": len(agents),
             "has_parallel_groups": has_parallel,
-            # Store expected topology derived from source organism for
-            # independent verification (not used to build agents/edges)
-            "_expected_nodes": agent_names,
-            "_expected_edges": [list(e) for e in edges],
+            # Source stage_groups for independent topology reconstruction
+            # during verification (not used to build agents/edges)
+            "_stage_groups": [
+                [s.name for s in g] for g in groups
+            ],
         },
     }
 
