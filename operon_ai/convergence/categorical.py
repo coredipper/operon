@@ -335,18 +335,20 @@ class CompilerFunctor:
             # from _stage_groups metadata (not from compiled agents/edges)
             cfg = compiled.get("config", {})
             stage_groups = cfg.get("_stage_groups", [])
+            fj_names = cfg.get("_fork_join_names", [])
             exp_nodes: set[str] = set()
             exp_edges: set[tuple[str, str]] = set()
             entry_names: list[str] = []
             exit_names: list[str] = []
             for i, grp in enumerate(stage_groups):
+                fj = fj_names[i] if i < len(fj_names) else None
                 if len(grp) == 1:
                     exp_nodes.add(grp[0])
                     entry_names.append(grp[0])
                     exit_names.append(grp[0])
                 else:
-                    fn = f"__fork_{i}"
-                    jn = f"__join_{i}"
+                    fn = fj[0] if fj else f"__fork_{i}"
+                    jn = fj[1] if fj else f"__join_{i}"
                     exp_nodes.add(fn)
                     exp_nodes.add(jn)
                     for sn in grp:
@@ -495,10 +497,15 @@ def _compile_langgraph(organism: SkillOrganism, *, config: RuntimeConfig | None 
             "runtime": "langgraph",
             "node_count": len(agents),
             "has_parallel_groups": has_parallel,
-            # Source stage_groups for independent topology reconstruction
-            # during verification (not used to build agents/edges)
+            # Source stage_groups + generated fork/join names for
+            # independent topology reconstruction during verification
             "_stage_groups": [
                 [s.name for s in g] for g in groups
+            ],
+            "_fork_join_names": [
+                (group_entry_names[i], group_exit_names[i])
+                if len(groups[i]) > 1 else None
+                for i in range(len(groups))
             ],
         },
     }
