@@ -146,7 +146,7 @@ CONFIGS = [
         "latencies": {"a": 100, "b": 200},
     },
     {
-        "name": "adjacent-2par+2par",
+        "name": "adjacent-2par+2par-asym",
         "parallel_stages": [
             [
                 SkillStage(name="a", role="A", handler=_make_sleep_handler(100), mode="fixed"),
@@ -154,16 +154,16 @@ CONFIGS = [
             ],
             [
                 SkillStage(name="c", role="C", handler=_make_sleep_handler(100), mode="fixed"),
-                SkillStage(name="d", role="D", handler=_make_sleep_handler(100), mode="fixed"),
+                SkillStage(name="d", role="D", handler=_make_sleep_handler(300), mode="fixed"),
             ],
         ],
         "sequential_stages": [
             SkillStage(name="a", role="A", handler=_make_sleep_handler(100), mode="fixed"),
             SkillStage(name="b", role="B", handler=_make_sleep_handler(100), mode="fixed"),
             SkillStage(name="c", role="C", handler=_make_sleep_handler(100), mode="fixed"),
-            SkillStage(name="d", role="D", handler=_make_sleep_handler(100), mode="fixed"),
+            SkillStage(name="d", role="D", handler=_make_sleep_handler(300), mode="fixed"),
         ],
-        "latencies": {"a": 100, "b": 100, "c": 100, "d": 100},
+        "latencies": {"a": 100, "b": 100, "c": 100, "d": 300},
     },
     {
         "name": "sequential-baseline",
