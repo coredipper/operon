@@ -7,6 +7,7 @@ fresh run. These tests lock the schema and the failure contract.
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -22,6 +23,7 @@ from eval.swebench_phase2 import (  # noqa: E402
     _IDENTITY_REQUIRED,
     _parse_ollama_show,
     _resolve_model_identity,
+    _rewrite_envelope,
     build_artifact,
 )
 
@@ -189,6 +191,112 @@ def test_committed_artifact_schema_matches_writer():
             assert key in check, f"mismatch status requires {key!r}"
     elif check["status"] == "error":
         assert "error" in check, "error status requires 'error' message"
+
+
+def test_rewrite_envelope_refuses_explicit_model_mismatch(tmp_path):
+    """If --model is supplied explicitly and disagrees with the artifact,
+    --rewrite-envelope must refuse rather than verify against the wrong tag.
+
+    Catches the review #707 regression: previously, args.model (defaulting
+    to gemma4:latest) was used for verification even when the artifact
+    recorded a different model, which could silently emit a false
+    match/mismatch for a model that never ran.
+    """
+    artifact = build_artifact(
+        model="llama3.1:8b",  # artifact is for a different model
+        model_identity={
+            "tag": "llama3.1:8b",
+            "digest": "abc123",
+            "blob_sha256": "def",
+            "architecture": "llama",
+            "parameters": "8.0B",
+            "quantization": "Q4_K_M",
+            "source": "test",
+        },
+        post_run_check={"status": "match"},
+        run_id="r",
+        n_instances=0,
+        offset=0,
+        conditions=[],
+        timestamp="t",
+        skip_harness=False,
+        results=[],
+        summary={},
+    )
+    p = tmp_path / "a.json"
+    p.write_text(json.dumps(artifact))
+
+    # Caller passed --model explicitly with a DIFFERENT tag — must refuse.
+    with pytest.raises(SystemExit) as exc_info:
+        _rewrite_envelope(p, "gemma4:latest", cli_model_was_default=False)
+    assert exc_info.value.code == 1
+
+    # Artifact must not have been overwritten.
+    after = json.loads(p.read_text())
+    assert after == artifact
+
+
+def test_rewrite_envelope_uses_artifact_model_when_default(tmp_path):
+    """When --model takes its default, rewrite verifies against the
+    artifact's recorded model, not the CLI default.
+
+    This is the "rewrite a historical artifact" path. The artifact
+    records what actually ran; the rewrite must trust it.
+    """
+    artifact = build_artifact(
+        model="llama3.1:8b",
+        model_identity={
+            "tag": "llama3.1:8b",
+            "digest": "abc123",
+            "blob_sha256": "deadbeef",
+            "architecture": "llama",
+            "parameters": "8.0B",
+            "quantization": "Q4_K_M",
+            "source": "test",
+        },
+        post_run_check={"status": "match"},
+        run_id="r",
+        n_instances=0,
+        offset=0,
+        conditions=[],
+        timestamp="t",
+        skip_harness=False,
+        results=[],
+        summary={},
+    )
+    p = tmp_path / "a.json"
+    p.write_text(json.dumps(artifact))
+
+    seen_tags = []
+
+    def fake_resolve(tag):
+        seen_tags.append(tag)
+        return {
+            "tag": tag,
+            "digest": "abc123",
+            "blob_sha256": "deadbeef",
+            "architecture": "llama",
+            "parameters": "8.0B",
+            "quantization": "Q4_K_M",
+            "source": "test",
+        }
+
+    # cli_model_was_default=True means user did NOT set --model.
+    # The CLI tag passed in is the default ("gemma4:latest"), but the
+    # rewrite should ignore it and verify against the artifact's "llama3.1:8b".
+    with patch(
+        "eval.swebench_phase2._resolve_model_identity",
+        side_effect=fake_resolve,
+    ):
+        _rewrite_envelope(p, "gemma4:latest", cli_model_was_default=True)
+
+    assert seen_tags == ["llama3.1:8b"], (
+        f"verification tag must come from the artifact, not the CLI default; "
+        f"got {seen_tags}"
+    )
+    after = json.loads(p.read_text())
+    assert after["model"] == "llama3.1:8b"
+    assert after["model_identity_post_run_check"]["status"] == "match"
 
 
 def test_build_artifact_has_stable_shape():

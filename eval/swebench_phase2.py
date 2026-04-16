@@ -398,7 +398,9 @@ def _compute_post_run_check(
     }
 
 
-def _rewrite_envelope(path: Path, model_tag: str) -> None:
+def _rewrite_envelope(
+    path: Path, cli_model_tag: str, cli_model_was_default: bool
+) -> None:
     """Rewrite the envelope of an existing results artifact.
 
     Preserves all content fields (results, summary, run_id, n_instances,
@@ -407,6 +409,12 @@ def _rewrite_envelope(path: Path, model_tag: str) -> None:
     against the currently-installed ollama model. This is how historical
     artifacts get aligned with a newer writer contract without rerunning
     predictions or the Docker harness.
+
+    The verification tag is taken from the artifact itself (``existing["model"]``),
+    not from ``--model``, so a stale or default CLI flag cannot silently
+    verify the wrong tag. If ``--model`` was set explicitly to a value
+    that disagrees with the artifact's recorded model, the rewrite
+    refuses rather than emit a status for the wrong model.
     """
     existing = json.loads(path.read_text())
     prior_identity = existing.get("model_identity")
@@ -416,9 +424,26 @@ def _rewrite_envelope(path: Path, model_tag: str) -> None:
               "produce a fresh artifact.")
         sys.exit(1)
 
-    post_run_check = _compute_post_run_check(prior_identity, model_tag)
+    artifact_model = existing.get("model")
+    if not artifact_model:
+        print(f"ERROR: {path} has no `model` field. Cannot determine which "
+              "tag to verify against.")
+        sys.exit(1)
+
+    # If the user supplied --model explicitly and it disagrees with the
+    # artifact, refuse. An implicit default does not disagree — we trust
+    # the artifact's own record in that case.
+    if not cli_model_was_default and cli_model_tag != artifact_model:
+        print(f"ERROR: --model {cli_model_tag!r} disagrees with the "
+              f"artifact's recorded model {artifact_model!r}. Refusing "
+              "to verify against a different tag. Remove --model to use "
+              "the artifact's own value, or update the artifact.")
+        sys.exit(1)
+
+    verification_tag = artifact_model
+    post_run_check = _compute_post_run_check(prior_identity, verification_tag)
     out_data = build_artifact(
-        model=existing.get("model", model_tag),
+        model=artifact_model,
         model_identity=prior_identity,
         post_run_check=post_run_check,
         run_id=existing["run_id"],
@@ -432,7 +457,8 @@ def _rewrite_envelope(path: Path, model_tag: str) -> None:
         dataset=existing.get("dataset", "SWE-bench/SWE-bench_Lite"),
     )
     path.write_text(json.dumps(out_data, indent=2))
-    print(f"Rewrote envelope at {path}: "
+    print(f"Rewrote envelope at {path} (verified against "
+          f"{verification_tag!r}): "
           f"post_run_check.status={post_run_check['status']}")
 
 
@@ -469,9 +495,15 @@ def _parse_reports(
 # Main
 # ---------------------------------------------------------------------------
 
+_DEFAULT_MODEL = "gemma4:latest"
+
+
 def main():
     parser = argparse.ArgumentParser(description="SWE-bench-lite Phase 2 (Docker)")
-    parser.add_argument("--model", default="gemma4:latest")
+    # Sentinel default lets us distinguish an explicit --model from a
+    # defaulted one. The rewrite path uses this to refuse verifying
+    # against a tag the user supplied that disagrees with the artifact.
+    parser.add_argument("--model", default=None)
     parser.add_argument("--n", type=int, default=10)
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--conditions", default="baseline,organism,langgraph")
@@ -487,8 +519,14 @@ def main():
     )
     args = parser.parse_args()
 
+    cli_model_was_default = args.model is None
+    if cli_model_was_default:
+        args.model = _DEFAULT_MODEL
+
     if args.rewrite_envelope:
-        _rewrite_envelope(Path(args.rewrite_envelope), args.model)
+        _rewrite_envelope(
+            Path(args.rewrite_envelope), args.model, cli_model_was_default,
+        )
         return
 
     conditions = [c.strip() for c in args.conditions.split(",")]
