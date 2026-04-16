@@ -433,13 +433,66 @@ class TestLangGraphFunctor:
         assert p.interface_preserved
         assert p.all_preserved
 
-        # Target has 2 nodes: 1 parallel group + 1 sequential (c)
-        from operon_ai.convergence.langgraph_compiler import compute_group_node_names
-        expected_names = compute_group_node_names(
-            org.stage_groups, {s.name for s in org.stages}
-        )
+        # Target has fork + stages + join + sequential stage
         t = result.target_architecture
-        assert t.stage_count == 2
-        assert list(t.stage_names) == expected_names
-        assert len(t.edges) == 1
-        assert t.edges[0] == (expected_names[0], expected_names[1])
+        # Nodes: __fork_0, a, b, __join_0, c = 5 nodes
+        assert t.stage_count == 5
+        assert "__fork_0" in t.stage_names
+        assert "__join_0" in t.stage_names
+        assert "a" in t.stage_names
+        assert "b" in t.stage_names
+        assert "c" in t.stage_names
+        # Edges: fork→a, fork→b, a→join, b→join, join→c = 5 edges
+        assert ("__fork_0", "a") in t.edges
+        assert ("__fork_0", "b") in t.edges
+        assert ("a", "__join_0") in t.edges
+        assert ("b", "__join_0") in t.edges
+        assert ("__join_0", "c") in t.edges
+
+    def test_grouped_organism_with_colliding_stage_names(self):
+        """Fork/join names avoid collision with user stage names."""
+        fast = Nucleus(provider=MockProvider(responses={}))
+        deep = Nucleus(provider=MockProvider(responses={}))
+        org = skill_organism(
+            stages=[
+                [
+                    SkillStage(name="__fork_0", role="A", instructions="a", mode="fixed"),
+                    SkillStage(name="__join_0", role="B", instructions="b", mode="fixed"),
+                ],
+                SkillStage(name="c", role="C", instructions="c", mode="fuzzy"),
+            ],
+            fast_nucleus=fast,
+            deep_nucleus=deep,
+            budget=ATP_Store(budget=1000, silent=True),
+        )
+        result = langgraph_functor.compile(org)
+        p = result.preservation
+
+        # Certificates preserved
+        assert p.certificate_preserved
+
+        # Graph preserved despite collision — compiler avoids __fork_0/__join_0
+        assert p.graph_preserved
+        assert p.all_preserved
+
+        # 5 nodes: renamed_fork, __fork_0 (user), __join_0 (user), renamed_join, c
+        t = result.target_architecture
+        assert t.stage_count == 5
+        assert "__fork_0" in t.stage_names  # user stage
+        assert "__join_0" in t.stage_names  # user stage
+        assert "c" in t.stage_names
+
+        # Identify the generated fork/join names (renamed to avoid collision)
+        generated = [n for n in t.stage_names
+                     if n not in {"__fork_0", "__join_0", "c"}]
+        assert len(generated) == 2
+        fork_gen = next(n for n in generated if "fork" in n)
+        join_gen = next(n for n in generated if "join" in n)
+
+        # Verify exact fork/join edges (exactly 5, no extras)
+        assert len(t.edges) == 5
+        assert (fork_gen, "__fork_0") in t.edges   # fork → user stage A
+        assert (fork_gen, "__join_0") in t.edges   # fork → user stage B
+        assert ("__fork_0", join_gen) in t.edges   # user stage A → join
+        assert ("__join_0", join_gen) in t.edges   # user stage B → join
+        assert (join_gen, "c") in t.edges          # join → sequential stage

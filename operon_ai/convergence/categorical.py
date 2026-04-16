@@ -331,19 +331,38 @@ class CompilerFunctor:
         # group-level topology built from the organism's stage_groups.
         has_parallel = compiled.get("config", {}).get("has_parallel_groups", False)
         if has_parallel:
-            # Verify target against independently computed expected topology
-            # (derived from source organism's stage_groups, stored in config)
+            # Reconstruct expected fork/join topology independently
+            # from _stage_groups metadata (not from compiled agents/edges)
             cfg = compiled.get("config", {})
-            expected_names = cfg.get("expected_node_names", [])
-            # Derive expected edges from expected_node_names (independent
-            # of compiled["edges"] to avoid aliasing)
-            expected_edges = [
-                (expected_names[i], expected_names[i + 1])
-                for i in range(len(expected_names) - 1)
-            ]
+            stage_groups = cfg.get("_stage_groups", [])
+            fj_names = cfg.get("_fork_join_names", [])
+            exp_nodes: set[str] = set()
+            exp_edges: set[tuple[str, str]] = set()
+            entry_names: list[str] = []
+            exit_names: list[str] = []
+            for i, grp in enumerate(stage_groups):
+                fj = fj_names[i] if i < len(fj_names) else None
+                if len(grp) == 1:
+                    exp_nodes.add(grp[0])
+                    entry_names.append(grp[0])
+                    exit_names.append(grp[0])
+                else:
+                    fn = fj[0] if fj else f"__fork_{i}"
+                    jn = fj[1] if fj else f"__join_{i}"
+                    exp_nodes.add(fn)
+                    exp_nodes.add(jn)
+                    for sn in grp:
+                        exp_nodes.add(sn)
+                        exp_edges.add((fn, sn))
+                        exp_edges.add((sn, jn))
+                    entry_names.append(fn)
+                    exit_names.append(jn)
+            for i in range(len(exit_names) - 1):
+                exp_edges.add((exit_names[i], entry_names[i + 1]))
+
             graph_ok = (
-                list(target.stage_names) == expected_names
-                and list(target.edges) == expected_edges
+                set(target.stage_names) == exp_nodes
+                and set(target.edges) == exp_edges
             )
         else:
             graph_ok = stages_embedded and edges_embedded
@@ -371,12 +390,9 @@ class CompilerFunctor:
         # (mode→model mapping may differ since compilers remap models)
         source_stage_set = frozenset(source.stage_names)
         target_stage_set = frozenset(target.stage_names)
-        # For parallel groups, verify interface names match expected group nodes
+        # For parallel groups, verify all source stages are present in target
         if has_parallel:
-            cfg = compiled.get("config", {})
-            expected_iface_names = list(cfg.get("expected_node_names", []))
-            target_iface_names = [name for name, _ in target.interface]
-            interface_ok = target_iface_names == expected_iface_names
+            interface_ok = source_stage_set <= target_stage_set
         else:
             interface_ok = source_stage_set <= target_stage_set
         details["source_stage_names"] = sorted(source_stage_set)
@@ -434,25 +450,42 @@ def _compile_langgraph(organism: SkillOrganism, *, config: RuntimeConfig | None 
             "functor. Use organism_to_langgraph() directly."
         )
 
-    from .langgraph_compiler import compute_group_node_names
-
     groups = organism.stage_groups or tuple((s,) for s in organism.stages)
-    all_stage_names = {s.name for s in organism.stages}
 
-    # Use the same node naming as the runtime compiler
-    node_names = compute_group_node_names(groups, all_stage_names)
+    # Model the actual LangGraph topology: fork → stages → join
+    agents = []
+    edges: list[tuple[str, str]] = []
+    all_names = {s.name for s in organism.stages}
 
-    # Agents use node-level names (matching the actual LangGraph nodes)
-    agents = [
-        {"name": node_names[i], "role": ",".join(s.role for s in group),
-         "model": ",".join(s.mode for s in group)}
-        for i, group in enumerate(groups)
-    ]
+    # Track entry/exit nodes per group for sequential wiring
+    group_entry_names: list[str] = []
+    group_exit_names: list[str] = []
 
-    edges = [
-        (node_names[i], node_names[i + 1])
-        for i in range(len(node_names) - 1)
-    ]
+    for i, group in enumerate(groups):
+        if len(group) == 1:
+            stage = group[0]
+            agents.append({"name": stage.name, "role": stage.role, "model": stage.mode})
+            group_entry_names.append(stage.name)
+            group_exit_names.append(stage.name)
+        else:
+            fork_name = f"__fork_{i}"
+            while fork_name in all_names:
+                fork_name = f"__fork_{i}_{id(group)}"
+            join_name = f"__join_{i}"
+            while join_name in all_names:
+                join_name = f"__join_{i}_{id(group)}"
+            agents.append({"name": fork_name, "role": "fork", "model": "internal"})
+            for stage in group:
+                agents.append({"name": stage.name, "role": stage.role, "model": stage.mode})
+                edges.append((fork_name, stage.name))
+                edges.append((stage.name, join_name))
+            agents.append({"name": join_name, "role": "join", "model": "internal"})
+            group_entry_names.append(fork_name)
+            group_exit_names.append(join_name)
+
+    # Wire groups sequentially
+    for i in range(len(group_exit_names) - 1):
+        edges.append((group_exit_names[i], group_entry_names[i + 1]))
     certificates = [certificate_to_dict(c) for c in organism.collect_certificates()]
 
     has_parallel = any(len(g) > 1 for g in groups)
@@ -462,10 +495,18 @@ def _compile_langgraph(organism: SkillOrganism, *, config: RuntimeConfig | None 
         "certificates": certificates,
         "config": {
             "runtime": "langgraph",
-            "node_count": len(node_names),
+            "node_count": len(agents),
             "has_parallel_groups": has_parallel,
-            # Independent expected topology for verification (from source organism)
-            "expected_node_names": list(node_names),
+            # Source stage_groups + generated fork/join names for
+            # independent topology reconstruction during verification
+            "_stage_groups": [
+                [s.name for s in g] for g in groups
+            ],
+            "_fork_join_names": [
+                (group_entry_names[i], group_exit_names[i])
+                if len(groups[i]) > 1 else None
+                for i in range(len(groups))
+            ],
         },
     }
 

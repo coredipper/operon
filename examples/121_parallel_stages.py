@@ -122,7 +122,28 @@ def main():
     print(f"  both present: {'writer_a' in result3.shared_state and 'writer_b' in result3.shared_state}")
 
     # ------------------------------------------------------------------
-    # 5. Backward compatibility: flat list = sequential
+    # 5. LangGraph fan-out/fan-in (requires operon-ai[langgraph])
+    # ------------------------------------------------------------------
+    print("\n--- LangGraph Fan-Out/Fan-In ---")
+
+    from operon_ai.convergence.langgraph_compiler import HAS_LANGGRAPH
+    if not HAS_LANGGRAPH:
+        print("  (skipped — install operon-ai[langgraph] for this demo)")
+    else:
+        from operon_ai.convergence.langgraph_compiler import organism_to_langgraph
+
+        graph = organism_to_langgraph(org2)
+        all_nodes = list(graph.nodes.keys())
+        stage_nodes = [n for n in all_nodes if not n.startswith("__")]
+        infra_nodes = [n for n in all_nodes if n.startswith("__") and not n.startswith("__start") and not n.startswith("__end")]
+
+        print(f"  all nodes:   {all_nodes}")
+        print(f"  stage nodes: {stage_nodes}")
+        print(f"  infra nodes: {infra_nodes}")
+        print(f"  fork/join visible in LangGraph Studio!")
+
+    # ------------------------------------------------------------------
+    # 6. Backward compatibility: flat list = sequential
     # ------------------------------------------------------------------
     print("\n--- Backward Compatibility ---")
 

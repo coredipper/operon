@@ -57,6 +57,9 @@ class LangGraphState(TypedDict):
     shared_state: dict[str, Any]
     halted: bool
     _routing: str  # "continue" / "halt" / "blocked"
+    # Fan-out/fan-in support for parallel groups
+    _parallel_results: Annotated[list, operator.add]
+    _parallel_snap: dict[str, Any]
 
 
 # ---------------------------------------------------------------------------
@@ -190,31 +193,36 @@ def organism_to_langgraph(organism: Any) -> Any:
 
         return node
 
-    def make_group_node(group, resolved_name):
-        """Create a LangGraph node for a parallel group.
+    def make_parallel_stage_node(stage):
+        """Create a LangGraph node for a stage within a parallel group.
 
-        Calls organism._run_group() which handles ThreadPoolExecutor
-        dispatch, state isolation, and merge internally.
+        Like make_stage_node but also appends to _parallel_results for
+        the join node to merge.
         """
-        group_name = resolved_name
-
         def node(state: LangGraphState) -> dict:
-            ctx = RunContext(state.get("shared_state", {}), watcher_key=watcher_key)
-            outputs = state.get("stage_outputs", {})
+            import copy as _copy
+            ctx = RunContext(
+                _copy.deepcopy(state.get("shared_state", {})),
+                watcher_key=watcher_key,
+            )
+            outputs = _copy.deepcopy(state.get("stage_outputs", {}))
             results: list[SkillStageResult] = []
 
             try:
-                decision = organism._run_group(
-                    group, state["task"], ctx, outputs, results,
+                decision = organism.run_single_stage(
+                    stage, state["task"], ctx, outputs, results,
                 )
             except Exception as exc:
                 return {
-                    "halted": True,
-                    "_routing": "halt",
-                    "shared_state": dict(ctx),
-                    "stage_results": [{
-                        "stage": group_name, "output": f"Error: {exc}",
-                        "error": str(exc),
+                    "_parallel_results": [{
+                        "stage": stage.name,
+                        "shared_state": dict(ctx),
+                        "stage_outputs": outputs,
+                        "stage_results": [{
+                            "stage": stage.name, "output": f"Error: {exc}",
+                            "error": str(exc),
+                        }],
+                        "decision": "halt",
                     }],
                 }
 
@@ -230,43 +238,151 @@ def organism_to_langgraph(organism: Any) -> Any:
                 outputs[sr.stage_name] = out
 
             return {
-                "stage_outputs": outputs,
-                "stage_results": new_results,
-                "shared_state": dict(ctx),
-                "halted": decision != "continue",
-                "_routing": decision,
+                "_parallel_results": [{
+                    "stage": stage.name,
+                    "shared_state": dict(ctx),
+                    "stage_outputs": outputs,
+                    "stage_results": new_results,
+                    "decision": decision,
+                }],
             }
 
-        return node, group_name
+        return node
 
-    # Build the graph — one node per group
+    def make_fork_node():
+        """Create a fork node that snapshots state before fan-out."""
+        def node(state: LangGraphState) -> dict:
+            import copy as _copy
+            return {
+                "_parallel_snap": _copy.deepcopy(state.get("shared_state", {})),
+                "_parallel_results": [],  # clear from any previous group
+            }
+        return node
+
+    def make_fork_router(group):
+        """Create a conditional edge function that returns Send objects."""
+        def router(state: LangGraphState):
+            try:
+                from langgraph.types import Send
+            except ImportError:
+                from langgraph.graph import Send
+            import copy as _copy
+            snap = state.get("_parallel_snap", state.get("shared_state", {}))
+            snap_outputs = state.get("stage_outputs", {})
+            return [
+                Send(stage.name, {
+                    "messages": state.get("messages", []),
+                    "task": state["task"],
+                    "shared_state": _copy.deepcopy(snap),
+                    "stage_outputs": _copy.deepcopy(snap_outputs),
+                    "stage_results": [],
+                    "halted": False,
+                    "_routing": "continue",
+                    "_parallel_results": [],
+                    "_parallel_snap": {},
+                })
+                for stage in group
+            ]
+        return router
+
+    def make_join_node(group):
+        """Create a join node that merges parallel results."""
+        from ..patterns.organism import _merge_parallel_results
+
+        def node(state: LangGraphState) -> dict:
+            snap = state.get("_parallel_snap", {})
+            parallel_results = state.get("_parallel_results", [])
+
+            # Build per_stage in declared group order (not reducer order)
+            results_by_stage = {r["stage"]: r for r in parallel_results}
+            per_stage: dict[str, tuple] = {}
+            all_stage_results = []
+            for stage in group:
+                r = results_by_stage.get(stage.name)
+                if r is None:
+                    continue
+                per_stage[stage.name] = (
+                    r["shared_state"],
+                    r["stage_outputs"],
+                    [],
+                    r["decision"],
+                )
+                all_stage_results.extend(r.get("stage_results", []))
+
+            merged_state = dict(snap)
+            merged_outputs = dict(state.get("stage_outputs", {}))
+            merged_results: list = []
+
+            _merge_parallel_results(
+                merged_state, merged_outputs, merged_results,
+                snap, per_stage,
+            )
+
+            halted = any(r["decision"] != "continue" for r in parallel_results)
+            return {
+                "shared_state": merged_state,
+                "stage_outputs": merged_outputs,
+                "stage_results": all_stage_results,
+                "halted": halted,
+                "_routing": "halt" if halted else "continue",
+                "_parallel_results": [],
+            }
+
+        return node
+
+    # Build the graph — fan-out/fan-in for parallel groups
     builder = StateGraph(LangGraphState)
 
-    all_stage_names = {s.name for s in organism.stages}
-    node_names = compute_group_node_names(groups, all_stage_names)
+    # Collect all node names for sequential wiring between groups
+    group_entry_nodes: list[str] = []  # first node of each group
+    group_exit_nodes: list[str] = []   # last node of each group
 
     for i, group in enumerate(groups):
-        name = node_names[i]
         if len(group) == 1:
-            builder.add_node(name, make_stage_node(group[0]))
+            # Sequential: single node
+            stage = group[0]
+            builder.add_node(stage.name, make_stage_node(stage))
+            group_entry_nodes.append(stage.name)
+            group_exit_nodes.append(stage.name)
         else:
-            node_fn, _ = make_group_node(group, name)
-            builder.add_node(name, node_fn)
+            # Parallel: fork → [stage_a, stage_b, ...] → join
+            all_stage_names = {s.name for s in organism.stages}
+            fork_name = f"__fork_{i}"
+            while fork_name in all_stage_names:
+                fork_name = f"__fork_{i}_{id(group)}"
+            join_name = f"__join_{i}"
+            while join_name in all_stage_names:
+                join_name = f"__join_{i}_{id(group)}"
 
-    # Routing: each node → next or END
+            builder.add_node(fork_name, make_fork_node())
+            for stage in group:
+                builder.add_node(stage.name, make_parallel_stage_node(stage))
+            builder.add_node(join_name, make_join_node(group))
+
+            # Fork → Send to each stage (fan-out)
+            builder.add_conditional_edges(fork_name, make_fork_router(group))
+
+            # Each stage → join (fan-in)
+            for stage in group:
+                builder.add_edge(stage.name, join_name)
+
+            group_entry_nodes.append(fork_name)
+            group_exit_nodes.append(join_name)
+
+    # Wire groups sequentially with routing
     def route(state: LangGraphState) -> str:
         return "halt" if state.get("_routing") != "continue" else "next"
 
-    for i, name in enumerate(node_names):
-        if i < len(node_names) - 1:
+    for i in range(len(group_exit_nodes)):
+        if i < len(group_entry_nodes) - 1:
             builder.add_conditional_edges(
-                name, route,
-                {"next": node_names[i + 1], "halt": END},
+                group_exit_nodes[i], route,
+                {"next": group_entry_nodes[i + 1], "halt": END},
             )
         else:
-            builder.add_edge(name, END)
+            builder.add_edge(group_exit_nodes[i], END)
 
-    builder.add_edge(START, node_names[0])
+    builder.add_edge(START, group_entry_nodes[0])
     return builder.compile()
 
 
@@ -308,6 +424,8 @@ def run_organism_langgraph(
         "shared_state": dict(ctx),
         "halted": False,
         "_routing": "continue",
+        "_parallel_results": [],
+        "_parallel_snap": {},
     })
     elapsed_ms = (time.monotonic() - t0) * 1000
 
