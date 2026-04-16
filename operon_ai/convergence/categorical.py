@@ -327,10 +327,17 @@ class CompilerFunctor:
         edges_embedded = source_edges <= target_edges
 
         # Parallel groups reshape the graph intentionally — stages are
-        # collapsed into composite group nodes. This is correct behavior,
-        # not a preservation failure.
+        # collapsed into composite group nodes. Verify group-level structure
+        # (correct node count and edge chain) instead of stage-level embedding.
         has_parallel = compiled.get("config", {}).get("has_parallel_groups", False)
-        graph_ok = (stages_embedded and edges_embedded) or has_parallel
+        if has_parallel:
+            expected_nodes = compiled.get("config", {}).get("node_count", 0)
+            graph_ok = (
+                target.stage_count == expected_nodes
+                and len(target.edges) == max(0, expected_nodes - 1)
+            )
+        else:
+            graph_ok = stages_embedded and edges_embedded
         details["source_stages"] = source.stage_count
         details["target_stages"] = target.stage_count
         details["stages_embedded"] = stages_embedded
@@ -355,7 +362,12 @@ class CompilerFunctor:
         # (mode→model mapping may differ since compilers remap models)
         source_stage_set = frozenset(source.stage_names)
         target_stage_set = frozenset(target.stage_names)
-        interface_ok = (source_stage_set <= target_stage_set) or has_parallel
+        # For parallel groups, interface is at group-node level
+        if has_parallel:
+            n = compiled.get("config", {}).get("node_count", 0)
+            interface_ok = len(target.interface) == n
+        else:
+            interface_ok = source_stage_set <= target_stage_set
         details["source_stage_names"] = sorted(source_stage_set)
         details["target_stage_names"] = sorted(target_stage_set)
 
