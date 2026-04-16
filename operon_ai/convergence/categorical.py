@@ -331,11 +331,12 @@ class CompilerFunctor:
         # group-level topology built from the organism's stage_groups.
         has_parallel = compiled.get("config", {}).get("has_parallel_groups", False)
         if has_parallel:
-            # Verify target matches the compiled agents/edges exactly
-            expected_names = [a["name"] for a in compiled.get("agents", [])]
+            # Verify target against independently computed expected topology
+            # (derived from source organism's stage_groups, stored in config)
+            cfg = compiled.get("config", {})
+            expected_names = cfg.get("expected_node_names", [])
             expected_edges = frozenset(
-                (expected_names[i], expected_names[i + 1])
-                for i in range(len(expected_names) - 1)
+                tuple(e) for e in cfg.get("expected_edges", [])
             )
             graph_ok = (
                 frozenset(target.stage_names) == frozenset(expected_names)
@@ -369,7 +370,8 @@ class CompilerFunctor:
         target_stage_set = frozenset(target.stage_names)
         # For parallel groups, verify interface names match expected group nodes
         if has_parallel:
-            expected_iface_names = frozenset(a["name"] for a in compiled.get("agents", []))
+            cfg = compiled.get("config", {})
+            expected_iface_names = frozenset(cfg.get("expected_node_names", []))
             target_iface_names = frozenset(name for name, _ in target.interface)
             interface_ok = target_iface_names == expected_iface_names
         else:
@@ -459,6 +461,9 @@ def _compile_langgraph(organism: SkillOrganism, *, config: RuntimeConfig | None 
             "runtime": "langgraph",
             "node_count": len(node_names),
             "has_parallel_groups": has_parallel,
+            # Independent expected topology for verification (from source organism)
+            "expected_node_names": list(node_names),
+            "expected_edges": edges,
         },
     }
 
