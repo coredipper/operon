@@ -61,12 +61,46 @@ def sanitize(patch: str, repo_slug: str) -> str:
         return ""
 
     normalized = _normalize_paths(patch, repo_slug)
+    normalized = _repair_bare_empty_context(normalized)
     if not _validate_hunks(normalized):
         return ""
 
     if not normalized.endswith("\n"):
         normalized += "\n"
     return normalized
+
+
+def _repair_bare_empty_context(patch: str) -> str:
+    """Restore the ``" "`` prefix on bare empty context lines inside hunks.
+
+    Some editors/tools strip trailing whitespace, which turns a valid
+    context line (a single space followed by a newline, representing a
+    blank line in the file) into a bare empty line. ``git apply``
+    rejects bare empty lines inside hunks, so we rewrite them back to
+    ``" "``. Only applied inside hunk bodies — headers and separating
+    whitespace between files are left alone.
+    """
+    lines = patch.splitlines()
+    out: list[str] = []
+    in_hunk = False
+    for line in lines:
+        if line.startswith("@@"):
+            in_hunk = True
+            out.append(line)
+            continue
+        if in_hunk:
+            if (line.startswith("--- ")
+                    or line.startswith("+++ ")
+                    or line.startswith(_METADATA_PREFIXES)):
+                in_hunk = False
+                out.append(line)
+                continue
+            if line == "":
+                # Blank line inside a hunk = whitespace-stripped context.
+                out.append(" ")
+                continue
+        out.append(line)
+    return "\n".join(out)
 
 
 def _normalize_paths(patch: str, repo_slug: str) -> str:
@@ -115,11 +149,25 @@ def _normalize_paths(patch: str, repo_slug: str) -> str:
     return "\n".join(out)
 
 
+# Git metadata lines whose value is a bare path (no ``a/``/``b/`` prefix).
+# These must be normalized alongside ``---``/``+++`` so a rename or copy
+# diff does not end up with inconsistent old vs. new paths after the
+# slug prefix is stripped from one side but not the other.
+_BARE_PATH_PREFIXES = (
+    "rename from ",
+    "rename to ",
+    "copy from ",
+    "copy to ",
+)
+
+
 def _strip_diff_line_prefix(line: str, strip_side) -> str:
     """Rewrite a single diff header line's path if applicable.
 
-    Handles ``--- a/...``, ``+++ b/...``, and ``diff --git a/... b/...``.
-    Leaves ``/dev/null`` untouched (file add/delete marker).
+    Handles ``--- a/...``, ``+++ b/...``, ``diff --git a/... b/...``,
+    and the bare-path metadata forms ``rename from``, ``rename to``,
+    ``copy from``, ``copy to``. Leaves ``/dev/null`` untouched (file
+    add/delete marker).
     """
     if line.startswith("--- a/"):
         tail = line[len("--- a/"):]
@@ -135,6 +183,10 @@ def _strip_diff_line_prefix(line: str, strip_side) -> str:
         if m:
             prefix, a_path, b_path, rest = m.groups()
             return f"{prefix}a/{strip_side(a_path)} b/{strip_side(b_path)}{rest}"
+    for meta in _BARE_PATH_PREFIXES:
+        if line.startswith(meta):
+            tail = line[len(meta):]
+            return meta + strip_side(tail)
     return line
 
 
@@ -186,13 +238,13 @@ def _validate_hunks(patch: str) -> bool:
                     body_new += 1
                 elif body_line.startswith("-"):
                     body_old += 1
-                elif body_line.startswith(" ") or body_line == "":
-                    # Context line (empty lines are context with a space
-                    # often stripped by non-conforming writers).
+                elif body_line.startswith(" "):
                     body_old += 1
                     body_new += 1
                 else:
-                    # Unrecognized body line — treat as malformed.
+                    # Bare empty lines are repaired upstream by
+                    # _repair_bare_empty_context; anything else here is
+                    # malformed.
                     return False
                 i += 1
             if body_old != old_count or body_new != new_count:

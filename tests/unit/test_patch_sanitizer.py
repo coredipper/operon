@@ -212,3 +212,80 @@ def test_trailing_newline_normalized():
     cleaned = sanitize(patch_no_trailing, "django/django")
     assert cleaned.endswith("\n")
     assert cleaned.count("\n\n") == 0 or cleaned.endswith("\n")
+
+
+def test_repairs_bare_empty_context_line():
+    """A context line that lost its leading space (whitespace-stripped
+    by an editor) must be repaired back to ``" "`` so git apply can
+    consume it. Review #714.
+    """
+    # Body: 3 context (incl. one bare-empty) + 1 delete + 1 add.
+    # Header counts both sides at 4 (3 context + 1 modify on each side).
+    patch = (
+        "--- a/django/foo.py\n"
+        "+++ b/django/foo.py\n"
+        "@@ -1,4 +1,4 @@\n"
+        " context1\n"
+        "\n"  # bare empty line — was " " before whitespace-stripping
+        "-old\n"
+        "+new\n"
+        " context3\n"
+    )
+    cleaned = sanitize(patch, "django/django")
+    assert cleaned, "bare empty context must be repaired, not rejected"
+    # Count the two consecutive newlines that were there — after repair,
+    # the empty line should have been rewritten to " " (a space + newline).
+    assert "\n \n" in cleaned, (
+        "bare empty line was not repaired to the required ' ' context "
+        f"prefix; got:\n{cleaned!r}"
+    )
+
+
+def test_normalizes_rename_from_to_paths():
+    """rename from/to metadata must get the same slug stripping as
+    ---/+++ headers so the resulting diff is internally consistent.
+    Review #714.
+    """
+    # django/django: the model doubled the repo name on all path-bearing
+    # metadata. Sanitizer must strip consistently.
+    patch = (
+        "diff --git a/django/django/old.py b/django/django/new.py\n"
+        "similarity index 95%\n"
+        "rename from django/django/old.py\n"
+        "rename to django/django/new.py\n"
+        "--- a/django/django/old.py\n"
+        "+++ b/django/django/new.py\n"
+        "@@ -1,1 +1,1 @@\n"
+        "-a\n"
+        "+b\n"
+    )
+    cleaned = sanitize(patch, "django/django")
+    assert cleaned, "valid rename diff must survive sanitize"
+    # Every path-bearing line should be single-prefixed now.
+    assert "rename from django/old.py" in cleaned
+    assert "rename to django/new.py" in cleaned
+    assert "diff --git a/django/old.py b/django/new.py" in cleaned
+    assert "--- a/django/old.py" in cleaned
+    assert "+++ b/django/new.py" in cleaned
+    # And no trace of the doubled form anywhere.
+    assert "django/django/" not in cleaned
+
+
+def test_normalizes_copy_from_to_paths():
+    """copy from/to metadata must be normalized just like rename."""
+    patch = (
+        "diff --git a/pallets/flask/src/a.py b/pallets/flask/src/b.py\n"
+        "similarity index 100%\n"
+        "copy from pallets/flask/src/a.py\n"
+        "copy to pallets/flask/src/b.py\n"
+        "--- a/pallets/flask/src/a.py\n"
+        "+++ b/pallets/flask/src/b.py\n"
+        "@@ -1,1 +1,1 @@\n"
+        "-x\n"
+        "+y\n"
+    )
+    cleaned = sanitize(patch, "pallets/flask")
+    assert cleaned
+    assert "copy from src/a.py" in cleaned
+    assert "copy to src/b.py" in cleaned
+    assert "pallets/flask/" not in cleaned
