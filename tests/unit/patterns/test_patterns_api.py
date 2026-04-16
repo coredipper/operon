@@ -278,6 +278,46 @@ class TestParallelStageGroups:
         # Exact declared order
         assert signals == ["signal_a", "signal_b"]
 
+    def test_parallel_speedup(self):
+        """Parallel group should complete faster than sequential."""
+        import time
+        from operon_ai import SkillStage
+
+        sleep_ms = 100
+
+        def slow_handler(task, state, outputs, stage):
+            time.sleep(sleep_ms / 1000)
+            return "done"
+
+        # Parallel: 3 stages × 100ms = ~100ms wall-clock
+        org_par = self._make_organism([[
+            SkillStage(name="a", role="A", handler=slow_handler, mode="fixed"),
+            SkillStage(name="b", role="B", handler=slow_handler, mode="fixed"),
+            SkillStage(name="c", role="C", handler=slow_handler, mode="fixed"),
+        ]])
+
+        t0 = time.monotonic()
+        org_par.run("test")
+        parallel_ms = (time.monotonic() - t0) * 1000
+
+        # Sequential: 3 stages × 100ms = ~300ms wall-clock
+        org_seq = self._make_organism([
+            SkillStage(name="a", role="A", handler=slow_handler, mode="fixed"),
+            SkillStage(name="b", role="B", handler=slow_handler, mode="fixed"),
+            SkillStage(name="c", role="C", handler=slow_handler, mode="fixed"),
+        ])
+
+        t0 = time.monotonic()
+        org_seq.run("test")
+        sequential_ms = (time.monotonic() - t0) * 1000
+
+        # Parallel should be at least 1.5x faster than sequential
+        speedup = sequential_ms / max(parallel_ms, 1)
+        assert speedup > 1.5, (
+            f"Expected speedup > 1.5x, got {speedup:.1f}x "
+            f"(parallel={parallel_ms:.0f}ms, sequential={sequential_ms:.0f}ms)"
+        )
+
     def test_backward_compatible_run(self):
         """Flat-list organism produces identical results to pre-parallel behavior."""
         from operon_ai import SkillStage

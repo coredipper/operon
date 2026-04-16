@@ -114,8 +114,8 @@ def organism_to_langgraph(organism: Any) -> Any:
             "LangGraph is required. Install with: pip install operon-ai[langgraph]"
         ) from e
 
-    stages = organism.stages
     components = organism.components
+    groups = organism.stage_groups or tuple((s,) for s in organism.stages)
 
     # Resolve watcher key
     watcher_key = WATCHER_STATE_KEY
@@ -131,9 +131,7 @@ def organism_to_langgraph(organism: Any) -> Any:
         def node(state: LangGraphState) -> dict:
             ctx = RunContext(state.get("shared_state", {}), watcher_key=watcher_key)
             outputs = state.get("stage_outputs", {})
-            results_dicts = state.get("stage_results", [])
 
-            # Reconstruct mutable lists for run_single_stage
             results: list[SkillStageResult] = []
 
             try:
@@ -151,7 +149,6 @@ def organism_to_langgraph(organism: Any) -> Any:
                     }],
                 }
 
-            # Serialize the new stage result
             new_results = []
             for sr in results:
                 out = sr.output if isinstance(sr.output, str) else str(sr.output)
@@ -173,26 +170,85 @@ def organism_to_langgraph(organism: Any) -> Any:
 
         return node
 
-    # Build the graph
+    def make_group_node(group):
+        """Create a LangGraph node for a parallel group.
+
+        Calls organism._run_group() which handles ThreadPoolExecutor
+        dispatch, state isolation, and merge internally.
+        """
+        group_name = "+".join(s.name for s in group)
+
+        def node(state: LangGraphState) -> dict:
+            ctx = RunContext(state.get("shared_state", {}), watcher_key=watcher_key)
+            outputs = state.get("stage_outputs", {})
+            results: list[SkillStageResult] = []
+
+            try:
+                decision = organism._run_group(
+                    group, state["task"], ctx, outputs, results,
+                )
+            except Exception as exc:
+                return {
+                    "halted": True,
+                    "_routing": "halt",
+                    "shared_state": dict(ctx),
+                    "stage_results": [{
+                        "stage": group_name, "output": f"Error: {exc}",
+                        "error": str(exc),
+                    }],
+                }
+
+            new_results = []
+            for sr in results:
+                out = sr.output if isinstance(sr.output, str) else str(sr.output)
+                new_results.append({
+                    "stage": sr.stage_name,
+                    "model": sr.model_alias,
+                    "action": sr.action_type,
+                    "output": out,
+                })
+                outputs[sr.stage_name] = out
+
+            return {
+                "stage_outputs": outputs,
+                "stage_results": new_results,
+                "shared_state": dict(ctx),
+                "halted": decision != "continue",
+                "_routing": decision,
+            }
+
+        return node, group_name
+
+    # Build the graph — one node per group
     builder = StateGraph(LangGraphState)
 
-    for stage in stages:
-        builder.add_node(stage.name, make_stage_node(stage))
+    node_names: list[str] = []
+    for group in groups:
+        if len(group) == 1:
+            # Single-stage group → one node (unchanged from before)
+            stage = group[0]
+            builder.add_node(stage.name, make_stage_node(stage))
+            node_names.append(stage.name)
+        else:
+            # Parallel group → one "group node" that runs _run_group()
+            node_fn, name = make_group_node(group)
+            builder.add_node(name, node_fn)
+            node_names.append(name)
 
-    # Routing: each stage → next or END
+    # Routing: each node → next or END
     def route(state: LangGraphState) -> str:
         return "halt" if state.get("_routing") != "continue" else "next"
 
-    for i, stage in enumerate(stages):
-        if i < len(stages) - 1:
+    for i, name in enumerate(node_names):
+        if i < len(node_names) - 1:
             builder.add_conditional_edges(
-                stage.name, route,
-                {"next": stages[i + 1].name, "halt": END},
+                name, route,
+                {"next": node_names[i + 1], "halt": END},
             )
         else:
-            builder.add_edge(stage.name, END)
+            builder.add_edge(name, END)
 
-    builder.add_edge(START, stages[0].name)
+    builder.add_edge(START, node_names[0])
     return builder.compile()
 
 
