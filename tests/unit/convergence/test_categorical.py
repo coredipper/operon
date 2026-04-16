@@ -448,3 +448,40 @@ class TestLangGraphFunctor:
         assert ("a", "__join_0") in t.edges
         assert ("b", "__join_0") in t.edges
         assert ("__join_0", "c") in t.edges
+
+    def test_grouped_organism_with_colliding_stage_names(self):
+        """Fork/join names avoid collision with user stage names."""
+        fast = Nucleus(provider=MockProvider(responses={}))
+        deep = Nucleus(provider=MockProvider(responses={}))
+        org = skill_organism(
+            stages=[
+                [
+                    SkillStage(name="__fork_0", role="A", instructions="a", mode="fixed"),
+                    SkillStage(name="__join_0", role="B", instructions="b", mode="fixed"),
+                ],
+                SkillStage(name="c", role="C", instructions="c", mode="fuzzy"),
+            ],
+            fast_nucleus=fast,
+            deep_nucleus=deep,
+            budget=ATP_Store(budget=1000, silent=True),
+        )
+        result = langgraph_functor.compile(org)
+        p = result.preservation
+
+        # Certificates preserved
+        assert p.certificate_preserved
+
+        # Graph preserved despite collision — compiler avoids __fork_0/__join_0
+        assert p.graph_preserved
+        assert p.all_preserved
+
+        # User stages present in target
+        t = result.target_architecture
+        assert "__fork_0" in t.stage_names  # user stage
+        assert "__join_0" in t.stage_names  # user stage
+        assert "c" in t.stage_names
+
+        # Generated fork/join names are different from user stage names
+        fork_join = [n for n in t.stage_names
+                     if n not in {"__fork_0", "__join_0", "c"}]
+        assert len(fork_join) == 2  # renamed fork + join nodes
