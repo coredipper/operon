@@ -43,6 +43,8 @@ dev = [
 eval = [
   "agentdojo>=0.1.35",
   "bfcl-eval>=2026.2",
+  "datasets>=4.0",
+  "swebench>=3.0",
 ]
 
 [project.urls]

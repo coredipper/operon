@@ -50,24 +50,127 @@ _HUNK_RE = re.compile(
 )
 
 
-def sanitize(patch: str, repo_slug: str) -> str:
+def sanitize(
+    patch: str, repo_slug: str,
+    *, tree_paths: frozenset[str] | None = None,
+) -> str:
     """Return a sanitized unified diff, or ``""`` if unsalvageable.
 
     ``repo_slug`` is the SWE-bench ``repo`` field, e.g. ``"django/django"``.
     An empty return means the caller should treat the submission as
     ``empty_patch`` rather than forward a broken diff to ``git apply``.
+
+    ``tree_paths``, when provided, is the set of repo-relative file
+    paths that actually exist at ``base_commit``. It is used as an
+    oracle to fuzzy-correct paths: a diff pointing at a nonexistent
+    file may be rewritten to a file with the same basename if the
+    match is unique, or rejected if it's ambiguous or impossible. When
+    ``tree_paths`` is ``None``, no oracle-based correction runs —
+    behavior matches the Phase A sanitizer exactly.
     """
     if not patch or not patch.strip():
         return ""
 
     normalized = _normalize_paths(patch, repo_slug)
     normalized = _repair_bare_empty_context(normalized)
+    if tree_paths is not None:
+        normalized = _fuzzy_correct_paths(normalized, tree_paths)
+        if not normalized:
+            return ""
     if not _validate_hunks(normalized):
         return ""
 
     if not normalized.endswith("\n"):
         normalized += "\n"
     return normalized
+
+
+def _fuzzy_correct_paths(patch: str, tree_paths: frozenset[str]) -> str:
+    """Rewrite diff paths to exist in ``tree_paths``.
+
+    For each ``--- a/<p>`` / ``+++ b/<p>`` / ``diff --git ...`` /
+    ``rename from/to`` / ``copy from/to`` line, check whether ``<p>``
+    exists in ``tree_paths``. If yes, leave it alone. If not:
+
+      - If exactly one file in ``tree_paths`` has the same basename,
+        rewrite ``<p>`` to that file.
+      - Otherwise (zero or multiple basename matches), return ``""`` —
+        we know the patch targets a file that isn't there, and we
+        won't guess.
+
+    ``/dev/null`` paths (add/delete markers) are always accepted.
+    """
+    # Precompute basename → full paths index for fast lookup.
+    basename_index: dict[str, list[str]] = {}
+    for p in tree_paths:
+        base = p.rsplit("/", 1)[-1]
+        basename_index.setdefault(base, []).append(p)
+
+    def _correct_or_none(path: str) -> str | None:
+        """Return the (possibly rewritten) path, or None to reject the
+        whole patch."""
+        if path == "/dev/null":
+            return path
+        if path in tree_paths:
+            return path
+        base = path.rsplit("/", 1)[-1]
+        matches = basename_index.get(base, [])
+        if len(matches) == 1:
+            return matches[0]
+        return None
+
+    out: list[str] = []
+    for line in patch.splitlines():
+        rewritten = _rewrite_diff_line(line, _correct_or_none)
+        if rewritten is None:
+            return ""
+        out.append(rewritten)
+    return "\n".join(out)
+
+
+def _rewrite_diff_line(line: str, correct) -> str | None:
+    """Apply ``correct`` to any path-bearing diff-header line.
+
+    Returns the (possibly rewritten) line, or ``None`` if ``correct``
+    rejected a path — which propagates up as "reject the whole patch".
+    """
+    # --- a/<path>
+    if line.startswith("--- a/"):
+        path = line[len("--- a/"):]
+        fixed = correct(path)
+        if fixed is None:
+            return None
+        return "--- a/" + fixed
+    # +++ b/<path>
+    if line.startswith("+++ b/"):
+        path = line[len("+++ b/"):]
+        fixed = correct(path)
+        if fixed is None:
+            return None
+        return "+++ b/" + fixed
+    # --- /dev/null, +++ /dev/null — no change
+    if line.startswith("--- ") or line.startswith("+++ "):
+        return line
+    # diff --git a/<p> b/<p>
+    if line.startswith("diff --git "):
+        m = re.match(r"^(diff --git )a/(\S+) b/(\S+)(.*)$", line)
+        if m:
+            prefix, a_path, b_path, rest = m.groups()
+            fa = correct(a_path)
+            fb = correct(b_path)
+            if fa is None or fb is None:
+                return None
+            return f"{prefix}a/{fa} b/{fb}{rest}"
+        return line
+    # rename from / rename to / copy from / copy to <path>
+    for meta in _BARE_PATH_PREFIXES:
+        if line.startswith(meta):
+            path = line[len(meta):]
+            fixed = correct(path)
+            if fixed is None:
+                return None
+            return meta + fixed
+    return line
 
 
 def _repair_bare_empty_context(patch: str) -> str:

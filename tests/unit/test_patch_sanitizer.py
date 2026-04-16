@@ -289,3 +289,104 @@ def test_normalizes_copy_from_to_paths():
     assert "copy from src/a.py" in cleaned
     assert "copy to src/b.py" in cleaned
     assert "pallets/flask/" not in cleaned
+
+
+# --------------------------------------------------------------------------
+# Fuzzy path correction (Phase B — tree_paths oracle)
+# --------------------------------------------------------------------------
+
+def test_tree_paths_None_keeps_phase_A_behavior():
+    """Omitting tree_paths must not change anything vs. Phase A."""
+    # A doubled-path diff gets normalized (Phase A behavior) but no
+    # fuzzy correction runs.
+    doubled = (
+        "--- a/django/django/foo.py\n"
+        "+++ b/django/django/foo.py\n"
+        "@@ -1,1 +1,1 @@\n"
+        "-a\n"
+        "+b\n"
+    )
+    cleaned = sanitize(doubled, "django/django")
+    assert "a/django/foo.py" in cleaned
+
+
+def test_fuzzy_rewrites_wrong_path_to_unique_basename_match():
+    """Model named a nonexistent file; tree has exactly one file with
+    that basename — rewrite to it."""
+    patch = (
+        "--- a/wrong/place/storage.py\n"
+        "+++ b/wrong/place/storage.py\n"
+        "@@ -1,1 +1,1 @@\n"
+        "-a\n"
+        "+b\n"
+    )
+    tree = frozenset({
+        "django/core/files/storage.py",
+        "django/forms/forms.py",
+    })
+    cleaned = sanitize(patch, "django/django", tree_paths=tree)
+    assert cleaned
+    assert "--- a/django/core/files/storage.py" in cleaned
+    assert "+++ b/django/core/files/storage.py" in cleaned
+
+
+def test_fuzzy_rejects_when_multiple_basename_matches():
+    """Tree has two files with the same basename — can't guess, reject."""
+    patch = (
+        "--- a/wrong/place/utils.py\n"
+        "+++ b/wrong/place/utils.py\n"
+        "@@ -1,1 +1,1 @@\n"
+        "-a\n"
+        "+b\n"
+    )
+    tree = frozenset({
+        "django/utils.py",
+        "django/core/utils.py",
+    })
+    assert sanitize(patch, "django/django", tree_paths=tree) == ""
+
+
+def test_fuzzy_rejects_when_no_basename_match():
+    """Basename isn't in the tree at all — reject."""
+    patch = (
+        "--- a/invented.py\n"
+        "+++ b/invented.py\n"
+        "@@ -1,1 +1,1 @@\n"
+        "-a\n"
+        "+b\n"
+    )
+    tree = frozenset({"real.py", "other.py"})
+    assert sanitize(patch, "django/django", tree_paths=tree) == ""
+
+
+def test_fuzzy_leaves_correct_paths_untouched():
+    """A diff whose paths are already in the tree must pass through
+    unchanged."""
+    patch = (
+        "--- a/django/core/storage.py\n"
+        "+++ b/django/core/storage.py\n"
+        "@@ -1,1 +1,1 @@\n"
+        "-a\n"
+        "+b\n"
+    )
+    tree = frozenset({"django/core/storage.py"})
+    cleaned = sanitize(patch, "django/django", tree_paths=tree)
+    assert "--- a/django/core/storage.py" in cleaned
+
+
+def test_fuzzy_accepts_dev_null_for_file_add_delete():
+    """``/dev/null`` must always be accepted even when absent from the tree.
+
+    A file-add diff has ``--- /dev/null`` and a real new path on the
+    ``+++`` side. The oracle must let ``/dev/null`` through unchanged
+    and only apply fuzzy correction to the real path.
+    """
+    tree = frozenset({"existing.py"})
+    patch = (
+        "diff --git a/existing.py b/existing.py\n"
+        "--- /dev/null\n"
+        "+++ b/existing.py\n"
+        "@@ -0,0 +1,1 @@\n"
+        "+line\n"
+    )
+    assert sanitize(patch, "django/django", tree_paths=tree)
