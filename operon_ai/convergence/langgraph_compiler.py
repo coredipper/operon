@@ -293,14 +293,18 @@ def organism_to_langgraph(organism: Any) -> Any:
             snap = state.get("_parallel_snap", {})
             parallel_results = state.get("_parallel_results", [])
 
-            # Build per_stage dict for _merge_parallel_results
+            # Build per_stage in declared group order (not reducer order)
+            results_by_stage = {r["stage"]: r for r in parallel_results}
             per_stage: dict[str, tuple] = {}
             all_stage_results = []
-            for r in parallel_results:
-                per_stage[r["stage"]] = (
+            for stage in group:
+                r = results_by_stage.get(stage.name)
+                if r is None:
+                    continue
+                per_stage[stage.name] = (
                     r["shared_state"],
                     r["stage_outputs"],
-                    [],  # SkillStageResult list (not serialized)
+                    [],
                     r["decision"],
                 )
                 all_stage_results.extend(r.get("stage_results", []))
@@ -309,13 +313,10 @@ def organism_to_langgraph(organism: Any) -> Any:
             merged_outputs = dict(state.get("stage_outputs", {}))
             merged_results: list = []
 
-            try:
-                _merge_parallel_results(
-                    merged_state, merged_outputs, merged_results,
-                    snap, per_stage,
-                )
-            except Exception:
-                pass  # conflict detection — log but don't crash
+            _merge_parallel_results(
+                merged_state, merged_outputs, merged_results,
+                snap, per_stage,
+            )
 
             halted = any(r["decision"] != "continue" for r in parallel_results)
             return {
@@ -345,8 +346,13 @@ def organism_to_langgraph(organism: Any) -> Any:
             group_exit_nodes.append(stage.name)
         else:
             # Parallel: fork → [stage_a, stage_b, ...] → join
+            all_stage_names = {s.name for s in organism.stages}
             fork_name = f"__fork_{i}"
+            while fork_name in all_stage_names:
+                fork_name = f"__fork_{i}_{id(group)}"
             join_name = f"__join_{i}"
+            while join_name in all_stage_names:
+                join_name = f"__join_{i}_{id(group)}"
 
             builder.add_node(fork_name, make_fork_node())
             for stage in group:
