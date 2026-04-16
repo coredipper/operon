@@ -401,22 +401,40 @@ def _compile_langgraph(organism: SkillOrganism, *, config: RuntimeConfig | None 
             "functor. Use organism_to_langgraph() directly."
         )
 
-    stages = organism.stages
+    groups = organism.stage_groups or tuple((s,) for s in organism.stages)
+
+    # Build agents list (all stages, regardless of grouping)
     agents = [
         {"name": s.name, "role": s.role, "model": s.mode}
-        for s in stages
+        for s in organism.stages
     ]
+
+    # Build edges: sequential between groups, parallel within groups
+    # Within a parallel group, stages share a common predecessor/successor
+    node_names: list[str] = []
+    for group in groups:
+        if len(group) == 1:
+            node_names.append(group[0].name)
+        else:
+            # Parallel group modeled as a single composite node
+            node_names.append("+".join(s.name for s in group))
+
     edges = [
-        (stages[i].name, stages[i + 1].name)
-        for i in range(len(stages) - 1)
+        (node_names[i], node_names[i + 1])
+        for i in range(len(node_names) - 1)
     ]
     certificates = [certificate_to_dict(c) for c in organism.collect_certificates()]
 
+    has_parallel = any(len(g) > 1 for g in groups)
     return {
         "agents": agents,
         "edges": edges,
         "certificates": certificates,
-        "config": {"runtime": "langgraph", "node_count": len(stages)},
+        "config": {
+            "runtime": "langgraph",
+            "node_count": len(node_names),
+            "has_parallel_groups": has_parallel,
+        },
     }
 
 

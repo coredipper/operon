@@ -170,13 +170,14 @@ def organism_to_langgraph(organism: Any) -> Any:
 
         return node
 
-    def make_group_node(group):
+    def make_group_node(group, group_idx):
         """Create a LangGraph node for a parallel group.
 
         Calls organism._run_group() which handles ThreadPoolExecutor
         dispatch, state isolation, and merge internally.
         """
-        group_name = "+".join(s.name for s in group)
+        # Use index-based unique ID to avoid collisions from stage names containing '+'
+        group_name = f"__parallel_{group_idx}"
 
         def node(state: LangGraphState) -> dict:
             ctx = RunContext(state.get("shared_state", {}), watcher_key=watcher_key)
@@ -223,15 +224,13 @@ def organism_to_langgraph(organism: Any) -> Any:
     builder = StateGraph(LangGraphState)
 
     node_names: list[str] = []
-    for group in groups:
+    for i, group in enumerate(groups):
         if len(group) == 1:
-            # Single-stage group → one node (unchanged from before)
             stage = group[0]
             builder.add_node(stage.name, make_stage_node(stage))
             node_names.append(stage.name)
         else:
-            # Parallel group → one "group node" that runs _run_group()
-            node_fn, name = make_group_node(group)
+            node_fn, name = make_group_node(group, i)
             builder.add_node(name, node_fn)
             node_names.append(name)
 
