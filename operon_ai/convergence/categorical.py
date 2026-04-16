@@ -327,14 +327,19 @@ class CompilerFunctor:
         edges_embedded = source_edges <= target_edges
 
         # Parallel groups reshape the graph intentionally — stages are
-        # collapsed into composite group nodes. Verify group-level structure
-        # (correct node count and edge chain) instead of stage-level embedding.
+        # collapsed into composite group nodes. Verify against the expected
+        # group-level topology built from the organism's stage_groups.
         has_parallel = compiled.get("config", {}).get("has_parallel_groups", False)
         if has_parallel:
-            expected_nodes = compiled.get("config", {}).get("node_count", 0)
+            # Verify target matches the compiled agents/edges exactly
+            expected_names = [a["name"] for a in compiled.get("agents", [])]
+            expected_edges = frozenset(
+                (expected_names[i], expected_names[i + 1])
+                for i in range(len(expected_names) - 1)
+            )
             graph_ok = (
-                target.stage_count == expected_nodes
-                and len(target.edges) == max(0, expected_nodes - 1)
+                frozenset(target.stage_names) == frozenset(expected_names)
+                and frozenset(target.edges) == expected_edges
             )
         else:
             graph_ok = stages_embedded and edges_embedded
@@ -362,10 +367,11 @@ class CompilerFunctor:
         # (mode→model mapping may differ since compilers remap models)
         source_stage_set = frozenset(source.stage_names)
         target_stage_set = frozenset(target.stage_names)
-        # For parallel groups, interface is at group-node level
+        # For parallel groups, verify interface names match expected group nodes
         if has_parallel:
-            n = compiled.get("config", {}).get("node_count", 0)
-            interface_ok = len(target.interface) == n
+            expected_iface_names = frozenset(a["name"] for a in compiled.get("agents", []))
+            target_iface_names = frozenset(name for name, _ in target.interface)
+            interface_ok = target_iface_names == expected_iface_names
         else:
             interface_ok = source_stage_set <= target_stage_set
         details["source_stage_names"] = sorted(source_stage_set)
