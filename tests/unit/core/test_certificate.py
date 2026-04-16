@@ -351,3 +351,125 @@ class TestATPCertificate:
         atp = ATP_Store(budget=0)
         result = atp.certify().verify()
         assert result.holds is False
+
+
+# ---------------------------------------------------------------------------
+# Behavioral certificates
+# ---------------------------------------------------------------------------
+
+
+class TestBehavioralQuality:
+    def test_verify_holds(self):
+        from operon_ai.core.certificate import _verify_behavioral_quality
+
+        cert = Certificate(
+            theorem="behavioral_quality",
+            parameters={"scores": [0.9, 0.85, 0.95], "threshold": 0.8},
+            conclusion="test",
+            source="test",
+            _verify_fn=_verify_behavioral_quality,
+        )
+        result = cert.verify()
+        assert result.holds is True
+        assert result.evidence["mean"] == 0.9
+        assert result.evidence["min"] == 0.85
+        assert result.evidence["n"] == 3
+
+    def test_verify_fails_below_threshold(self):
+        from operon_ai.core.certificate import _verify_behavioral_quality
+
+        cert = Certificate(
+            theorem="behavioral_quality",
+            parameters={"scores": [0.5, 0.4, 0.6], "threshold": 0.8},
+            conclusion="test",
+            source="test",
+            _verify_fn=_verify_behavioral_quality,
+        )
+        result = cert.verify()
+        assert result.holds is False
+
+    def test_empty_scores_fails(self):
+        from operon_ai.core.certificate import _verify_behavioral_quality
+
+        cert = Certificate(
+            theorem="behavioral_quality",
+            parameters={"scores": [], "threshold": 0.8},
+            conclusion="test",
+            source="test",
+            _verify_fn=_verify_behavioral_quality,
+        )
+        result = cert.verify()
+        assert result.holds is False
+
+
+class TestBehavioralStability:
+    def test_verify_holds(self):
+        from operon_ai.core.certificate import _verify_behavioral_stability
+
+        cert = Certificate(
+            theorem="behavioral_stability",
+            parameters={
+                "signal_values": [0.1, 0.2, 0.15],
+                "threshold": 0.5,
+                "category": "epistemic",
+            },
+            conclusion="test",
+            source="test",
+            _verify_fn=_verify_behavioral_stability,
+        )
+        result = cert.verify()
+        assert result.holds is True
+        assert result.evidence["mean"] == 0.15
+        assert result.evidence["max"] == 0.2
+
+    def test_verify_fails_above_threshold(self):
+        from operon_ai.core.certificate import _verify_behavioral_stability
+
+        cert = Certificate(
+            theorem="behavioral_stability",
+            parameters={
+                "signal_values": [0.8, 0.9, 0.7],
+                "threshold": 0.5,
+                "category": "epistemic",
+            },
+            conclusion="test",
+            source="test",
+            _verify_fn=_verify_behavioral_stability,
+        )
+        result = cert.verify()
+        assert result.holds is False
+
+
+class TestBehavioralNoAnomaly:
+    def test_verify_holds(self):
+        from operon_ai.core.certificate import _verify_behavioral_no_anomaly
+
+        cert = Certificate(
+            theorem="behavioral_no_anomaly",
+            parameters={
+                "threat_levels": ["none", "none", "suspicious"],
+                "max_allowed": "suspicious",
+            },
+            conclusion="test",
+            source="test",
+            _verify_fn=_verify_behavioral_no_anomaly,
+        )
+        result = cert.verify()
+        assert result.holds is True
+        assert result.evidence["max_threat"] == "suspicious"
+
+    def test_verify_fails_with_confirmed(self):
+        from operon_ai.core.certificate import _verify_behavioral_no_anomaly
+
+        cert = Certificate(
+            theorem="behavioral_no_anomaly",
+            parameters={
+                "threat_levels": ["none", "confirmed"],
+                "max_allowed": "suspicious",
+            },
+            conclusion="test",
+            source="test",
+            _verify_fn=_verify_behavioral_no_anomaly,
+        )
+        result = cert.verify()
+        assert result.holds is False

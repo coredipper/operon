@@ -596,6 +596,36 @@ class WatcherComponent:
             "mismatches": mismatches,
         }
 
+    def certify_behavior(
+        self,
+        category: str = "epistemic",
+        threshold: float = 0.5,
+    ):
+        """Produce a behavioral certificate from collected signal values.
+
+        Returns a :class:`Certificate` asserting that mean signal severity
+        for *category* is below *threshold* (i.e., the system remained
+        stable and didn't stagnate or collapse).
+
+        Returns ``None`` if no signals of the given category were collected.
+        """
+        values = [s.value for s in self.signals if s.category.value == category]
+        if not values:
+            return None
+        from ..core.certificate import Certificate, _verify_behavioral_stability
+
+        return Certificate(
+            theorem="behavioral_stability",
+            parameters={
+                "signal_values": values,
+                "threshold": threshold,
+                "category": category,
+            },
+            conclusion=f"Mean {category} signal < {threshold} on {len(values)} observations",
+            source="WatcherComponent.certify_behavior",
+            _verify_fn=_verify_behavioral_stability,
+        )
+
     def summary(self) -> dict[str, Any]:
         """Return watcher statistics."""
         by_category: dict[str, int] = {}

@@ -1,15 +1,20 @@
-"""Categorical certificate framework for structural guarantees.
+"""Categorical certificate framework for structural and behavioral guarantees.
 
-A :class:`Certificate` captures a structural guarantee as a self-verifiable
-record.  It stores the theorem being claimed, the parameters that make it
-hold, and a verification function that re-derives the conclusion from the
+A :class:`Certificate` captures a guarantee as a self-verifiable record.
+It stores the theorem being claimed, the parameters that make it hold,
+and a verification function that re-derives the conclusion from the
 parameters (derivation replay).
 
-Three mechanisms currently produce certificates:
+**Structural certificates** (configuration → algebraic check):
 
 - **QuorumSensingBio.certify()** — no-false-activation under normal traffic
 - **MTORScaler.certify()** — no-oscillation via hysteresis dead bands
 - **ATP_Store.certify()** — priority gating serves critical operations
+
+**Behavioral certificates** (evidence snapshot → statistical check):
+
+- **VerifierComponent.certify_behavior()** — mean rubric quality ≥ threshold
+- **WatcherComponent.certify_behavior()** — signal stability (mean < threshold)
 
 Example::
 
@@ -162,11 +167,66 @@ def certificate_to_dict(cert: Certificate) -> dict[str, Any]:
 
 
 _THEOREM_FN_PATHS: dict[str, tuple[str, str]] = {
+    # Structural certificates
     "no_false_activation": ("operon_ai.coordination.quorum_sensing", "_verify_no_false_activation"),
     "no_oscillation": ("operon_ai.state.mtor", "_verify_no_oscillation"),
     "priority_gating": ("operon_ai.state.metabolism", "_verify_priority_gating"),
     "state_integrity_verified": ("operon_ai.state.dna_repair", "_verify_state_integrity"),
+    # Behavioral certificates
+    "behavioral_quality": ("operon_ai.core.certificate", "_verify_behavioral_quality"),
+    "behavioral_stability": ("operon_ai.core.certificate", "_verify_behavioral_stability"),
+    "behavioral_no_anomaly": ("operon_ai.core.certificate", "_verify_behavioral_no_anomaly"),
 }
+
+
+# ---------------------------------------------------------------------------
+# Behavioral verification functions
+# ---------------------------------------------------------------------------
+
+
+def _verify_behavioral_quality(params: Mapping[str, Any]) -> tuple[bool, dict[str, Any]]:
+    """Replay: mean rubric quality ≥ threshold over frozen score evidence."""
+    scores = list(params["scores"])
+    threshold = params["threshold"]
+    if not scores:
+        return False, {"mean": 0.0, "min": 0.0, "n": 0}
+    mean_q = sum(scores) / len(scores)
+    return mean_q >= threshold, {
+        "mean": round(mean_q, 4),
+        "min": round(min(scores), 4),
+        "n": len(scores),
+    }
+
+
+def _verify_behavioral_stability(params: Mapping[str, Any]) -> tuple[bool, dict[str, Any]]:
+    """Replay: mean signal severity < threshold (no stagnation/collapse)."""
+    values = list(params["signal_values"])
+    threshold = params["threshold"]
+    if not values:
+        return False, {"mean": 0.0, "max": 0.0, "n": 0}
+    mean_v = sum(values) / len(values)
+    return mean_v < threshold, {
+        "mean": round(mean_v, 4),
+        "max": round(max(values), 4),
+        "n": len(values),
+    }
+
+
+def _verify_behavioral_no_anomaly(params: Mapping[str, Any]) -> tuple[bool, dict[str, Any]]:
+    """Replay: no confirmed/critical threats in inspection evidence."""
+    levels = list(params["threat_levels"])
+    max_allowed = params["max_allowed"]
+    order = {"none": 0, "suspicious": 1, "confirmed": 2, "critical": 3}
+    if not levels:
+        return False, {"max_threat": "none", "n": 0}
+    max_seen = max(order.get(str(level), 0) for level in levels)
+    holds = max_seen <= order.get(max_allowed, 1)
+    # Reverse-map for evidence
+    reverse = {v: k for k, v in order.items()}
+    return holds, {
+        "max_threat": reverse.get(max_seen, "unknown"),
+        "n": len(levels),
+    }
 
 
 def _resolve_verify_fn(theorem: str) -> Callable | None:
