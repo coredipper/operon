@@ -17,6 +17,8 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from eval.swebench_phase2 import (  # noqa: E402
+    ARTIFACT_TOP_LEVEL_KEYS,
+    POST_RUN_CHECK_STATUSES,
     ModelIdentityError,
     _IDENTITY_REQUIRED,
     _parse_ollama_show,
@@ -114,16 +116,14 @@ def test_resolve_identity_raises_when_digest_not_in_list():
             _resolve_model_identity("gemma4:latest")
 
 
-_POST_RUN_CHECK_VALID_STATUSES = {"match", "mismatch", "error"}
-
-
 def test_committed_artifact_schema_matches_resolver():
-    """The checked-in results file must match the resolver's output schema.
+    """The checked-in results file must match the writer's contract.
 
-    If someone changes the resolver, they must regenerate the artifact
-    (or vice versa). This test fails if the two drift. It also covers
-    sibling fields that the writer always emits so a missing top-level
-    key cannot slip through (see review #700).
+    Locks (a) the nested identity key set, and (b) the exact top-level
+    artifact key set. Exact equality is used because drift in either
+    direction — a new writer field not in the artifact, or an artifact
+    field no longer emitted — is a contract mismatch and must be
+    addressed explicitly (see reviews #700, #702).
     """
     import json
 
@@ -140,37 +140,35 @@ def test_committed_artifact_schema_matches_resolver():
             "regenerate eval/results/swebench_phase2.json"
         )
 
-    # Top-level keys that the writer in eval/swebench_phase2.py always
-    # emits alongside the summary. Extending this list is a deliberate
-    # contract change and must include a matching artifact regeneration.
-    required_top_level = {
-        "model",
-        "model_identity",
-        "model_identity_post_run_check",
-        "dataset",
-        "run_id",
-        "summary",
-        "results",
-    }
-    missing = required_top_level - artifact.keys()
-    assert not missing, (
-        f"committed artifact is missing top-level keys {missing}; "
-        "regenerate eval/results/swebench_phase2.json or update the writer"
+    # Exact top-level key equality. If the writer grows/shrinks keys,
+    # this test must be updated alongside the artifact, making drift
+    # impossible to introduce silently.
+    actual = set(artifact.keys())
+    assert actual == set(ARTIFACT_TOP_LEVEL_KEYS), (
+        f"top-level keys drift: "
+        f"missing={set(ARTIFACT_TOP_LEVEL_KEYS) - actual} "
+        f"extra={actual - set(ARTIFACT_TOP_LEVEL_KEYS)}; "
+        "regenerate eval/results/swebench_phase2.json or update "
+        "ARTIFACT_TOP_LEVEL_KEYS in eval/swebench_phase2.py"
     )
 
     check = artifact["model_identity_post_run_check"]
     assert isinstance(check, dict), (
-        "model_identity_post_run_check must be a dict "
-        "{status: match|mismatch|error, ...}"
+        "model_identity_post_run_check must be a dict"
     )
-    assert check.get("status") in _POST_RUN_CHECK_VALID_STATUSES, (
-        f"unexpected model_identity_post_run_check.status {check.get('status')!r}; "
-        f"expected one of {_POST_RUN_CHECK_VALID_STATUSES}"
+    assert check.get("status") in POST_RUN_CHECK_STATUSES, (
+        f"unexpected status {check.get('status')!r}; "
+        f"expected one of {sorted(POST_RUN_CHECK_STATUSES)}"
     )
     if check["status"] == "mismatch":
         for key in ("digest_now", "blob_sha256_now"):
-            assert key in check, (
-                f"mismatch status requires {key!r}"
-            )
+            assert key in check, f"mismatch status requires {key!r}"
     elif check["status"] == "error":
         assert "error" in check, "error status requires 'error' message"
+    elif check["status"] == "not_performed":
+        # This status is only valid for artifacts predating the writer
+        # contract; a note is required so readers see why it is there.
+        assert "note" in check, (
+            "not_performed status requires a 'note' explaining why the "
+            "post-run check was not executed"
+        )

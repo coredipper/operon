@@ -335,6 +335,36 @@ HARNESS_OK = "ok"
 HARNESS_FAILED = "failed"
 HARNESS_SKIPPED = "skipped"
 
+# Valid values for model_identity_post_run_check.status.
+# - match / mismatch: set by the writer at save time based on re-resolving
+#   the identity. These describe an actual verification that ran.
+# - error: the re-resolution itself failed.
+# - not_performed: the artifact was produced or augmented out-of-band
+#   (e.g. script refactor that added the field to a pre-existing record);
+#   never written by the live script.
+POST_RUN_CHECK_STATUSES = frozenset(
+    {"match", "mismatch", "error", "not_performed"}
+)
+
+# Top-level keys the writer always emits for a complete SWE-bench Phase 2
+# artifact. Any change here is a contract change and must come with a
+# matching regeneration of eval/results/swebench_phase2.json — the
+# schema test locks this set.
+ARTIFACT_TOP_LEVEL_KEYS = frozenset({
+    "model",
+    "model_identity",
+    "model_identity_post_run_check",
+    "dataset",
+    "run_id",
+    "n_instances",
+    "offset",
+    "conditions",
+    "timestamp",
+    "skip_harness",
+    "results",
+    "summary",
+})
+
 
 def _parse_reports(
     report_dir: Path, run_id: str, model_name: str
