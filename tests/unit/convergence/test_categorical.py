@@ -489,7 +489,8 @@ class TestLangGraphFunctor:
         fork_gen = next(n for n in generated if "fork" in n)
         join_gen = next(n for n in generated if "join" in n)
 
-        # Verify exact fork/join edges
+        # Verify exact fork/join edges (exactly 5, no extras)
+        assert len(t.edges) == 5
         assert (fork_gen, "__fork_0") in t.edges   # fork → user stage A
         assert (fork_gen, "__join_0") in t.edges   # fork → user stage B
         assert ("__fork_0", join_gen) in t.edges   # user stage A → join
