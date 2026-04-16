@@ -1,0 +1,431 @@
+Model probe: Ok.
+Docker:      OK
+
+Loading SWE-bench-lite...
+Selected 10 instances
+
+============================================================
+[1/10] astropy__astropy-12907
+  repo:  astropy/astropy
+  issue: Modeling's `separability_matrix` does not compute separability correct...
+  baseline   extract=ok       latency=82192ms (patch 807B)
+  organism   extract=no-patch latency=88268ms (patch 0B)
+  langgraph  extract=ok       latency=100928ms (patch 1432B)
+
+============================================================
+[2/10] astropy__astropy-14182
+  repo:  astropy/astropy
+  issue: Please support header rows in RestructuredText output
+### Description...
+  baseline   extract=ok       latency=46816ms (patch 261B)
+  organism   extract=no-patch latency=100049ms (patch 0B)
+  langgraph  extract=ok       latency=73222ms (patch 237B)
+
+============================================================
+[3/10] astropy__astropy-14365
+  repo:  astropy/astropy
+  issue: ascii.qdp Table format assumes QDP commands are upper case
+### Descrip...
+  baseline   extract=ok       latency=31482ms (patch 319B)
+  organism   extract=ok       latency=85309ms (patch 791B)
+  langgraph  extract=ok       latency=74763ms (patch 385B)
+
+============================================================
+[4/10] astropy__astropy-14995
+  repo:  astropy/astropy
+  issue: In v5.3, NDDataRef mask propagation fails when one of the operand does...
+  baseline   extract=ok       latency=71007ms (patch 758B)
+  organism   extract=no-patch latency=92528ms (patch 0B)
+  langgraph  extract=no-patch latency=92650ms (patch 0B)
+
+============================================================
+[5/10] astropy__astropy-6938
+  repo:  astropy/astropy
+  issue: Possible bug in io.fits related to D exponents
+I came across the follo...
+  baseline   extract=ok       latency=16225ms (patch 332B)
+  organism   extract=ok       latency=64966ms (patch 334B)
+  langgraph  extract=ok       latency=76311ms (patch 332B)
+
+============================================================
+[6/10] astropy__astropy-7746
+  repo:  astropy/astropy
+  issue: Issue when passing empty lists/arrays to WCS transformations
+The follo...
+  baseline   extract=ok       latency=52492ms (patch 341B)
+  organism   extract=no-patch latency=100164ms (patch 0B)
+  langgraph  extract=no-patch latency=86556ms (patch 0B)
+
+============================================================
+[7/10] django__django-10914
+  repo:  django/django
+  issue: Set default FILE_UPLOAD_PERMISSION to 0o644.
+Description
+	
+Hello,
+As f...
+  baseline   extract=ok       latency=30339ms (patch 658B)
+  organism   extract=ok       latency=78501ms (patch 395B)
+  langgraph  extract=ok       latency=98046ms (patch 548B)
+
+============================================================
+[8/10] django__django-10924
+  repo:  django/django
+  issue: Allow FilePathField path to accept a callable.
+Description
+	
+I have a ...
+  baseline   extract=ok       latency=34100ms (patch 485B)
+  organism   extract=ok       latency=97140ms (patch 662B)
+  langgraph  extract=no-patch latency=96967ms (patch 0B)
+
+============================================================
+[9/10] django__django-11001
+  repo:  django/django
+  issue: Incorrect removal of order_by clause created as multiline RawSQL
+Descr...
+  baseline   extract=ok       latency=40896ms (patch 513B)
+  organism   extract=ok       latency=80293ms (patch 257B)
+  langgraph  extract=ok       latency=101696ms (patch 189B)
+
+============================================================
+[10/10] django__django-11019
+  repo:  django/django
+  issue: Merging 3 or more media objects can throw unnecessary MediaOrderConfli...
+  baseline   extract=ok       latency=38740ms (patch 1237B)
+  organism   extract=ok       latency=89378ms (patch 96B)
+  langgraph  extract=no-patch latency=96817ms (patch 0B)
+
+  Wrote 10 predictions to eval/results/swebench_phase2_predictions/phase2_20260416_211049/baseline.jsonl
+
+============================================================
+Running harness for baseline (10 instances)
+============================================================
+  Harness: python -m swebench.harness.run_evaluation --run_id phase2_20260416_211049_baseline ...
+2026-04-16 22:00:56,653 - datasets - INFO - JAX version 0.6.1 available.
+<frozen runpy>:128: RuntimeWarning: 'swebench.harness.run_evaluation' found in sys.modules after import of package 'swebench.harness', but prior to execution of 'swebench.harness.run_evaluation'; this may result in unpredictable behaviour
+2026-04-16 22:00:57,152 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+2026-04-16 22:00:57,172 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/SWE-bench/SWE-bench_Lite/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/README.md "HTTP/1.1 200 OK"
+2026-04-16 22:00:57,301 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/SWE-bench_Lite.py "HTTP/1.1 404 Not Found"
+2026-04-16 22:00:57,623 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/SWE-bench/SWE-bench_Lite/SWE-bench/SWE-bench_Lite.py "HTTP/1.1 404 Not Found"
+2026-04-16 22:00:57,751 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/SWE-bench/SWE-bench_Lite/revision/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e "HTTP/1.1 200 OK"
+2026-04-16 22:00:57,877 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/.huggingface.yaml "HTTP/1.1 404 Not Found"
+2026-04-16 22:00:58,138 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=SWE-bench/SWE-bench_Lite "HTTP/1.1 200 OK"
+2026-04-16 22:00:58,279 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/SWE-bench/SWE-bench_Lite/tree/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/data?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-04-16 22:00:58,393 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/SWE-bench/SWE-bench_Lite/tree/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e?recursive=false&expand=false "HTTP/1.1 200 OK"
+2026-04-16 22:00:58,522 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/dataset_infos.json "HTTP/1.1 404 Not Found"
+2026-04-16 22:00:58,745 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+2026-04-16 22:00:58,762 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/SWE-bench/SWE-bench_Lite/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/README.md "HTTP/1.1 200 OK"
+2026-04-16 22:00:58,877 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/SWE-bench_Lite.py "HTTP/1.1 404 Not Found"
+2026-04-16 22:00:58,981 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/SWE-bench/SWE-bench_Lite/SWE-bench/SWE-bench_Lite.py "HTTP/1.1 404 Not Found"
+2026-04-16 22:00:59,101 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/.huggingface.yaml "HTTP/1.1 404 Not Found"
+2026-04-16 22:00:59,227 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=SWE-bench/SWE-bench_Lite "HTTP/1.1 200 OK"
+2026-04-16 22:00:59,350 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/dataset_infos.json "HTTP/1.1 404 Not Found"
+Running 10 instances...
+Evaluation:   0%|          | 0/10 [00:00<?, ?it/s, error=0, ✓=0, ✖=0]astropy__astropy-14182: >>>>> Patch Apply Failed:
+can't find file to patch at input line 3
+Perhaps you used the wrong -p or --strip option?
+The text leading up to this was:
+--------------------------
+|--- a/astropy/io/ascii/writer.py
+|+++ b/astropy/io/ascii/writer.py
+--------------------------
+No file to patch.  Skipping patch.
+1 out of 1 hunk ignored
+
+Check (logs/run_evaluation/phase2_20260416_211049_baseline/operon-baseline/astropy__astropy-14182/run_instance.log) for more information.
+astropy__astropy-12907: >>>>> Patch Apply Failed:
+patching file astropy/modeling/separable.py
+patch: **** malformed patch at line 16:      return self._calculate_separability_matrix()
+
+
+Check (logs/run_evaluation/phase2_20260416_211049_baseline/operon-baseline/astropy__astropy-12907/run_instance.log) for more information.
+Evaluation:   0%|          | 0/10 [00:45<?, ?it/s, ✓=0, ✖=0, error=1]Evaluation:  10%|█         | 1/10 [00:45<06:52, 45.89s/it, ✓=0, ✖=0, error=1]astropy__astropy-14365: >>>>> Patch Apply Failed:
+can't find file to patch at input line 3
+Perhaps you used the wrong -p or --strip option?
+The text leading up to this was:
+--------------------------
+|--- a/astropy/io/ascii/_qdp.py
+|+++ b/astropy/io/ascii/_qdp.py
+--------------------------
+No file to patch.  Skipping patch.
+patch: **** missing line number at line 3: @@ -XXX,10 +XXX,10 @@
+
+
+Check (logs/run_evaluation/phase2_20260416_211049_baseline/operon-baseline/astropy__astropy-14365/run_instance.log) for more information.
+Evaluation:  10%|█         | 1/10 [00:53<06:52, 45.89s/it, ✓=0, ✖=0, error=2]Evaluation:  20%|██        | 2/10 [00:53<03:05, 23.16s/it, ✓=0, ✖=0, error=2]astropy__astropy-14995: >>>>> Patch Apply Failed:
+can't find file to patch at input line 3
+Perhaps you used the wrong -p or --strip option?
+The text leading up to this was:
+--------------------------
+|--- a/astropy/nddata/nddata_ref.py
+|+++ b/astropy/nddata/nddata_ref.py
+--------------------------
+No file to patch.  Skipping patch.
+patch: **** missing line number at line 3: @@ -XXX,7 +XXX,15 @@
+
+
+Check (logs/run_evaluation/phase2_20260416_211049_baseline/operon-baseline/astropy__astropy-14995/run_instance.log) for more information.
+Evaluation:  20%|██        | 2/10 [01:05<03:05, 23.16s/it, ✓=0, ✖=0, error=3]Evaluation:  30%|███       | 3/10 [01:05<02:06, 18.09s/it, ✓=0, ✖=0, error=3]Evaluation:  30%|███       | 3/10 [01:12<02:06, 18.09s/it, ✓=0, ✖=0, error=4]Evaluation:  40%|████      | 4/10 [01:12<01:23, 13.94s/it, ✓=0, ✖=0, error=4]astropy__astropy-6938: >>>>> Patch Apply Failed:
+patching file astropy/io/fits/fitsrec.py
+patch: **** missing line number at line 3: @@ -X,4 +X,4 @@
+
+
+Check (logs/run_evaluation/phase2_20260416_211049_baseline/operon-baseline/astropy__astropy-6938/run_instance.log) for more information.
+Evaluation:  40%|████      | 4/10 [01:50<01:23, 13.94s/it, ✓=0, ✖=0, error=5]Evaluation:  50%|█████     | 5/10 [01:50<01:52, 22.47s/it, ✓=0, ✖=0, error=5]Evaluation:  50%|█████     | 5/10 [01:56<01:52, 22.47s/it, ✓=0, ✖=1, error=5]Evaluation:  60%|██████    | 6/10 [01:56<01:07, 16.75s/it, ✓=0, ✖=1, error=5]django__django-10914: >>>>> Patch Apply Failed:
+can't find file to patch at input line 3
+Perhaps you used the wrong -p or --strip option?
+The text leading up to this was:
+--------------------------
+|--- a/django/django/settings_doc.py
+|+++ b/django/django/settings_doc.py
+--------------------------
+No file to patch.  Skipping patch.
+patch: **** malformed patch at line 16:  
+
+
+Check (logs/run_evaluation/phase2_20260416_211049_baseline/operon-baseline/django__django-10914/run_instance.log) for more information.
+django__django-10924: >>>>> Patch Apply Failed:
+can't find file to patch at input line 3
+Perhaps you used the wrong -p or --strip option?
+The text leading up to this was:
+--------------------------
+|--- a/django/db/models/fields.py
+|+++ b/django/db/models/fields.py
+--------------------------
+No file to patch.  Skipping patch.
+patch: **** malformed patch at line 14:          return value
+
+
+Check (logs/run_evaluation/phase2_20260416_211049_baseline/operon-baseline/django__django-10924/run_instance.log) for more information.
+Evaluation:  60%|██████    | 6/10 [02:39<01:07, 16.75s/it, ✓=0, ✖=1, error=6]Evaluation:  70%|███████   | 7/10 [02:39<01:16, 25.58s/it, ✓=0, ✖=1, error=6]Evaluation:  70%|███████   | 7/10 [02:44<01:16, 25.58s/it, ✓=0, ✖=1, error=7]Evaluation:  80%|████████  | 8/10 [02:44<00:37, 18.80s/it, ✓=0, ✖=1, error=7]django__django-11001: >>>>> Patch Apply Failed:
+can't find file to patch at input line 3
+Perhaps you used the wrong -p or --strip option?
+The text leading up to this was:
+--------------------------
+|--- a/django/db/sql/compiler.py
+|+++ b/django/db/sql/compiler.py
+--------------------------
+No file to patch.  Skipping patch.
+1 out of 1 hunk ignored
+
+Check (logs/run_evaluation/phase2_20260416_211049_baseline/operon-baseline/django__django-11001/run_instance.log) for more information.
+django__django-11019: >>>>> Patch Apply Failed:
+can't find file to patch at input line 3
+Perhaps you used the wrong -p or --strip option?
+The text leading up to this was:
+--------------------------
+|--- a/django/django/forms/widgets.py
+|+++ b/django/django/forms/widgets.py
+--------------------------
+No file to patch.  Skipping patch.
+patch: **** malformed patch at line 19: +        media = Media(css=self.css + other.css, js=self.js + other.js, check_order=self.check_order and other.check_order)
+
+
+Check (logs/run_evaluation/phase2_20260416_211049_baseline/operon-baseline/django__django-11019/run_instance.log) for more information.
+Evaluation:  80%|████████  | 8/10 [03:02<00:37, 18.80s/it, ✓=0, ✖=1, error=8]Evaluation:  90%|█████████ | 9/10 [03:02<00:18, 18.75s/it, ✓=0, ✖=1, error=8]Evaluation:  90%|█████████ | 9/10 [03:06<00:18, 18.75s/it, ✓=0, ✖=1, error=9]Evaluation: 100%|██████████| 10/10 [03:06<00:00, 14.27s/it, ✓=0, ✖=1, error=9]All instances run.
+Evaluation: 100%|██████████| 10/10 [03:06<00:00, 18.70s/it, ✓=0, ✖=1, error=9]
+Cleaning cached images...
+Removed 0 images.
+Total instances: 300
+Instances submitted: 10
+Instances completed: 1
+Instances incomplete: 290
+Instances resolved: 0
+Instances unresolved: 1
+Instances with empty patches: 0
+Instances with errors: 9
+Unstopped containers: 0
+Unremoved images: 0
+Report written to operon-baseline.phase2_20260416_211049_baseline.json
+
+  Wrote 10 predictions to eval/results/swebench_phase2_predictions/phase2_20260416_211049/organism.jsonl
+
+============================================================
+Running harness for organism (10 instances)
+============================================================
+  Harness: python -m swebench.harness.run_evaluation --run_id phase2_20260416_211049_organism ...
+2026-04-16 22:04:13,557 - datasets - INFO - JAX version 0.6.1 available.
+<frozen runpy>:128: RuntimeWarning: 'swebench.harness.run_evaluation' found in sys.modules after import of package 'swebench.harness', but prior to execution of 'swebench.harness.run_evaluation'; this may result in unpredictable behaviour
+2026-04-16 22:04:14,046 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+2026-04-16 22:04:14,065 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/SWE-bench/SWE-bench_Lite/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/README.md "HTTP/1.1 200 OK"
+2026-04-16 22:04:14,176 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/SWE-bench_Lite.py "HTTP/1.1 404 Not Found"
+2026-04-16 22:04:14,490 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/SWE-bench/SWE-bench_Lite/SWE-bench/SWE-bench_Lite.py "HTTP/1.1 404 Not Found"
+2026-04-16 22:04:14,609 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/SWE-bench/SWE-bench_Lite/revision/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e "HTTP/1.1 200 OK"
+2026-04-16 22:04:14,727 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/.huggingface.yaml "HTTP/1.1 404 Not Found"
+2026-04-16 22:04:14,920 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=SWE-bench/SWE-bench_Lite "HTTP/1.1 200 OK"
+2026-04-16 22:04:15,039 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/SWE-bench/SWE-bench_Lite/tree/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/data?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-04-16 22:04:15,151 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/SWE-bench/SWE-bench_Lite/tree/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e?recursive=false&expand=false "HTTP/1.1 200 OK"
+2026-04-16 22:04:15,297 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/dataset_infos.json "HTTP/1.1 404 Not Found"
+2026-04-16 22:04:15,683 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+2026-04-16 22:04:15,701 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/SWE-bench/SWE-bench_Lite/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/README.md "HTTP/1.1 200 OK"
+2026-04-16 22:04:15,817 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/SWE-bench_Lite.py "HTTP/1.1 404 Not Found"
+2026-04-16 22:04:15,914 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/SWE-bench/SWE-bench_Lite/SWE-bench/SWE-bench_Lite.py "HTTP/1.1 404 Not Found"
+2026-04-16 22:04:16,034 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/.huggingface.yaml "HTTP/1.1 404 Not Found"
+2026-04-16 22:04:16,160 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=SWE-bench/SWE-bench_Lite "HTTP/1.1 200 OK"
+2026-04-16 22:04:16,304 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/dataset_infos.json "HTTP/1.1 404 Not Found"
+Running 6 instances...
+Evaluation:   0%|          | 0/6 [00:00<?, ?it/s, error=0, ✓=0, ✖=0]astropy__astropy-14365: >>>>> Patch Apply Failed:
+patching file astropy/io/ascii/qdp.py
+patch: **** malformed patch at line 19:  
+
+
+Check (logs/run_evaluation/phase2_20260416_211049_organism/operon-organism/astropy__astropy-14365/run_instance.log) for more information.
+Evaluation:   0%|          | 0/6 [00:46<?, ?it/s, ✓=0, ✖=0, error=1]Evaluation:  17%|█▋        | 1/6 [00:46<03:50, 46.10s/it, ✓=0, ✖=0, error=1]Evaluation:  17%|█▋        | 1/6 [01:02<03:50, 46.10s/it, ✓=0, ✖=1, error=1]Evaluation:  33%|███▎      | 2/6 [01:02<01:55, 28.82s/it, ✓=0, ✖=1, error=1]django__django-10914: >>>>> Patch Apply Failed:
+patching file django/core/files/storage.py
+patch: **** malformed patch at line 10:  
+
+
+Check (logs/run_evaluation/phase2_20260416_211049_organism/operon-organism/django__django-10914/run_instance.log) for more information.
+django__django-10924: >>>>> Patch Apply Failed:
+can't find file to patch at input line 3
+Perhaps you used the wrong -p or --strip option?
+The text leading up to this was:
+--------------------------
+|--- a/django/db/models/fields.py
+|+++ b/django/db/models/fields.py
+--------------------------
+No file to patch.  Skipping patch.
+patch: **** malformed patch at line 15: +        elif self.path is not None:
+
+
+Check (logs/run_evaluation/phase2_20260416_211049_organism/operon-organism/django__django-10924/run_instance.log) for more information.
+Evaluation:  33%|███▎      | 2/6 [01:30<01:55, 28.82s/it, ✓=0, ✖=1, error=2]Evaluation:  50%|█████     | 3/6 [01:30<01:25, 28.35s/it, ✓=0, ✖=1, error=2]django__django-11001: >>>>> Patch Apply Failed:
+can't find file to patch at input line 3
+Perhaps you used the wrong -p or --strip option?
+The text leading up to this was:
+--------------------------
+|--- a/django/db/compiler/sql_compiler.py
+|+++ b/django/db/compiler/sql_compiler.py
+--------------------------
+No file to patch.  Skipping patch.
+patch: **** unexpected end of file in patch
+
+Check (logs/run_evaluation/phase2_20260416_211049_organism/operon-organism/django__django-11001/run_instance.log) for more information.
+Evaluation:  50%|█████     | 3/6 [01:44<01:25, 28.35s/it, ✓=0, ✖=1, error=3]Evaluation:  67%|██████▋   | 4/6 [01:44<00:45, 22.68s/it, ✓=0, ✖=1, error=3]Evaluation:  67%|██████▋   | 4/6 [01:53<00:45, 22.68s/it, ✓=0, ✖=1, error=4]Evaluation:  83%|████████▎ | 5/6 [01:53<00:17, 17.63s/it, ✓=0, ✖=1, error=4]django__django-11019: >>>>> Patch Apply Failed:
+can't find file to patch at input line 3
+Perhaps you used the wrong -p or --strip option?
+The text leading up to this was:
+--------------------------
+|--- a/django/django/forms/widgets.py
+|+++ b/django/django/forms/widgets.py
+--------------------------
+No file to patch.  Skipping patch.
+patch: **** unexpected end of file in patch
+
+Check (logs/run_evaluation/phase2_20260416_211049_organism/operon-organism/django__django-11019/run_instance.log) for more information.
+Evaluation:  83%|████████▎ | 5/6 [02:09<00:17, 17.63s/it, ✓=0, ✖=1, error=5]Evaluation: 100%|██████████| 6/6 [02:09<00:00, 16.98s/it, ✓=0, ✖=1, error=5]All instances run.
+Evaluation: 100%|██████████| 6/6 [02:09<00:00, 21.50s/it, ✓=0, ✖=1, error=5]
+Cleaning cached images...
+Removed 0 images.
+Total instances: 300
+Instances submitted: 10
+Instances completed: 1
+Instances incomplete: 290
+Instances resolved: 0
+Instances unresolved: 1
+Instances with empty patches: 4
+Instances with errors: 5
+Unstopped containers: 0
+Unremoved images: 0
+Report written to operon-organism.phase2_20260416_211049_organism.json
+
+  Wrote 10 predictions to eval/results/swebench_phase2_predictions/phase2_20260416_211049/langgraph.jsonl
+
+============================================================
+Running harness for langgraph (10 instances)
+============================================================
+  Harness: python -m swebench.harness.run_evaluation --run_id phase2_20260416_211049_langgraph ...
+2026-04-16 22:06:31,043 - datasets - INFO - JAX version 0.6.1 available.
+<frozen runpy>:128: RuntimeWarning: 'swebench.harness.run_evaluation' found in sys.modules after import of package 'swebench.harness', but prior to execution of 'swebench.harness.run_evaluation'; this may result in unpredictable behaviour
+2026-04-16 22:06:31,498 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+2026-04-16 22:06:31,510 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/SWE-bench/SWE-bench_Lite/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/README.md "HTTP/1.1 200 OK"
+2026-04-16 22:06:31,650 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/SWE-bench_Lite.py "HTTP/1.1 404 Not Found"
+2026-04-16 22:06:31,978 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/SWE-bench/SWE-bench_Lite/SWE-bench/SWE-bench_Lite.py "HTTP/1.1 404 Not Found"
+2026-04-16 22:06:32,109 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/SWE-bench/SWE-bench_Lite/revision/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e "HTTP/1.1 200 OK"
+2026-04-16 22:06:32,229 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/.huggingface.yaml "HTTP/1.1 404 Not Found"
+2026-04-16 22:06:32,435 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=SWE-bench/SWE-bench_Lite "HTTP/1.1 200 OK"
+2026-04-16 22:06:32,594 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/SWE-bench/SWE-bench_Lite/tree/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/data?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-04-16 22:06:32,711 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/SWE-bench/SWE-bench_Lite/tree/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e?recursive=false&expand=false "HTTP/1.1 200 OK"
+2026-04-16 22:06:32,844 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/dataset_infos.json "HTTP/1.1 404 Not Found"
+2026-04-16 22:06:33,065 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+2026-04-16 22:06:33,077 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/SWE-bench/SWE-bench_Lite/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/README.md "HTTP/1.1 200 OK"
+2026-04-16 22:06:33,191 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/SWE-bench_Lite.py "HTTP/1.1 404 Not Found"
+2026-04-16 22:06:33,291 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/SWE-bench/SWE-bench_Lite/SWE-bench/SWE-bench_Lite.py "HTTP/1.1 404 Not Found"
+2026-04-16 22:06:33,406 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/.huggingface.yaml "HTTP/1.1 404 Not Found"
+2026-04-16 22:06:33,534 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=SWE-bench/SWE-bench_Lite "HTTP/1.1 200 OK"
+2026-04-16 22:06:33,645 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite/resolve/69611d31007e1c6731db8bd5b5c3f2d33f5bab6e/dataset_infos.json "HTTP/1.1 404 Not Found"
+Running 6 instances...
+Evaluation:   0%|          | 0/6 [00:00<?, ?it/s, error=0, ✓=0, ✖=0]astropy__astropy-12907: >>>>> Patch Apply Failed:
+patching file astropy/modeling/separable.py
+Hunk #1 succeeded at 1 with fuzz 3.
+patch: **** malformed patch at line 22:      # Handle the case where the model is compound
+
+
+Check (logs/run_evaluation/phase2_20260416_211049_langgraph/operon-langgraph/astropy__astropy-12907/run_instance.log) for more information.
+astropy__astropy-14182: >>>>> Patch Apply Failed:
+can't find file to patch at input line 3
+Perhaps you used the wrong -p or --strip option?
+The text leading up to this was:
+--------------------------
+|--- a/astropy/io/ascii/writers/rst.py
+|+++ b/astropy/io/ascii/writers/rst.py
+--------------------------
+No file to patch.  Skipping patch.
+1 out of 1 hunk ignored
+
+Check (logs/run_evaluation/phase2_20260416_211049_langgraph/operon-langgraph/astropy__astropy-14182/run_instance.log) for more information.
+Evaluation:   0%|          | 0/6 [00:47<?, ?it/s, ✓=0, ✖=0, error=1]Evaluation:  17%|█▋        | 1/6 [00:47<03:58, 47.71s/it, ✓=0, ✖=0, error=1]Evaluation:  17%|█▋        | 1/6 [00:48<03:58, 47.71s/it, ✓=0, ✖=0, error=2]Evaluation:  33%|███▎      | 2/6 [00:48<01:19, 19.94s/it, ✓=0, ✖=0, error=2]astropy__astropy-14365: >>>>> Patch Apply Failed:
+patching file astropy/io/ascii/qdp.py
+Hunk #1 FAILED at 25.
+1 out of 1 hunk FAILED -- saving rejects to file astropy/io/ascii/qdp.py.rej
+
+Check (logs/run_evaluation/phase2_20260416_211049_langgraph/operon-langgraph/astropy__astropy-14365/run_instance.log) for more information.
+astropy__astropy-6938: >>>>> Patch Apply Failed:
+patching file astropy/io/fits/fitsrec.py
+patch: **** missing line number at line 3: @@ -X,4 +X,4 @@
+
+
+Check (logs/run_evaluation/phase2_20260416_211049_langgraph/operon-langgraph/astropy__astropy-6938/run_instance.log) for more information.
+Evaluation:  33%|███▎      | 2/6 [01:37<01:19, 19.94s/it, ✓=0, ✖=0, error=3]Evaluation:  50%|█████     | 3/6 [01:37<01:39, 33.19s/it, ✓=0, ✖=0, error=3]Evaluation:  50%|█████     | 3/6 [01:40<01:39, 33.19s/it, ✓=0, ✖=0, error=4]Evaluation:  67%|██████▋   | 4/6 [01:40<00:43, 21.59s/it, ✓=0, ✖=0, error=4]django__django-10914: >>>>> Patch Apply Failed:
+patching file django/core/files/storage.py
+patch: **** malformed patch at line 11:  
+
+
+Check (logs/run_evaluation/phase2_20260416_211049_langgraph/operon-langgraph/django__django-10914/run_instance.log) for more information.
+django__django-11001: >>>>> Patch Apply Failed:
+can't find file to patch at input line 3
+Perhaps you used the wrong -p or --strip option?
+The text leading up to this was:
+--------------------------
+|--- a/django/db/compiler/sql_compiler.py
+|+++ b/django/db/compiler/sql_compiler.py
+--------------------------
+No file to patch.  Skipping patch.
+patch: **** unexpected end of file in patch
+
+Check (logs/run_evaluation/phase2_20260416_211049_langgraph/operon-langgraph/django__django-11001/run_instance.log) for more information.
+Evaluation:  67%|██████▋   | 4/6 [02:24<00:43, 21.59s/it, ✓=0, ✖=0, error=5]Evaluation:  83%|████████▎ | 5/6 [02:24<00:29, 29.37s/it, ✓=0, ✖=0, error=5]Evaluation:  83%|████████▎ | 5/6 [02:30<00:29, 29.37s/it, ✓=0, ✖=0, error=6]Evaluation: 100%|██████████| 6/6 [02:30<00:00, 21.63s/it, ✓=0, ✖=0, error=6]All instances run.
+Evaluation: 100%|██████████| 6/6 [02:30<00:00, 25.13s/it, ✓=0, ✖=0, error=6]
+Cleaning cached images...
+Removed 0 images.
+Total instances: 300
+Instances submitted: 10
+Instances completed: 0
+Instances incomplete: 290
+Instances resolved: 0
+Instances unresolved: 0
+Instances with empty patches: 4
+Instances with errors: 6
+Unstopped containers: 0
+Unremoved images: 0
+Report written to operon-langgraph.phase2_20260416_211049_langgraph.json
+
+============================================================
+SUMMARY
+============================================================
+  baseline   resolved=0/10 (0.0%)  n=10  extracted=10/10  harness=ok  latency=44429ms
+  organism   resolved=0/10 (0.0%)  n=10  extracted=6/10  harness=ok  latency=87660ms
+  langgraph  resolved=0/10 (0.0%)  n=10  extracted=6/10  harness=ok  latency=89796ms
+
+  Results saved to eval/results/swebench_phase2.json
