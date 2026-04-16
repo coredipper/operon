@@ -1,44 +1,44 @@
 {
-  "timestamp": "2026-04-16T11:19:44.690821+00:00",
+  "timestamp": "2026-04-16T12:18:23.012144+00:00",
   "results": [
     {
       "name": "2-parallel-equal",
       "predicted": 2.0,
-      "measured": 1.947,
-      "sequential_ms": 215.7,
-      "parallel_ms": 110.8,
+      "measured": 2.008,
+      "sequential_ms": 207.2,
+      "parallel_ms": 103.2,
       "within_bound": true
     },
     {
       "name": "3-parallel-equal",
       "predicted": 3.0,
-      "measured": 2.95,
-      "sequential_ms": 326.2,
-      "parallel_ms": 110.6,
+      "measured": 2.926,
+      "sequential_ms": 316.0,
+      "parallel_ms": 108.0,
       "within_bound": true
     },
     {
       "name": "mixed-2par+1seq",
       "predicted": 1.5,
-      "measured": 1.477,
-      "sequential_ms": 326.5,
-      "parallel_ms": 221.1,
+      "measured": 1.475,
+      "sequential_ms": 308.9,
+      "parallel_ms": 209.4,
       "within_bound": true
     },
     {
       "name": "uneven-2par",
       "predicted": 1.5024875621890548,
-      "measured": 1.486,
-      "sequential_ms": 311.1,
-      "parallel_ms": 209.3,
+      "measured": 1.528,
+      "sequential_ms": 309.0,
+      "parallel_ms": 202.2,
       "within_bound": true
     },
     {
       "name": "sequential-baseline",
       "predicted": 1.0,
-      "measured": 1.003,
-      "sequential_ms": 322.9,
-      "parallel_ms": 322.1,
+      "measured": 0.987,
+      "sequential_ms": 309.6,
+      "parallel_ms": 313.5,
       "within_bound": true
     }
   ]

@@ -60,13 +60,13 @@ def _build_diagram(stage_groups, latencies: dict[str, int]) -> WiringDiagram:
                 cost=ResourceCost(atp=1, latency_ms=ms),
             ))
 
-    # Wire: sequential between groups, no wires within parallel groups
+    # Wire: every stage in group i → every stage in group i+1
+    # (each later group depends on completion of the full previous group)
     flat_groups = list(stage_groups)
     for i in range(len(flat_groups) - 1):
-        # Last stage of group i → first stage of group i+1
-        src = flat_groups[i][-1].name
-        dst = flat_groups[i + 1][0].name
-        diagram.connect(src, "out", dst, "in")
+        for src_stage in flat_groups[i]:
+            for dst_stage in flat_groups[i + 1]:
+                diagram.connect(src_stage.name, "out", dst_stage.name, "in")
 
     return diagram
 
@@ -203,9 +203,10 @@ def main():
         parallel_ms = (time.monotonic() - t0) * 1000
 
         measured = sequential_ms / max(parallel_ms, 1)
-        within_bound = measured <= predicted.speedup * 1.1  # 10% tolerance
-        overhead = ((1.0 / measured - 1.0 / predicted.speedup) /
-                    (1.0 / predicted.speedup)) * 100 if predicted.speedup > 1 else 0
+        # Two-sided check: measured should be close to predicted (within 25%)
+        ratio = measured / predicted.speedup if predicted.speedup > 0 else 1.0
+        within_bound = 0.75 <= ratio <= 1.1  # measured shouldn't exceed or severely underperform
+        overhead = (1.0 - ratio) * 100
 
         r = SpeedupResult(
             name=name,
@@ -238,17 +239,25 @@ def main():
 
     # Correlation
     if len(results) >= 3:
-        from scipy.stats import spearmanr
-        predicted = [r.predicted for r in results]
-        measured = [r.measured for r in results]
-        rho, p = spearmanr(predicted, measured)
-        print(f"\n  Spearman rho: {rho:.3f} (p={p:.4f})")
-        if rho > 0.8:
-            print("  Strong positive correlation — theorem predicts measured speedup")
-        elif rho > 0.5:
-            print("  Moderate correlation")
+        try:
+            from scipy.stats import spearmanr
+        except ImportError:
+            spearmanr = None
+        if spearmanr is None:
+            print("\n  (scipy not installed — skipping correlation)")
+            rho, p = None, None
         else:
-            print("  Weak or no correlation")
+            predicted = [r.predicted for r in results]
+            measured = [r.measured for r in results]
+            rho, p = spearmanr(predicted, measured)
+        if rho is not None:
+            print(f"\n  Spearman rho: {rho:.3f} (p={p:.4f})")
+            if rho > 0.8:
+                print("  Strong positive correlation — theorem predicts measured speedup")
+            elif rho > 0.5:
+                print("  Moderate correlation")
+            else:
+                print("  Weak or no correlation")
 
     all_within = all(r.within_bound for r in results)
     print(f"\n  All within bound: {all_within}")
