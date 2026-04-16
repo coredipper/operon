@@ -7,7 +7,7 @@
     "architecture": "gemma4",
     "parameters": "8.0B",
     "quantization": "Q4_K_M",
-    "source": "ollama list / ollama show --modelfile gemma4:latest"
+    "source": "ollama list / ollama show / ollama show --modelfile"
   },
   "dataset": "SWE-bench/SWE-bench_Lite",
   "run_id": "phase2_20260416_211049",

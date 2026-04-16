@@ -53,39 +53,107 @@ def _make_provider(model: str) -> OpenAICompatibleProvider:
     )
 
 
+class ModelIdentityError(RuntimeError):
+    """Raised when an immutable identity cannot be resolved for a tag."""
+
+
+# Required keys for an immutable identity. The schema is locked so the
+# committed artifact always matches a fresh rerun's output.
+_IDENTITY_REQUIRED = ("tag", "digest", "blob_sha256", "architecture",
+                      "parameters", "quantization", "source")
+
+
+def _parse_ollama_show(stdout: str) -> dict[str, str]:
+    """Extract architecture / parameters / quantization from ``ollama show``.
+
+    The non-modelfile form prints indented section headers (``Model``,
+    ``Capabilities``, ``Parameters``) at 2 spaces of indent with their
+    row values at 4+ spaces. We parse only the keys we publish so a
+    future ollama version adding rows does not change our schema.
+    """
+    wanted = {"architecture", "parameters", "quantization"}
+    found: dict[str, str] = {}
+    in_model_section = False
+    for line in stdout.splitlines():
+        if not line.strip():
+            continue
+        indent = len(line) - len(line.lstrip(" "))
+        stripped = line.strip()
+        if indent <= 2:
+            in_model_section = stripped == "Model"
+            continue
+        if not in_model_section:
+            continue
+        parts = stripped.split(None, 1)
+        if len(parts) == 2 and parts[0] in wanted:
+            found[parts[0]] = parts[1].strip()
+    return found
+
+
 def _resolve_model_identity(model_tag: str) -> dict[str, str]:
     """Return an immutable identifier for *model_tag* from Ollama.
 
     The human-readable tag (e.g. ``gemma4:latest``) is a floating pointer;
     the digest and blob sha256 pin a specific set of weights so the result
     can be correlated with a concrete model version later.
+
+    Raises :class:`ModelIdentityError` if any required field cannot be
+    resolved. Callers must surface this to the user rather than silently
+    proceeding — the published artifact and the paper both cite these
+    fields as reproducibility anchors.
     """
-    identity: dict[str, str] = {"tag": model_tag}
+    identity: dict[str, str] = {
+        "tag": model_tag,
+        "source": "ollama list / ollama show / ollama show --modelfile",
+    }
     try:
-        result = subprocess.run(
+        listed = subprocess.run(
             ["ollama", "list"], check=True, capture_output=True, text=True,
             timeout=5,
         )
-        for line in result.stdout.splitlines():
-            parts = line.split()
-            if len(parts) >= 2 and parts[0] == model_tag:
-                identity["digest"] = parts[1]
-                break
     except (subprocess.CalledProcessError, FileNotFoundError,
-            subprocess.TimeoutExpired):
-        pass
+            subprocess.TimeoutExpired) as e:
+        raise ModelIdentityError(f"`ollama list` failed: {e}") from e
+    for line in listed.stdout.splitlines():
+        parts = line.split()
+        if len(parts) >= 2 and parts[0] == model_tag:
+            identity["digest"] = parts[1]
+            break
+
     try:
-        result = subprocess.run(
+        modelfile = subprocess.run(
             ["ollama", "show", "--modelfile", model_tag],
             check=True, capture_output=True, text=True, timeout=5,
         )
-        for line in result.stdout.splitlines():
-            if line.startswith("FROM /") and "sha256-" in line:
-                identity["blob_sha256"] = line.split("sha256-", 1)[1].strip()
-                break
     except (subprocess.CalledProcessError, FileNotFoundError,
-            subprocess.TimeoutExpired):
-        pass
+            subprocess.TimeoutExpired) as e:
+        raise ModelIdentityError(
+            f"`ollama show --modelfile {model_tag}` failed: {e}"
+        ) from e
+    for line in modelfile.stdout.splitlines():
+        if line.startswith("FROM /") and "sha256-" in line:
+            identity["blob_sha256"] = line.split("sha256-", 1)[1].strip()
+            break
+
+    try:
+        shown = subprocess.run(
+            ["ollama", "show", model_tag],
+            check=True, capture_output=True, text=True, timeout=5,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError,
+            subprocess.TimeoutExpired) as e:
+        raise ModelIdentityError(
+            f"`ollama show {model_tag}` failed: {e}"
+        ) from e
+    identity.update(_parse_ollama_show(shown.stdout))
+
+    missing = [k for k in _IDENTITY_REQUIRED if k not in identity]
+    if missing:
+        raise ModelIdentityError(
+            f"could not resolve required identity fields {missing} for "
+            f"tag {model_tag!r}; refusing to publish an incomplete "
+            "reproducibility record"
+        )
     return identity
 
 
@@ -320,6 +388,26 @@ def main():
             print("WARNING: langgraph not installed, skipping")
             conditions = [c for c in conditions if c != "langgraph"]
 
+    # Freeze the model identity BEFORE any predictions are generated so
+    # the recorded digest/blob describes the weights actually used. A
+    # concurrent `ollama pull` during a 45-minute run could otherwise
+    # re-point the floating tag; resolving at save time would then lie
+    # about what generated the predictions.
+    try:
+        model_identity = _resolve_model_identity(args.model)
+    except ModelIdentityError as e:
+        print(f"ERROR: cannot resolve immutable model identity: {e}")
+        print("Refusing to run — the results artifact cites this identity "
+              "for reproducibility. Pin the model first (e.g. `ollama pull "
+              f"{args.model}`) and retry.")
+        sys.exit(1)
+    print(f"Model identity: tag={model_identity['tag']} "
+          f"digest={model_identity['digest']} "
+          f"blob={model_identity['blob_sha256'][:12]}... "
+          f"arch={model_identity['architecture']} "
+          f"params={model_identity['parameters']} "
+          f"quant={model_identity['quantization']}")
+
     provider = _make_provider(args.model)
 
     # Probe model
@@ -457,11 +545,32 @@ def main():
             ) if n else 0,
         }
 
+    # Best-effort verification: re-resolve the identity and flag if the
+    # floating tag moved during the run. Non-fatal — the run has already
+    # executed against `model_identity`, and that is the authoritative
+    # record. A mismatch is recorded as a sibling field in the artifact.
+    post_run_check: dict[str, str] = {"status": "match"}
+    try:
+        current = _resolve_model_identity(args.model)
+        if current.get("digest") != model_identity.get("digest") or \
+                current.get("blob_sha256") != model_identity.get("blob_sha256"):
+            post_run_check = {
+                "status": "mismatch",
+                "digest_now": current.get("digest", ""),
+                "blob_sha256_now": current.get("blob_sha256", ""),
+            }
+            print("WARN: model tag moved during the run. Recorded identity "
+                  "describes pre-run weights; post-run digest saved as "
+                  "`model_identity_post_run_check.mismatch`.")
+    except ModelIdentityError as e:
+        post_run_check = {"status": "error", "error": str(e)}
+
     out_path = Path("eval/results/swebench_phase2.json")
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_data = {
         "model": args.model,
-        "model_identity": _resolve_model_identity(args.model),
+        "model_identity": model_identity,
+        "model_identity_post_run_check": post_run_check,
         "dataset": "SWE-bench/SWE-bench_Lite",
         "run_id": run_id,
         "n_instances": len(instances),
