@@ -53,6 +53,23 @@ def _extract_fenced(text: str) -> str:
     return ""
 
 
+_GIT_METADATA_PREFIXES = (
+    "index ",
+    "new file mode",
+    "deleted file mode",
+    "old mode",
+    "new mode",
+    "rename from",
+    "rename to",
+    "copy from",
+    "copy to",
+    "similarity index",
+    "dissimilarity index",
+    "Binary files ",
+    "GIT binary patch",
+)
+
+
 def _extract_bare(text: str) -> str:
     # Concatenate all diff-looking chunks
     chunks = []
@@ -65,10 +82,11 @@ def _extract_bare(text: str) -> str:
             current = [line]
             in_diff = True
         elif in_diff:
-            if line.startswith("+++") or line.startswith("@@") or \
-                    line.startswith("+") or line.startswith("-") or \
-                    line.startswith(" ") or line == "\\ No newline at end of file" or \
-                    line.startswith("index "):
+            if (line.startswith("+++") or line.startswith("@@") or
+                    line.startswith("+") or line.startswith("-") or
+                    line.startswith(" ") or
+                    line == "\\ No newline at end of file" or
+                    line.startswith(_GIT_METADATA_PREFIXES)):
                 current.append(line)
             else:
                 if current:
@@ -83,8 +101,12 @@ def _extract_bare(text: str) -> str:
 
 
 def _looks_like_diff(text: str) -> bool:
+    """A block is a valid diff only if it has file headers, not just hunks.
+
+    Hunk-only snippets (just ``@@ -1 +1 @@`` lines) cannot be applied by
+    ``git apply``, so we reject them.
+    """
     return (
         ("--- a/" in text and "+++ b/" in text)
         or "diff --git " in text
-        or re.search(r"^@@\s+-\d+", text, re.MULTILINE) is not None
     )

@@ -187,10 +187,17 @@ def _write_predictions(preds: list[Prediction], path: Path, model_name: str) -> 
             }) + "\n")
 
 
+class HarnessFailed(Exception):
+    """Raised when the swebench harness itself failed to run."""
+
+
 def _run_harness(
     predictions_path: Path, run_id: str, report_dir: Path, timeout: int = 600
 ) -> None:
-    """Invoke swebench.harness.run_evaluation. Report lands in *report_dir*."""
+    """Invoke swebench.harness.run_evaluation. Report lands in *report_dir*.
+
+    Raises :class:`HarnessFailed` if the harness exits non-zero.
+    """
     report_dir.mkdir(parents=True, exist_ok=True)
     cmd = [
         sys.executable, "-m", "swebench.harness.run_evaluation",
@@ -207,32 +214,46 @@ def _run_harness(
         # Harness writes {model_name}.{run_id}.json to CWD — run in report_dir
         subprocess.run(cmd, check=True, cwd=str(report_dir))
     except subprocess.CalledProcessError as e:
-        print(f"  Harness failed (exit {e.returncode}); continuing")
+        raise HarnessFailed(
+            f"swebench.harness.run_evaluation exited {e.returncode}"
+        ) from e
+
+
+# Per-instance evaluation state
+EVAL_RESOLVED = "resolved"          # patch applied, tests passed
+EVAL_UNRESOLVED = "unresolved"      # patch applied but tests failed
+EVAL_ERROR = "error"                # patch failed to apply, timeout, etc.
+EVAL_EMPTY = "empty_patch"          # no patch produced
+EVAL_NOT_EVALUATED = "not_evaluated"  # harness did not report on this instance
 
 
 def _parse_reports(
     report_dir: Path, run_id: str, model_name: str
-) -> dict[str, bool]:
-    """Map instance_id → resolved bool from harness summary JSON."""
-    resolved: dict[str, bool] = {}
+) -> tuple[dict[str, str], bool]:
+    """Parse harness output.
+
+    Returns (status_by_instance, report_found). *status_by_instance* maps
+    instance_id → one of the EVAL_* constants. Instances not mentioned in
+    the report get EVAL_NOT_EVALUATED by the caller.
+    """
+    status: dict[str, str] = {}
     summary = report_dir / f"{model_name}.{run_id}.json"
     if not summary.exists():
-        print(f"  WARN: report not found at {summary}")
-        return resolved
+        return status, False
     try:
         data = json.loads(summary.read_text())
         for inst_id in data.get("resolved_ids", []):
-            resolved[inst_id] = True
+            status[inst_id] = EVAL_RESOLVED
         for inst_id in data.get("unresolved_ids", []):
-            resolved[inst_id] = False
+            status[inst_id] = EVAL_UNRESOLVED
         for inst_id in data.get("error_ids", []):
-            resolved[inst_id] = False
-        # Empty patches and incomplete are also "not resolved"
+            status[inst_id] = EVAL_ERROR
         for inst_id in data.get("empty_patch_ids", []):
-            resolved[inst_id] = False
+            status[inst_id] = EVAL_EMPTY
+        return status, True
     except (json.JSONDecodeError, KeyError) as e:
         print(f"  WARN: failed to parse {summary}: {e}")
-    return resolved
+        return status, False
 
 
 # ---------------------------------------------------------------------------
@@ -319,7 +340,8 @@ def main():
 
     # -- Phase B: write predictions & run harness ------------------------
     results_dir = Path("eval/results/swebench_phase2_predictions") / run_id
-    resolved_by_cond: dict[str, dict[str, bool]] = {c: {} for c in conditions}
+    status_by_cond: dict[str, dict[str, str]] = {c: {} for c in conditions}
+    harness_ok_by_cond: dict[str, bool] = {c: False for c in conditions}
 
     for cond in conditions:
         model_name = f"operon-{cond}"
@@ -334,22 +356,43 @@ def main():
         print(f"Running harness for {cond} ({len(preds_by_cond[cond])} instances)")
         print(f"{'='*60}")
         report_dir = Path("eval/results/swebench_phase2_reports") / f"{run_id}_{cond}"
-        _run_harness(pred_path, f"{run_id}_{cond}", report_dir, args.timeout)
-        resolved_by_cond[cond] = _parse_reports(report_dir, f"{run_id}_{cond}", model_name)
+        try:
+            _run_harness(pred_path, f"{run_id}_{cond}", report_dir, args.timeout)
+        except HarnessFailed as e:
+            print(f"  HARNESS FAILED for {cond}: {e}")
+            print(f"  Instances for {cond} will be recorded as not_evaluated")
+            continue
+        statuses, report_found = _parse_reports(
+            report_dir, f"{run_id}_{cond}", model_name
+        )
+        status_by_cond[cond] = statuses
+        harness_ok_by_cond[cond] = report_found
 
     # -- Phase C: aggregate & save ---------------------------------------
     summary: dict[str, dict] = {}
     for cond in conditions:
         preds = preds_by_cond[cond]
-        resolved = resolved_by_cond[cond]
+        statuses = status_by_cond[cond]
+        harness_ok = harness_ok_by_cond[cond]
         n = len(preds)
-        passed = sum(1 for p in preds if resolved.get(p.instance_id, False))
         extracted = sum(1 for p in preds if p.extract_ok)
+
+        # Only include instances with a real harness verdict in the denominator.
+        evaluated = [
+            p for p in preds
+            if statuses.get(p.instance_id, EVAL_NOT_EVALUATED) != EVAL_NOT_EVALUATED
+        ]
+        passed = sum(1 for p in evaluated if statuses.get(p.instance_id) == EVAL_RESOLVED)
+
         summary[cond] = {
             "n": n,
             "patch_extracted": extracted,
+            "evaluated": len(evaluated),
             "resolved": passed,
-            "resolved_rate": round(passed / n, 3) if n else 0.0,
+            "resolved_rate": (
+                round(passed / len(evaluated), 3) if evaluated else None
+            ),
+            "harness_ran": harness_ok,
             "mean_latency_ms": round(
                 sum(p.latency_ms for p in preds) / n, 0
             ) if n else 0,
@@ -374,7 +417,9 @@ def main():
                 "patch_extracted": p.extract_ok,
                 "patch_size_bytes": len(p.model_patch),
                 "latency_ms": p.latency_ms,
-                "resolved": resolved_by_cond[p.condition].get(p.instance_id, False),
+                "eval_status": status_by_cond[p.condition].get(
+                    p.instance_id, EVAL_NOT_EVALUATED
+                ),
             }
             for cond in conditions for p in preds_by_cond[cond]
         ],
@@ -385,10 +430,18 @@ def main():
     print("SUMMARY")
     print(f"{'='*60}")
     for cond, s in summary.items():
-        print(f"  {cond:10s} resolved={s['resolved']}/{s['n']} "
-              f"({s['resolved_rate']:.1%})  "
-              f"patch_extracted={s['patch_extracted']}/{s['n']}  "
-              f"latency={s['mean_latency_ms']:.0f}ms")
+        rate_str = (
+            f"{s['resolved_rate']:.1%}"
+            if s["resolved_rate"] is not None else "N/A"
+        )
+        harness_str = "ok" if s["harness_ran"] else "FAILED"
+        print(
+            f"  {cond:10s} resolved={s['resolved']}/{s['evaluated']} "
+            f"({rate_str})  n={s['n']}  "
+            f"extracted={s['patch_extracted']}/{s['n']}  "
+            f"harness={harness_str}  "
+            f"latency={s['mean_latency_ms']:.0f}ms"
+        )
     print(f"\n  Results saved to {out_path}")
 
 
