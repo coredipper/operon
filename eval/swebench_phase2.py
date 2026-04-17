@@ -215,13 +215,39 @@ def _build_grounding(instance: dict, cache_dir: Path) -> "Grounding":
     return Grounding(repo_path=repo_path, tree_paths=tree_paths, context_block=block)
 
 
+#: Per-call timeout (seconds) for every LLM invocation this runner
+#: makes, both direct (baseline via :func:`_llm_call`) and via the
+#: three-stage organism path (each :class:`SkillStage` ships with a
+#: matching ``provider_config``). The provider base class defaults to
+#: 120s, which is a safe choice for small interactive callers but not
+#: for SWE-bench prompts: the grounded v0.34.5 run had two baseline
+#: instances (astropy-12907, astropy-14995) time out at the 120s
+#: ceiling, and reasoning models like deepseek-r1 routinely produce
+#: 5-10 minute responses (long ``<think>`` blocks before the final
+#: answer). 900s is a safety net, not a tight fit — it accommodates
+#: current gemma4 runs (mean ~131s, some instances higher), grounded
+#: prompts with large context blocks, and reasoning-model reruns,
+#: while still catching silent Ollama hangs on a ~15 min budget.
+_LLM_TIMEOUT_SECONDS: float = 900.0
+
+
 def _llm_call(provider, prompt: str) -> str:
-    config = ProviderConfig(max_tokens=4096)
+    config = ProviderConfig(
+        max_tokens=4096, timeout_seconds=_LLM_TIMEOUT_SECONDS,
+    )
     return provider.complete(prompt, config).content
 
 
 def _build_organism(provider):
     nucleus = Nucleus(provider=provider)
+    # Every stage ships with the same per-call timeout as the baseline
+    # path. Without this, BioAgent -> Nucleus.transcribe falls back to
+    # ProviderConfig()'s 120s default and organism/langgraph runs time
+    # out long before the model has a chance to produce a full response.
+    # ProviderConfig is constructed per-stage (rather than shared) so a
+    # stage that later needs different max_tokens / temperature can
+    # override without disturbing the others.
+    stage_config = ProviderConfig(timeout_seconds=_LLM_TIMEOUT_SECONDS)
     return skill_organism(
         stages=[
             SkillStage(
@@ -233,6 +259,7 @@ def _build_organism(provider):
                     "occurs. Explain the root cause concisely."
                 ),
                 mode="fixed",
+                provider_config=stage_config,
             ),
             SkillStage(
                 name="edit",
@@ -263,6 +290,7 @@ def _build_organism(provider):
                     "text — the fenced diff only."
                 ),
                 mode="fixed",
+                provider_config=stage_config,
             ),
             SkillStage(
                 name="verify",
@@ -276,6 +304,7 @@ def _build_organism(provider):
                     "in this stage's output."
                 ),
                 mode="fixed",
+                provider_config=stage_config,
             ),
         ],
         fast_nucleus=nucleus,
