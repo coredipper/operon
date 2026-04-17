@@ -253,37 +253,55 @@ def _scan_hunk_extent(
     # The next line (if any) must be a legal post-hunk boundary, not
     # more body-shaped content. Body-shaped content after counts drain
     # means the hunk is overlong.
-    if i < len(lines):
-        nxt = lines[i]
-        if _is_post_hunk_boundary(nxt):
-            return i, True
-        # Body-shaped content (``+``, ``-``, `` ``, or empty) means
-        # the model emitted more body lines than the header declared.
-        return i, False
-    return i, True
+    if _is_post_hunk_boundary(lines, i):
+        return i, True
+    return i, False
 
 
-def _is_post_hunk_boundary(line: str) -> bool:
-    """Return True iff ``line`` is a legal boundary after a hunk body.
+def _is_post_hunk_boundary(lines: list[str], i: int) -> bool:
+    """Return True iff ``lines[i]`` is a legal post-hunk boundary.
 
-    Legal boundaries are the start of another hunk, another file, or
-    git metadata between files. Anything shaped like body content
-    (``+``, ``-``, `` ``, empty) means the previous hunk was overlong.
+    Review #736: shape-only acceptance of ``---``/``+++`` lets overlong
+    body content that happens to match header shape slip through. The
+    correct disambiguation is structural: the current hunk has ended,
+    and we're looking for where the NEXT hunk or file begins.
+
+    Legal boundaries (in decreasing order of specificity):
+
+    1. EOF (``i >= len(lines)``).
+    2. ``@@ ...`` — another hunk of the same file. Unambiguous: no
+       body line starts with ``@@``.
+    3. ``diff --git ...`` — a new file-diff. Unambiguous: no body line
+       starts with this exact prefix.
+    4. A git metadata line (``index ``, ``new file mode``, etc.) —
+       these sit BETWEEN ``diff --git`` and the ``---``/``+++`` pair
+       of a new file-diff, so finding one here implies a new file.
+    5. The three-line triplet ``--- a/<p>`` + ``+++ b/<p>`` + ``@@`` —
+       a bare multi-file diff's next file-diff starts. Requiring the
+       ``@@`` on line ``i+2`` is what rules out body-content
+       impostors: a body pair ``-- a/...`` / ``++ b/...`` followed by
+       arbitrary body content will not put ``@@`` at position ``i+2``.
+
+    Any other shape (including shape-only ``---``/``+++`` without the
+    full triplet) is treated as overlong body content, which rejects
+    the whole patch.
     """
+    if i >= len(lines):
+        return True
+    line = lines[i]
     if line.startswith("@@"):
         return True
     if line.startswith("diff --git "):
         return True
-    if _MINUS_FILE_HEADER_RE.match(line):
-        return True
-    # ``+++ b/...`` / ``+++ /dev/null`` as a sibling of a ``---`` line
-    # at a file boundary. Standalone ``+++`` outside a sibling pair is
-    # not a valid patch, but we accept it here and let downstream
-    # validation catch it.
-    if _PLUS_FILE_HEADER_RE.match(line):
-        return True
     if line.startswith(_METADATA_PREFIXES):
         return True
+    # Bare multi-file triplet: ---, +++, @@.
+    if _MINUS_FILE_HEADER_RE.match(line):
+        plus = lines[i + 1] if i + 1 < len(lines) else None
+        at = lines[i + 2] if i + 2 < len(lines) else None
+        if plus is not None and _PLUS_FILE_HEADER_RE.match(plus):
+            if at is not None and at.startswith("@@"):
+                return True
     return False
 
 

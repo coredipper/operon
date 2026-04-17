@@ -851,6 +851,89 @@ def test_sanitize_rejects_overlong_hunk_extra_context():
     assert sanitize(patch, "owner/repo") == ""
 
 
+def test_sanitize_rejects_overlong_with_plus_b_shape_after_counts():
+    """Review #736: an extra ``+++ b/bar.py`` after counts drain is
+    overlong body content, not a legal post-hunk boundary. Shape-only
+    acceptance would have let this through.
+    """
+    patch = (
+        "--- a/foo.py\n"
+        "+++ b/foo.py\n"
+        "@@ -1 +1 @@\n"
+        "-old\n"
+        "+new\n"
+        "+++ b/bar.py\n"   # addition of content "++ b/bar.py" — overlong
+    )
+    assert sanitize(patch, "owner/repo") == ""
+
+
+def test_sanitize_rejects_overlong_with_minus_a_shape_after_counts():
+    """Extra ``--- a/foo.py`` after counts drain without a real ``+++``
+    sibling + ``@@`` triplet is overlong body content."""
+    patch = (
+        "--- a/foo.py\n"
+        "+++ b/foo.py\n"
+        "@@ -1 +1 @@\n"
+        "-old\n"
+        "+new\n"
+        "--- a/foo.py\n"   # deletion of "-- a/foo.py" — overlong, not
+                            # a file boundary (no +++ b/... followed by @@)
+    )
+    assert sanitize(patch, "owner/repo") == ""
+
+
+def test_sanitize_rejects_overlong_with_plus_devnull_after_counts():
+    """Extra ``+++ /dev/null`` after counts drain is overlong."""
+    patch = (
+        "--- a/foo.py\n"
+        "+++ b/foo.py\n"
+        "@@ -1 +1 @@\n"
+        "-old\n"
+        "+new\n"
+        "+++ /dev/null\n"  # addition of "++ /dev/null" — overlong
+    )
+    assert sanitize(patch, "owner/repo") == ""
+
+
+def test_sanitize_accepts_bare_multi_file_triplet_boundary():
+    """A legitimate bare multi-file boundary must still be accepted:
+    ``---`` + ``+++`` + ``@@`` triplet after the previous hunk's
+    counts drain.
+    """
+    patch = (
+        "--- a/foo.py\n"
+        "+++ b/foo.py\n"
+        "@@ -1 +1 @@\n"
+        "-old\n"
+        "+new\n"
+        "--- a/bar.py\n"
+        "+++ b/bar.py\n"
+        "@@ -1 +1 @@\n"
+        "-x\n"
+        "+y\n"
+    )
+    cleaned = sanitize(patch, "owner/repo")
+    assert cleaned
+    assert "--- a/foo.py" in cleaned
+    assert "--- a/bar.py" in cleaned
+
+
+def test_sanitize_rejects_overlong_where_only_minus_plus_pair_without_hunk():
+    """Two-line pair ``--- a/bar.py`` + ``+++ b/bar.py`` after counts
+    drain WITHOUT a following ``@@`` is not a real boundary — must
+    reject as overlong body content."""
+    patch = (
+        "--- a/foo.py\n"
+        "+++ b/foo.py\n"
+        "@@ -1 +1 @@\n"
+        "-old\n"
+        "+new\n"
+        "--- a/bar.py\n"
+        "+++ b/bar.py\n"   # no @@ follows — overlong body, not a boundary
+    )
+    assert sanitize(patch, "owner/repo") == ""
+
+
 def test_sanitize_accepts_no_newline_marker_at_hunk_end():
     """``\\ No newline at end of file`` after the body is a valid
     marker and must NOT be rejected as overlong body content.
