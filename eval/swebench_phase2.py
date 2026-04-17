@@ -40,6 +40,13 @@ from operon_ai.providers.openai_compatible_provider import OpenAICompatibleProvi
 
 from eval._patch_extraction import extract_patch
 from eval._patch_sanitizer import sanitize as sanitize_patch
+from eval._repo_cache import RepoCacheError, ensure_repo_at
+from eval._repo_grounding import (
+    extract_hints,
+    format_context_block,
+    rank_candidate_files,
+    walk_tree_paths,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -158,14 +165,54 @@ def _resolve_model_identity(model_tag: str) -> dict[str, str]:
     return identity
 
 
-def _format_task(instance: dict) -> str:
+def _format_task(instance: dict, grounding_block: str = "") -> str:
     repo = instance["repo"]
     problem = instance["problem_statement"]
     hints = instance.get("hints_text", "") or ""
     prompt = f"Repository: {repo}\n\nIssue:\n{problem}\n"
     if hints.strip():
         prompt += f"\nHints:\n{hints[:500]}\n"
+    if grounding_block:
+        prompt += f"\nRepository context:\n{grounding_block}\n"
     return prompt
+
+
+@dataclass
+class Grounding:
+    """Per-instance grounding bundle built in main() when --grounding is on."""
+    repo_path: "Path | None"  # forward ref; Path imported at module top
+    tree_paths: "frozenset[str] | None"
+    context_block: str
+
+    @classmethod
+    def none(cls) -> "Grounding":
+        return cls(repo_path=None, tree_paths=None, context_block="")
+
+
+def _build_grounding(instance: dict, cache_dir: Path) -> "Grounding":
+    """Clone the instance's repo at its base_commit and produce context.
+
+    Returns a ``Grounding.none()`` if anything fails — the caller falls
+    back to the Phase-A behavior for that instance with a diagnostic
+    printed.
+    """
+    repo_slug = instance["repo"]
+    base_commit = instance.get("base_commit")
+    if not base_commit:
+        print(f"  grounding skipped: no base_commit on {instance['instance_id']}")
+        return Grounding.none()
+    try:
+        repo_path = ensure_repo_at(repo_slug, base_commit, cache_dir)
+    except RepoCacheError as e:
+        print(f"  grounding failed for {repo_slug}@{base_commit[:12]}: {e}")
+        return Grounding.none()
+    tree_paths = walk_tree_paths(repo_path)
+    hints = extract_hints(
+        instance["problem_statement"] + "\n" + (instance.get("hints_text") or "")
+    )
+    candidates = rank_candidate_files(repo_path, hints, k=5)
+    block = format_context_block(repo_path, candidates)
+    return Grounding(repo_path=repo_path, tree_paths=tree_paths, context_block=block)
 
 
 def _llm_call(provider, prompt: str) -> str:
@@ -267,26 +314,33 @@ _BASELINE_RULES = (
 )
 
 
-def _sanitize_for_submission(raw: str, repo_slug: str) -> str:
+def _sanitize_for_submission(
+    raw: str, repo_slug: str,
+    tree_paths: "frozenset[str] | None" = None,
+) -> str:
     """Extract and sanitize a patch from raw model output.
 
-    A rejected-by-sanitizer submission is returned as ``""`` so the
+    When ``tree_paths`` is provided (``--grounding`` mode), the
+    sanitizer also fuzzy-corrects near-miss file paths against the
+    cloned repo. A rejected submission is returned as ``""`` so the
     harness counts it as ``empty_patch`` rather than a format-error
-    ``error`` — an honest categorization (we refused to submit a diff
-    we knew would fail to apply).
+    ``error``.
     """
     extracted = extract_patch(raw)
     if not extracted:
         return ""
-    cleaned = sanitize_patch(extracted, repo_slug)
+    cleaned = sanitize_patch(extracted, repo_slug, tree_paths=tree_paths)
     if not cleaned:
         print(f"  sanitizer: dropped patch for {repo_slug} "
               "(placeholder hunk / malformed counts / bad paths)")
     return cleaned
 
 
-def run_baseline(provider, instance: dict) -> Prediction:
-    task = _format_task(instance)
+def run_baseline(
+    provider, instance: dict, grounding: "Grounding | None" = None,
+) -> Prediction:
+    g = grounding or Grounding.none()
+    task = _format_task(instance, grounding_block=g.context_block)
     prompt = (
         f"{task}\nFix this bug. Output a unified diff "
         "(--- a/file, +++ b/file) with your fix. Be minimal."
@@ -295,15 +349,18 @@ def run_baseline(provider, instance: dict) -> Prediction:
     t0 = time.monotonic()
     raw = _llm_call(provider, prompt)
     elapsed = (time.monotonic() - t0) * 1000
-    patch = _sanitize_for_submission(raw, instance["repo"])
+    patch = _sanitize_for_submission(raw, instance["repo"], g.tree_paths)
     return Prediction(
         instance["instance_id"], instance["repo"], "baseline",
         raw, patch, elapsed, bool(patch),
     )
 
 
-def run_organism(provider, instance: dict) -> Prediction:
-    task = _format_task(instance)
+def run_organism(
+    provider, instance: dict, grounding: "Grounding | None" = None,
+) -> Prediction:
+    g = grounding or Grounding.none()
+    task = _format_task(instance, grounding_block=g.context_block)
     org = _build_organism(provider)
     t0 = time.monotonic()
     result = org.run(task)
@@ -311,22 +368,25 @@ def run_organism(provider, instance: dict) -> Prediction:
     full = "\n\n".join(
         f"[{sr.stage_name}]\n{sr.output}" for sr in result.stage_results
     )
-    patch = _sanitize_for_submission(full, instance["repo"])
+    patch = _sanitize_for_submission(full, instance["repo"], g.tree_paths)
     return Prediction(
         instance["instance_id"], instance["repo"], "organism",
         full, patch, elapsed, bool(patch),
     )
 
 
-def run_langgraph(provider, instance: dict) -> Prediction:
-    task = _format_task(instance)
+def run_langgraph(
+    provider, instance: dict, grounding: "Grounding | None" = None,
+) -> Prediction:
+    g = grounding or Grounding.none()
+    task = _format_task(instance, grounding_block=g.context_block)
     org = _build_organism(provider)
     t0 = time.monotonic()
     result = run_organism_langgraph(org, task=task, verify_certificates=True)
     elapsed = (time.monotonic() - t0) * 1000
     parts = [f"[{name}]\n{out}" for name, out in result.stage_outputs.items()]
     full = "\n\n".join(parts) if parts else result.output
-    patch = _sanitize_for_submission(full, instance["repo"])
+    patch = _sanitize_for_submission(full, instance["repo"], g.tree_paths)
     return Prediction(
         instance["instance_id"], instance["repo"], "langgraph",
         full, patch, elapsed, bool(patch),
@@ -575,6 +635,18 @@ def main():
               "model_identity against ollama, and emits an authentic "
               "post-run check. Does not rerun predictions or the harness."),
     )
+    parser.add_argument(
+        "--grounding", action="store_true",
+        help=("Shallow-clone each instance's {repo}@{base_commit} into "
+              "--cache-dir, inject candidate-file context into the prompt, "
+              "and give the sanitizer a tree-oracle for fuzzy path "
+              "correction. Adds disk + network cost; opt in explicitly."),
+    )
+    parser.add_argument(
+        "--cache-dir", default=".cache/swebench",
+        help=("Directory where --grounding clones are cached "
+              "(default: .cache/swebench)."),
+    )
     args = parser.parse_args()
 
     cli_model_was_default = args.model is None
@@ -654,15 +726,25 @@ def main():
     run_id = f"phase2_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
     preds_by_cond: dict[str, list[Prediction]] = {c: [] for c in conditions}
 
+    cache_dir_path = Path(args.cache_dir)
     for i, instance in enumerate(instances):
         print(f"\n{'='*60}")
         print(f"[{i+1}/{len(instances)}] {instance['instance_id']}")
         print(f"  repo:  {instance['repo']}")
         print(f"  issue: {instance['problem_statement'][:70]}...")
 
+        if args.grounding:
+            grounding = _build_grounding(instance, cache_dir_path)
+            if grounding.repo_path is not None:
+                print(f"  grounding: repo at {grounding.repo_path}, "
+                      f"{len(grounding.tree_paths or ())} files indexed, "
+                      f"context_block={len(grounding.context_block)}B")
+        else:
+            grounding = Grounding.none()
+
         for cond in conditions:
             try:
-                p = condition_fns[cond](provider, instance)
+                p = condition_fns[cond](provider, instance, grounding)
             except Exception as e:
                 print(f"  {cond:10s} ERROR: {e}")
                 p = Prediction(
