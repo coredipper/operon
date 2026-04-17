@@ -135,7 +135,18 @@ def _fuzzy_correct_paths(patch: str, tree_paths: frozenset[str]) -> str:
     return "\n".join(out_parts)
 
 
-_FILE_HEADER_RE = re.compile(r"^--- (?:a/|/dev/null$|/dev/null\t)")
+_MINUS_FILE_HEADER_RE = re.compile(r"^--- (?:a/|/dev/null(?:$|\t))")
+_PLUS_FILE_HEADER_RE = re.compile(r"^\+\+\+ (?:b/|/dev/null(?:$|\t))")
+
+
+def _is_plus_file_header(line: str) -> bool:
+    """Return True iff ``line`` looks like a real ``+++`` file header.
+
+    A real header is ``+++ b/<path>`` or ``+++ /dev/null`` (optionally
+    followed by a tab + timestamp). Arbitrary text after ``+++ ``
+    (``+++ <some addition starting with ++ >``) is not a header shape.
+    """
+    return bool(_PLUS_FILE_HEADER_RE.match(line))
 
 
 def _is_minus_file_header(line: str, next_line: str | None) -> bool:
@@ -147,18 +158,19 @@ def _is_minus_file_header(line: str, next_line: str | None) -> bool:
     two checks:
 
     1. The header must match ``--- a/<path>`` or ``--- /dev/null``.
-       Arbitrary text after ``--- `` (``--- arbitrary deletion``) is
-       not a file header shape for the patches SWE-bench emits.
-    2. A file header is always immediately followed by ``+++ `` on
-       the next line. A deletion of content that happens to match the
-       ``--- a/`` shape would be followed by another body line (most
-       commonly ``-<text>`` or `` <text>``), not ``+++ ``.
+       Arbitrary text after ``--- `` is not a file-header shape.
+    2. The next line must itself be a real ``+++`` file header —
+       ``+++ b/<path>`` or ``+++ /dev/null``. A hunk body where the
+       deletion is ``-- a/...`` and the following addition happens to
+       be ``++ ...`` (encoded on the wire as ``+++ ...``) still does
+       not match this stricter shape because ``+++ ...`` (arbitrary
+       content) is not ``+++ b/...``.
     """
-    if not _FILE_HEADER_RE.match(line):
+    if not _MINUS_FILE_HEADER_RE.match(line):
         return False
     if next_line is None:
         return False
-    return next_line.startswith("+++ ")
+    return _is_plus_file_header(next_line)
 
 
 def _split_file_diffs(patch: str) -> list[list[str]]:
@@ -343,21 +355,32 @@ def _repair_bare_empty_context(patch: str) -> str:
     context line (a single space followed by a newline, representing a
     blank line in the file) into a bare empty line. ``git apply``
     rejects bare empty lines inside hunks, so we rewrite them back to
-    ``" "``. Only applied inside hunk bodies — headers and separating
-    whitespace between files are left alone.
+    ``" "``.
+
+    Hunk termination uses the same file-header disambiguation as
+    ``_split_file_diffs`` and ``_validate_hunks`` — a ``---`` inside
+    a hunk body is only a file boundary if the next line is a real
+    ``+++`` header. Review #730.
     """
     lines = patch.splitlines()
     out: list[str] = []
     in_hunk = False
-    for line in lines:
+    for i, line in enumerate(lines):
+        next_line = lines[i + 1] if i + 1 < len(lines) else None
         if line.startswith("@@"):
             in_hunk = True
             out.append(line)
             continue
         if in_hunk:
-            if (line.startswith("--- ")
-                    or line.startswith("+++ ")
-                    or line.startswith(_METADATA_PREFIXES)):
+            if _is_minus_file_header(line, next_line):
+                in_hunk = False
+                out.append(line)
+                continue
+            if _is_plus_file_header(line):
+                in_hunk = False
+                out.append(line)
+                continue
+            if line.startswith("diff --git ") or line.startswith(_METADATA_PREFIXES):
                 in_hunk = False
                 out.append(line)
                 continue
@@ -502,8 +525,14 @@ def _validate_hunks(patch: str) -> bool:
                     break
                 if _is_minus_file_header(body_line, next_line):
                     break
-                if body_line.startswith("+++ ") and not body_line.startswith("+++ b/") and body_line != "+++ /dev/null":
-                    # Safety: stray +++ header without sibling --- is malformed.
+                if _is_plus_file_header(body_line):
+                    # A real ``+++`` header in the hunk body is
+                    # malformed (should be a sibling of a ``---``); end
+                    # the hunk here and let validation fail downstream
+                    # if counts don't add up. ``+++ arbitrary content``
+                    # (a hunk addition) is NOT a file header — it only
+                    # triggers here if the addition shape matches
+                    # ``+++ b/<path>`` or ``+++ /dev/null``.
                     break
                 if body_line.startswith(_METADATA_PREFIXES):
                     break

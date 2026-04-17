@@ -718,3 +718,63 @@ def test_fuzzy_yaml_frontmatter_deletion_not_a_split():
     assert cleaned
     # The YAML fence deletions (``----``) are preserved.
     assert "----" in cleaned
+
+
+# --------------------------------------------------------------------------
+# Review #730: hunk body with '--- a/...' delete followed by '+++ ...'
+# add (arbitrary content starting with '++') still must NOT be split.
+# Requires the sibling-line check to validate a real '+++' header
+# shape, not just the '+++ ' prefix.
+# --------------------------------------------------------------------------
+
+def test_fuzzy_hunk_delete_dash_add_plus_not_split():
+    """Hunk deletes content shaped ``-- a/foo.py`` (wire: ``--- a/foo.py``)
+    AND adds content shaped ``++ plus`` (wire: ``+++ plus``). Before the
+    fix, the lookahead would see ``+++ `` on the next line and misread
+    the pair as a file header. The stricter check requires the next
+    line to match ``+++ b/<path>`` or ``+++ /dev/null``.
+    """
+    # Body: 1 delete + 1 add + 2 context = 3 old, 3 new.
+    tree = frozenset({"docs/readme.md"})
+    patch = (
+        "--- a/docs/readme.md\n"
+        "+++ b/docs/readme.md\n"
+        "@@ -1,3 +1,3 @@\n"
+        "--- a/foo.py\n"        # body deletion of content "-- a/foo.py"
+        "+++ some content\n"    # body addition of content "++ some content"
+        " context\n"
+        " context2\n"
+    )
+    cleaned = sanitize(patch, "owner/repo", tree_paths=tree)
+    assert cleaned, (
+        "hunk-body ambiguous dash/plus pair must not split the "
+        "file-diff; got empty result"
+    )
+    assert "--- a/foo.py" in cleaned
+    assert "+++ some content" in cleaned
+
+
+def test_repair_preserves_bare_empty_after_ambiguous_delete():
+    """A hunk with an ambiguous ``--- a/...`` deletion followed by a
+    whitespace-stripped blank context line must still get the blank
+    line repaired — the repair pass must use the same lookahead
+    disambiguation as validation and splitting. Review #730.
+    """
+    # Body: ctx + delete "-- a/foo.py" + blank context + ctx2.
+    # old = 3 (1 ctx + 1 delete + 1 blank-as-ctx + 1... no wait)
+    # Let me recount: ctx(1,1) + delete(2,1) + blank-as-ctx(3,2) + ctx2(4,3)
+    # So old=4, new=3. Header -1,4 +1,3.
+    tree = frozenset({"docs/readme.md"})
+    patch = (
+        "--- a/docs/readme.md\n"
+        "+++ b/docs/readme.md\n"
+        "@@ -1,4 +1,3 @@\n"
+        " ctx\n"
+        "--- a/foo.py\n"   # body deletion, not a file header
+        "\n"                # whitespace-stripped blank context
+        " ctx2\n"
+    )
+    cleaned = sanitize(patch, "owner/repo", tree_paths=tree)
+    assert cleaned, "repair must work even after ambiguous --- deletion"
+    # Blank line repaired to ' ' (appears between the delete and ctx2).
+    assert "--- a/foo.py\n \n ctx2" in cleaned
