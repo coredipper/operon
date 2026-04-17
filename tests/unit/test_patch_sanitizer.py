@@ -657,3 +657,64 @@ def test_fuzzy_bare_multi_file_rejects_if_any_source_unresolvable():
         "+Y\n"
     )
     assert sanitize(patch, "owner/pkg", tree_paths=tree) == ""
+
+
+# --------------------------------------------------------------------------
+# Review #729: a hunk-body deletion of content starting with "-- " is
+# encoded as "--- ..." — must NOT be split as a file boundary. The next
+# line being "+++ " is the disambiguator.
+# --------------------------------------------------------------------------
+
+def test_fuzzy_does_not_split_on_hunk_body_that_starts_with_dashes():
+    """Hunk deletes a line whose content happens to start with ``-- a/``.
+
+    Encoded as ``--- a/foo.py`` on the wire (``-`` delete marker +
+    ``-- a/foo.py`` content). The next line is another body line, not
+    ``+++ ``, so the sanitizer must keep it inside the hunk body and
+    not treat it as a new file boundary.
+    """
+    # Single-file diff, but the hunk deletes two lines; one of the
+    # deleted lines is literally ``-- a/foo.py``.
+    tree = frozenset({"docs/readme.md"})
+    patch = (
+        "--- a/docs/readme.md\n"
+        "+++ b/docs/readme.md\n"
+        "@@ -1,3 +1,1 @@\n"
+        " intro\n"
+        "--- a/foo.py\n"
+        "-next line\n"
+    )
+    cleaned = sanitize(patch, "owner/repo", tree_paths=tree)
+    assert cleaned, (
+        "hunk-body deletion starting with '-- ' must not split the "
+        "file-diff; the whole patch should pass as a single-file "
+        "modify"
+    )
+    # The deletion body is preserved verbatim inside the hunk.
+    assert "--- a/foo.py" in cleaned  # still there, but as body, not header
+    assert "-next line" in cleaned
+    # And we did NOT produce a second block claiming foo.py is a source.
+    # (If it had been misparsed as a header, the sanitizer would have
+    # oracle-checked foo.py which is not in tree, so the whole patch
+    # would have been rejected.)
+
+
+def test_fuzzy_yaml_frontmatter_deletion_not_a_split():
+    """Real-world case: deleting a YAML frontmatter block starts with
+    ``---`` on each side, so a bare ``---`` deletion in the hunk body
+    must not be split.
+    """
+    tree = frozenset({"docs/post.md"})
+    patch = (
+        "--- a/docs/post.md\n"
+        "+++ b/docs/post.md\n"
+        "@@ -1,4 +1,1 @@\n"
+        "----\n"
+        "-title: hello\n"
+        "----\n"
+        " content\n"
+    )
+    cleaned = sanitize(patch, "owner/repo", tree_paths=tree)
+    assert cleaned
+    # The YAML fence deletions (``----``) are preserved.
+    assert "----" in cleaned

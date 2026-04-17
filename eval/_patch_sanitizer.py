@@ -135,53 +135,67 @@ def _fuzzy_correct_paths(patch: str, tree_paths: frozenset[str]) -> str:
     return "\n".join(out_parts)
 
 
+_FILE_HEADER_RE = re.compile(r"^--- (?:a/|/dev/null$|/dev/null\t)")
+
+
+def _is_minus_file_header(line: str, next_line: str | None) -> bool:
+    """Return True iff ``line`` is a real unified-diff ``---`` file
+    header (not a hunk deletion that happens to start with ``-- ``).
+
+    A deletion of content starting with ``-- foo`` is encoded as
+    ``--- foo`` — same three-dash-space prefix. We disambiguate with
+    two checks:
+
+    1. The header must match ``--- a/<path>`` or ``--- /dev/null``.
+       Arbitrary text after ``--- `` (``--- arbitrary deletion``) is
+       not a file header shape for the patches SWE-bench emits.
+    2. A file header is always immediately followed by ``+++ `` on
+       the next line. A deletion of content that happens to match the
+       ``--- a/`` shape would be followed by another body line (most
+       commonly ``-<text>`` or `` <text>``), not ``+++ ``.
+    """
+    if not _FILE_HEADER_RE.match(line):
+        return False
+    if next_line is None:
+        return False
+    return next_line.startswith("+++ ")
+
+
 def _split_file_diffs(patch: str) -> list[list[str]]:
     """Split a patch into per-file blocks.
 
     Boundary rules:
 
-    * ``diff --git`` always starts a new block. These headers
-      unambiguously delimit files.
-    * A bare ``---`` header (``--- a/<p>`` or ``--- /dev/null``) starts
-      a new block if either (a) we are not yet in a block, or (b) the
-      current block has already seen its own ``+++`` header — meaning
-      the previous file's definition is complete and this ``---`` is
-      the next file's source header.
+    * ``diff --git`` always starts a new block.
+    * A ``--- `` line starts a new block when (a) it looks like a real
+      file header (``--- a/<p>`` or ``--- /dev/null``), (b) the next
+      line is ``+++ ``, and (c) either we are not yet in a block or
+      the current block already emitted its own ``+++`` (so the
+      previous file is complete).
 
-    Rule (b) is what makes bare multi-file diffs work:
-
-    .. code-block:: text
-
-        --- a/foo.py      ← starts block 1
-        +++ b/foo.py      ← block 1 has now seen +++
-        @@ ... @@
-        -old
-        +new
-        --- a/bar.py      ← +++ seen in current → starts block 2
-        +++ b/bar.py
-        ...
-
-    A ``---`` seen while the current block has not yet emitted ``+++``
-    is treated as part of the current block (e.g. the ``--- /dev/null``
-    that follows a ``diff --git`` + ``new file mode`` prelude).
+    Rule (c) is what makes bare multi-file diffs work. Rule (b) is
+    what prevents a hunk-body deletion like ``--- a/foo.py`` (the
+    content ``-- a/foo.py`` being removed) from being misread as a
+    new file header.
     """
     lines = patch.splitlines()
     blocks: list[list[str]] = []
     current: list[str] = []
     seen_plus_in_current = False
 
-    def _starts_new_block(line: str) -> bool:
+    def _starts_new_block(line: str, next_line: str | None) -> bool:
         if line.startswith("diff --git "):
             return True
-        if line.startswith("--- "):
+        if _is_minus_file_header(line, next_line):
             if not current:
                 return True
             if seen_plus_in_current:
                 return True
         return False
 
-    for line in lines:
-        if _starts_new_block(line):
+    for i, line in enumerate(lines):
+        next_line = lines[i + 1] if i + 1 < len(lines) else None
+        if _starts_new_block(line, next_line):
             if current:
                 blocks.append(current)
             current = [line]
@@ -221,10 +235,13 @@ def _correct_file_diff(
     target_is_new = source_is_devnull or is_rename or is_copy
 
     # Second pass: establish the source-side correction (if any) by
-    # looking at `--- a/<path>` first. For modify patches we need to
-    # apply the same correction to `+++ b/<path>` and `diff --git`.
+    # looking at the FIRST `--- a/<path>` before any `@@` hunk header.
+    # (Lines matching `--- a/...` after a hunk header are hunk-body
+    # deletions, not file headers.)
     source_rewrite: dict[str, str] = {}  # original path → corrected path
     for line in block:
+        if line.startswith("@@"):
+            break
         if line.startswith("--- a/"):
             path = line[len("--- a/"):]
             fixed = resolve_source(path)
@@ -240,9 +257,24 @@ def _correct_file_diff(
         == target)."""
         return source_rewrite.get(path, path)
 
-    # Third pass: rewrite each line using the classification.
+    # Third pass: rewrite each line using the classification. File-
+    # header transformations only apply BEFORE the first `@@` hunk
+    # header. After that, every line is hunk-body content and must
+    # pass through verbatim.
+    in_hunk_body = False
     out: list[str] = []
     for line in block:
+        if in_hunk_body:
+            out.append(line)
+            if line.startswith("@@"):
+                # Next hunk header (same file) — still hunk-body phase
+                # for the file-header rewriter's purposes.
+                pass
+            continue
+        if line.startswith("@@"):
+            in_hunk_body = True
+            out.append(line)
+            continue
         if line.startswith("diff --git "):
             m = re.match(r"^(diff --git )a/(\S+) b/(\S+)(.*)$", line)
             if not m:
@@ -453,16 +485,27 @@ def _validate_hunks(patch: str) -> bool:
             new_count = int(m.group("new_count")) if m.group("new_count") else 1
 
             # Walk the body until the next hunk or the next file header.
+            # A ``---`` line inside a hunk body is ambiguous: it could
+            # be either a real file header (next file in a bare
+            # multi-file diff) or a deletion of content that starts
+            # with ``-- `` (encoded as ``--- ...`` on the wire). We
+            # disambiguate with lookahead — a real file header is
+            # always followed by ``+++ `` on the next line. See
+            # ``_is_minus_file_header`` for the shared helper.
             body_old = 0
             body_new = 0
             i += 1
             while i < len(lines):
                 body_line = lines[i]
+                next_line = lines[i + 1] if i + 1 < len(lines) else None
                 if body_line.startswith("@@"):
                     break
-                if (body_line.startswith("--- ")
-                        or body_line.startswith("+++ ")
-                        or body_line.startswith(_METADATA_PREFIXES)):
+                if _is_minus_file_header(body_line, next_line):
+                    break
+                if body_line.startswith("+++ ") and not body_line.startswith("+++ b/") and body_line != "+++ /dev/null":
+                    # Safety: stray +++ header without sibling --- is malformed.
+                    break
+                if body_line.startswith(_METADATA_PREFIXES):
                     break
                 if body_line == r"\ No newline at end of file":
                     # Marker, not a real line — ignored by both sides.
