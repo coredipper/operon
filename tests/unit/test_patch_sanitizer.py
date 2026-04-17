@@ -1127,6 +1127,29 @@ def test_sanitize_with_reason_ambiguous_path_with_tree_oracle():
     assert reason == "ambiguous_path"
 
 
+def test_sanitize_with_reason_overlong_hunk_bare_empty_extra():
+    """Review #755: an overlong hunk whose extra body content is a
+    bare empty line (the bare-empty-context whitespace-stripped form)
+    must still be classified as ``overlong_hunk``, not misclassified
+    as ``truncated_hunk``. Otherwise the retry prompt says "include
+    every line" when the model actually needs to trim extras.
+
+    Minimal repro: declared ``@@ -1,1 +1,1 @@`` with body ``-old``
+    ``+new`` ``""`` (a bare empty context line beyond the drained
+    counts).
+    """
+    bad = (
+        "--- a/foo.py\n+++ b/foo.py\n"
+        "@@ -1,1 +1,1 @@\n-old\n+new\n\n"
+    )
+    patch, reason = sanitize_with_reason(bad, "django/django")
+    assert patch == ""
+    assert reason == "overlong_hunk", (
+        f"bare-empty extra after drained hunk must be overlong_hunk, "
+        f"got {reason!r}"
+    )
+
+
 def test_sanitize_with_reason_uses_empty_extraction_when_malformed_headers_only():
     """A blob shaped like a diff but with no real hunks (no ``@@`` line
     at all) classifies as ``empty_extraction`` — the model didn't

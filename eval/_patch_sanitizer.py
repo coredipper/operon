@@ -107,6 +107,19 @@ def sanitize_with_reason(
     if not patch or not patch.strip():
         return "", "empty_extraction"
 
+    # Validate on the pristine input, BEFORE any string-round-tripping.
+    # Both ``_normalize_paths`` and ``_repair_bare_empty_context`` use
+    # ``splitlines()`` + ``"\n".join()``, which silently drops trailing
+    # empty lines. That would hide overlong-hunk content (an extra body
+    # line beyond declared counts, shaped as a bare empty line) from
+    # the validator. Validation is invariant under path normalization
+    # and bare-empty repair (both only touch paths / in-body blank
+    # lines, neither changes hunk structure), so running it first is
+    # safe. Review #755.
+    ok, reason = _validate_hunks_with_reason(patch)
+    if not ok:
+        return "", reason
+
     normalized = _normalize_paths(patch, repo_slug)
     normalized = _repair_bare_empty_context(normalized)
     if tree_paths is not None:
@@ -115,9 +128,6 @@ def sanitize_with_reason(
         )
         if not normalized:
             return "", reason
-    ok, reason = _validate_hunks_with_reason(normalized)
-    if not ok:
-        return "", reason
 
     if not normalized.endswith("\n"):
         normalized += "\n"
@@ -738,10 +748,15 @@ def _validate_hunks_with_reason(patch: str) -> "tuple[bool, str]":
                 # would have drained at ``end`` exactly, this is an
                 # overlong case; otherwise a truncated / malformed body.
                 if _is_post_hunk_boundary(lines, end) is False and (
-                    lines[end].startswith(("+", "-", " "))
+                    lines[end] == ""
+                    or lines[end].startswith(("+", "-", " "))
                 ):
                     # Body-shaped content after counts should have drained:
-                    # overlong.
+                    # overlong. Bare empty lines (``""``) count as body-
+                    # shaped too — they serialize as context-that-lost-
+                    # its-leading-space (the case repair is designed to
+                    # fix) and mis-classifying them as truncated
+                    # misleads the retry prompt. Review #755.
                     return False, "overlong_hunk"
                 return False, "truncated_hunk"
             i = end

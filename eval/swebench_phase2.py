@@ -799,7 +799,8 @@ def _compute_post_run_check(
 
 
 def _rewrite_envelope(
-    path: Path, cli_model_tag: str, cli_model_was_default: bool
+    path: Path, cli_model_tag: str, cli_model_was_default: bool,
+    output_path: "Path | None" = None,
 ) -> None:
     """Rewrite the envelope of an existing results artifact.
 
@@ -815,6 +816,13 @@ def _rewrite_envelope(
     verify the wrong tag. If ``--model`` was set explicitly to a value
     that disagrees with the artifact's recorded model, the rewrite
     refuses rather than emit a status for the wrong model.
+
+    ``output_path``, when provided, directs the rewritten artifact to
+    that location instead of the default in-place rewrite. Used when
+    the caller wants to preserve the source artifact untouched (e.g.
+    ``--rewrite-envelope X --output Y``). Review #755: without this
+    parameter, ``--output`` was silently ignored under rewrite mode
+    and callers could overwrite the artifact they meant to preserve.
     """
     existing = json.loads(path.read_text())
     prior_identity = existing.get("model_identity")
@@ -856,10 +864,19 @@ def _rewrite_envelope(
         summary=existing["summary"],
         dataset=existing.get("dataset", "SWE-bench/SWE-bench_Lite"),
     )
-    path.write_text(json.dumps(out_data, indent=2))
-    print(f"Rewrote envelope at {path} (verified against "
-          f"{verification_tag!r}): "
-          f"post_run_check.status={post_run_check['status']}")
+    write_to = output_path if output_path is not None else path
+    write_to.parent.mkdir(parents=True, exist_ok=True)
+    write_to.write_text(json.dumps(out_data, indent=2))
+    if output_path is not None and output_path != path:
+        print(
+            f"Rewrote envelope from {path} to {write_to} (verified "
+            f"against {verification_tag!r}): "
+            f"post_run_check.status={post_run_check['status']}"
+        )
+    else:
+        print(f"Rewrote envelope at {write_to} (verified against "
+              f"{verification_tag!r}): "
+              f"post_run_check.status={post_run_check['status']}")
 
 
 def _parse_reports(
@@ -954,6 +971,7 @@ def main():
     if args.rewrite_envelope:
         _rewrite_envelope(
             Path(args.rewrite_envelope), args.model, cli_model_was_default,
+            output_path=(Path(args.output) if args.output else None),
         )
         return
 
