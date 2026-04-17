@@ -456,6 +456,26 @@ EVAL_EMPTY = "empty_patch"          # model returned but no usable diff (incl. s
 EVAL_RUNTIME_ERROR = "runtime_error"  # model call itself raised (timeout, API failure, OOM)
 EVAL_NOT_EVALUATED = "not_evaluated"  # harness did not report on this instance
 
+
+def classify_prediction(
+    error_reason: "str | None", harness_status: str,
+) -> str:
+    """Return the canonical eval_status for a prediction.
+
+    ``error_reason`` (set in main() when the model call raised an
+    exception) is the authoritative signal for "model never returned".
+    It overrides any ``harness_status`` — including ``empty_patch``
+    (the harness can't tell the difference from sanitizer-rejection),
+    ``not_evaluated`` (when --skip-harness is used or the harness
+    report is missing), and even ``error`` (a harness-reported
+    git-apply failure on a patch that wouldn't exist if the model
+    call had raised). This guarantees that runtime failures stay
+    visible regardless of the harness's reporting state. Review #748.
+    """
+    if error_reason is not None:
+        return EVAL_RUNTIME_ERROR
+    return harness_status or EVAL_NOT_EVALUATED
+
 # Harness-run states (tri-state: not a bool, because "skipped" ≠ "failed")
 HARNESS_OK = "ok"
 HARNESS_FAILED = "failed"
@@ -833,9 +853,8 @@ def main():
             EVAL_NOT_EVALUATED: 0,
         }
         for p in preds:
-            s = statuses.get(p.instance_id, EVAL_NOT_EVALUATED)
-            if p.error_reason is not None and s == EVAL_EMPTY:
-                s = EVAL_RUNTIME_ERROR
+            harness_status = statuses.get(p.instance_id, EVAL_NOT_EVALUATED)
+            s = classify_prediction(p.error_reason, harness_status)
             status_counts[s] = status_counts.get(s, 0) + 1
 
         evaluated_n = status_counts[EVAL_RESOLVED] + status_counts[EVAL_UNRESOLVED]
@@ -877,12 +896,12 @@ def main():
               "`model_identity_post_run_check.mismatch`.")
 
     def _result_status(p: Prediction) -> str:
-        s = status_by_cond[p.condition].get(
-            p.instance_id, EVAL_NOT_EVALUATED
+        return classify_prediction(
+            p.error_reason,
+            status_by_cond[p.condition].get(
+                p.instance_id, EVAL_NOT_EVALUATED
+            ),
         )
-        if p.error_reason is not None and s == EVAL_EMPTY:
-            return EVAL_RUNTIME_ERROR
-        return s
 
     results = [
         {

@@ -299,6 +299,46 @@ def test_rewrite_envelope_uses_artifact_model_when_default(tmp_path):
     assert after["model_identity_post_run_check"]["status"] == "match"
 
 
+def test_classify_prediction_error_reason_wins_over_empty_patch():
+    """When the harness reports empty_patch, an error_reason still wins.
+    This is the original review #747 reclassification."""
+    from eval.swebench_phase2 import classify_prediction  # noqa: PLC0415
+    assert classify_prediction("TimeoutError", "empty_patch") == "runtime_error"
+
+
+def test_classify_prediction_error_reason_wins_over_not_evaluated():
+    """The review #748 case: --skip-harness or a missing harness report
+    leaves harness_status = not_evaluated, but the model still failed
+    to return. error_reason must win so the failure stays visible."""
+    from eval.swebench_phase2 import classify_prediction  # noqa: PLC0415
+    assert classify_prediction("TimeoutError", "not_evaluated") == "runtime_error"
+
+
+def test_classify_prediction_error_reason_wins_over_harness_error():
+    """Even a harness-reported 'error' loses to error_reason — if the
+    model call raised, no patch ever reached the harness, so a
+    harness 'error' would be a phantom from a stale state."""
+    from eval.swebench_phase2 import classify_prediction  # noqa: PLC0415
+    assert classify_prediction("TimeoutError", "error") == "runtime_error"
+
+
+def test_classify_prediction_no_error_reason_passes_harness_through():
+    """When error_reason is None, the harness status is authoritative."""
+    from eval.swebench_phase2 import classify_prediction  # noqa: PLC0415
+    assert classify_prediction(None, "resolved") == "resolved"
+    assert classify_prediction(None, "unresolved") == "unresolved"
+    assert classify_prediction(None, "empty_patch") == "empty_patch"
+    assert classify_prediction(None, "error") == "error"
+    assert classify_prediction(None, "not_evaluated") == "not_evaluated"
+
+
+def test_classify_prediction_no_error_reason_empty_harness_defaults_to_not_evaluated():
+    """Defensive: an empty/missing harness_status string defaults to
+    not_evaluated rather than propagating the empty value."""
+    from eval.swebench_phase2 import classify_prediction  # noqa: PLC0415
+    assert classify_prediction(None, "") == "not_evaluated"
+
+
 def test_eval_runtime_error_status_distinct_from_empty_patch():
     """Review #747: model-call exceptions must record as ``runtime_error``
     not ``empty_patch``, so the artifact distinguishes "model failed to
@@ -342,10 +382,12 @@ def test_prediction_error_reason_marks_runtime_failure():
 def test_committed_artifact_distinguishes_runtime_errors():
     """The committed artifact must carry the runtime_error reclassification.
 
-    The 2026-04-17 grounded rerun had two baseline timeouts (astropy-12907
-    and astropy-14995). After the review #747 fix they should appear as
-    ``eval_status=runtime_error`` with a non-null ``error_reason``, NOT
-    ``empty_patch`` lumped with sanitizer-rejected outputs.
+    The 2026-04-17 grounded rerun had two baseline timeouts
+    (astropy-12907 and astropy-14995). After review #747 they should
+    appear as ``eval_status=runtime_error`` with a non-null
+    ``error_reason``, NOT ``empty_patch`` lumped with sanitizer-rejected
+    outputs. Review #748 added the count + identity pins below so a
+    silent regeneration that lost the reclassification would fail.
     """
     artifact = json.loads(
         (Path(__file__).resolve().parents[2]
@@ -355,17 +397,40 @@ def test_committed_artifact_distinguishes_runtime_errors():
         r for r in artifact["results"]
         if r.get("eval_status") == "runtime_error"
     ]
-    # Each runtime_error row must carry a non-null error_reason describing
-    # what failed (the alternative — silent latency_ms=0.0 — was the
-    # exact bug review #747 caught).
+
+    # Pin: exactly the two known baseline timeouts must be classified
+    # as runtime_error. If a future rerun produces zero or different
+    # runtime errors, this test should fail loudly so the artifact
+    # gets re-examined rather than silently shipping wrong numbers.
+    assert len(runtime_errors) == 2, (
+        f"expected exactly 2 runtime_error rows in the committed "
+        f"artifact (the two 2026-04-17 baseline API timeouts); got "
+        f"{len(runtime_errors)}"
+    )
+    expected_ids = {"astropy__astropy-12907", "astropy__astropy-14995"}
+    actual_ids = {r["instance_id"] for r in runtime_errors}
+    assert actual_ids == expected_ids, (
+        f"runtime_error rows must be the two baseline timeouts "
+        f"({expected_ids}); got {actual_ids}"
+    )
     for r in runtime_errors:
+        assert r["condition"] == "baseline", (
+            f"the known runtime errors are baseline-only; got "
+            f"{r['instance_id']}/{r['condition']}"
+        )
         assert r.get("error_reason"), (
-            f"runtime_error row {r['instance_id']}/{r['condition']} must "
-            f"carry an error_reason; got {r.get('error_reason')!r}"
+            f"runtime_error row {r['instance_id']}/{r['condition']} "
+            f"must carry an error_reason; got {r.get('error_reason')!r}"
         )
         assert r["latency_ms"] == 0.0, (
             f"runtime_error rows have latency_ms=0.0 by construction"
         )
+
+    # Summary must reflect the same count.
+    assert artifact["summary"]["baseline"]["n_runtime_errors"] == 2
+    assert artifact["summary"]["baseline"]["status_counts"]["runtime_error"] == 2
+    assert artifact["summary"]["organism"]["n_runtime_errors"] == 0
+    assert artifact["summary"]["langgraph"]["n_runtime_errors"] == 0
 
 
 def test_committed_artifact_summary_includes_runtime_error_count():
