@@ -475,3 +475,114 @@ def test_build_artifact_has_stable_shape():
         "results",
         "summary",
     }
+
+
+def test_rewrite_envelope_writes_to_output_path_when_provided(tmp_path):
+    """Review #755: when --rewrite-envelope is combined with --output
+    <DIFFERENT_PATH>, the rewritten artifact must be written to the
+    output path, NOT to the input path. Without this, --output is
+    silently ignored in rewrite mode and callers can accidentally
+    overwrite the artifact they were trying to preserve.
+    """
+    artifact = build_artifact(
+        model="gemma4:latest",
+        model_identity={
+            "tag": "gemma4:latest",
+            "digest": "abc123",
+            "blob_sha256": "deadbeef",
+            "architecture": "gemma4",
+            "parameters": "8.0B",
+            "quantization": "Q4_K_M",
+            "source": "test",
+        },
+        post_run_check={"status": "match"},
+        run_id="r",
+        n_instances=0,
+        offset=0,
+        conditions=[],
+        timestamp="t",
+        skip_harness=False,
+        results=[],
+        summary={},
+    )
+    src = tmp_path / "source_artifact.json"
+    dst = tmp_path / "rewritten_artifact.json"
+    src.write_text(json.dumps(artifact))
+
+    def fake_resolve(tag):
+        return {
+            "tag": tag, "digest": "abc123", "blob_sha256": "deadbeef",
+            "architecture": "gemma4", "parameters": "8.0B",
+            "quantization": "Q4_K_M", "source": "test",
+        }
+
+    with patch(
+        "eval.swebench_phase2._resolve_model_identity",
+        side_effect=fake_resolve,
+    ):
+        _rewrite_envelope(
+            src, "gemma4:latest", cli_model_was_default=True,
+            output_path=dst,
+        )
+
+    # Source artifact must be untouched — that's the whole point of
+    # using --output instead of the default in-place rewrite.
+    assert src.exists(), "source artifact must still exist"
+    src_content = json.loads(src.read_text())
+    assert src_content == artifact, (
+        "source artifact must not be mutated when --output is supplied"
+    )
+
+    # Destination exists with the rewritten envelope.
+    assert dst.exists(), "rewrite must write the new path"
+    dst_content = json.loads(dst.read_text())
+    assert dst_content["model"] == "gemma4:latest"
+    assert dst_content["model_identity_post_run_check"]["status"] == "match"
+
+
+def test_rewrite_envelope_defaults_to_input_path_when_output_omitted(tmp_path):
+    """Backward-compat: without --output, rewrite stays in-place so
+    existing callers behave exactly as before review #755.
+    """
+    artifact = build_artifact(
+        model="gemma4:latest",
+        model_identity={
+            "tag": "gemma4:latest",
+            "digest": "abc123",
+            "blob_sha256": "deadbeef",
+            "architecture": "gemma4",
+            "parameters": "8.0B",
+            "quantization": "Q4_K_M",
+            "source": "test",
+        },
+        post_run_check={"status": "match"},
+        run_id="r",
+        n_instances=0,
+        offset=0,
+        conditions=[],
+        timestamp="t",
+        skip_harness=False,
+        results=[],
+        summary={},
+    )
+    p = tmp_path / "in_place.json"
+    p.write_text(json.dumps(artifact))
+
+    def fake_resolve(tag):
+        return {
+            "tag": tag, "digest": "abc123", "blob_sha256": "deadbeef",
+            "architecture": "gemma4", "parameters": "8.0B",
+            "quantization": "Q4_K_M", "source": "test",
+        }
+
+    with patch(
+        "eval.swebench_phase2._resolve_model_identity",
+        side_effect=fake_resolve,
+    ):
+        _rewrite_envelope(p, "gemma4:latest", cli_model_was_default=True)
+
+    # In-place rewrite still works — path exists, envelope updated.
+    assert p.exists()
+    content = json.loads(p.read_text())
+    assert content["model"] == "gemma4:latest"
+    assert content["model_identity_post_run_check"]["status"] == "match"
