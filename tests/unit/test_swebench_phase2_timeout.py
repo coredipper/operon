@@ -85,6 +85,60 @@ def test_llm_call_preserves_existing_max_tokens_setting():
     assert provider.last_config.max_tokens == 4096
 
 
+def test_llm_probe_timeout_is_short_enough_to_fail_fast():
+    """The reachability probe must fail within roughly a connect+load
+    budget (Ollama cold-loads can take a minute on large quants).
+    The benchmark default (900s) is a regression for a healthcheck —
+    if the model is misconfigured, we want the error in ≤2 min, not
+    ≤15. Review #753 from v0.34.5 follow-up."""
+    from eval.swebench_phase2 import _LLM_PROBE_TIMEOUT_SECONDS  # noqa: PLC0415
+    assert 10.0 <= _LLM_PROBE_TIMEOUT_SECONDS <= 120.0, (
+        f"_LLM_PROBE_TIMEOUT_SECONDS={_LLM_PROBE_TIMEOUT_SECONDS} "
+        f"must be a reachability budget (10-120s), not a benchmark "
+        f"budget"
+    )
+    # Concrete contract: probe strictly shorter than benchmark.
+    assert _LLM_PROBE_TIMEOUT_SECONDS < _LLM_TIMEOUT_SECONDS
+
+
+def test_llm_call_accepts_timeout_override():
+    """Callers must be able to pass a shorter timeout without mutating
+    the module default. This is the mechanism the probe uses to avoid
+    the 900s hang."""
+    provider = _CaptureProvider()
+
+    _llm_call(provider, "ping", timeout_seconds=30.0)
+
+    assert provider.last_config is not None
+    assert provider.last_config.timeout_seconds == 30.0
+
+
+def test_llm_call_default_unchanged_when_override_not_passed():
+    """Sanity: the new override parameter defaults to None (or the
+    module default) so existing callers keep the 900s budget."""
+    provider = _CaptureProvider()
+
+    _llm_call(provider, "full benchmark prompt")
+
+    assert provider.last_config is not None
+    assert provider.last_config.timeout_seconds == _LLM_TIMEOUT_SECONDS
+
+
+def test_probe_model_uses_probe_timeout():
+    """The probe helper must route through the short timeout, not the
+    benchmark default. Without this test, the probe could silently
+    drift back to 900s if someone later edits _probe_model."""
+    from eval.swebench_phase2 import (  # noqa: PLC0415
+        _LLM_PROBE_TIMEOUT_SECONDS, _probe_model,
+    )
+    provider = _CaptureProvider()
+
+    _probe_model(provider)
+
+    assert provider.last_config is not None
+    assert provider.last_config.timeout_seconds == _LLM_PROBE_TIMEOUT_SECONDS
+
+
 def test_build_organism_stages_carry_llm_timeout():
     """Every SkillStage in the organism must ship with a
     provider_config whose timeout_seconds matches the module default.
