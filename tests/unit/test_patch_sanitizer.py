@@ -546,3 +546,114 @@ def test_fuzzy_modify_mirrors_source_correction_to_target():
     assert "+++ b/django/core/files/storage.py" in cleaned
     # diff --git line also mirrors the correction on both sides.
     assert "diff --git a/django/core/files/storage.py b/django/core/files/storage.py" in cleaned
+
+
+# --------------------------------------------------------------------------
+# Review #726: bare multi-file diffs (no ``diff --git`` headers) must
+# correctly split into one block per file when grounding is active.
+# --------------------------------------------------------------------------
+
+def test_fuzzy_handles_bare_multi_file_diff_each_file_oracle_checked():
+    """Bare diff with two modify sections back-to-back.
+
+    Before the fix, both files collapsed into one block and the
+    source_rewrite for the first leaked into the second.
+    """
+    tree = frozenset({"pkg/a.py", "pkg/b.py"})
+    patch = (
+        "--- a/pkg/a.py\n"
+        "+++ b/pkg/a.py\n"
+        "@@ -1,1 +1,1 @@\n"
+        "-aa\n"
+        "+AA\n"
+        "--- a/pkg/b.py\n"
+        "+++ b/pkg/b.py\n"
+        "@@ -1,1 +1,1 @@\n"
+        "-bb\n"
+        "+BB\n"
+    )
+    cleaned = sanitize(patch, "owner/pkg", tree_paths=tree)
+    assert cleaned
+    assert "--- a/pkg/a.py" in cleaned
+    assert "+++ b/pkg/a.py" in cleaned
+    assert "--- a/pkg/b.py" in cleaned
+    assert "+++ b/pkg/b.py" in cleaned
+
+
+def test_fuzzy_bare_multi_file_mixed_modify_and_create():
+    """Mixed: one modify + one create in a single bare diff. The create's
+    target path must NOT be oracle-checked.
+    """
+    tree = frozenset({"pkg/existing.py"})
+    patch = (
+        "--- a/pkg/existing.py\n"
+        "+++ b/pkg/existing.py\n"
+        "@@ -1,1 +1,1 @@\n"
+        "-old\n"
+        "+new\n"
+        "--- /dev/null\n"
+        "+++ b/pkg/brand_new.py\n"
+        "@@ -0,0 +1,1 @@\n"
+        "+hello\n"
+    )
+    cleaned = sanitize(patch, "owner/pkg", tree_paths=tree)
+    assert cleaned, "mixed modify+create must survive"
+    # Modify block intact.
+    assert "--- a/pkg/existing.py" in cleaned
+    assert "+++ b/pkg/existing.py" in cleaned
+    # Create block preserved; brand_new.py NOT rewritten to existing.py
+    # or rejected.
+    assert "--- /dev/null" in cleaned
+    assert "+++ b/pkg/brand_new.py" in cleaned
+
+
+def test_fuzzy_bare_multi_file_mixed_with_bad_source_in_second():
+    """Second file's source path is wrong and has a unique basename
+    match — sanitizer rewrites the second without affecting the first.
+    """
+    tree = frozenset({
+        "pkg/a.py",
+        "pkg/deep/b.py",
+    })
+    patch = (
+        "--- a/pkg/a.py\n"
+        "+++ b/pkg/a.py\n"
+        "@@ -1,1 +1,1 @@\n"
+        "-x\n"
+        "+X\n"
+        "--- a/wrong/b.py\n"
+        "+++ b/wrong/b.py\n"
+        "@@ -1,1 +1,1 @@\n"
+        "-y\n"
+        "+Y\n"
+    )
+    cleaned = sanitize(patch, "owner/pkg", tree_paths=tree)
+    assert cleaned
+    # First block unchanged.
+    assert "--- a/pkg/a.py" in cleaned
+    assert "+++ b/pkg/a.py" in cleaned
+    # Second block rewritten via unique basename match — mirrored on both
+    # --- and +++.
+    assert "--- a/pkg/deep/b.py" in cleaned
+    assert "+++ b/pkg/deep/b.py" in cleaned
+    assert "wrong/b.py" not in cleaned
+
+
+def test_fuzzy_bare_multi_file_rejects_if_any_source_unresolvable():
+    """If the second file's source can't be resolved, reject the whole
+    patch — not just the second block.
+    """
+    tree = frozenset({"pkg/a.py"})
+    patch = (
+        "--- a/pkg/a.py\n"
+        "+++ b/pkg/a.py\n"
+        "@@ -1,1 +1,1 @@\n"
+        "-x\n"
+        "+X\n"
+        "--- a/invented.py\n"
+        "+++ b/invented.py\n"
+        "@@ -1,1 +1,1 @@\n"
+        "-y\n"
+        "+Y\n"
+    )
+    assert sanitize(patch, "owner/pkg", tree_paths=tree) == ""

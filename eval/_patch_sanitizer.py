@@ -138,33 +138,58 @@ def _fuzzy_correct_paths(patch: str, tree_paths: frozenset[str]) -> str:
 def _split_file_diffs(patch: str) -> list[list[str]]:
     """Split a patch into per-file blocks.
 
-    A block starts at ``diff --git`` or (for bare diffs with no
-    ``diff --git`` header) at ``--- `` following a non-diff line. Any
-    leading prelude before the first block is returned as an empty-
-    classification block so the caller can preserve it verbatim.
+    Boundary rules:
+
+    * ``diff --git`` always starts a new block. These headers
+      unambiguously delimit files.
+    * A bare ``---`` header (``--- a/<p>`` or ``--- /dev/null``) starts
+      a new block if either (a) we are not yet in a block, or (b) the
+      current block has already seen its own ``+++`` header — meaning
+      the previous file's definition is complete and this ``---`` is
+      the next file's source header.
+
+    Rule (b) is what makes bare multi-file diffs work:
+
+    .. code-block:: text
+
+        --- a/foo.py      ← starts block 1
+        +++ b/foo.py      ← block 1 has now seen +++
+        @@ ... @@
+        -old
+        +new
+        --- a/bar.py      ← +++ seen in current → starts block 2
+        +++ b/bar.py
+        ...
+
+    A ``---`` seen while the current block has not yet emitted ``+++``
+    is treated as part of the current block (e.g. the ``--- /dev/null``
+    that follows a ``diff --git`` + ``new file mode`` prelude).
     """
     lines = patch.splitlines()
     blocks: list[list[str]] = []
     current: list[str] = []
-    in_block = False
+    seen_plus_in_current = False
 
-    def _is_boundary(line: str, prev: str | None) -> bool:
+    def _starts_new_block(line: str) -> bool:
         if line.startswith("diff --git "):
             return True
-        if line.startswith("--- ") and (prev is None or not prev.startswith("--- ")):
-            # Treat as a new block only if we're not already inside one.
-            return not in_block
+        if line.startswith("--- "):
+            if not current:
+                return True
+            if seen_plus_in_current:
+                return True
         return False
 
-    for i, line in enumerate(lines):
-        prev = lines[i - 1] if i > 0 else None
-        if _is_boundary(line, prev):
+    for line in lines:
+        if _starts_new_block(line):
             if current:
                 blocks.append(current)
             current = [line]
-            in_block = True
+            seen_plus_in_current = False
         else:
             current.append(line)
+            if line.startswith("+++ "):
+                seen_plus_in_current = True
     if current:
         blocks.append(current)
     return blocks
