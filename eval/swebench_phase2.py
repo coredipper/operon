@@ -297,6 +297,13 @@ class Prediction:
     model_patch: str
     latency_ms: float
     extract_ok: bool
+    # Set to a short string (e.g. "API timeout", "OOM") when the model
+    # call raised an exception and no real model output was produced.
+    # ``None`` means the model returned text (whether or not the
+    # sanitizer accepted it). Used downstream to distinguish
+    # ``empty_patch`` (sanitizer-rejected legitimate model output)
+    # from ``runtime_error`` (model call never completed).
+    error_reason: "str | None" = None
 
 
 _BASELINE_RULES = (
@@ -445,7 +452,8 @@ def _run_harness(
 EVAL_RESOLVED = "resolved"          # patch applied, tests passed
 EVAL_UNRESOLVED = "unresolved"      # patch applied but tests failed
 EVAL_ERROR = "error"                # patch failed to apply, timeout, etc.
-EVAL_EMPTY = "empty_patch"          # no patch produced
+EVAL_EMPTY = "empty_patch"          # model returned but no usable diff (incl. sanitizer-rejected)
+EVAL_RUNTIME_ERROR = "runtime_error"  # model call itself raised (timeout, API failure, OOM)
 EVAL_NOT_EVALUATED = "not_evaluated"  # harness did not report on this instance
 
 # Harness-run states (tri-state: not a bool, because "skipped" ≠ "failed")
@@ -747,9 +755,16 @@ def main():
                 p = condition_fns[cond](provider, instance, grounding)
             except Exception as e:
                 print(f"  {cond:10s} ERROR: {e}")
+                # Tag the failure mode so summary aggregation can
+                # distinguish "model crashed" from "model returned but
+                # sanitizer rejected the output". Both serialize as an
+                # empty model_patch and the harness will mark them
+                # ``empty_patch``, but only this one is a true runtime
+                # failure of our pipeline.
                 p = Prediction(
                     instance["instance_id"], instance["repo"], cond,
                     f"ERROR: {e}", "", 0.0, False,
+                    error_reason=type(e).__name__ + ": " + str(e)[:200],
                 )
             preds_by_cond[cond].append(p)
             status = "ok" if p.extract_ok else "no-patch"
@@ -800,24 +815,41 @@ def main():
         n = len(preds)
         extracted = sum(1 for p in preds if p.extract_ok)
 
-        # Per-status counts. "error" (patch didn't apply) and "empty_patch"
-        # (no diff produced) are not failures of the model under test — they
-        # are upstream problems. The "evaluated" denominator is therefore
-        # restricted to instances that actually reached a pass/fail harness
-        # verdict (resolved or unresolved).
+        # Per-status counts. The harness can only see the model_patch
+        # field of each prediction; if the model call raised an exception
+        # we wrote an empty patch which the harness then categorizes as
+        # ``empty_patch``. We override that to ``runtime_error`` here so
+        # the summary distinguishes "sanitizer-rejected" (model produced
+        # invalid output) from "model never produced output" (API
+        # timeout, OOM, etc.).
+        # The "evaluated" denominator stays restricted to instances that
+        # reached a pass/fail harness verdict (resolved or unresolved).
         status_counts = {
             EVAL_RESOLVED: 0,
             EVAL_UNRESOLVED: 0,
             EVAL_ERROR: 0,
             EVAL_EMPTY: 0,
+            EVAL_RUNTIME_ERROR: 0,
             EVAL_NOT_EVALUATED: 0,
         }
         for p in preds:
             s = statuses.get(p.instance_id, EVAL_NOT_EVALUATED)
+            if p.error_reason is not None and s == EVAL_EMPTY:
+                s = EVAL_RUNTIME_ERROR
             status_counts[s] = status_counts.get(s, 0) + 1
 
         evaluated_n = status_counts[EVAL_RESOLVED] + status_counts[EVAL_UNRESOLVED]
         passed = status_counts[EVAL_RESOLVED]
+
+        # Mean latency over predictions that actually completed. A
+        # latency of 0 means the model call raised before any timing
+        # could be recorded, so including those zeros deflates the mean
+        # and overstates per-call throughput.
+        completed = [p for p in preds if p.error_reason is None]
+        mean_latency_ms = (
+            round(sum(p.latency_ms for p in completed) / len(completed), 0)
+            if completed else 0
+        )
 
         summary[cond] = {
             "n": n,
@@ -829,9 +861,9 @@ def main():
                 round(passed / evaluated_n, 3) if evaluated_n else None
             ),
             "harness_state": harness_state,
-            "mean_latency_ms": round(
-                sum(p.latency_ms for p in preds) / n, 0
-            ) if n else 0,
+            "mean_latency_ms": mean_latency_ms,
+            "n_runtime_errors": status_counts[EVAL_RUNTIME_ERROR],
+            "n_completed": len(completed),
         }
 
     # Best-effort verification: re-resolve the identity and flag if the
@@ -844,6 +876,14 @@ def main():
               "describes pre-run weights; post-run digest saved as "
               "`model_identity_post_run_check.mismatch`.")
 
+    def _result_status(p: Prediction) -> str:
+        s = status_by_cond[p.condition].get(
+            p.instance_id, EVAL_NOT_EVALUATED
+        )
+        if p.error_reason is not None and s == EVAL_EMPTY:
+            return EVAL_RUNTIME_ERROR
+        return s
+
     results = [
         {
             "instance_id": p.instance_id,
@@ -852,9 +892,8 @@ def main():
             "patch_extracted": p.extract_ok,
             "patch_size_bytes": len(p.model_patch),
             "latency_ms": p.latency_ms,
-            "eval_status": status_by_cond[p.condition].get(
-                p.instance_id, EVAL_NOT_EVALUATED
-            ),
+            "eval_status": _result_status(p),
+            "error_reason": p.error_reason,
         }
         for cond in conditions for p in preds_by_cond[cond]
     ]

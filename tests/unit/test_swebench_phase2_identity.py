@@ -299,6 +299,96 @@ def test_rewrite_envelope_uses_artifact_model_when_default(tmp_path):
     assert after["model_identity_post_run_check"]["status"] == "match"
 
 
+def test_eval_runtime_error_status_distinct_from_empty_patch():
+    """Review #747: model-call exceptions must record as ``runtime_error``
+    not ``empty_patch``, so the artifact distinguishes "model failed to
+    return" from "model returned but sanitizer rejected".
+    """
+    from eval.swebench_phase2 import (  # noqa: PLC0415
+        EVAL_EMPTY, EVAL_RUNTIME_ERROR,
+    )
+    assert EVAL_RUNTIME_ERROR == "runtime_error"
+    assert EVAL_RUNTIME_ERROR != EVAL_EMPTY
+
+
+def test_prediction_error_reason_default_is_none():
+    """Sanity: a Prediction without an explicit error_reason should be
+    None, signalling "model returned text, classification is downstream
+    of the harness". Review #747.
+    """
+    from eval.swebench_phase2 import Prediction  # noqa: PLC0415
+    p = Prediction(
+        instance_id="x", repo="o/r", condition="baseline",
+        raw_output="some text", model_patch="--- a/x.py\n",
+        latency_ms=100.0, extract_ok=True,
+    )
+    assert p.error_reason is None
+
+
+def test_prediction_error_reason_marks_runtime_failure():
+    """When constructed with error_reason set (the exception path in
+    main()), the Prediction carries the failure tag forward."""
+    from eval.swebench_phase2 import Prediction  # noqa: PLC0415
+    p = Prediction(
+        instance_id="x", repo="o/r", condition="baseline",
+        raw_output="ERROR: timeout", model_patch="",
+        latency_ms=0.0, extract_ok=False,
+        error_reason="TimeoutError: API request timed out",
+    )
+    assert p.error_reason is not None
+    assert "Timeout" in p.error_reason
+
+
+def test_committed_artifact_distinguishes_runtime_errors():
+    """The committed artifact must carry the runtime_error reclassification.
+
+    The 2026-04-17 grounded rerun had two baseline timeouts (astropy-12907
+    and astropy-14995). After the review #747 fix they should appear as
+    ``eval_status=runtime_error`` with a non-null ``error_reason``, NOT
+    ``empty_patch`` lumped with sanitizer-rejected outputs.
+    """
+    artifact = json.loads(
+        (Path(__file__).resolve().parents[2]
+         / "eval/results/swebench_phase2.json").read_text()
+    )
+    runtime_errors = [
+        r for r in artifact["results"]
+        if r.get("eval_status") == "runtime_error"
+    ]
+    # Each runtime_error row must carry a non-null error_reason describing
+    # what failed (the alternative — silent latency_ms=0.0 — was the
+    # exact bug review #747 caught).
+    for r in runtime_errors:
+        assert r.get("error_reason"), (
+            f"runtime_error row {r['instance_id']}/{r['condition']} must "
+            f"carry an error_reason; got {r.get('error_reason')!r}"
+        )
+        assert r["latency_ms"] == 0.0, (
+            f"runtime_error rows have latency_ms=0.0 by construction"
+        )
+
+
+def test_committed_artifact_summary_includes_runtime_error_count():
+    """The summary must expose ``n_runtime_errors`` and ``n_completed``
+    so downstream readers can recompute honest mean-latency and reason
+    about model-failure vs sanitizer-rejection ratios."""
+    artifact = json.loads(
+        (Path(__file__).resolve().parents[2]
+         / "eval/results/swebench_phase2.json").read_text()
+    )
+    for cond, s in artifact["summary"].items():
+        assert "n_runtime_errors" in s, (
+            f"summary[{cond}] missing n_runtime_errors (review #747)"
+        )
+        assert "n_completed" in s, (
+            f"summary[{cond}] missing n_completed (review #747)"
+        )
+        # status_counts now includes the runtime_error key.
+        assert "runtime_error" in s["status_counts"], (
+            f"summary[{cond}].status_counts missing 'runtime_error' key"
+        )
+
+
 def test_build_artifact_has_stable_shape():
     """build_artifact is the single source of truth for the envelope.
 
