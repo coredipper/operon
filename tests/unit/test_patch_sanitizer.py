@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from eval._patch_sanitizer import sanitize  # noqa: E402
+from eval._patch_sanitizer import sanitize, sanitize_with_reason  # noqa: E402
 
 
 VALID_BASELINE = (
@@ -992,3 +992,146 @@ def test_repair_preserves_bare_empty_after_ambiguous_delete():
     assert cleaned, "repair must work even after ambiguous --- deletion"
     # Blank line repaired to ' ' (appears between the delete and ctx2).
     assert "--- a/foo.py\n \n ctx2" in cleaned
+
+
+# ---------------------------------------------------------------------------
+# sanitize_with_reason — tuple API exposing the rejection reason code
+#
+# Phase C introduces ``sanitize_with_reason`` alongside ``sanitize``. It
+# returns ``(cleaned_patch, reason)`` where ``reason`` is a short machine-
+# readable code the format-correction retry loop in swebench_phase2.py
+# uses to build a targeted re-ask. On success, ``reason`` is ``""``.
+#
+# The existing ``sanitize`` function is kept as a thin wrapper returning
+# just the cleaned patch, so all prior tests still pass unchanged.
+# ---------------------------------------------------------------------------
+
+
+def test_sanitize_with_reason_happy_path_returns_empty_reason():
+    patch, reason = sanitize_with_reason(VALID_BASELINE, "django/django")
+    assert patch, "valid diff should survive sanitization"
+    assert reason == "", f"happy path must have empty reason; got {reason!r}"
+
+
+def test_sanitize_with_reason_empty_input_returns_empty_extraction():
+    patch, reason = sanitize_with_reason("", "django/django")
+    assert patch == ""
+    assert reason == "empty_extraction"
+
+
+def test_sanitize_with_reason_whitespace_only_returns_empty_extraction():
+    patch, reason = sanitize_with_reason("   \n  \n", "django/django")
+    assert patch == ""
+    assert reason == "empty_extraction"
+
+
+def test_sanitize_with_reason_no_hunks_returns_empty_extraction():
+    """A file-header-only diff with zero hunks is not a valid unified
+    diff to submit. The current sanitize() returns ""; the reason API
+    should classify it as ``empty_extraction`` (same class as truly
+    empty input — from the retry loop's perspective, both mean "the
+    model didn't actually produce a diff")."""
+    patch, reason = sanitize_with_reason(
+        "--- a/x.py\n+++ b/x.py\n", "django/django"
+    )
+    assert patch == ""
+    assert reason == "empty_extraction"
+
+
+def test_sanitize_wrapper_returns_same_patch_as_tuple_first_element():
+    """Parity: sanitize(patch, slug) == sanitize_with_reason(patch, slug)[0]
+    for the same input. This locks the backward-compat contract so
+    existing callers of sanitize() keep their semantics."""
+    for case in [
+        VALID_BASELINE,
+        "",
+        "--- a/x.py\n+++ b/x.py\n@@ -XXX,N +XXX,N @@\n context\n",
+    ]:
+        assert sanitize(case, "django/django") == (
+            sanitize_with_reason(case, "django/django")[0]
+        )
+
+
+def test_sanitize_with_reason_placeholder_hunk_XXX():
+    bad = (
+        "--- a/foo.py\n+++ b/foo.py\n"
+        "@@ -XXX,10 +XXX,10 @@\n-old\n+new\n"
+    )
+    patch, reason = sanitize_with_reason(bad, "django/django")
+    assert patch == ""
+    assert reason == "placeholder_hunk"
+
+
+def test_sanitize_with_reason_placeholder_hunk_single_letter():
+    bad = (
+        "--- a/foo.py\n+++ b/foo.py\n"
+        "@@ -N,10 +N,10 @@\n-old\n+new\n"
+    )
+    patch, reason = sanitize_with_reason(bad, "django/django")
+    assert patch == ""
+    assert reason == "placeholder_hunk"
+
+
+def test_sanitize_with_reason_truncated_hunk():
+    """Declared counts > body length."""
+    bad = (
+        "--- a/foo.py\n+++ b/foo.py\n"
+        "@@ -1,5 +1,5 @@\n ctx\n-old\n+new\n"
+    )
+    patch, reason = sanitize_with_reason(bad, "django/django")
+    assert patch == ""
+    assert reason == "truncated_hunk"
+
+
+def test_sanitize_with_reason_overlong_hunk():
+    """Body exceeds declared counts (and next line is not a legal boundary)."""
+    bad = (
+        "--- a/foo.py\n+++ b/foo.py\n"
+        "@@ -1,1 +1,1 @@\n-old\n+new\n+unexpected_extra_add\n"
+    )
+    patch, reason = sanitize_with_reason(bad, "django/django")
+    assert patch == ""
+    assert reason == "overlong_hunk"
+
+
+def test_sanitize_with_reason_path_not_found_with_tree_oracle():
+    """When grounding is active and the model invents a path with no
+    basename match in the tree, the reason must be ``path_not_found``
+    so the retry prompt can tell the model the file doesn't exist."""
+    bad = (
+        "--- a/totally/made_up/path.py\n"
+        "+++ b/totally/made_up/path.py\n"
+        "@@ -1,1 +1,1 @@\n-old\n+new\n"
+    )
+    tree = frozenset({"django/forms/__init__.py", "docs/index.rst"})
+    patch, reason = sanitize_with_reason(bad, "django/django", tree_paths=tree)
+    assert patch == ""
+    assert reason == "path_not_found"
+
+
+def test_sanitize_with_reason_ambiguous_path_with_tree_oracle():
+    """Basename present at multiple locations — sanitizer can't pick
+    one. The retry prompt can disambiguate by asking for full path."""
+    bad = (
+        "--- a/wrong/path/utils.py\n"
+        "+++ b/wrong/path/utils.py\n"
+        "@@ -1,1 +1,1 @@\n-old\n+new\n"
+    )
+    tree = frozenset({
+        "django/utils.py",
+        "docs/utils.py",
+        "tests/utils.py",
+    })
+    patch, reason = sanitize_with_reason(bad, "django/django", tree_paths=tree)
+    assert patch == ""
+    assert reason == "ambiguous_path"
+
+
+def test_sanitize_with_reason_uses_empty_extraction_when_malformed_headers_only():
+    """A blob shaped like a diff but with no real hunks (no ``@@`` line
+    at all) classifies as ``empty_extraction`` — the model didn't
+    actually produce a diff, even if it emitted file headers."""
+    bad = "random prose that isn't a diff at all\nsome more text\n"
+    patch, reason = sanitize_with_reason(bad, "django/django")
+    assert patch == ""
+    assert reason == "empty_extraction"

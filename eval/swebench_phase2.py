@@ -39,7 +39,7 @@ from operon_ai.providers.base import ProviderConfig
 from operon_ai.providers.openai_compatible_provider import OpenAICompatibleProvider
 
 from eval._patch_extraction import extract_patch
-from eval._patch_sanitizer import sanitize as sanitize_patch
+from eval._patch_sanitizer import sanitize_with_reason
 from eval._repo_cache import RepoCacheError, ensure_repo_at
 from eval._repo_grounding import (
     extract_hints,
@@ -385,9 +385,93 @@ _BASELINE_RULES = (
 )
 
 
+#: How many format-correction retries to attempt per instance when
+#: ``retry_callback`` is provided. One retry is the diagnostic
+#: default: doubles cost per failure, more retries diminish in
+#: returns, and an experiment asking "does any retry help?" is
+#: answered with a single retry.
+_FORMAT_RETRY_MAX: int = 1
+
+
+def _build_retry_prompt(
+    original_prompt: str, reason: str, failed_output: str,
+) -> str:
+    """Build a targeted retry prompt from the sanitizer's reason code.
+
+    The prompt does three things:
+
+    1. Shows the model its previous failed output verbatim (so it can
+       correct rather than regenerate from scratch).
+    2. Names the rejection reason in the sanitizer's vocabulary (so
+       the error is specific, not "try again").
+    3. Adds reason-specific guidance. A ``placeholder_hunk`` retry
+       emphasizes real integer line numbers; a ``path_not_found``
+       retry emphasizes using the paths actually shown in the
+       repository context block.
+    """
+    reason_guidance = {
+        "placeholder_hunk": (
+            "The hunk header used placeholder line numbers (e.g. "
+            "`XXX`, `N`, `?`). Please use REAL INTEGER LINE NUMBERS "
+            "from the file shown in the repository context above. "
+            "The format is `@@ -<old_start>,<old_count> "
+            "+<new_start>,<new_count> @@`."
+        ),
+        "truncated_hunk": (
+            "The hunk body was shorter than the declared counts. "
+            "Additions + context must match the new_count; "
+            "deletions + context must match the old_count. Include "
+            "every line."
+        ),
+        "overlong_hunk": (
+            "The hunk body had extra lines beyond the declared "
+            "counts. Trim the body so additions + context == "
+            "new_count and deletions + context == old_count."
+        ),
+        "path_not_found": (
+            "The file path in the diff header doesn't exist in the "
+            "repository. Please use one of the exact file paths "
+            "shown in the repository context above."
+        ),
+        "ambiguous_path": (
+            "The basename in your path matched multiple files in "
+            "the repository. Please use the full, unambiguous path "
+            "(relative to the repo root) from the repository context."
+        ),
+        "empty_extraction": (
+            "Your previous output did not contain a fenced diff. "
+            "Respond with a single fenced diff block and nothing else."
+        ),
+        "malformed_metadata": (
+            "The hunk header didn't parse. The format is "
+            "`@@ -<old_start>,<old_count> +<new_start>,<new_count> "
+            "@@` with integers only."
+        ),
+    }
+    guidance = reason_guidance.get(
+        reason,
+        "Please produce a corrected unified diff.",
+    )
+    return (
+        f"Your previous attempt at a unified diff was rejected. "
+        f"Reason: {reason}.\n\n"
+        f"{guidance}\n\n"
+        f"Your previous output was:\n"
+        f"<<<\n{failed_output}\n>>>\n\n"
+        f"The original task was:\n"
+        f"{original_prompt}\n\n"
+        f"Please produce a corrected unified diff. Respond with a "
+        f"single fenced diff block and nothing else. Use REAL "
+        f"integer line numbers, complete hunk bodies that match "
+        f"the declared counts, and file paths that exist in the "
+        f"repository context above (not prefixed with the repo name)."
+    )
+
+
 def _sanitize_for_submission(
     raw: str, repo_slug: str,
     tree_paths: "frozenset[str] | None" = None,
+    retry_callback=None,
 ) -> str:
     """Extract and sanitize a patch from raw model output.
 
@@ -396,19 +480,80 @@ def _sanitize_for_submission(
     cloned repo. A rejected submission is returned as ``""`` so the
     harness counts it as ``empty_patch`` rather than a format-error
     ``error``.
+
+    When ``retry_callback`` is provided, a sanitizer rejection does
+    not immediately return ``""``; instead the callback is invoked
+    with ``(reason_code, failed_output)`` and expected to return a
+    fresh raw response from the model. Each retry is sanitized the
+    same way; up to :data:`_FORMAT_RETRY_MAX` retries are attempted.
+    If all retries also fail, ``""`` is returned. When
+    ``retry_callback`` is ``None`` (the v0.34.5-era default), behavior
+    is unchanged.
     """
     extracted = extract_patch(raw)
     if not extracted:
+        if retry_callback is not None:
+            # Feed the extraction failure through the retry path too —
+            # the model returned text but nothing diff-shaped in it.
+            return _try_format_retry(
+                raw, repo_slug, tree_paths, retry_callback, "empty_extraction",
+            )
         return ""
-    cleaned = sanitize_patch(extracted, repo_slug, tree_paths=tree_paths)
-    if not cleaned:
-        print(f"  sanitizer: dropped patch for {repo_slug} "
-              "(placeholder hunk / malformed counts / bad paths)")
-    return cleaned
+    cleaned, reason = sanitize_with_reason(
+        extracted, repo_slug, tree_paths=tree_paths,
+    )
+    if cleaned:
+        return cleaned
+    print(
+        f"  sanitizer: dropped patch for {repo_slug} (reason={reason})"
+    )
+    if retry_callback is None:
+        return ""
+    return _try_format_retry(
+        raw, repo_slug, tree_paths, retry_callback, reason,
+    )
+
+
+def _try_format_retry(
+    failed_raw: str,
+    repo_slug: str,
+    tree_paths: "frozenset[str] | None",
+    retry_callback,
+    reason: str,
+) -> str:
+    """Run up to :data:`_FORMAT_RETRY_MAX` format-correction retries.
+
+    The callback receives ``(reason, failed_output)`` — the sanitizer's
+    rejection code and the raw text that produced it — and returns a
+    fresh raw response from the model. Each retry's output is passed
+    through the same sanitizer; if any attempt succeeds, its cleaned
+    patch is returned. If all attempts also fail, ``""`` is returned —
+    no fallback to the original failed output.
+    """
+    current_reason = reason
+    last_failed = failed_raw
+    for _ in range(_FORMAT_RETRY_MAX):
+        retry_raw = retry_callback(current_reason, last_failed)
+        if not retry_raw:
+            return ""
+        extracted = extract_patch(retry_raw)
+        if extracted:
+            cleaned, next_reason = sanitize_with_reason(
+                extracted, repo_slug, tree_paths=tree_paths,
+            )
+            if cleaned:
+                print(f"  retry recovered patch for {repo_slug}")
+                return cleaned
+            current_reason = next_reason
+        else:
+            current_reason = "empty_extraction"
+        last_failed = retry_raw
+    return ""
 
 
 def run_baseline(
     provider, instance: dict, grounding: "Grounding | None" = None,
+    retry_on_reject: bool = False,
 ) -> Prediction:
     g = grounding or Grounding.none()
     task = _format_task(instance, grounding_block=g.context_block)
@@ -419,8 +564,19 @@ def run_baseline(
     )
     t0 = time.monotonic()
     raw = _llm_call(provider, prompt)
+
+    callback: "callable | None" = None  # type: ignore[valid-type]
+    if retry_on_reject:
+        def callback(reason: str, failed_output: str) -> str:
+            return _llm_call(
+                provider,
+                _build_retry_prompt(prompt, reason, failed_output),
+            )
+
+    patch = _sanitize_for_submission(
+        raw, instance["repo"], g.tree_paths, retry_callback=callback,
+    )
     elapsed = (time.monotonic() - t0) * 1000
-    patch = _sanitize_for_submission(raw, instance["repo"], g.tree_paths)
     return Prediction(
         instance["instance_id"], instance["repo"], "baseline",
         raw, patch, elapsed, bool(patch),
@@ -429,17 +585,31 @@ def run_baseline(
 
 def run_organism(
     provider, instance: dict, grounding: "Grounding | None" = None,
+    retry_on_reject: bool = False,
 ) -> Prediction:
     g = grounding or Grounding.none()
     task = _format_task(instance, grounding_block=g.context_block)
     org = _build_organism(provider)
     t0 = time.monotonic()
     result = org.run(task)
-    elapsed = (time.monotonic() - t0) * 1000
     full = "\n\n".join(
         f"[{sr.stage_name}]\n{sr.output}" for sr in result.stage_results
     )
-    patch = _sanitize_for_submission(full, instance["repo"], g.tree_paths)
+
+    callback: "callable | None" = None  # type: ignore[valid-type]
+    if retry_on_reject:
+        def callback(reason: str, failed_output: str) -> str:
+            retry_task = _build_retry_prompt(task, reason, failed_output)
+            retry_result = _build_organism(provider).run(retry_task)
+            return "\n\n".join(
+                f"[{sr.stage_name}]\n{sr.output}"
+                for sr in retry_result.stage_results
+            )
+
+    patch = _sanitize_for_submission(
+        full, instance["repo"], g.tree_paths, retry_callback=callback,
+    )
+    elapsed = (time.monotonic() - t0) * 1000
     return Prediction(
         instance["instance_id"], instance["repo"], "organism",
         full, patch, elapsed, bool(patch),
@@ -448,16 +618,36 @@ def run_organism(
 
 def run_langgraph(
     provider, instance: dict, grounding: "Grounding | None" = None,
+    retry_on_reject: bool = False,
 ) -> Prediction:
     g = grounding or Grounding.none()
     task = _format_task(instance, grounding_block=g.context_block)
     org = _build_organism(provider)
     t0 = time.monotonic()
     result = run_organism_langgraph(org, task=task, verify_certificates=True)
-    elapsed = (time.monotonic() - t0) * 1000
     parts = [f"[{name}]\n{out}" for name, out in result.stage_outputs.items()]
     full = "\n\n".join(parts) if parts else result.output
-    patch = _sanitize_for_submission(full, instance["repo"], g.tree_paths)
+
+    callback: "callable | None" = None  # type: ignore[valid-type]
+    if retry_on_reject:
+        def callback(reason: str, failed_output: str) -> str:
+            retry_task = _build_retry_prompt(task, reason, failed_output)
+            retry_result = run_organism_langgraph(
+                _build_organism(provider), task=retry_task,
+                verify_certificates=True,
+            )
+            retry_parts = [
+                f"[{name}]\n{out}"
+                for name, out in retry_result.stage_outputs.items()
+            ]
+            return (
+                "\n\n".join(retry_parts) if retry_parts else retry_result.output
+            )
+
+    patch = _sanitize_for_submission(
+        full, instance["repo"], g.tree_paths, retry_callback=callback,
+    )
+    elapsed = (time.monotonic() - t0) * 1000
     return Prediction(
         instance["instance_id"], instance["repo"], "langgraph",
         full, patch, elapsed, bool(patch),
@@ -739,6 +929,22 @@ def main():
         help=("Directory where --grounding clones are cached "
               "(default: .cache/swebench)."),
     )
+    parser.add_argument(
+        "--retry-on-reject", action="store_true",
+        help=("When the sanitizer rejects a model's diff, re-prompt "
+              "once with the specific rejection reason and try again. "
+              "Gated behind a flag so v0.34.5-era callers see zero "
+              "behavior change. Doubles cost per failure in the worst "
+              "case but may recover 20-40%% of sanitizer drops."),
+    )
+    parser.add_argument(
+        "--output", default=None,
+        help=("Write the results artifact to this path instead of the "
+              "default eval/results/swebench_phase2.json. Use this to "
+              "preserve separate artifacts per model or per config "
+              "(e.g. swebench_phase2_gemma4_retry.json) without "
+              "overwriting earlier runs."),
+    )
     args = parser.parse_args()
 
     cli_model_was_default = args.model is None
@@ -836,7 +1042,10 @@ def main():
 
         for cond in conditions:
             try:
-                p = condition_fns[cond](provider, instance, grounding)
+                p = condition_fns[cond](
+                    provider, instance, grounding,
+                    retry_on_reject=args.retry_on_reject,
+                )
             except Exception as e:
                 print(f"  {cond:10s} ERROR: {e}")
                 # Tag the failure mode so summary aggregation can
@@ -993,7 +1202,9 @@ def main():
         results=results,
         summary=summary,
     )
-    out_path = Path("eval/results/swebench_phase2.json")
+    out_path = Path(
+        args.output if args.output else "eval/results/swebench_phase2.json"
+    )
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(out_data, indent=2))
     print(f"\n{'='*60}")

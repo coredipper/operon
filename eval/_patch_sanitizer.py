@@ -50,68 +50,113 @@ _HUNK_RE = re.compile(
 )
 
 
+#: Machine-readable rejection reason codes returned by
+#: :func:`sanitize_with_reason`. Each code names a specific failure
+#: mode the format-correction retry loop in ``eval.swebench_phase2``
+#: can build a targeted re-ask from. Kept as a tuple rather than an
+#: Enum so it's trivially JSON-serialisable into artifacts.
+SANITIZE_REASONS: tuple[str, ...] = (
+    "",                      # success
+    "empty_extraction",      # no usable diff content
+    "placeholder_hunk",      # @@ header with XXX / N / ? line numbers
+    "truncated_hunk",        # body shorter than declared counts
+    "overlong_hunk",         # body longer than declared counts, bad boundary
+    "malformed_metadata",    # @@ header couldn't be parsed at all
+    "path_not_found",        # source path missing + no basename match
+    "ambiguous_path",        # source path missing + >1 basename matches
+)
+
+
 def sanitize(
     patch: str, repo_slug: str,
     *, tree_paths: frozenset[str] | None = None,
 ) -> str:
     """Return a sanitized unified diff, or ``""`` if unsalvageable.
 
-    ``repo_slug`` is the SWE-bench ``repo`` field, e.g. ``"django/django"``.
-    An empty return means the caller should treat the submission as
-    ``empty_patch`` rather than forward a broken diff to ``git apply``.
+    Thin wrapper over :func:`sanitize_with_reason` that discards the
+    reason code. Kept so callers that only care about the cleaned
+    patch (the majority of existing callers and tests) don't need to
+    unpack a tuple. New callers that want to route the failure reason
+    to a retry prompt should call :func:`sanitize_with_reason` directly.
+    """
+    patch_out, _reason = sanitize_with_reason(
+        patch, repo_slug, tree_paths=tree_paths,
+    )
+    return patch_out
 
+
+def sanitize_with_reason(
+    patch: str, repo_slug: str,
+    *, tree_paths: frozenset[str] | None = None,
+) -> "tuple[str, str]":
+    """Return ``(sanitized_patch, reason)``.
+
+    On success, ``sanitized_patch`` is the cleaned, newline-terminated
+    diff and ``reason`` is ``""``. On failure, ``sanitized_patch`` is
+    ``""`` and ``reason`` is one of :data:`SANITIZE_REASONS` excluding
+    the empty success code. The reason is the seam the format-
+    correction retry loop uses to build a targeted re-ask: a
+    ``"placeholder_hunk"`` can be fixed by asking for real line
+    numbers; a ``"path_not_found"`` needs a different file; etc.
+
+    ``repo_slug`` is the SWE-bench ``repo`` field, e.g. ``"django/django"``.
     ``tree_paths``, when provided, is the set of repo-relative file
-    paths that actually exist at ``base_commit``. It is used as an
-    oracle to fuzzy-correct paths: a diff pointing at a nonexistent
-    file may be rewritten to a file with the same basename if the
-    match is unique, or rejected if it's ambiguous or impossible. When
-    ``tree_paths`` is ``None``, no oracle-based correction runs —
-    behavior matches the Phase A sanitizer exactly.
+    paths that actually exist at ``base_commit``. When ``None``, no
+    oracle-based path correction runs.
     """
     if not patch or not patch.strip():
-        return ""
+        return "", "empty_extraction"
 
     normalized = _normalize_paths(patch, repo_slug)
     normalized = _repair_bare_empty_context(normalized)
     if tree_paths is not None:
-        normalized = _fuzzy_correct_paths(normalized, tree_paths)
+        normalized, reason = _fuzzy_correct_paths_with_reason(
+            normalized, tree_paths,
+        )
         if not normalized:
-            return ""
-    if not _validate_hunks(normalized):
-        return ""
+            return "", reason
+    ok, reason = _validate_hunks_with_reason(normalized)
+    if not ok:
+        return "", reason
 
     if not normalized.endswith("\n"):
         normalized += "\n"
-    return normalized
+    return normalized, ""
 
 
 def _fuzzy_correct_paths(patch: str, tree_paths: frozenset[str]) -> str:
-    """Rewrite diff paths so each file-diff's source paths exist in
-    ``tree_paths``, while target paths of create / rename / copy
-    operations are left alone (those paths legitimately don't exist
-    at ``base_commit``).
+    """Backward-compat wrapper returning just the corrected patch.
 
-    Per file-diff (a block starting at ``diff --git`` or ``---``):
+    New callers should prefer :func:`_fuzzy_correct_paths_with_reason`
+    so they can distinguish ``path_not_found`` from ``ambiguous_path``
+    and feed that reason into a retry prompt.
+    """
+    corrected, _reason = _fuzzy_correct_paths_with_reason(patch, tree_paths)
+    return corrected
 
-    * Source-side paths must exist at base_commit. The source is
-      ``--- a/<p>`` (for modify/delete/rename-from), ``rename from``,
-      ``copy from``. If a source path is missing from the tree, try
-      to rewrite it to a unique basename match; if that fails, reject
-      the whole patch.
-    * Target-side paths of a creation (``--- /dev/null``), rename
-      (``rename to``), or copy (``copy to``) are passed through
-      unchanged — they are new paths by definition.
-    * For a plain modify, source == target, and the ``+++ b/<p>`` line
-      is rewritten to mirror any correction applied to ``--- a/<p>``.
-      The ``diff --git a/<X> b/<Y>`` line is rewritten the same way.
-    * ``/dev/null`` is always accepted.
 
-    Returns ``""`` when any source-side path cannot be resolved.
+def _fuzzy_correct_paths_with_reason(
+    patch: str, tree_paths: frozenset[str],
+) -> "tuple[str, str]":
+    """Like :func:`_fuzzy_correct_paths` but also returns a reason
+    code when the correction fails.
+
+    Returns ``(corrected_patch, "")`` on success. On failure, returns
+    ``("", "path_not_found")`` if no basename match was found, or
+    ``("", "ambiguous_path")`` if multiple basename matches made the
+    rewrite ambiguous. Per-file-diff: the first failure reason wins —
+    earlier blocks get priority.
     """
     basename_index: dict[str, list[str]] = {}
     for p in tree_paths:
         base = p.rsplit("/", 1)[-1]
         basename_index.setdefault(base, []).append(p)
+
+    # Track the reason the most recent ``_resolve_source`` call came
+    # back empty. Closed over by the nested function so we can surface
+    # it up to the file-diff loop without changing the resolver's
+    # signature (which is consumed by _correct_file_diff unchanged).
+    resolve_failure_reason: list[str] = [""]
 
     def _resolve_source(path: str) -> str | None:
         """Oracle check for a source-side path."""
@@ -123,6 +168,10 @@ def _fuzzy_correct_paths(patch: str, tree_paths: frozenset[str]) -> str:
         matches = basename_index.get(base, [])
         if len(matches) == 1:
             return matches[0]
+        if len(matches) == 0:
+            resolve_failure_reason[0] = "path_not_found"
+        else:
+            resolve_failure_reason[0] = "ambiguous_path"
         return None
 
     blocks = _split_file_diffs(patch)
@@ -130,9 +179,12 @@ def _fuzzy_correct_paths(patch: str, tree_paths: frozenset[str]) -> str:
     for block in blocks:
         fixed = _correct_file_diff(block, _resolve_source)
         if fixed is None:
-            return ""
+            # resolve_failure_reason is set by the resolver; guard
+            # against an unexpected None from elsewhere in the block
+            # by defaulting to path_not_found (the most common case).
+            return "", (resolve_failure_reason[0] or "path_not_found")
         out_parts.append(fixed)
-    return "\n".join(out_parts)
+    return "\n".join(out_parts), ""
 
 
 _MINUS_FILE_HEADER_RE = re.compile(r"^--- (?:a/|/dev/null(?:$|\t))")
@@ -626,14 +678,26 @@ def _strip_diff_line_prefix(line: str, strip_side) -> str:
 
 
 def _validate_hunks(patch: str) -> bool:
-    """Return True if every hunk's declared counts match its body.
+    """Backward-compat wrapper returning just the ok/not-ok flag.
 
-    Rejects placeholder line numbers (non-digit ``XXX``/``N``/``?``) and
-    truncated hunks where the body line counts disagree with the header.
-    Uses count-driven consumption (:func:`_scan_hunk_extent`) so body
-    lines whose content happens to match ``--- a/...`` or ``+++ b/...``
-    shapes are unambiguously interpreted as deletions or additions
-    respectively (review #733).
+    New callers should prefer :func:`_validate_hunks_with_reason`
+    so they can distinguish ``placeholder_hunk`` from ``truncated_hunk``
+    from ``overlong_hunk`` and feed that reason into a retry prompt.
+    """
+    ok, _reason = _validate_hunks_with_reason(patch)
+    return ok
+
+
+def _validate_hunks_with_reason(patch: str) -> "tuple[bool, str]":
+    """Like :func:`_validate_hunks` but also returns a reason code on
+    failure.
+
+    Returns ``(True, "")`` on success. On failure, returns
+    ``(False, reason)`` where reason is one of ``placeholder_hunk``,
+    ``truncated_hunk``, ``overlong_hunk``, ``malformed_metadata``, or
+    ``empty_extraction`` (the last for a diff with no ``@@`` hunks at
+    all — from the retry loop's perspective, that's equivalent to an
+    empty extraction since the model didn't actually produce a diff).
     """
     lines = patch.splitlines()
     i = 0
@@ -642,27 +706,48 @@ def _validate_hunks(patch: str) -> bool:
         line = lines[i]
         if line.startswith("@@"):
             saw_any_hunk = True
-            # Reject placeholder hunk headers (``@@ -XXX,N +XXX,N @@``)
-            # even when the rest of the line otherwise parses.
             m_raw = _HUNK_RE.match(line)
             if not m_raw:
-                return False
+                return False, "malformed_metadata"
             for key in ("old_start", "old_count", "new_start", "new_count"):
                 val = m_raw.group(key)
                 if val is None:
                     continue
                 if not val.isdigit():
-                    return False
+                    return False, "placeholder_hunk"
             counts = _parse_hunk_counts(line)
             if counts is None:
-                return False
+                return False, "placeholder_hunk"
             old, new = counts
             end, ok = _scan_hunk_extent(lines, i + 1, old, new)
             if not ok:
-                return False
+                # Distinguish truncated (body drained short) from
+                # overlong (counts drained but next line isn't a
+                # legal post-hunk boundary). _scan_hunk_extent returns
+                # False in both cases; we re-check the counts-vs-end
+                # shape here to pick the right reason for the retry
+                # prompt.
+                if end >= len(lines):
+                    # Ran off the end without draining counts — pure
+                    # truncation.
+                    return False, "truncated_hunk"
+                # We have a non-boundary line still inside what should
+                # be post-hunk space, OR the walk hit malformed content
+                # mid-body. Distinguish by probing one more time: if
+                # re-scanning from the start with the declared counts
+                # would have drained at ``end`` exactly, this is an
+                # overlong case; otherwise a truncated / malformed body.
+                if _is_post_hunk_boundary(lines, end) is False and (
+                    lines[end].startswith(("+", "-", " "))
+                ):
+                    # Body-shaped content after counts should have drained:
+                    # overlong.
+                    return False, "overlong_hunk"
+                return False, "truncated_hunk"
             i = end
             continue
         i += 1
 
-    # An input with no hunks at all is not a valid unified diff to submit.
-    return saw_any_hunk
+    if not saw_any_hunk:
+        return False, "empty_extraction"
+    return True, ""
