@@ -809,6 +809,63 @@ def test_fuzzy_hunk_body_with_minus_a_plus_b_pair_not_split():
     # been oracle-checked, not in tree, and the whole patch rejected.)
 
 
+def test_sanitize_rejects_overlong_hunk():
+    """Declared count ``@@ -1 +1 @@`` but body has an extra ``+``
+    line. git apply would reject; sanitizer must too. Review #735.
+    """
+    patch = (
+        "--- a/foo.py\n"
+        "+++ b/foo.py\n"
+        "@@ -1 +1 @@\n"
+        "-old\n"
+        "+new\n"
+        "+extra\n"
+    )
+    assert sanitize(patch, "owner/repo") == ""
+
+
+def test_sanitize_rejects_overlong_hunk_with_grounding():
+    """Same rejection applies in grounding mode."""
+    tree = frozenset({"foo.py"})
+    patch = (
+        "--- a/foo.py\n"
+        "+++ b/foo.py\n"
+        "@@ -1 +1 @@\n"
+        "-old\n"
+        "+new\n"
+        "+extra\n"
+    )
+    assert sanitize(patch, "owner/repo", tree_paths=tree) == ""
+
+
+def test_sanitize_rejects_overlong_hunk_extra_context():
+    """Overlong context line after counts drain must also reject."""
+    patch = (
+        "--- a/foo.py\n"
+        "+++ b/foo.py\n"
+        "@@ -1 +1 @@\n"
+        "-old\n"
+        "+new\n"
+        " extra context\n"
+    )
+    assert sanitize(patch, "owner/repo") == ""
+
+
+def test_sanitize_accepts_no_newline_marker_at_hunk_end():
+    """``\\ No newline at end of file`` after the body is a valid
+    marker and must NOT be rejected as overlong body content.
+    """
+    patch = (
+        "--- a/foo.py\n"
+        "+++ b/foo.py\n"
+        "@@ -1 +1 @@\n"
+        "-old\n"
+        "+new\n"
+        "\\ No newline at end of file\n"
+    )
+    assert sanitize(patch, "owner/repo")
+
+
 def test_fuzzy_hunk_with_dev_null_shaped_body_add():
     """An added line whose content is ``/dev/null`` (wire: ``+/dev/null``
     wouldn't match, but ``+++ /dev/null`` would). Body content shaped

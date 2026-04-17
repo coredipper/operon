@@ -198,7 +198,16 @@ def _scan_hunk_extent(
 
     Returns ``(end_idx, ok)``. ``end_idx`` is the index of the first
     line *after* the hunk body (or ``len(lines)`` if truncated). ``ok``
-    is True iff the body was well-formed and the counts reached zero.
+    is True iff:
+
+    1. The body was well-formed and both counts reached zero.
+    2. The line at ``end_idx`` is a legal post-hunk boundary —
+       another ``@@`` hunk header, a ``---``/``+++`` file header,
+       ``diff --git``, a git metadata line, or EOF. This second
+       check catches **overlong** hunks: a declared ``@@ -1 +1 @@``
+       whose body contains ``-old``, ``+new``, ``+extra`` must be
+       rejected, because git apply would choke on the dangling
+       ``+extra``. Review #735.
 
     Inside a hunk body, a line's role is determined by its first
     character:
@@ -206,14 +215,16 @@ def _scan_hunk_extent(
       * ``-`` → deletion (decrements ``old_count``)
       * `` `` or empty → context (decrements both; empty is a
         whitespace-stripped blank that the repair pass will fix up)
-      * ``\\ No newline at end of file`` → marker, does not count
+      * ``\\ No newline at end of file`` → marker, does not count.
+        Accepted both inside the body (as a marker for the preceding
+        ``+``/``-`` line) and as the first line after the body
+        (as a marker for the hunk's final body line).
       * anything else → malformed; stop with ``ok=False``.
 
-    Crucially, an in-body line whose content is shaped like a file
-    header (``--- a/...``, ``+++ b/...``) is STILL interpreted by its
-    first character — a ``-``-prefixed line is always a delete inside
-    a hunk body regardless of what follows. That's what makes the
-    disambiguation robust against adversarial content.
+    An in-body line whose content is shaped like a file header
+    (``--- a/...``, ``+++ b/...``) is STILL interpreted by its first
+    character — a ``-``-prefixed line is always a delete inside a
+    hunk body regardless of what follows.
     """
     i = start
     while i < len(lines) and (old_count > 0 or new_count > 0):
@@ -231,7 +242,49 @@ def _scan_hunk_extent(
         else:
             return i, False
         i += 1
-    return i, (old_count == 0 and new_count == 0)
+    if old_count != 0 or new_count != 0:
+        return i, False
+
+    # Counts drained. Consume a trailing ``\ No newline at end of file``
+    # marker if present (it applies to the hunk's final body line).
+    if i < len(lines) and lines[i] == r"\ No newline at end of file":
+        i += 1
+
+    # The next line (if any) must be a legal post-hunk boundary, not
+    # more body-shaped content. Body-shaped content after counts drain
+    # means the hunk is overlong.
+    if i < len(lines):
+        nxt = lines[i]
+        if _is_post_hunk_boundary(nxt):
+            return i, True
+        # Body-shaped content (``+``, ``-``, `` ``, or empty) means
+        # the model emitted more body lines than the header declared.
+        return i, False
+    return i, True
+
+
+def _is_post_hunk_boundary(line: str) -> bool:
+    """Return True iff ``line`` is a legal boundary after a hunk body.
+
+    Legal boundaries are the start of another hunk, another file, or
+    git metadata between files. Anything shaped like body content
+    (``+``, ``-``, `` ``, empty) means the previous hunk was overlong.
+    """
+    if line.startswith("@@"):
+        return True
+    if line.startswith("diff --git "):
+        return True
+    if _MINUS_FILE_HEADER_RE.match(line):
+        return True
+    # ``+++ b/...`` / ``+++ /dev/null`` as a sibling of a ``---`` line
+    # at a file boundary. Standalone ``+++`` outside a sibling pair is
+    # not a valid patch, but we accept it here and let downstream
+    # validation catch it.
+    if _PLUS_FILE_HEADER_RE.match(line):
+        return True
+    if line.startswith(_METADATA_PREFIXES):
+        return True
+    return False
 
 
 def _split_file_diffs(patch: str) -> list[list[str]]:
