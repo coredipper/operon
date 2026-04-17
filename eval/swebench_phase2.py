@@ -39,6 +39,7 @@ from operon_ai.providers.base import ProviderConfig
 from operon_ai.providers.openai_compatible_provider import OpenAICompatibleProvider
 
 from eval._patch_extraction import extract_patch
+from eval._patch_sanitizer import sanitize as sanitize_patch
 
 
 # ---------------------------------------------------------------------------
@@ -51,6 +52,110 @@ def _make_provider(model: str) -> OpenAICompatibleProvider:
         base_url="http://localhost:11434/v1",
         model=model,
     )
+
+
+class ModelIdentityError(RuntimeError):
+    """Raised when an immutable identity cannot be resolved for a tag."""
+
+
+# Required keys for an immutable identity. The schema is locked so the
+# committed artifact always matches a fresh rerun's output.
+_IDENTITY_REQUIRED = ("tag", "digest", "blob_sha256", "architecture",
+                      "parameters", "quantization", "source")
+
+
+def _parse_ollama_show(stdout: str) -> dict[str, str]:
+    """Extract architecture / parameters / quantization from ``ollama show``.
+
+    The non-modelfile form prints indented section headers (``Model``,
+    ``Capabilities``, ``Parameters``) at 2 spaces of indent with their
+    row values at 4+ spaces. We parse only the keys we publish so a
+    future ollama version adding rows does not change our schema.
+    """
+    wanted = {"architecture", "parameters", "quantization"}
+    found: dict[str, str] = {}
+    in_model_section = False
+    for line in stdout.splitlines():
+        if not line.strip():
+            continue
+        indent = len(line) - len(line.lstrip(" "))
+        stripped = line.strip()
+        if indent <= 2:
+            in_model_section = stripped == "Model"
+            continue
+        if not in_model_section:
+            continue
+        parts = stripped.split(None, 1)
+        if len(parts) == 2 and parts[0] in wanted:
+            found[parts[0]] = parts[1].strip()
+    return found
+
+
+def _resolve_model_identity(model_tag: str) -> dict[str, str]:
+    """Return an immutable identifier for *model_tag* from Ollama.
+
+    The human-readable tag (e.g. ``gemma4:latest``) is a floating pointer;
+    the digest and blob sha256 pin a specific set of weights so the result
+    can be correlated with a concrete model version later.
+
+    Raises :class:`ModelIdentityError` if any required field cannot be
+    resolved. Callers must surface this to the user rather than silently
+    proceeding — the published artifact and the paper both cite these
+    fields as reproducibility anchors.
+    """
+    identity: dict[str, str] = {
+        "tag": model_tag,
+        "source": "ollama list / ollama show / ollama show --modelfile",
+    }
+    try:
+        listed = subprocess.run(
+            ["ollama", "list"], check=True, capture_output=True, text=True,
+            timeout=5,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError,
+            subprocess.TimeoutExpired) as e:
+        raise ModelIdentityError(f"`ollama list` failed: {e}") from e
+    for line in listed.stdout.splitlines():
+        parts = line.split()
+        if len(parts) >= 2 and parts[0] == model_tag:
+            identity["digest"] = parts[1]
+            break
+
+    try:
+        modelfile = subprocess.run(
+            ["ollama", "show", "--modelfile", model_tag],
+            check=True, capture_output=True, text=True, timeout=5,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError,
+            subprocess.TimeoutExpired) as e:
+        raise ModelIdentityError(
+            f"`ollama show --modelfile {model_tag}` failed: {e}"
+        ) from e
+    for line in modelfile.stdout.splitlines():
+        if line.startswith("FROM /") and "sha256-" in line:
+            identity["blob_sha256"] = line.split("sha256-", 1)[1].strip()
+            break
+
+    try:
+        shown = subprocess.run(
+            ["ollama", "show", model_tag],
+            check=True, capture_output=True, text=True, timeout=5,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError,
+            subprocess.TimeoutExpired) as e:
+        raise ModelIdentityError(
+            f"`ollama show {model_tag}` failed: {e}"
+        ) from e
+    identity.update(_parse_ollama_show(shown.stdout))
+
+    missing = [k for k in _IDENTITY_REQUIRED if k not in identity]
+    if missing:
+        raise ModelIdentityError(
+            f"could not resolve required identity fields {missing} for "
+            f"tag {model_tag!r}; refusing to publish an incomplete "
+            "reproducibility record"
+        )
+    return identity
 
 
 def _format_task(instance: dict) -> str:
@@ -86,9 +191,29 @@ def _build_organism(provider):
                 name="edit",
                 role="Patch Author",
                 instructions=(
-                    "Based on the bug localization, write a minimal fix. "
-                    "Output a unified diff (--- a/file\\n+++ b/file). "
-                    "Change only what's necessary."
+                    "Based on the bug localization, write a minimal fix "
+                    "as a unified diff.\n\n"
+                    "STRICT FORMAT — your ENTIRE response for this stage "
+                    "must be a single fenced diff block and nothing "
+                    "else:\n\n"
+                    "```diff\n"
+                    "--- a/<path-relative-to-repo-root>\n"
+                    "+++ b/<path-relative-to-repo-root>\n"
+                    "@@ -<real_old_start>,<real_old_count> "
+                    "+<real_new_start>,<real_new_count> @@\n"
+                    " <context line>\n"
+                    "-<removed line>\n"
+                    "+<added line>\n"
+                    "```\n\n"
+                    "Rules:\n"
+                    "- Do not prefix the path with the repo name.\n"
+                    "- Use REAL integer line numbers. Never use `XXX`, "
+                    "`N`, `?`, or single letters.\n"
+                    "- The body of each hunk must be complete: "
+                    "additions + context must equal the new_count; "
+                    "deletions + context must equal the old_count.\n"
+                    "- No prose, no explanation, no 'here is the fix' "
+                    "text — the fenced diff only."
                 ),
                 mode="fixed",
             ),
@@ -96,9 +221,12 @@ def _build_organism(provider):
                 name="verify",
                 role="Patch Reviewer",
                 instructions=(
-                    "Review the proposed patch. Check: (1) does it fix the "
-                    "reported issue? (2) any regressions? (3) diff format valid? "
-                    "If any problems, describe them."
+                    "Review the proposed patch from the edit stage. "
+                    "Do NOT re-emit the diff. Output at most three "
+                    "short bullet points: (1) does it fix the issue; "
+                    "(2) any regressions you see; (3) is the diff "
+                    "format valid. Never include a fenced diff block "
+                    "in this stage's output."
                 ),
                 mode="fixed",
             ),
@@ -124,16 +252,50 @@ class Prediction:
     extract_ok: bool
 
 
+_BASELINE_RULES = (
+    "\nRules for the diff:\n"
+    "- Use the path exactly as it appears in the repository, relative\n"
+    "  to the repo root. Never prefix the path with the repo name. For\n"
+    "  repository `{repo}`, the correct form is `a/<path>`, not\n"
+    "  `a/{repo}/<path>`.\n"
+    "- Every hunk header must contain real line numbers,\n"
+    "  e.g. `@@ -42,7 +42,9 @@`. Never use placeholders like `XXX`, `N`,\n"
+    "  `?`, or single letters.\n"
+    "- Every hunk body must be complete — context, additions, and\n"
+    "  deletions must match the counts declared in the header. Do not\n"
+    "  truncate mid-hunk.\n"
+)
+
+
+def _sanitize_for_submission(raw: str, repo_slug: str) -> str:
+    """Extract and sanitize a patch from raw model output.
+
+    A rejected-by-sanitizer submission is returned as ``""`` so the
+    harness counts it as ``empty_patch`` rather than a format-error
+    ``error`` — an honest categorization (we refused to submit a diff
+    we knew would fail to apply).
+    """
+    extracted = extract_patch(raw)
+    if not extracted:
+        return ""
+    cleaned = sanitize_patch(extracted, repo_slug)
+    if not cleaned:
+        print(f"  sanitizer: dropped patch for {repo_slug} "
+              "(placeholder hunk / malformed counts / bad paths)")
+    return cleaned
+
+
 def run_baseline(provider, instance: dict) -> Prediction:
     task = _format_task(instance)
     prompt = (
         f"{task}\nFix this bug. Output a unified diff "
         "(--- a/file, +++ b/file) with your fix. Be minimal."
+        + _BASELINE_RULES.format(repo=instance["repo"])
     )
     t0 = time.monotonic()
     raw = _llm_call(provider, prompt)
     elapsed = (time.monotonic() - t0) * 1000
-    patch = extract_patch(raw)
+    patch = _sanitize_for_submission(raw, instance["repo"])
     return Prediction(
         instance["instance_id"], instance["repo"], "baseline",
         raw, patch, elapsed, bool(patch),
@@ -149,7 +311,7 @@ def run_organism(provider, instance: dict) -> Prediction:
     full = "\n\n".join(
         f"[{sr.stage_name}]\n{sr.output}" for sr in result.stage_results
     )
-    patch = extract_patch(full)
+    patch = _sanitize_for_submission(full, instance["repo"])
     return Prediction(
         instance["instance_id"], instance["repo"], "organism",
         full, patch, elapsed, bool(patch),
@@ -164,7 +326,7 @@ def run_langgraph(provider, instance: dict) -> Prediction:
     elapsed = (time.monotonic() - t0) * 1000
     parts = [f"[{name}]\n{out}" for name, out in result.stage_outputs.items()]
     full = "\n\n".join(parts) if parts else result.output
-    patch = extract_patch(full)
+    patch = _sanitize_for_submission(full, instance["repo"])
     return Prediction(
         instance["instance_id"], instance["repo"], "langgraph",
         full, patch, elapsed, bool(patch),
@@ -226,6 +388,137 @@ EVAL_ERROR = "error"                # patch failed to apply, timeout, etc.
 EVAL_EMPTY = "empty_patch"          # no patch produced
 EVAL_NOT_EVALUATED = "not_evaluated"  # harness did not report on this instance
 
+# Harness-run states (tri-state: not a bool, because "skipped" ≠ "failed")
+HARNESS_OK = "ok"
+HARNESS_FAILED = "failed"
+HARNESS_SKIPPED = "skipped"
+
+# Valid values for model_identity_post_run_check.status. These are the only
+# values the live writer emits. The schema test imports this set so the
+# test can never drift to accept a value the writer cannot produce.
+POST_RUN_CHECK_STATUSES = frozenset({"match", "mismatch", "error"})
+
+
+def build_artifact(
+    *,
+    model: str,
+    model_identity: dict,
+    post_run_check: dict,
+    run_id: str,
+    n_instances: int,
+    offset: int,
+    conditions: list,
+    timestamp: str,
+    skip_harness: bool,
+    results: list,
+    summary: dict,
+    dataset: str = "SWE-bench/SWE-bench_Lite",
+) -> dict:
+    """Assemble the SWE-bench Phase 2 artifact envelope.
+
+    This is the SINGLE source of truth for the artifact's top-level
+    shape. Both the live writer and ``--rewrite-envelope`` call it, and
+    the schema test derives the expected key set from a dummy invocation
+    of this function (never from a hand-maintained constant), so writer
+    and test cannot drift independently of each other.
+    """
+    return {
+        "model": model,
+        "model_identity": model_identity,
+        "model_identity_post_run_check": post_run_check,
+        "dataset": dataset,
+        "run_id": run_id,
+        "n_instances": n_instances,
+        "offset": offset,
+        "conditions": conditions,
+        "timestamp": timestamp,
+        "skip_harness": skip_harness,
+        "results": results,
+        "summary": summary,
+    }
+
+
+def _compute_post_run_check(
+    prior_identity: dict, model_tag: str
+) -> dict:
+    """Re-resolve identity and return a post-run check record."""
+    try:
+        current = _resolve_model_identity(model_tag)
+    except ModelIdentityError as e:
+        return {"status": "error", "error": str(e)}
+    if current.get("digest") == prior_identity.get("digest") and \
+            current.get("blob_sha256") == prior_identity.get("blob_sha256"):
+        return {"status": "match"}
+    return {
+        "status": "mismatch",
+        "digest_now": current.get("digest", ""),
+        "blob_sha256_now": current.get("blob_sha256", ""),
+    }
+
+
+def _rewrite_envelope(
+    path: Path, cli_model_tag: str, cli_model_was_default: bool
+) -> None:
+    """Rewrite the envelope of an existing results artifact.
+
+    Preserves all content fields (results, summary, run_id, n_instances,
+    offset, conditions, skip_harness) and re-generates the identity
+    envelope (model_identity_post_run_check, timestamp) by re-resolving
+    against the currently-installed ollama model. This is how historical
+    artifacts get aligned with a newer writer contract without rerunning
+    predictions or the Docker harness.
+
+    The verification tag is taken from the artifact itself (``existing["model"]``),
+    not from ``--model``, so a stale or default CLI flag cannot silently
+    verify the wrong tag. If ``--model`` was set explicitly to a value
+    that disagrees with the artifact's recorded model, the rewrite
+    refuses rather than emit a status for the wrong model.
+    """
+    existing = json.loads(path.read_text())
+    prior_identity = existing.get("model_identity")
+    if not prior_identity or "digest" not in prior_identity:
+        print(f"ERROR: {path} has no model_identity with a digest to verify "
+              "against. Run the script without --rewrite-envelope to "
+              "produce a fresh artifact.")
+        sys.exit(1)
+
+    artifact_model = existing.get("model")
+    if not artifact_model:
+        print(f"ERROR: {path} has no `model` field. Cannot determine which "
+              "tag to verify against.")
+        sys.exit(1)
+
+    # If the user supplied --model explicitly and it disagrees with the
+    # artifact, refuse. An implicit default does not disagree — we trust
+    # the artifact's own record in that case.
+    if not cli_model_was_default and cli_model_tag != artifact_model:
+        print(f"ERROR: --model {cli_model_tag!r} disagrees with the "
+              f"artifact's recorded model {artifact_model!r}. Refusing "
+              "to verify against a different tag. Remove --model to use "
+              "the artifact's own value, or update the artifact.")
+        sys.exit(1)
+
+    verification_tag = artifact_model
+    post_run_check = _compute_post_run_check(prior_identity, verification_tag)
+    out_data = build_artifact(
+        model=artifact_model,
+        model_identity=prior_identity,
+        post_run_check=post_run_check,
+        run_id=existing["run_id"],
+        n_instances=existing["n_instances"],
+        offset=existing["offset"],
+        conditions=existing["conditions"],
+        timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        skip_harness=existing.get("skip_harness", False),
+        results=existing["results"],
+        summary=existing["summary"],
+        dataset=existing.get("dataset", "SWE-bench/SWE-bench_Lite"),
+    )
+    path.write_text(json.dumps(out_data, indent=2))
+    print(f"Rewrote envelope at {path} (verified against "
+          f"{verification_tag!r}): "
+          f"post_run_check.status={post_run_check['status']}")
+
 
 def _parse_reports(
     report_dir: Path, run_id: str, model_name: str
@@ -260,16 +553,39 @@ def _parse_reports(
 # Main
 # ---------------------------------------------------------------------------
 
+_DEFAULT_MODEL = "gemma4:latest"
+
+
 def main():
     parser = argparse.ArgumentParser(description="SWE-bench-lite Phase 2 (Docker)")
-    parser.add_argument("--model", default="gemma4:latest")
+    # Sentinel default lets us distinguish an explicit --model from a
+    # defaulted one. The rewrite path uses this to refuse verifying
+    # against a tag the user supplied that disagrees with the artifact.
+    parser.add_argument("--model", default=None)
     parser.add_argument("--n", type=int, default=10)
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--conditions", default="baseline,organism,langgraph")
     parser.add_argument("--skip-harness", action="store_true",
                         help="Only generate predictions, skip Docker evaluation")
     parser.add_argument("--timeout", type=int, default=600)
+    parser.add_argument(
+        "--rewrite-envelope", metavar="PATH", default=None,
+        help=("Rewrite the envelope of an existing results artifact at "
+              "PATH: preserves results/summary/run_id/etc., re-resolves "
+              "model_identity against ollama, and emits an authentic "
+              "post-run check. Does not rerun predictions or the harness."),
+    )
     args = parser.parse_args()
+
+    cli_model_was_default = args.model is None
+    if cli_model_was_default:
+        args.model = _DEFAULT_MODEL
+
+    if args.rewrite_envelope:
+        _rewrite_envelope(
+            Path(args.rewrite_envelope), args.model, cli_model_was_default,
+        )
+        return
 
     conditions = [c.strip() for c in args.conditions.split(",")]
 
@@ -278,6 +594,26 @@ def main():
         if not HAS_LANGGRAPH:
             print("WARNING: langgraph not installed, skipping")
             conditions = [c for c in conditions if c != "langgraph"]
+
+    # Freeze the model identity BEFORE any predictions are generated so
+    # the recorded digest/blob describes the weights actually used. A
+    # concurrent `ollama pull` during a 45-minute run could otherwise
+    # re-point the floating tag; resolving at save time would then lie
+    # about what generated the predictions.
+    try:
+        model_identity = _resolve_model_identity(args.model)
+    except ModelIdentityError as e:
+        print(f"ERROR: cannot resolve immutable model identity: {e}")
+        print("Refusing to run — the results artifact cites this identity "
+              "for reproducibility. Pin the model first (e.g. `ollama pull "
+              f"{args.model}`) and retry.")
+        sys.exit(1)
+    print(f"Model identity: tag={model_identity['tag']} "
+          f"digest={model_identity['digest']} "
+          f"blob={model_identity['blob_sha256'][:12]}... "
+          f"arch={model_identity['architecture']} "
+          f"params={model_identity['parameters']} "
+          f"quant={model_identity['quantization']}")
 
     provider = _make_provider(args.model)
 
@@ -341,7 +677,11 @@ def main():
     # -- Phase B: write predictions & run harness ------------------------
     results_dir = Path("eval/results/swebench_phase2_predictions") / run_id
     status_by_cond: dict[str, dict[str, str]] = {c: {} for c in conditions}
-    harness_ok_by_cond: dict[str, bool] = {c: False for c in conditions}
+    # Tri-state per condition: "ok" | "failed" | "skipped". Default is
+    # "failed" so that unexpected paths (no report, crash before parse)
+    # are not silently treated as "ok"; the skip path explicitly sets
+    # HARNESS_SKIPPED so a skipped run is distinguishable from a crash.
+    harness_state_by_cond: dict[str, str] = {c: HARNESS_FAILED for c in conditions}
 
     for cond in conditions:
         model_name = f"operon-{cond}"
@@ -350,6 +690,7 @@ def main():
         print(f"\n  Wrote {len(preds_by_cond[cond])} predictions to {pred_path}")
 
         if args.skip_harness:
+            harness_state_by_cond[cond] = HARNESS_SKIPPED
             continue
 
         print(f"\n{'='*60}")
@@ -366,65 +707,90 @@ def main():
             report_dir, f"{run_id}_{cond}", model_name
         )
         status_by_cond[cond] = statuses
-        harness_ok_by_cond[cond] = report_found
+        harness_state_by_cond[cond] = HARNESS_OK if report_found else HARNESS_FAILED
 
     # -- Phase C: aggregate & save ---------------------------------------
     summary: dict[str, dict] = {}
     for cond in conditions:
         preds = preds_by_cond[cond]
         statuses = status_by_cond[cond]
-        harness_ok = harness_ok_by_cond[cond]
+        harness_state = harness_state_by_cond[cond]
         n = len(preds)
         extracted = sum(1 for p in preds if p.extract_ok)
 
-        # Only include instances with a real harness verdict in the denominator.
-        evaluated = [
-            p for p in preds
-            if statuses.get(p.instance_id, EVAL_NOT_EVALUATED) != EVAL_NOT_EVALUATED
-        ]
-        passed = sum(1 for p in evaluated if statuses.get(p.instance_id) == EVAL_RESOLVED)
+        # Per-status counts. "error" (patch didn't apply) and "empty_patch"
+        # (no diff produced) are not failures of the model under test — they
+        # are upstream problems. The "evaluated" denominator is therefore
+        # restricted to instances that actually reached a pass/fail harness
+        # verdict (resolved or unresolved).
+        status_counts = {
+            EVAL_RESOLVED: 0,
+            EVAL_UNRESOLVED: 0,
+            EVAL_ERROR: 0,
+            EVAL_EMPTY: 0,
+            EVAL_NOT_EVALUATED: 0,
+        }
+        for p in preds:
+            s = statuses.get(p.instance_id, EVAL_NOT_EVALUATED)
+            status_counts[s] = status_counts.get(s, 0) + 1
+
+        evaluated_n = status_counts[EVAL_RESOLVED] + status_counts[EVAL_UNRESOLVED]
+        passed = status_counts[EVAL_RESOLVED]
 
         summary[cond] = {
             "n": n,
             "patch_extracted": extracted,
-            "evaluated": len(evaluated),
+            "status_counts": status_counts,
+            "evaluated": evaluated_n,
             "resolved": passed,
             "resolved_rate": (
-                round(passed / len(evaluated), 3) if evaluated else None
+                round(passed / evaluated_n, 3) if evaluated_n else None
             ),
-            "harness_ran": harness_ok,
+            "harness_state": harness_state,
             "mean_latency_ms": round(
                 sum(p.latency_ms for p in preds) / n, 0
             ) if n else 0,
         }
 
+    # Best-effort verification: re-resolve the identity and flag if the
+    # floating tag moved during the run. Non-fatal — the run has already
+    # executed against `model_identity`, and that is the authoritative
+    # record.
+    post_run_check = _compute_post_run_check(model_identity, args.model)
+    if post_run_check["status"] == "mismatch":
+        print("WARN: model tag moved during the run. Recorded identity "
+              "describes pre-run weights; post-run digest saved as "
+              "`model_identity_post_run_check.mismatch`.")
+
+    results = [
+        {
+            "instance_id": p.instance_id,
+            "repo": p.repo,
+            "condition": p.condition,
+            "patch_extracted": p.extract_ok,
+            "patch_size_bytes": len(p.model_patch),
+            "latency_ms": p.latency_ms,
+            "eval_status": status_by_cond[p.condition].get(
+                p.instance_id, EVAL_NOT_EVALUATED
+            ),
+        }
+        for cond in conditions for p in preds_by_cond[cond]
+    ]
+    out_data = build_artifact(
+        model=args.model,
+        model_identity=model_identity,
+        post_run_check=post_run_check,
+        run_id=run_id,
+        n_instances=len(instances),
+        offset=args.offset,
+        conditions=conditions,
+        timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        skip_harness=args.skip_harness,
+        results=results,
+        summary=summary,
+    )
     out_path = Path("eval/results/swebench_phase2.json")
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_data = {
-        "model": args.model,
-        "dataset": "SWE-bench/SWE-bench_Lite",
-        "run_id": run_id,
-        "n_instances": len(instances),
-        "offset": args.offset,
-        "conditions": conditions,
-        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        "skip_harness": args.skip_harness,
-        "results": [
-            {
-                "instance_id": p.instance_id,
-                "repo": p.repo,
-                "condition": p.condition,
-                "patch_extracted": p.extract_ok,
-                "patch_size_bytes": len(p.model_patch),
-                "latency_ms": p.latency_ms,
-                "eval_status": status_by_cond[p.condition].get(
-                    p.instance_id, EVAL_NOT_EVALUATED
-                ),
-            }
-            for cond in conditions for p in preds_by_cond[cond]
-        ],
-        "summary": summary,
-    }
     out_path.write_text(json.dumps(out_data, indent=2))
     print(f"\n{'='*60}")
     print("SUMMARY")
@@ -434,7 +800,7 @@ def main():
             f"{s['resolved_rate']:.1%}"
             if s["resolved_rate"] is not None else "N/A"
         )
-        harness_str = "ok" if s["harness_ran"] else "FAILED"
+        harness_str = s["harness_state"]
         print(
             f"  {cond:10s} resolved={s['resolved']}/{s['evaluated']} "
             f"({rate_str})  n={s['n']}  "

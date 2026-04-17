@@ -1,5 +1,17 @@
 {
   "model": "gemma4:latest",
+  "model_identity": {
+    "tag": "gemma4:latest",
+    "digest": "c6eb396dbd59",
+    "blob_sha256": "4c27e0f5b5adf02ac956c7322bd2ee7636fe3f45a8512c9aba5385242cb6e09a",
+    "architecture": "gemma4",
+    "parameters": "8.0B",
+    "quantization": "Q4_K_M",
+    "source": "ollama list / ollama show / ollama show --modelfile"
+  },
+  "model_identity_post_run_check": {
+    "status": "match"
+  },
   "dataset": "SWE-bench/SWE-bench_Lite",
   "run_id": "phase2_20260416_211049",
   "n_instances": 10,
@@ -9,7 +21,7 @@
     "organism",
     "langgraph"
   ],
-  "timestamp": "2026-04-16T20:09:07.742895+00:00",
+  "timestamp": "2026-04-16T21:36:00.523412+00:00",
   "skip_harness": false,
   "results": [
     {
@@ -287,28 +299,49 @@
     "baseline": {
       "n": 10,
       "patch_extracted": 10,
-      "evaluated": 10,
+      "status_counts": {
+        "resolved": 0,
+        "unresolved": 1,
+        "error": 9,
+        "empty_patch": 0,
+        "not_evaluated": 0
+      },
+      "evaluated": 1,
       "resolved": 0,
       "resolved_rate": 0.0,
-      "harness_ran": true,
+      "harness_state": "ok",
       "mean_latency_ms": 44429.0
     },
     "organism": {
       "n": 10,
       "patch_extracted": 6,
-      "evaluated": 10,
+      "status_counts": {
+        "resolved": 0,
+        "unresolved": 1,
+        "error": 5,
+        "empty_patch": 4,
+        "not_evaluated": 0
+      },
+      "evaluated": 1,
       "resolved": 0,
       "resolved_rate": 0.0,
-      "harness_ran": true,
+      "harness_state": "ok",
       "mean_latency_ms": 87660.0
     },
     "langgraph": {
       "n": 10,
       "patch_extracted": 6,
-      "evaluated": 10,
+      "status_counts": {
+        "resolved": 0,
+        "unresolved": 0,
+        "error": 6,
+        "empty_patch": 4,
+        "not_evaluated": 0
+      },
+      "evaluated": 0,
       "resolved": 0,
-      "resolved_rate": 0.0,
-      "harness_ran": true,
+      "resolved_rate": null,
+      "harness_state": "ok",
       "mean_latency_ms": 89796.0
     }
   }

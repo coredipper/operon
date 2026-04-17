@@ -67,42 +67,46 @@ Scion & 3/3 (100\%) & 3/3 \\
 
 Full certificate identity (theorem + parameters + source) is preserved across all four measured compilers, confirming Proposition~5.1 empirically. The LangGraph compiler preserves certificates via per-stage execution of \texttt{run\_single\_stage()} (Section~\ref{sec:preservation}).
 
-\subsection{SWE-bench-lite: Decomposition Does Not Help on Real Bug-Fix Tasks}
+\subsection{SWE-bench-lite: An Inconclusive Run Dominated by Patch-Apply Failures}
 \label{sec:swebench-phase2}
 
-To test whether the categorical harness delivers end-to-end value beyond certificate preservation, we ran an apples-to-apples comparison on SWE-bench-lite: 10 real Python bug-fix instances from \texttt{astropy} and \texttt{django}, with patches applied inside the official SWE-bench Docker harness and evaluated via \texttt{FAIL\_TO\_PASS} + \texttt{PASS\_TO\_PASS} test suites.
+To probe whether the categorical harness delivers end-to-end value beyond certificate preservation, we attempted an apples-to-apples comparison on SWE-bench-lite: 10 real Python bug-fix instances from \texttt{astropy} and \texttt{django}, with patches applied inside the official SWE-bench Docker harness and evaluated via \texttt{FAIL\_TO\_PASS} + \texttt{PASS\_TO\_PASS} test suites. The run is reported here for transparency, but --- as we show below --- it is confounded and cannot support a capability conclusion.
 
-\paragraph{Setup.} Gemma~4 (27B MoE, 4B active) via Ollama. Three conditions:
+\paragraph{Setup.} Gemma~4 via Ollama (tag \texttt{gemma4:latest}, digest \texttt{c6eb396dbd59}, blob \texttt{sha256:4c27e0f5}, architecture \texttt{gemma4}, 8.0B parameters, Q4\_K\_M quantization, 131{,}072 context). The immutable digest is recorded in \texttt{eval/results/swebench\_phase2.json} so the exact weights can be identified later. Three conditions:
 \begin{itemize}[leftmargin=*]
 \item \textbf{baseline}: direct single prompt, request unified diff.
 \item \textbf{organism}: three-stage \texttt{SkillOrganism} (\textit{localize} $\to$ \textit{edit} $\to$ \textit{verify}).
 \item \textbf{langgraph}: same organism, compiled via \texttt{organism\_to\_langgraph()} and executed as a LangGraph \texttt{StateGraph}.
 \end{itemize}
 
-\paragraph{Results (pass/fail, 10 instances).}
+\paragraph{Results (harness outcome distribution, 10 instances per condition).}
 
 \begin{center}
 \small
-\begin{tabular}{@{}lccc@{}}
+\begin{tabular}{@{}lcccccc@{}}
 \toprule
-\textbf{Condition} & \textbf{Resolved} & \textbf{Patch extracted} & \textbf{Mean latency} \\
+\textbf{Condition} & \textbf{Resolved} & \textbf{Unresolved} & \textbf{Error} & \textbf{Empty patch} & \textbf{Evaluated} & \textbf{Mean latency} \\
 \midrule
-baseline    & 0/10 & \textbf{10/10} & 44~s  \\
-organism    & 0/10 & 6/10           & 88~s  \\
-langgraph   & 0/10 & 6/10           & 90~s  \\
+baseline    & 0 & 1 & 9 & 0 & 1/10 & 44~s  \\
+organism    & 0 & 1 & 5 & 4 & 1/10 & 88~s  \\
+langgraph   & 0 & 0 & 6 & 4 & 0/10 & 90~s  \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\paragraph{Interpretation.} All three conditions resolve zero instances. This is an honest negative result about the \emph{model}, not the harness: Gemma~4 27B (4B active) is too weak to pass SWE-bench-lite unaided on either prompt style. Two secondary findings are load-bearing, however:
+Categories follow the SWE-bench harness: \texttt{resolved} (patch applied and all target tests pass), \texttt{unresolved} (patch applied, tests fail), \texttt{error} (patch rejected by \texttt{git apply}, timeout, or infrastructure failure), \texttt{empty\_patch} (no diff-shaped output from the model). \textbf{Evaluated} counts only instances that reached a pass/fail harness verdict, i.e.\ \texttt{resolved} $+$ \texttt{unresolved}.
+
+\paragraph{Interpretation (confounded; no capability conclusion).} The run does not isolate model capability from infrastructure. Across all three conditions, only 2 of 30 submissions (baseline: 1, organism: 1, langgraph: 0) reached an actual test-suite verdict; the remaining 28 were rejected at the \texttt{git apply} stage (\texttt{error}, 20) or never produced a diff-shaped output at all (\texttt{empty\_patch}, 8). With \textbf{evaluated} in $\{0, 1\}$ per condition, the sample size is too small to distinguish model weakness from upstream patch-format/pathing issues. We therefore do \emph{not} claim this run demonstrates a capability ceiling.
+
+Two observations are still defensible from the data we have:
 
 \begin{enumerate}[leftmargin=*]
-\item \textbf{The organism and LangGraph pipelines \emph{degrade} patch extraction} (6/10 vs baseline's 10/10). Direct prompting produces cleaner unified diffs than a three-stage localize--edit--verify pipeline. Pipeline overhead introduces format drift.
-\item \textbf{Latency doubles with no offsetting gain.} The three-stage pipeline costs $\sim$2$\times$ baseline wall-clock for identical pass/fail outcomes.
+\item \textbf{The organism and LangGraph pipelines more often failed to produce a diff-shaped output} (4 \texttt{empty\_patch} each vs.\ 0 for baseline). This is a measurement about extractability of the three-stage pipeline's output, not about patch correctness: baseline produced an extractable diff for every instance yet 9/10 were rejected by \texttt{git apply} anyway, so extractability is not a proxy for patch quality.
+\item \textbf{Latency roughly doubled under the pipelines} (88--90~s vs.\ 44~s mean) with no compensating gain in evaluated instances. Cost is paid regardless of whether the output is usable.
 \end{enumerate}
 
-A judge-based Phase~1 evaluation of the same instances (LLM-as-judge over a plausibility rubric) reported baseline=0.808 and organism=0.776, which we interpreted as plausibility of the produced diff. The pass/fail truth at the harness level collapses that judge signal: when a patch cannot be applied at all (\texttt{error}) or is applied but fails tests (\texttt{unresolved}), the judge's plausibility score is not predictive of correctness.
+The Phase~1 LLM-judge scores reported earlier (baseline~$=0.808$, organism~$=0.776$) are plausibility judgments over the produced text; they do not measure whether a patch applies to the target repository, which is where most of this run failed. That is an argument for using harness-grounded pass/fail rather than judge plausibility for end-task claims, but it does not by itself rank the three conditions.
 
-\paragraph{What this result does and does not say.} It says: categorical compilation and multi-stage decomposition do \emph{not} substitute for model capability on hard, mechanistic tasks. This is consistent with the empirical finding in the companion Bio-Benchmarks paper that decomposition-based abstractions do not earn their complexity for capable models on hard SWE-bench instances; we extend that to: they do not help small models either. The harness-level \emph{structural} guarantees (certificate preservation, priority gating, stagnation detection) remain valid under compilation regardless of model capability --- but guarantees about \emph{structure} do not imply gains in \emph{task resolution}.
+\paragraph{What this run does and does not say.} It does not say that categorical compilation or multi-stage decomposition fail on SWE-bench-lite; with 0--1 evaluated instances per condition, the experiment is not powered to answer that. What it does say is that (i) the current prompt-to-unified-diff pipeline produces patches that are almost never applicable to the target repos, and (ii) before decomposition vs.\ direct prompting can be compared on this benchmark, the upstream patch-application failure rate has to be brought down. The harness-level \emph{structural} guarantees reported in Sections~\ref{sec:preservation} and in the escalation experiment are unaffected by this negative run: they are $\mathrm{Know}$-level properties verified independently of SWE-bench outcomes.
 
-This motivates Section~\ref{sec:conclusion}: the transfer value of categorical harness engineering is in \emph{reliability primitives} (gates, certificates, monitors) that a user can drop into an existing graph, not in wholesale organism adoption.
+This motivates Section~\ref{sec:conclusion}: the demonstrated transfer value of categorical harness engineering in this paper is in \emph{preservation} and \emph{primitive reuse}, not in task-resolution gains on SWE-bench-lite --- the latter remains open pending a run where patches reliably apply.
