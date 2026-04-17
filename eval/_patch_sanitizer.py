@@ -142,29 +142,26 @@ _PLUS_FILE_HEADER_RE = re.compile(r"^\+\+\+ (?:b/|/dev/null(?:$|\t))")
 def _is_plus_file_header(line: str) -> bool:
     """Return True iff ``line`` looks like a real ``+++`` file header.
 
-    A real header is ``+++ b/<path>`` or ``+++ /dev/null`` (optionally
-    followed by a tab + timestamp). Arbitrary text after ``+++ ``
-    (``+++ <some addition starting with ++ >``) is not a header shape.
+    Shape-only check: ``+++ b/<path>`` or ``+++ /dev/null`` (optionally
+    followed by a tab + timestamp). Shape alone is NOT sufficient to
+    decide if a line inside a hunk body is a header — content shaped
+    ``++ b/...`` serialises on the wire as ``+++ b/...`` and collides
+    with this pattern. Callers must use hunk-count tracking (see
+    ``_scan_hunk_extent``) to know whether a line is in a body or
+    at a file boundary.
     """
     return bool(_PLUS_FILE_HEADER_RE.match(line))
 
 
 def _is_minus_file_header(line: str, next_line: str | None) -> bool:
-    """Return True iff ``line`` is a real unified-diff ``---`` file
-    header (not a hunk deletion that happens to start with ``-- ``).
+    """Shape-only check that ``line`` looks like a ``---`` file header
+    paired with a ``+++`` header on the next line.
 
-    A deletion of content starting with ``-- foo`` is encoded as
-    ``--- foo`` — same three-dash-space prefix. We disambiguate with
-    two checks:
-
-    1. The header must match ``--- a/<path>`` or ``--- /dev/null``.
-       Arbitrary text after ``--- `` is not a file-header shape.
-    2. The next line must itself be a real ``+++`` file header —
-       ``+++ b/<path>`` or ``+++ /dev/null``. A hunk body where the
-       deletion is ``-- a/...`` and the following addition happens to
-       be ``++ ...`` (encoded on the wire as ``+++ ...``) still does
-       not match this stricter shape because ``+++ ...`` (arbitrary
-       content) is not ``+++ b/...``.
+    Same caveat as :func:`_is_plus_file_header`: position matters.
+    Inside a hunk body, a deletion of content shaped ``-- a/...``
+    followed by an addition shaped ``++ b/...`` will satisfy this
+    shape check too. Callers must use hunk-count tracking to know
+    they are outside a hunk body.
     """
     if not _MINUS_FILE_HEADER_RE.match(line):
         return False
@@ -173,49 +170,129 @@ def _is_minus_file_header(line: str, next_line: str | None) -> bool:
     return _is_plus_file_header(next_line)
 
 
+_HUNK_HEADER_RE = re.compile(
+    r"^@@ -(?P<old_start>\d+)(?:,(?P<old_count>\d+))? "
+    r"\+(?P<new_start>\d+)(?:,(?P<new_count>\d+))? @@"
+)
+
+
+def _parse_hunk_counts(line: str) -> "tuple[int, int] | None":
+    """Return ``(old_count, new_count)`` for a well-formed hunk header.
+
+    Returns ``None`` if the header has placeholder line numbers (``XXX``,
+    ``N``, etc.) or otherwise fails to parse. The count defaults to 1
+    when omitted (``@@ -42 +42 @@`` is valid git syntax).
+    """
+    m = _HUNK_HEADER_RE.match(line)
+    if not m:
+        return None
+    old = int(m.group("old_count")) if m.group("old_count") else 1
+    new = int(m.group("new_count")) if m.group("new_count") else 1
+    return old, new
+
+
+def _scan_hunk_extent(
+    lines: list[str], start: int, old_count: int, new_count: int,
+) -> "tuple[int, bool]":
+    """Walk ``lines[start:]`` consuming the hunk body until counts drain.
+
+    Returns ``(end_idx, ok)``. ``end_idx`` is the index of the first
+    line *after* the hunk body (or ``len(lines)`` if truncated). ``ok``
+    is True iff the body was well-formed and the counts reached zero.
+
+    Inside a hunk body, a line's role is determined by its first
+    character:
+      * ``+`` → addition (decrements ``new_count``)
+      * ``-`` → deletion (decrements ``old_count``)
+      * `` `` or empty → context (decrements both; empty is a
+        whitespace-stripped blank that the repair pass will fix up)
+      * ``\\ No newline at end of file`` → marker, does not count
+      * anything else → malformed; stop with ``ok=False``.
+
+    Crucially, an in-body line whose content is shaped like a file
+    header (``--- a/...``, ``+++ b/...``) is STILL interpreted by its
+    first character — a ``-``-prefixed line is always a delete inside
+    a hunk body regardless of what follows. That's what makes the
+    disambiguation robust against adversarial content.
+    """
+    i = start
+    while i < len(lines) and (old_count > 0 or new_count > 0):
+        line = lines[i]
+        if line == r"\ No newline at end of file":
+            i += 1
+            continue
+        if line.startswith("+"):
+            new_count -= 1
+        elif line.startswith("-"):
+            old_count -= 1
+        elif line.startswith(" ") or line == "":
+            old_count -= 1
+            new_count -= 1
+        else:
+            return i, False
+        i += 1
+    return i, (old_count == 0 and new_count == 0)
+
+
 def _split_file_diffs(patch: str) -> list[list[str]]:
     """Split a patch into per-file blocks.
 
-    Boundary rules:
-
-    * ``diff --git`` always starts a new block.
-    * A ``--- `` line starts a new block when (a) it looks like a real
-      file header (``--- a/<p>`` or ``--- /dev/null``), (b) the next
-      line is ``+++ ``, and (c) either we are not yet in a block or
-      the current block already emitted its own ``+++`` (so the
-      previous file is complete).
-
-    Rule (c) is what makes bare multi-file diffs work. Rule (b) is
-    what prevents a hunk-body deletion like ``--- a/foo.py`` (the
-    content ``-- a/foo.py`` being removed) from being misread as a
-    new file header.
+    The key invariant is that lines *inside* a hunk body are never
+    interpreted as file headers, no matter what they look like. We
+    track hunk state via the declared ``@@ -a,b +c,d @@`` counts and
+    walk the body using :func:`_scan_hunk_extent`. Outside hunks,
+    ``diff --git`` is an unambiguous boundary and ``--- a/<p>`` paired
+    with ``+++ b/<p>`` on the next line is a file-header pair; we
+    split on it when we're between files (the current block either is
+    empty or has already emitted a ``+++`` header, meaning the
+    previous file's definition is complete).
     """
     lines = patch.splitlines()
     blocks: list[list[str]] = []
     current: list[str] = []
     seen_plus_in_current = False
 
-    def _starts_new_block(line: str, next_line: str | None) -> bool:
-        if line.startswith("diff --git "):
-            return True
-        if _is_minus_file_header(line, next_line):
-            if not current:
-                return True
-            if seen_plus_in_current:
-                return True
-        return False
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        # Inside a hunk body? Consume it wholesale — no boundary check.
+        if line.startswith("@@"):
+            counts = _parse_hunk_counts(line)
+            if counts is not None:
+                old, new = counts
+                current.append(line)
+                end, _ok = _scan_hunk_extent(lines, i + 1, old, new)
+                for k in range(i + 1, end):
+                    current.append(lines[k])
+                i = end
+                continue
+            # Malformed hunk header — just append and move on. The
+            # validator will reject downstream.
+            current.append(line)
+            i += 1
+            continue
 
-    for i, line in enumerate(lines):
+        # Outside hunk: look for boundaries.
         next_line = lines[i + 1] if i + 1 < len(lines) else None
-        if _starts_new_block(line, next_line):
+        if line.startswith("diff --git "):
             if current:
                 blocks.append(current)
             current = [line]
             seen_plus_in_current = False
-        else:
-            current.append(line)
-            if line.startswith("+++ "):
-                seen_plus_in_current = True
+            i += 1
+            continue
+        if _is_minus_file_header(line, next_line):
+            if not current or seen_plus_in_current:
+                if current:
+                    blocks.append(current)
+                current = [line]
+                seen_plus_in_current = False
+                i += 1
+                continue
+        if line.startswith("+++ "):
+            seen_plus_in_current = True
+        current.append(line)
+        i += 1
     if current:
         blocks.append(current)
     return blocks
@@ -351,44 +428,42 @@ def _correct_file_diff(
 def _repair_bare_empty_context(patch: str) -> str:
     """Restore the ``" "`` prefix on bare empty context lines inside hunks.
 
-    Some editors/tools strip trailing whitespace, which turns a valid
-    context line (a single space followed by a newline, representing a
-    blank line in the file) into a bare empty line. ``git apply``
-    rejects bare empty lines inside hunks, so we rewrite them back to
+    Some editors/tools strip trailing whitespace, turning a valid
+    context line (a single space) into a bare empty line. ``git apply``
+    rejects bare empty lines inside hunks; we rewrite them back to
     ``" "``.
 
-    Hunk termination uses the same file-header disambiguation as
-    ``_split_file_diffs`` and ``_validate_hunks`` — a ``---`` inside
-    a hunk body is only a file boundary if the next line is a real
-    ``+++`` header. Review #730.
+    Hunk boundaries come from the declared ``@@ -a,b +c,d @@`` counts
+    (via :func:`_scan_hunk_extent`), not from line-shape heuristics.
+    Review #733: shape-based heuristics can false-match adversarial
+    hunk content shaped like ``--- a/...`` or ``+++ b/...``. Count-
+    driven consumption is robust against such content.
     """
     lines = patch.splitlines()
     out: list[str] = []
-    in_hunk = False
-    for i, line in enumerate(lines):
-        next_line = lines[i + 1] if i + 1 < len(lines) else None
+    i = 0
+    while i < len(lines):
+        line = lines[i]
         if line.startswith("@@"):
-            in_hunk = True
+            counts = _parse_hunk_counts(line)
+            if counts is None:
+                out.append(line)
+                i += 1
+                continue
+            old, new = counts
             out.append(line)
+            # Walk body lines, repairing blanks; stop at exact count.
+            end, _ok = _scan_hunk_extent(lines, i + 1, old, new)
+            for k in range(i + 1, end):
+                body_line = lines[k]
+                if body_line == "":
+                    out.append(" ")
+                else:
+                    out.append(body_line)
+            i = end
             continue
-        if in_hunk:
-            if _is_minus_file_header(line, next_line):
-                in_hunk = False
-                out.append(line)
-                continue
-            if _is_plus_file_header(line):
-                in_hunk = False
-                out.append(line)
-                continue
-            if line.startswith("diff --git ") or line.startswith(_METADATA_PREFIXES):
-                in_hunk = False
-                out.append(line)
-                continue
-            if line == "":
-                # Blank line inside a hunk = whitespace-stripped context.
-                out.append(" ")
-                continue
         out.append(line)
+        i += 1
     return "\n".join(out)
 
 
@@ -484,6 +559,10 @@ def _validate_hunks(patch: str) -> bool:
 
     Rejects placeholder line numbers (non-digit ``XXX``/``N``/``?``) and
     truncated hunks where the body line counts disagree with the header.
+    Uses count-driven consumption (:func:`_scan_hunk_extent`) so body
+    lines whose content happens to match ``--- a/...`` or ``+++ b/...``
+    shapes are unambiguously interpreted as deletions or additions
+    respectively (review #733).
     """
     lines = patch.splitlines()
     i = 0
@@ -492,70 +571,26 @@ def _validate_hunks(patch: str) -> bool:
         line = lines[i]
         if line.startswith("@@"):
             saw_any_hunk = True
-            m = _HUNK_RE.match(line)
-            if not m:
+            # Reject placeholder hunk headers (``@@ -XXX,N +XXX,N @@``)
+            # even when the rest of the line otherwise parses.
+            m_raw = _HUNK_RE.match(line)
+            if not m_raw:
                 return False
-            # All of the numeric fields must be actual base-10 integers.
-            # Reject placeholders like XXX, N, Y, single letters, ?.
             for key in ("old_start", "old_count", "new_start", "new_count"):
-                val = m.group(key)
+                val = m_raw.group(key)
                 if val is None:
-                    # Omitted count is valid — git default is 1.
                     continue
                 if not val.isdigit():
                     return False
-            old_count = int(m.group("old_count")) if m.group("old_count") else 1
-            new_count = int(m.group("new_count")) if m.group("new_count") else 1
-
-            # Walk the body until the next hunk or the next file header.
-            # A ``---`` line inside a hunk body is ambiguous: it could
-            # be either a real file header (next file in a bare
-            # multi-file diff) or a deletion of content that starts
-            # with ``-- `` (encoded as ``--- ...`` on the wire). We
-            # disambiguate with lookahead — a real file header is
-            # always followed by ``+++ `` on the next line. See
-            # ``_is_minus_file_header`` for the shared helper.
-            body_old = 0
-            body_new = 0
-            i += 1
-            while i < len(lines):
-                body_line = lines[i]
-                next_line = lines[i + 1] if i + 1 < len(lines) else None
-                if body_line.startswith("@@"):
-                    break
-                if _is_minus_file_header(body_line, next_line):
-                    break
-                if _is_plus_file_header(body_line):
-                    # A real ``+++`` header in the hunk body is
-                    # malformed (should be a sibling of a ``---``); end
-                    # the hunk here and let validation fail downstream
-                    # if counts don't add up. ``+++ arbitrary content``
-                    # (a hunk addition) is NOT a file header — it only
-                    # triggers here if the addition shape matches
-                    # ``+++ b/<path>`` or ``+++ /dev/null``.
-                    break
-                if body_line.startswith(_METADATA_PREFIXES):
-                    break
-                if body_line == r"\ No newline at end of file":
-                    # Marker, not a real line — ignored by both sides.
-                    i += 1
-                    continue
-                if body_line.startswith("+"):
-                    body_new += 1
-                elif body_line.startswith("-"):
-                    body_old += 1
-                elif body_line.startswith(" "):
-                    body_old += 1
-                    body_new += 1
-                else:
-                    # Bare empty lines are repaired upstream by
-                    # _repair_bare_empty_context; anything else here is
-                    # malformed.
-                    return False
-                i += 1
-            if body_old != old_count or body_new != new_count:
+            counts = _parse_hunk_counts(line)
+            if counts is None:
                 return False
-            continue  # already advanced i
+            old, new = counts
+            end, ok = _scan_hunk_extent(lines, i + 1, old, new)
+            if not ok:
+                return False
+            i = end
+            continue
         i += 1
 
     # An input with no hunks at all is not a valid unified diff to submit.

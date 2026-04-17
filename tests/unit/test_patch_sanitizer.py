@@ -754,6 +754,80 @@ def test_fuzzy_hunk_delete_dash_add_plus_not_split():
     assert "+++ some content" in cleaned
 
 
+# --------------------------------------------------------------------------
+# Review #733: shape-only checks still match content shaped like
+# '+++ b/...'. Count-driven hunk consumption is the real fix — inside a
+# hunk body, the line's first character decides its role regardless of
+# what follows.
+# --------------------------------------------------------------------------
+
+def test_fuzzy_hunk_body_with_plus_b_shape_not_split():
+    """Hunk adds a line whose content starts with ``++ b/`` (wire:
+    ``+++ b/foo.py``). A shape-only check would classify this as a
+    real ``+++`` file header. Count-driven consumption recognizes it
+    as an addition (starts with ``+``).
+    """
+    tree = frozenset({"docs/readme.md"})
+    patch = (
+        "--- a/docs/readme.md\n"
+        "+++ b/docs/readme.md\n"
+        "@@ -1,1 +1,2 @@\n"
+        " context\n"
+        "+++ b/bar.py\n"  # body add whose content is "++ b/bar.py"
+    )
+    cleaned = sanitize(patch, "owner/repo", tree_paths=tree)
+    assert cleaned, "plus-shape hunk body must not be mis-split"
+    assert "+++ b/bar.py" in cleaned
+    # And the patch still parses as a single-file modify on readme.md.
+    assert "--- a/docs/readme.md" in cleaned
+
+
+def test_fuzzy_hunk_body_with_minus_a_plus_b_pair_not_split():
+    """The review #733 adversarial case: delete shaped ``-- a/foo.py``
+    paired with add shaped ``++ b/bar.py`` (wire: ``--- a/foo.py``
+    then ``+++ b/bar.py``). Both lines individually match the shape
+    of a file-header pair. Count-driven consumption is immune.
+    """
+    tree = frozenset({"docs/readme.md"})
+    patch = (
+        "--- a/docs/readme.md\n"
+        "+++ b/docs/readme.md\n"
+        "@@ -1,1 +1,1 @@\n"
+        "--- a/foo.py\n"       # body delete
+        "+++ b/bar.py\n"       # body add
+    )
+    cleaned = sanitize(patch, "owner/repo", tree_paths=tree)
+    assert cleaned, (
+        "ambiguous --- / +++ body pair must not split the file-diff"
+    )
+    # Body content preserved verbatim.
+    assert "--- a/foo.py" in cleaned
+    assert "+++ b/bar.py" in cleaned
+    # And the surviving patch is a single-file modify on readme.md —
+    # NOT reinterpreted as a modify on foo.py → bar.py rename.
+    # (If mis-split, the second block's a-side "foo.py" would have
+    # been oracle-checked, not in tree, and the whole patch rejected.)
+
+
+def test_fuzzy_hunk_with_dev_null_shaped_body_add():
+    """An added line whose content is ``/dev/null`` (wire: ``+/dev/null``
+    wouldn't match, but ``+++ /dev/null`` would). Body content shaped
+    as ``+++ /dev/null`` (a 3-char ``/++`` added) would also match
+    our regex. Verify count-driven consumption handles it.
+    """
+    tree = frozenset({"x.py"})
+    patch = (
+        "--- a/x.py\n"
+        "+++ b/x.py\n"
+        "@@ -1,1 +1,2 @@\n"
+        " ctx\n"
+        "+++ /dev/null\n"   # body add whose content is "++ /dev/null"
+    )
+    cleaned = sanitize(patch, "owner/repo", tree_paths=tree)
+    assert cleaned
+    assert "+++ /dev/null" in cleaned  # preserved as body, not header
+
+
 def test_repair_preserves_bare_empty_after_ambiguous_delete():
     """A hunk with an ambiguous ``--- a/...`` deletion followed by a
     whitespace-stripped blank context line must still get the blank
