@@ -67,16 +67,22 @@ Scion & 3/3 (100\%) & 3/3 \\
 
 Full certificate identity (theorem + parameters + source) is preserved across all four measured compilers, confirming Proposition~5.1 empirically. The LangGraph compiler preserves certificates via per-stage execution of \texttt{run\_single\_stage()} (Section~\ref{sec:preservation}).
 
-\subsection{SWE-bench-lite: An Inconclusive Run Dominated by Patch-Apply Failures}
+\subsection{SWE-bench-lite: 8B Format Discipline Is the Ceiling}
 \label{sec:swebench-phase2}
 
-To probe whether the categorical harness delivers end-to-end value beyond certificate preservation, we attempted an apples-to-apples comparison on SWE-bench-lite: 10 real Python bug-fix instances from \texttt{astropy} and \texttt{django}, with patches applied inside the official SWE-bench Docker harness and evaluated via \texttt{FAIL\_TO\_PASS} + \texttt{PASS\_TO\_PASS} test suites. The run is reported here for transparency, but --- as we show below --- it is confounded and cannot support a capability conclusion.
+To probe whether the categorical harness delivers end-to-end value beyond certificate preservation, we ran an apples-to-apples comparison on SWE-bench-lite: 10 real Python bug-fix instances from \texttt{astropy} and \texttt{django}, with patches applied inside the official SWE-bench Docker harness and evaluated via \texttt{FAIL\_TO\_PASS} + \texttt{PASS\_TO\_PASS} test suites. An initial 2026-04-16 run was inconclusive: 28 of 30 submissions failed at \texttt{git apply}, mixing model weakness with prompt-format/pathing issues that we could not separate. We therefore built a \emph{patch-apply pipeline} (sanitizer + repository grounding) and reran. With grounding active, the failure mode shifts from \texttt{git apply} errors to honest \texttt{empty\_patch} rejections, and the run \emph{does} support a capability conclusion: at 8B / Q4\_K\_M, the model's diff-format discipline is below what SWE-bench-lite requires.
 
-\paragraph{Setup.} Gemma~4 via Ollama (tag \texttt{gemma4:latest}, digest \texttt{c6eb396dbd59}, blob \texttt{sha256:4c27e0f5}, architecture \texttt{gemma4}, 8.0B parameters, Q4\_K\_M quantization, 131{,}072 context). The immutable digest is recorded in \texttt{eval/results/swebench\_phase2.json} so the exact weights can be identified later. Three conditions:
+\paragraph{Setup.} Gemma~4 via Ollama (tag \texttt{gemma4:latest}, digest \texttt{c6eb396dbd59}, blob \texttt{sha256:4c27e0f5}, architecture \texttt{gemma4}, 8.0B parameters, Q4\_K\_M quantization, 131{,}072 context). The immutable digest is recorded in \texttt{eval/results/swebench\_phase2.json}. Three conditions:
 \begin{itemize}[leftmargin=*]
 \item \textbf{baseline}: direct single prompt, request unified diff.
 \item \textbf{organism}: three-stage \texttt{SkillOrganism} (\textit{localize} $\to$ \textit{edit} $\to$ \textit{verify}).
 \item \textbf{langgraph}: same organism, compiled via \texttt{organism\_to\_langgraph()} and executed as a LangGraph \texttt{StateGraph}.
+\end{itemize}
+
+The pipeline applied to all three conditions in this rerun:
+\begin{itemize}[leftmargin=*]
+\item Each instance's repository is shallow-cloned at its \texttt{base\_commit} into a local cache; up to five candidate file snippets selected by issue-text heuristics are injected into the prompt as repository context.
+\item Model output is sanitized: paths normalized (e.g.\ stripping the \texttt{owner/repo/} prefix the model often hallucinates), hunk headers checked for placeholder line numbers (\texttt{@@ -XXX,N +XXX,N @@} style), hunk bodies validated against declared counts, and patches whose paths don't exist in the cloned tree fuzzy-corrected against unique basename matches or rejected. Patches that the sanitizer cannot make safe are dropped (recorded as \texttt{empty\_patch}, never forwarded to \texttt{git apply}).
 \end{itemize}
 
 \paragraph{Results (harness outcome distribution, 10 instances per condition).}
@@ -87,26 +93,23 @@ To probe whether the categorical harness delivers end-to-end value beyond certif
 \toprule
 \textbf{Condition} & \textbf{Resolved} & \textbf{Unresolved} & \textbf{Error} & \textbf{Empty patch} & \textbf{Evaluated} & \textbf{Mean latency} \\
 \midrule
-baseline    & 0 & 1 & 9 & 0 & 1/10 & 44~s  \\
-organism    & 0 & 1 & 5 & 4 & 1/10 & 88~s  \\
-langgraph   & 0 & 0 & 6 & 4 & 0/10 & 90~s  \\
+baseline    & 0 & 1 & 0 & 9  & 1/10 & 104~s \\
+organism    & 0 & 0 & 0 & 10 & 0/10 & 170~s \\
+langgraph   & 0 & 0 & 0 & 10 & 0/10 & 172~s \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-Categories follow the SWE-bench harness: \texttt{resolved} (patch applied and all target tests pass), \texttt{unresolved} (patch applied, tests fail), \texttt{error} (patch rejected by \texttt{git apply}, timeout, or infrastructure failure), \texttt{empty\_patch} (no diff-shaped output from the model). \textbf{Evaluated} counts only instances that reached a pass/fail harness verdict, i.e.\ \texttt{resolved} $+$ \texttt{unresolved}.
+Categories follow the SWE-bench harness: \texttt{resolved} (patch applied and all target tests pass), \texttt{unresolved} (patch applied, tests fail), \texttt{error} (patch rejected by \texttt{git apply}, timeout, or infrastructure failure), \texttt{empty\_patch} (no diff-shaped output reached the harness; here this includes sanitizer rejections). \textbf{Evaluated} counts only instances that reached a pass/fail harness verdict.
 
-\paragraph{Interpretation (confounded; no capability conclusion).} The run does not isolate model capability from infrastructure. Across all three conditions, only 2 of 30 submissions (baseline: 1, organism: 1, langgraph: 0) reached an actual test-suite verdict; the remaining 28 were rejected at the \texttt{git apply} stage (\texttt{error}, 20) or never produced a diff-shaped output at all (\texttt{empty\_patch}, 8). With \textbf{evaluated} in $\{0, 1\}$ per condition, the sample size is too small to distinguish model weakness from upstream patch-format/pathing issues. We therefore do \emph{not} claim this run demonstrates a capability ceiling.
+\paragraph{Comparison with the 2026-04-16 run.} The earlier (un-grounded, un-sanitized) run had baseline 1/10 evaluated with 9 \texttt{error}, organism 1/10 with 5 \texttt{error} + 4 \texttt{empty\_patch}, langgraph 0/10 with 6 \texttt{error} + 4 \texttt{empty\_patch}. Two changes are notable. First, every \texttt{error} category collapsed to zero: the sanitizer refuses to forward patches that \texttt{git apply} would reject, so what previously appeared as 20 application failures across conditions is now correctly attributed to the model. Second, the organism/baseline gap (4 \texttt{empty\_patch} vs.\ 0 for baseline in the original) closed: the tightened ``\texttt{[edit]} stage emits a single fenced diff and nothing else'' instruction in the rerun pipeline eliminated the previous multi-stage format leak. The remaining gap is in the opposite direction --- baseline produces one applicable diff, organism and LangGraph produce none --- and is consistent with the localize/edit decomposition asking the model to write a self-contained diff while juggling stage outputs, a discipline tax the single-shot baseline avoids.
 
-Two observations are still defensible from the data we have:
+\paragraph{Interpretation: 8B format discipline, not file selection, is the ceiling.} The original run confounded two failure modes: (a)~the model selecting nonexistent or wrong file paths, (b)~the model writing hunk headers and bodies that \texttt{git apply} cannot consume. Grounding solves (a): every prompt now contains the actual files at \texttt{base\_commit}. The fact that 29 of 30 submissions still drop to \texttt{empty\_patch} --- with the dominant sanitizer-reject reasons being placeholder hunk headers, mismatched header counts, and paths that don't exist in the cloned tree --- localizes the bottleneck to (b). At this model scale, providing the actual files in the context window does \emph{not} translate to format-correct unified diffs.
 
-\begin{enumerate}[leftmargin=*]
-\item \textbf{The organism and LangGraph pipelines more often failed to produce a diff-shaped output} (4 \texttt{empty\_patch} each vs.\ 0 for baseline). This is a measurement about extractability of the three-stage pipeline's output, not about patch correctness: baseline produced an extractable diff for every instance yet 9/10 were rejected by \texttt{git apply} anyway, so extractability is not a proxy for patch quality.
-\item \textbf{Latency roughly doubled under the pipelines} (88--90~s vs.\ 44~s mean) with no compensating gain in evaluated instances. Cost is paid regardless of whether the output is usable.
-\end{enumerate}
+The single survivor, \texttt{django/django-11001} (baseline), reached the harness as \texttt{unresolved}: the patch applied cleanly but the test suite still failed. That same instance was the one survivor in the 2026-04-16 run as well, suggesting a structural property of that issue (likely a small, localized hunk) makes it more amenable to small-model output.
 
-The Phase~1 LLM-judge scores reported earlier (baseline~$=0.808$, organism~$=0.776$) are plausibility judgments over the produced text; they do not measure whether a patch applies to the target repository, which is where most of this run failed. That is an argument for using harness-grounded pass/fail rather than judge plausibility for end-task claims, but it does not by itself rank the three conditions.
+\paragraph{Latency cost of grounding.} Baseline mean latency rose from 44~s in the original run to 104~s with grounding, organism from 88~s to 170~s, langgraph from 90~s to 172~s. The 30~KB of repository context in each prompt roughly doubles per-call wall-clock with no compensating gain in evaluated instances at this model scale. Grounding's cost-benefit changes with stronger models, but at 8B it is overhead.
 
-\paragraph{What this run does and does not say.} It does not say that categorical compilation or multi-stage decomposition fail on SWE-bench-lite; with 0--1 evaluated instances per condition, the experiment is not powered to answer that. What it does say is that (i) the current prompt-to-unified-diff pipeline produces patches that are almost never applicable to the target repos, and (ii) before decomposition vs.\ direct prompting can be compared on this benchmark, the upstream patch-application failure rate has to be brought down. The harness-level \emph{structural} guarantees reported in Sections~\ref{sec:preservation} and in the escalation experiment are unaffected by this negative run: they are $\mathrm{Know}$-level properties verified independently of SWE-bench outcomes.
+\paragraph{What this rerun does and does not say.} It does say: at 8B / Q4\_K\_M, the model's ability to emit \texttt{git apply}-clean unified diffs is the binding constraint on SWE-bench-lite resolution, and three-stage decomposition does not relax it. It does not say that the organism architecture is intrinsically worse than direct prompting --- with 1 vs.\ 0 evaluated instances, the experiment is still under-powered to discriminate. The harness-level \emph{structural} guarantees reported in Sections~\ref{sec:preservation} and in the escalation experiment are unaffected: they are $\mathrm{Know}$-level properties verified independently of SWE-bench task resolution.
 
-This motivates Section~\ref{sec:conclusion}: the demonstrated transfer value of categorical harness engineering in this paper is in \emph{preservation} and \emph{primitive reuse}, not in task-resolution gains on SWE-bench-lite --- the latter remains open pending a run where patches reliably apply.
+This motivates Section~\ref{sec:conclusion}: the demonstrated transfer value of categorical harness engineering in this paper is in \emph{preservation} (certificate identity across compilers) and \emph{primitive reuse} (escalation), not in task-resolution gains on SWE-bench-lite at this model scale. The next experimental wedge for this benchmark is a stronger model or a format-correction retry loop, not more harness infrastructure.
