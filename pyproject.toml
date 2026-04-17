@@ -7,7 +7,7 @@ allow-direct-references = true
 
 [project]
 name = "operon-ai"
-version = "0.34.4"
+version = "0.34.5"
 description = "Biomimetic wiring diagrams for robust agentic systems."
 readme = "README.md"
 requires-python = ">=3.11"
