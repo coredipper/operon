@@ -215,13 +215,74 @@ def _build_grounding(instance: dict, cache_dir: Path) -> "Grounding":
     return Grounding(repo_path=repo_path, tree_paths=tree_paths, context_block=block)
 
 
-def _llm_call(provider, prompt: str) -> str:
-    config = ProviderConfig(max_tokens=4096)
+#: Per-call timeout (seconds) for benchmark LLM invocations — both
+#: direct (baseline via :func:`_llm_call`) and via the three-stage
+#: organism path (each :class:`SkillStage` ships with a matching
+#: ``provider_config``). The provider base class defaults to 120s,
+#: which is a safe choice for small interactive callers but not for
+#: SWE-bench prompts: the grounded v0.34.5 run had two baseline
+#: instances (astropy-12907, astropy-14995) time out at the 120s
+#: ceiling, and reasoning models like deepseek-r1 routinely produce
+#: 5-10 minute responses (long ``<think>`` blocks before the final
+#: answer). 900s is a safety net, not a tight fit — it accommodates
+#: current gemma4 runs (mean ~131s, some instances higher), grounded
+#: prompts with large context blocks, and reasoning-model reruns,
+#: while still catching silent Ollama hangs on a ~15 min budget.
+_LLM_TIMEOUT_SECONDS: float = 900.0
+
+#: Per-call timeout (seconds) for the startup reachability probe.
+#: Deliberately short: a "Say ok." round-trip shouldn't take more
+#: than a cold-load + one-token generation, so anything past ~60s is
+#: a configuration problem we want to surface immediately rather
+#: than hide behind the 15-minute benchmark budget. Review #753.
+_LLM_PROBE_TIMEOUT_SECONDS: float = 60.0
+
+
+def _llm_call(
+    provider,
+    prompt: str,
+    timeout_seconds: float | None = None,
+) -> str:
+    """Call the provider with the SWE-bench runner's config.
+
+    ``timeout_seconds`` overrides the module default for cases where
+    a shorter budget is appropriate (e.g. the startup reachability
+    probe — see :func:`_probe_model`). Passing ``None`` keeps the
+    benchmark default (:data:`_LLM_TIMEOUT_SECONDS`).
+    """
+    effective_timeout = (
+        _LLM_TIMEOUT_SECONDS if timeout_seconds is None else timeout_seconds
+    )
+    config = ProviderConfig(
+        max_tokens=4096, timeout_seconds=effective_timeout,
+    )
     return provider.complete(prompt, config).content
+
+
+def _probe_model(provider) -> str:
+    """Minimal reachability check for the configured model.
+
+    Uses :data:`_LLM_PROBE_TIMEOUT_SECONDS` (short) rather than the
+    benchmark timeout so a misconfigured model / unreachable Ollama
+    surfaces in ~1 minute, not ~15. Returns the probe response so
+    callers can print it for visual confirmation.
+    """
+    return _llm_call(
+        provider, "Say ok.",
+        timeout_seconds=_LLM_PROBE_TIMEOUT_SECONDS,
+    )
 
 
 def _build_organism(provider):
     nucleus = Nucleus(provider=provider)
+    # Every stage ships with the same per-call timeout as the baseline
+    # path. Without this, BioAgent -> Nucleus.transcribe falls back to
+    # ProviderConfig()'s 120s default and organism/langgraph runs time
+    # out long before the model has a chance to produce a full response.
+    # ProviderConfig is constructed per-stage (rather than shared) so a
+    # stage that later needs different max_tokens / temperature can
+    # override without disturbing the others.
+    stage_config = ProviderConfig(timeout_seconds=_LLM_TIMEOUT_SECONDS)
     return skill_organism(
         stages=[
             SkillStage(
@@ -233,6 +294,7 @@ def _build_organism(provider):
                     "occurs. Explain the root cause concisely."
                 ),
                 mode="fixed",
+                provider_config=stage_config,
             ),
             SkillStage(
                 name="edit",
@@ -263,6 +325,7 @@ def _build_organism(provider):
                     "text — the fenced diff only."
                 ),
                 mode="fixed",
+                provider_config=stage_config,
             ),
             SkillStage(
                 name="verify",
@@ -276,6 +339,7 @@ def _build_organism(provider):
                     "in this stage's output."
                 ),
                 mode="fixed",
+                provider_config=stage_config,
             ),
         ],
         fast_nucleus=nucleus,
@@ -719,7 +783,7 @@ def main():
 
     # Probe model
     try:
-        probe = _llm_call(provider, "Say ok.")
+        probe = _probe_model(provider)
         print(f"Model probe: {probe.strip()[:30]}")
     except Exception as e:
         print(f"ERROR: cannot reach model: {e}")
