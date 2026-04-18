@@ -748,4 +748,4 @@ __all__ = [
     "MetabolicAccessPolicy",
 ]
 
-__version__ = "0.34.5"
+__version__ = "0.35.0"

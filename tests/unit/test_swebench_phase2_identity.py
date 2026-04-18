@@ -472,9 +472,99 @@ def test_build_artifact_has_stable_shape():
         "conditions",
         "timestamp",
         "skip_harness",
+        "grounding",          # review #757: persist run-defining flags
+        "retry_on_reject",    # review #757: persist run-defining flags
         "results",
         "summary",
     }
+
+
+def test_rewrite_envelope_preserves_grounding_and_retry_flags(tmp_path):
+    """Review #758: the envelope rewrite must preserve the run-defining
+    flags (grounding, retry_on_reject) from the existing artifact.
+    Without this, rewriting an artifact for envelope freshness silently
+    resets both flags to False, corrupting the record of what pipeline
+    produced the results.
+    """
+    artifact = build_artifact(
+        model="gemma4:latest",
+        model_identity={
+            "tag": "gemma4:latest", "digest": "abc", "blob_sha256": "def",
+            "architecture": "gemma4", "parameters": "8.0B",
+            "quantization": "Q4_K_M", "source": "test",
+        },
+        post_run_check={"status": "match"},
+        run_id="r",
+        n_instances=0, offset=0, conditions=[],
+        timestamp="t", skip_harness=False,
+        results=[], summary={},
+        grounding=True, retry_on_reject=True,
+    )
+    p = tmp_path / "a.json"
+    p.write_text(json.dumps(artifact))
+
+    def fake_resolve(tag):
+        return {
+            "tag": tag, "digest": "abc", "blob_sha256": "def",
+            "architecture": "gemma4", "parameters": "8.0B",
+            "quantization": "Q4_K_M", "source": "test",
+        }
+
+    with patch(
+        "eval.swebench_phase2._resolve_model_identity",
+        side_effect=fake_resolve,
+    ):
+        _rewrite_envelope(p, "gemma4:latest", cli_model_was_default=True)
+
+    after = json.loads(p.read_text())
+    assert after["grounding"] is True, (
+        "rewrite must preserve grounding=True from the source artifact"
+    )
+    assert after["retry_on_reject"] is True, (
+        "rewrite must preserve retry_on_reject=True from the source artifact"
+    )
+
+
+def test_rewrite_envelope_defaults_flags_when_source_lacks_them(tmp_path):
+    """Backward-compat: if the source artifact predates the flag fields
+    (v0.34.x-era), the rewrite must produce a valid envelope with the
+    flags defaulting to False rather than KeyError.
+    """
+    # Build a pre-flag artifact by stripping the fields that the old
+    # writer didn't emit. The rewrite path must still handle it.
+    artifact = {
+        "model": "gemma4:latest",
+        "model_identity": {
+            "tag": "gemma4:latest", "digest": "abc", "blob_sha256": "def",
+            "architecture": "gemma4", "parameters": "8.0B",
+            "quantization": "Q4_K_M", "source": "test",
+        },
+        "model_identity_post_run_check": {"status": "match"},
+        "dataset": "SWE-bench/SWE-bench_Lite",
+        "run_id": "r", "n_instances": 0, "offset": 0,
+        "conditions": [], "timestamp": "t", "skip_harness": False,
+        "results": [], "summary": {},
+        # Intentionally no grounding / retry_on_reject.
+    }
+    p = tmp_path / "legacy.json"
+    p.write_text(json.dumps(artifact))
+
+    def fake_resolve(tag):
+        return {
+            "tag": tag, "digest": "abc", "blob_sha256": "def",
+            "architecture": "gemma4", "parameters": "8.0B",
+            "quantization": "Q4_K_M", "source": "test",
+        }
+
+    with patch(
+        "eval.swebench_phase2._resolve_model_identity",
+        side_effect=fake_resolve,
+    ):
+        _rewrite_envelope(p, "gemma4:latest", cli_model_was_default=True)
+
+    after = json.loads(p.read_text())
+    assert after["grounding"] is False
+    assert after["retry_on_reject"] is False
 
 
 def test_rewrite_envelope_writes_to_output_path_when_provided(tmp_path):

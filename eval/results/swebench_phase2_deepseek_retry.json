@@ -1,19 +1,19 @@
 {
-  "model": "gemma4:latest",
+  "model": "deepseek-r1:8b",
   "model_identity": {
-    "tag": "gemma4:latest",
+    "tag": "deepseek-r1:8b",
     "source": "ollama list / ollama show / ollama show --modelfile",
-    "digest": "c6eb396dbd59",
-    "blob_sha256": "4c27e0f5b5adf02ac956c7322bd2ee7636fe3f45a8512c9aba5385242cb6e09a",
-    "architecture": "gemma4",
-    "parameters": "8.0B",
+    "digest": "6995872bfe4c",
+    "blob_sha256": "e6a7edc1a4d7d9b2de136a221a57336b76316cfe53a252aeba814496c5ae439d",
+    "architecture": "qwen3",
+    "parameters": "8.2B",
     "quantization": "Q4_K_M"
   },
   "model_identity_post_run_check": {
     "status": "match"
   },
   "dataset": "SWE-bench/SWE-bench_Lite",
-  "run_id": "phase2_20260417_172740",
+  "run_id": "phase2_20260417_233858",
   "n_instances": 10,
   "offset": 0,
   "conditions": [
@@ -21,8 +21,10 @@
     "organism",
     "langgraph"
   ],
-  "timestamp": "2026-04-17T17:58:26.320131+00:00",
+  "timestamp": "2026-04-18T19:12:07.006194+00:00",
   "skip_harness": false,
+  "grounding": true,
+  "retry_on_reject": true,
   "results": [
     {
       "instance_id": "astropy__astropy-12907",
@@ -30,11 +32,11 @@
       "condition": "baseline",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 0.0,
-      "eval_status": "runtime_error",
-      "error_reason": "TimeoutError: openai-compatible request timed out",
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "latency_ms": 519483.8837920106,
+      "eval_status": "empty_patch",
+      "error_reason": null,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -43,11 +45,11 @@
       "condition": "baseline",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 188573.4160420252,
+      "latency_ms": 1664037.341749994,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "overlong_hunk",
       "retry_recovered": false
     },
     {
@@ -56,11 +58,11 @@
       "condition": "baseline",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 102528.12991599785,
+      "latency_ms": 1720279.875791981,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "truncated_hunk",
       "retry_recovered": false
     },
     {
@@ -69,11 +71,11 @@
       "condition": "baseline",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 0.0,
-      "eval_status": "runtime_error",
-      "error_reason": "TimeoutError: openai-compatible request timed out",
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "latency_ms": 1335763.1713749724,
+      "eval_status": "empty_patch",
+      "error_reason": null,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -82,11 +84,11 @@
       "condition": "baseline",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 92285.07899999386,
+      "latency_ms": 1484008.6174589815,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -95,11 +97,11 @@
       "condition": "baseline",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 203028.38266594335,
+      "latency_ms": 1504576.5512080397,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -108,11 +110,11 @@
       "condition": "baseline",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 81377.14420905104,
+      "latency_ms": 796949.0487499861,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "overlong_hunk",
       "retry_recovered": false
     },
     {
@@ -121,24 +123,24 @@
       "condition": "baseline",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 70401.24916698551,
+      "latency_ms": 803274.3056670297,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "overlong_hunk",
       "retry_recovered": false
     },
     {
       "instance_id": "django__django-11001",
       "repo": "django/django",
       "condition": "baseline",
-      "patch_extracted": true,
-      "patch_size_bytes": 490,
-      "latency_ms": 103740.48733297968,
-      "eval_status": "unresolved",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 494181.71570898267,
+      "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -147,11 +149,11 @@
       "condition": "baseline",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 202583.25166697614,
+      "latency_ms": 516584.2168329982,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -160,11 +162,11 @@
       "condition": "organism",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 184130.4173329845,
+      "latency_ms": 547574.8927919776,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -173,11 +175,11 @@
       "condition": "organism",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 193370.71779201506,
+      "latency_ms": 1557233.6340000038,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -186,11 +188,11 @@
       "condition": "organism",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 191797.11474996293,
+      "latency_ms": 1659119.8811249924,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -199,11 +201,11 @@
       "condition": "organism",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 204188.26170900138,
+      "latency_ms": 1903446.7459580046,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -212,11 +214,11 @@
       "condition": "organism",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 184448.07662500534,
+      "latency_ms": 1710555.077707977,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -225,11 +227,11 @@
       "condition": "organism",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 166907.5869580265,
+      "latency_ms": 1540100.532707991,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -238,11 +240,11 @@
       "condition": "organism",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 104637.16599997133,
+      "latency_ms": 365492.01129202265,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -251,11 +253,11 @@
       "condition": "organism",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 113032.0800000336,
+      "latency_ms": 422843.95837498596,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -264,11 +266,11 @@
       "condition": "organism",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 174194.1332499846,
+      "latency_ms": 477085.24716697866,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -277,11 +279,11 @@
       "condition": "organism",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 188248.38370800717,
+      "latency_ms": 549170.3400000115,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -290,11 +292,11 @@
       "condition": "langgraph",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 154389.57270799438,
+      "latency_ms": 1033578.2629580353,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -303,11 +305,11 @@
       "condition": "langgraph",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 196261.97041699197,
+      "latency_ms": 1691003.148082993,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -316,11 +318,11 @@
       "condition": "langgraph",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 196172.55970899714,
+      "latency_ms": 1865116.8661250267,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -329,11 +331,11 @@
       "condition": "langgraph",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 188795.38441699697,
+      "latency_ms": 1628429.4727919623,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -342,11 +344,11 @@
       "condition": "langgraph",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 188385.83229196956,
+      "latency_ms": 1469437.3460419592,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -355,11 +357,11 @@
       "condition": "langgraph",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 169160.41708301054,
+      "latency_ms": 1166461.9917080272,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -368,11 +370,11 @@
       "condition": "langgraph",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 93325.41350001702,
+      "latency_ms": 960333.1987079582,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -381,11 +383,11 @@
       "condition": "langgraph",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 131386.0181249911,
+      "latency_ms": 430007.59887497406,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -394,11 +396,11 @@
       "condition": "langgraph",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 203444.32179100113,
+      "latency_ms": 498191.9229589985,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     },
     {
@@ -407,33 +409,33 @@
       "condition": "langgraph",
       "patch_extracted": false,
       "patch_size_bytes": 0,
-      "latency_ms": 196769.38212499954,
+      "latency_ms": 559139.6633340046,
       "eval_status": "empty_patch",
       "error_reason": null,
-      "sanitize_reason": "",
-      "retry_attempted": false,
+      "retry_attempted": true,
+      "sanitize_reason": "empty_extraction",
       "retry_recovered": false
     }
   ],
   "summary": {
     "baseline": {
       "n": 10,
-      "patch_extracted": 1,
+      "patch_extracted": 0,
       "status_counts": {
         "resolved": 0,
-        "unresolved": 1,
+        "unresolved": 0,
         "error": 0,
-        "empty_patch": 7,
-        "runtime_error": 2,
+        "empty_patch": 10,
+        "runtime_error": 0,
         "not_evaluated": 0
       },
-      "evaluated": 1,
+      "evaluated": 0,
       "resolved": 0,
-      "resolved_rate": 0.0,
+      "resolved_rate": null,
       "harness_state": "ok",
-      "mean_latency_ms": 130565.0,
-      "n_runtime_errors": 2,
-      "n_completed": 8
+      "mean_latency_ms": 1083914.0,
+      "n_runtime_errors": 0,
+      "n_completed": 10
     },
     "organism": {
       "n": 10,
@@ -450,7 +452,7 @@
       "resolved": 0,
       "resolved_rate": null,
       "harness_state": "ok",
-      "mean_latency_ms": 170495.0,
+      "mean_latency_ms": 1073262.0,
       "n_runtime_errors": 0,
       "n_completed": 10
     },
@@ -469,11 +471,9 @@
       "resolved": 0,
       "resolved_rate": null,
       "harness_state": "ok",
-      "mean_latency_ms": 171809.0,
+      "mean_latency_ms": 1130170.0,
       "n_runtime_errors": 0,
       "n_completed": 10
     }
-  },
-  "grounding": true,
-  "retry_on_reject": false
+  }
 }
