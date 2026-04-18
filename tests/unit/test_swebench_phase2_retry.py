@@ -61,17 +61,23 @@ def test_format_retry_max_default_is_one():
 
 
 def test_sanitize_for_submission_no_callback_is_old_behavior():
-    """With no callback, a reject returns "" just like v0.34.5.
-    This is the contract that gates retry behind --retry-on-reject."""
-    result = _sanitize_for_submission(
+    """With no callback, a reject yields ``patch=""`` like v0.34.5.
+    retry_attempted must be False so the artifact reflects "never
+    tried" rather than conflating with "tried and failed". Review
+    #757 expanded the return shape from ``str`` to ``SanitizeOutcome``."""
+    outcome = _sanitize_for_submission(
         PLACEHOLDER_DIFF, "django/django", tree_paths=None,
     )
-    assert result == ""
+    assert outcome.patch == ""
+    assert outcome.reason == "placeholder_hunk"
+    assert outcome.retry_attempted is False
+    assert outcome.retry_recovered is False
 
 
 def test_sanitize_for_submission_callback_fires_on_reject():
     """When the sanitizer rejects, the callback is invoked with the
-    reason code and the original failed output."""
+    reason code and the original failed output, and the returned
+    outcome records retry_attempted=True even on recovery success."""
     seen: dict = {}
 
     def cb(reason: str, failed_output: str) -> str:
@@ -79,48 +85,58 @@ def test_sanitize_for_submission_callback_fires_on_reject():
         seen["failed_output"] = failed_output
         return VALID_DIFF  # pretend the retry succeeded
 
-    result = _sanitize_for_submission(
+    outcome = _sanitize_for_submission(
         PLACEHOLDER_DIFF, "django/django", tree_paths=None,
         retry_callback=cb,
     )
 
     assert seen["reason"] == "placeholder_hunk"
     assert seen["failed_output"] == PLACEHOLDER_DIFF
-    assert result, "successful retry should yield a non-empty patch"
-    assert "--- a/django/foo.py" in result
+    assert outcome.patch, "successful retry should yield a non-empty patch"
+    assert "--- a/django/foo.py" in outcome.patch
+    assert outcome.retry_attempted is True
+    assert outcome.retry_recovered is True
 
 
 def test_sanitize_for_submission_callback_not_fired_on_success():
     """If the first sanitization already succeeds, the retry callback
-    must NOT be invoked (wasted budget, misleading side effects)."""
+    must NOT be invoked (wasted budget, misleading side effects), and
+    retry_attempted must be False in the outcome."""
     calls: list = []
 
     def cb(reason: str, failed_output: str) -> str:
         calls.append(reason)
         return ""
 
-    result = _sanitize_for_submission(
+    outcome = _sanitize_for_submission(
         VALID_DIFF, "django/django", tree_paths=None,
         retry_callback=cb,
     )
 
-    assert result, "valid diff should pass through unchanged"
+    assert outcome.patch, "valid diff should pass through unchanged"
+    assert outcome.reason == ""
+    assert outcome.retry_attempted is False
+    assert outcome.retry_recovered is False
     assert calls == [], f"callback must not fire on success; got {calls}"
 
 
 def test_sanitize_for_submission_retry_also_rejects_returns_empty():
-    """If the retry also produces garbage, the final result is "" —
-    no infinite loops, no fallback to the original failed output."""
+    """If the retry also produces garbage, the outcome has patch=""
+    but retry_attempted=True so the artifact can tell the difference
+    between "tried and failed" and "never tried"."""
     def cb(reason: str, failed_output: str) -> str:
         # The retry produced the SAME rejected output.
         return PLACEHOLDER_DIFF
 
-    result = _sanitize_for_submission(
+    outcome = _sanitize_for_submission(
         PLACEHOLDER_DIFF, "django/django", tree_paths=None,
         retry_callback=cb,
     )
 
-    assert result == ""
+    assert outcome.patch == ""
+    assert outcome.retry_attempted is True
+    assert outcome.retry_recovered is False
+    assert outcome.reason, "reason must be populated so the retry prompt had a target"
 
 
 def test_sanitize_for_submission_retry_cap_enforced():

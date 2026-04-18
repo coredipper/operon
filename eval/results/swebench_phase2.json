@@ -32,7 +32,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 0.0,
       "eval_status": "runtime_error",
-      "error_reason": "TimeoutError: openai-compatible request timed out"
+      "error_reason": "TimeoutError: openai-compatible request timed out",
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "astropy__astropy-14182",
@@ -42,7 +45,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 188573.4160420252,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "astropy__astropy-14365",
@@ -52,7 +58,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 102528.12991599785,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "astropy__astropy-14995",
@@ -62,7 +71,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 0.0,
       "eval_status": "runtime_error",
-      "error_reason": "TimeoutError: openai-compatible request timed out"
+      "error_reason": "TimeoutError: openai-compatible request timed out",
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "astropy__astropy-6938",
@@ -72,7 +84,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 92285.07899999386,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "astropy__astropy-7746",
@@ -82,7 +97,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 203028.38266594335,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "django__django-10914",
@@ -92,7 +110,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 81377.14420905104,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "django__django-10924",
@@ -102,7 +123,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 70401.24916698551,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "django__django-11001",
@@ -112,7 +136,10 @@
       "patch_size_bytes": 490,
       "latency_ms": 103740.48733297968,
       "eval_status": "unresolved",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "django__django-11019",
@@ -122,7 +149,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 202583.25166697614,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "astropy__astropy-12907",
@@ -132,7 +162,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 184130.4173329845,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "astropy__astropy-14182",
@@ -142,7 +175,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 193370.71779201506,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "astropy__astropy-14365",
@@ -152,7 +188,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 191797.11474996293,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "astropy__astropy-14995",
@@ -162,7 +201,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 204188.26170900138,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "astropy__astropy-6938",
@@ -172,7 +214,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 184448.07662500534,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "astropy__astropy-7746",
@@ -182,7 +227,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 166907.5869580265,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "django__django-10914",
@@ -192,7 +240,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 104637.16599997133,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "django__django-10924",
@@ -202,7 +253,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 113032.0800000336,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "django__django-11001",
@@ -212,7 +266,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 174194.1332499846,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "django__django-11019",
@@ -222,7 +279,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 188248.38370800717,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "astropy__astropy-12907",
@@ -232,7 +292,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 154389.57270799438,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "astropy__astropy-14182",
@@ -242,7 +305,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 196261.97041699197,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "astropy__astropy-14365",
@@ -252,7 +318,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 196172.55970899714,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "astropy__astropy-14995",
@@ -262,7 +331,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 188795.38441699697,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "astropy__astropy-6938",
@@ -272,7 +344,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 188385.83229196956,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "astropy__astropy-7746",
@@ -282,7 +357,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 169160.41708301054,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "django__django-10914",
@@ -292,7 +370,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 93325.41350001702,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "django__django-10924",
@@ -302,7 +383,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 131386.0181249911,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "django__django-11001",
@@ -312,7 +396,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 203444.32179100113,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     },
     {
       "instance_id": "django__django-11019",
@@ -322,7 +409,10 @@
       "patch_size_bytes": 0,
       "latency_ms": 196769.38212499954,
       "eval_status": "empty_patch",
-      "error_reason": null
+      "error_reason": null,
+      "sanitize_reason": "",
+      "retry_attempted": false,
+      "retry_recovered": false
     }
   ],
   "summary": {
@@ -383,5 +473,7 @@
       "n_runtime_errors": 0,
       "n_completed": 10
     }
-  }
+  },
+  "grounding": true,
+  "retry_on_reject": false
 }

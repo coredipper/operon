@@ -472,6 +472,8 @@ def test_build_artifact_has_stable_shape():
         "conditions",
         "timestamp",
         "skip_harness",
+        "grounding",          # review #757: persist run-defining flags
+        "retry_on_reject",    # review #757: persist run-defining flags
         "results",
         "summary",
     }

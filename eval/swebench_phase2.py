@@ -29,6 +29,7 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass
+from typing import NamedTuple
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -368,6 +369,25 @@ class Prediction:
     # ``empty_patch`` (sanitizer-rejected legitimate model output)
     # from ``runtime_error`` (model call never completed).
     error_reason: "str | None" = None
+    # Phase C schema additions (review #757): persist sanitizer reason
+    # and retry outcomes in the artifact so downstream readers can
+    # substantiate paper claims about retry effects + reason-code
+    # distributions without re-running the benchmark.
+    #: The final-attempt sanitizer rejection reason. ``""`` if the
+    #: submission passed the sanitizer (or was never extracted). One of
+    #: :data:`eval._patch_sanitizer.SANITIZE_REASONS` when set.
+    sanitize_reason: str = ""
+    #: Whether a format-correction retry was invoked for this
+    #: submission. ``False`` means the first sanitization either
+    #: succeeded or the runner was configured without
+    #: ``--retry-on-reject``.
+    retry_attempted: bool = False
+    #: Whether a retry produced a usable (sanitizer-clean) patch.
+    #: ``False`` in three distinct cases: (a) no retry was attempted,
+    #: (b) retry was attempted and also rejected, (c) retry was
+    #: attempted but the model itself failed to respond. Distinguishing
+    #: (a) from (b)/(c) is what ``retry_attempted`` is for.
+    retry_recovered: bool = False
 
 
 _BASELINE_RULES = (
@@ -468,27 +488,42 @@ def _build_retry_prompt(
     )
 
 
+class SanitizeOutcome(NamedTuple):
+    """Structured result from :func:`_sanitize_for_submission`.
+
+    Exposes enough metadata that the runner can populate the
+    corresponding fields on :class:`Prediction`, so paper claims about
+    retry effects and reason-code distributions are grounded in the
+    committed artifact rather than only in live-run logs. Review #757.
+    """
+    patch: str            # "" iff the submission was unsalvageable
+    reason: str           # final-attempt reason code; "" on success
+    retry_attempted: bool # whether retry_callback was invoked
+    retry_recovered: bool # whether retry produced a usable patch
+
+
 def _sanitize_for_submission(
     raw: str, repo_slug: str,
     tree_paths: "frozenset[str] | None" = None,
     retry_callback=None,
-) -> str:
+) -> SanitizeOutcome:
     """Extract and sanitize a patch from raw model output.
 
     When ``tree_paths`` is provided (``--grounding`` mode), the
     sanitizer also fuzzy-corrects near-miss file paths against the
-    cloned repo. A rejected submission is returned as ``""`` so the
-    harness counts it as ``empty_patch`` rather than a format-error
-    ``error``.
+    cloned repo. A rejected submission returns ``SanitizeOutcome``
+    with ``patch=""``, so the harness counts it as ``empty_patch``
+    rather than a format-error ``error``.
 
     When ``retry_callback`` is provided, a sanitizer rejection does
-    not immediately return ``""``; instead the callback is invoked
-    with ``(reason_code, failed_output)`` and expected to return a
-    fresh raw response from the model. Each retry is sanitized the
-    same way; up to :data:`_FORMAT_RETRY_MAX` retries are attempted.
-    If all retries also fail, ``""`` is returned. When
-    ``retry_callback`` is ``None`` (the v0.34.5-era default), behavior
-    is unchanged.
+    not immediately yield an empty patch; instead the callback is
+    invoked with ``(reason_code, failed_output)`` and expected to
+    return a fresh raw response from the model. Up to
+    :data:`_FORMAT_RETRY_MAX` retries are attempted. If all retries
+    also fail, the returned ``patch`` is ``""`` and ``retry_attempted``
+    is ``True`` so the artifact can distinguish "never tried" from
+    "tried and failed" — a distinction the paper's Phase C claims
+    depend on.
     """
     extracted = extract_patch(raw)
     if not extracted:
@@ -498,17 +533,26 @@ def _sanitize_for_submission(
             return _try_format_retry(
                 raw, repo_slug, tree_paths, retry_callback, "empty_extraction",
             )
-        return ""
+        return SanitizeOutcome(
+            patch="", reason="empty_extraction",
+            retry_attempted=False, retry_recovered=False,
+        )
     cleaned, reason = sanitize_with_reason(
         extracted, repo_slug, tree_paths=tree_paths,
     )
     if cleaned:
-        return cleaned
+        return SanitizeOutcome(
+            patch=cleaned, reason="",
+            retry_attempted=False, retry_recovered=False,
+        )
     print(
         f"  sanitizer: dropped patch for {repo_slug} (reason={reason})"
     )
     if retry_callback is None:
-        return ""
+        return SanitizeOutcome(
+            patch="", reason=reason,
+            retry_attempted=False, retry_recovered=False,
+        )
     return _try_format_retry(
         raw, repo_slug, tree_paths, retry_callback, reason,
     )
@@ -520,22 +564,28 @@ def _try_format_retry(
     tree_paths: "frozenset[str] | None",
     retry_callback,
     reason: str,
-) -> str:
+) -> SanitizeOutcome:
     """Run up to :data:`_FORMAT_RETRY_MAX` format-correction retries.
 
     The callback receives ``(reason, failed_output)`` — the sanitizer's
     rejection code and the raw text that produced it — and returns a
     fresh raw response from the model. Each retry's output is passed
     through the same sanitizer; if any attempt succeeds, its cleaned
-    patch is returned. If all attempts also fail, ``""`` is returned —
-    no fallback to the original failed output.
+    patch is returned with ``retry_recovered=True``. If all attempts
+    also fail, the returned ``patch`` is ``""``; ``retry_attempted``
+    is always ``True`` because this function is only called when the
+    runner has a retry callback configured (gated at the caller).
     """
     current_reason = reason
     last_failed = failed_raw
     for _ in range(_FORMAT_RETRY_MAX):
         retry_raw = retry_callback(current_reason, last_failed)
         if not retry_raw:
-            return ""
+            # Retry model call itself returned empty — stop trying.
+            return SanitizeOutcome(
+                patch="", reason=current_reason,
+                retry_attempted=True, retry_recovered=False,
+            )
         extracted = extract_patch(retry_raw)
         if extracted:
             cleaned, next_reason = sanitize_with_reason(
@@ -543,12 +593,18 @@ def _try_format_retry(
             )
             if cleaned:
                 print(f"  retry recovered patch for {repo_slug}")
-                return cleaned
+                return SanitizeOutcome(
+                    patch=cleaned, reason="",
+                    retry_attempted=True, retry_recovered=True,
+                )
             current_reason = next_reason
         else:
             current_reason = "empty_extraction"
         last_failed = retry_raw
-    return ""
+    return SanitizeOutcome(
+        patch="", reason=current_reason,
+        retry_attempted=True, retry_recovered=False,
+    )
 
 
 def run_baseline(
@@ -573,13 +629,16 @@ def run_baseline(
                 _build_retry_prompt(prompt, reason, failed_output),
             )
 
-    patch = _sanitize_for_submission(
+    outcome = _sanitize_for_submission(
         raw, instance["repo"], g.tree_paths, retry_callback=callback,
     )
     elapsed = (time.monotonic() - t0) * 1000
     return Prediction(
         instance["instance_id"], instance["repo"], "baseline",
-        raw, patch, elapsed, bool(patch),
+        raw, outcome.patch, elapsed, bool(outcome.patch),
+        sanitize_reason=outcome.reason,
+        retry_attempted=outcome.retry_attempted,
+        retry_recovered=outcome.retry_recovered,
     )
 
 
@@ -606,13 +665,16 @@ def run_organism(
                 for sr in retry_result.stage_results
             )
 
-    patch = _sanitize_for_submission(
+    outcome = _sanitize_for_submission(
         full, instance["repo"], g.tree_paths, retry_callback=callback,
     )
     elapsed = (time.monotonic() - t0) * 1000
     return Prediction(
         instance["instance_id"], instance["repo"], "organism",
-        full, patch, elapsed, bool(patch),
+        full, outcome.patch, elapsed, bool(outcome.patch),
+        sanitize_reason=outcome.reason,
+        retry_attempted=outcome.retry_attempted,
+        retry_recovered=outcome.retry_recovered,
     )
 
 
@@ -644,13 +706,16 @@ def run_langgraph(
                 "\n\n".join(retry_parts) if retry_parts else retry_result.output
             )
 
-    patch = _sanitize_for_submission(
+    outcome = _sanitize_for_submission(
         full, instance["repo"], g.tree_paths, retry_callback=callback,
     )
     elapsed = (time.monotonic() - t0) * 1000
     return Prediction(
         instance["instance_id"], instance["repo"], "langgraph",
-        full, patch, elapsed, bool(patch),
+        full, outcome.patch, elapsed, bool(outcome.patch),
+        sanitize_reason=outcome.reason,
+        retry_attempted=outcome.retry_attempted,
+        retry_recovered=outcome.retry_recovered,
     )
 
 
@@ -755,6 +820,8 @@ def build_artifact(
     results: list,
     summary: dict,
     dataset: str = "SWE-bench/SWE-bench_Lite",
+    grounding: bool = False,
+    retry_on_reject: bool = False,
 ) -> dict:
     """Assemble the SWE-bench Phase 2 artifact envelope.
 
@@ -763,6 +830,13 @@ def build_artifact(
     the schema test derives the expected key set from a dummy invocation
     of this function (never from a hand-maintained constant), so writer
     and test cannot drift independently of each other.
+
+    ``grounding`` and ``retry_on_reject`` record the run-defining CLI
+    flags that produced these numbers, so a reader can tell which
+    pipeline produced the artifact without needing the original
+    invocation. Both default to ``False`` so v0.34.x-era callers
+    still produce a valid envelope without plumbing them through.
+    Review #757.
     """
     return {
         "model": model,
@@ -775,6 +849,8 @@ def build_artifact(
         "conditions": conditions,
         "timestamp": timestamp,
         "skip_harness": skip_harness,
+        "grounding": grounding,
+        "retry_on_reject": retry_on_reject,
         "results": results,
         "summary": summary,
     }
@@ -1204,6 +1280,9 @@ def main():
             "latency_ms": p.latency_ms,
             "eval_status": _result_status(p),
             "error_reason": p.error_reason,
+            "sanitize_reason": p.sanitize_reason,
+            "retry_attempted": p.retry_attempted,
+            "retry_recovered": p.retry_recovered,
         }
         for cond in conditions for p in preds_by_cond[cond]
     ]
@@ -1219,6 +1298,8 @@ def main():
         skip_harness=args.skip_harness,
         results=results,
         summary=summary,
+        grounding=args.grounding,
+        retry_on_reject=args.retry_on_reject,
     )
     out_path = Path(
         args.output if args.output else "eval/results/swebench_phase2.json"
