@@ -1,0 +1,387 @@
+{
+  "model": "deepseek-r1:8b",
+  "model_identity": {
+    "tag": "deepseek-r1:8b",
+    "source": "ollama list / ollama show / ollama show --modelfile",
+    "digest": "6995872bfe4c",
+    "blob_sha256": "e6a7edc1a4d7d9b2de136a221a57336b76316cfe53a252aeba814496c5ae439d",
+    "architecture": "qwen3",
+    "parameters": "8.2B",
+    "quantization": "Q4_K_M"
+  },
+  "model_identity_post_run_check": {
+    "status": "match"
+  },
+  "dataset": "SWE-bench/SWE-bench_Lite",
+  "run_id": "phase2_20260417_233858",
+  "n_instances": 10,
+  "offset": 0,
+  "conditions": [
+    "baseline",
+    "organism",
+    "langgraph"
+  ],
+  "timestamp": "2026-04-18T18:48:40.767386+00:00",
+  "skip_harness": false,
+  "results": [
+    {
+      "instance_id": "astropy__astropy-12907",
+      "repo": "astropy/astropy",
+      "condition": "baseline",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 519483.8837920106,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "astropy__astropy-14182",
+      "repo": "astropy/astropy",
+      "condition": "baseline",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 1664037.341749994,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "astropy__astropy-14365",
+      "repo": "astropy/astropy",
+      "condition": "baseline",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 1720279.875791981,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "astropy__astropy-14995",
+      "repo": "astropy/astropy",
+      "condition": "baseline",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 1335763.1713749724,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "astropy__astropy-6938",
+      "repo": "astropy/astropy",
+      "condition": "baseline",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 1484008.6174589815,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "astropy__astropy-7746",
+      "repo": "astropy/astropy",
+      "condition": "baseline",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 1504576.5512080397,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "django__django-10914",
+      "repo": "django/django",
+      "condition": "baseline",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 796949.0487499861,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "django__django-10924",
+      "repo": "django/django",
+      "condition": "baseline",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 803274.3056670297,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "django__django-11001",
+      "repo": "django/django",
+      "condition": "baseline",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 494181.71570898267,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "django__django-11019",
+      "repo": "django/django",
+      "condition": "baseline",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 516584.2168329982,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "astropy__astropy-12907",
+      "repo": "astropy/astropy",
+      "condition": "organism",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 547574.8927919776,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "astropy__astropy-14182",
+      "repo": "astropy/astropy",
+      "condition": "organism",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 1557233.6340000038,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "astropy__astropy-14365",
+      "repo": "astropy/astropy",
+      "condition": "organism",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 1659119.8811249924,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "astropy__astropy-14995",
+      "repo": "astropy/astropy",
+      "condition": "organism",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 1903446.7459580046,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "astropy__astropy-6938",
+      "repo": "astropy/astropy",
+      "condition": "organism",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 1710555.077707977,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "astropy__astropy-7746",
+      "repo": "astropy/astropy",
+      "condition": "organism",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 1540100.532707991,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "django__django-10914",
+      "repo": "django/django",
+      "condition": "organism",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 365492.01129202265,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "django__django-10924",
+      "repo": "django/django",
+      "condition": "organism",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 422843.95837498596,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "django__django-11001",
+      "repo": "django/django",
+      "condition": "organism",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 477085.24716697866,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "django__django-11019",
+      "repo": "django/django",
+      "condition": "organism",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 549170.3400000115,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "astropy__astropy-12907",
+      "repo": "astropy/astropy",
+      "condition": "langgraph",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 1033578.2629580353,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "astropy__astropy-14182",
+      "repo": "astropy/astropy",
+      "condition": "langgraph",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 1691003.148082993,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "astropy__astropy-14365",
+      "repo": "astropy/astropy",
+      "condition": "langgraph",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 1865116.8661250267,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "astropy__astropy-14995",
+      "repo": "astropy/astropy",
+      "condition": "langgraph",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 1628429.4727919623,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "astropy__astropy-6938",
+      "repo": "astropy/astropy",
+      "condition": "langgraph",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 1469437.3460419592,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "astropy__astropy-7746",
+      "repo": "astropy/astropy",
+      "condition": "langgraph",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 1166461.9917080272,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "django__django-10914",
+      "repo": "django/django",
+      "condition": "langgraph",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 960333.1987079582,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "django__django-10924",
+      "repo": "django/django",
+      "condition": "langgraph",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 430007.59887497406,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "django__django-11001",
+      "repo": "django/django",
+      "condition": "langgraph",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 498191.9229589985,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    },
+    {
+      "instance_id": "django__django-11019",
+      "repo": "django/django",
+      "condition": "langgraph",
+      "patch_extracted": false,
+      "patch_size_bytes": 0,
+      "latency_ms": 559139.6633340046,
+      "eval_status": "empty_patch",
+      "error_reason": null
+    }
+  ],
+  "summary": {
+    "baseline": {
+      "n": 10,
+      "patch_extracted": 0,
+      "status_counts": {
+        "resolved": 0,
+        "unresolved": 0,
+        "error": 0,
+        "empty_patch": 10,
+        "runtime_error": 0,
+        "not_evaluated": 0
+      },
+      "evaluated": 0,
+      "resolved": 0,
+      "resolved_rate": null,
+      "harness_state": "ok",
+      "mean_latency_ms": 1083914.0,
+      "n_runtime_errors": 0,
+      "n_completed": 10
+    },
+    "organism": {
+      "n": 10,
+      "patch_extracted": 0,
+      "status_counts": {
+        "resolved": 0,
+        "unresolved": 0,
+        "error": 0,
+        "empty_patch": 10,
+        "runtime_error": 0,
+        "not_evaluated": 0
+      },
+      "evaluated": 0,
+      "resolved": 0,
+      "resolved_rate": null,
+      "harness_state": "ok",
+      "mean_latency_ms": 1073262.0,
+      "n_runtime_errors": 0,
+      "n_completed": 10
+    },
+    "langgraph": {
+      "n": 10,
+      "patch_extracted": 0,
+      "status_counts": {
+        "resolved": 0,
+        "unresolved": 0,
+        "error": 0,
+        "empty_patch": 10,
+        "runtime_error": 0,
+        "not_evaluated": 0
+      },
+      "evaluated": 0,
+      "resolved": 0,
+      "resolved_rate": null,
+      "harness_state": "ok",
+      "mean_latency_ms": 1130170.0,
+      "n_runtime_errors": 0,
+      "n_completed": 10
+    }
+  }
+}

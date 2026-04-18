@@ -113,4 +113,55 @@ The single survivor, \texttt{django/django-11001} (baseline), reached the harnes
 
 \paragraph{What this rerun does and does not say.} It does say: at 8B / Q4\_K\_M, the model's ability to emit \texttt{git apply}-clean unified diffs is the binding constraint on SWE-bench-lite resolution, and three-stage decomposition does not relax it. It does not say that the organism architecture is intrinsically worse than direct prompting --- with 1 vs.\ 0 evaluated instances, the experiment is still under-powered to discriminate. The harness-level \emph{structural} guarantees reported in Sections~\ref{sec:preservation} and in the escalation experiment are unaffected: they are $\mathrm{Know}$-level properties verified independently of SWE-bench task resolution.
 
-This motivates Section~\ref{sec:conclusion}: the demonstrated transfer value of categorical harness engineering in this paper is in \emph{preservation} (certificate identity across compilers) and \emph{primitive reuse} (escalation), not in task-resolution gains on SWE-bench-lite at this model scale. The next experimental wedge for this benchmark is a stronger model or a format-correction retry loop, not more harness infrastructure.
+This motivates Section~\ref{sec:conclusion}: the demonstrated transfer value of categorical harness engineering in this paper is in \emph{preservation} (certificate identity across compilers) and \emph{primitive reuse} (escalation), not in task-resolution gains on SWE-bench-lite at this model scale.
+
+\subsubsection{Phase C: Cross-Model Check with Format-Correction Retry}
+\label{sec:swebench-phase-c}
+
+The v0.34.5 result above named two follow-up wedges: a stronger model and a format-correction retry loop. Paper 5's released code (v0.35.0) implements the retry and runs a cross-model check against a second locally-available 8B model, answering both wedges at once. The aim is not a better SWE-bench score --- prior results already place this outside the reach of 8B-class local models --- but a test of whether the 8B format-discipline ceiling reported above generalizes across training regimes, and whether a reason-coded retry prompt can recover any of the sanitizer-rejected submissions.
+
+\paragraph{Setup.} \texttt{deepseek-r1:8b} via Ollama (tag \texttt{deepseek-r1:8b}, digest \texttt{6995872bfe4c}, blob \texttt{sha256:e6a7edc1}, architecture \texttt{qwen3} --- the Ollama weight is the DeepSeek-R1 distillation onto a Qwen3-8B base, 8.2B parameters, Q4\_K\_M quantization, 131{,}072 context). Same 10 SWE-bench-lite instances as the v0.34.5 run, same grounded prompt pipeline, three conditions (baseline, organism, langgraph). The new flag \texttt{-{}-retry-on-reject} is active: when the sanitizer rejects a submission, the runner re-prompts the model once with the specific rejection reason code (one of \texttt{placeholder\_hunk}, \texttt{truncated\_hunk}, \texttt{overlong\_hunk}, \texttt{path\_not\_found}, \texttt{ambiguous\_path}, \texttt{empty\_extraction}, \texttt{malformed\_metadata}) embedded in the retry prompt, followed by the failed output verbatim. Artifact at \texttt{eval/results/swebench\_phase2\_deepseek\_retry.json}.
+
+\paragraph{Results (deepseek-r1 with retry, per-condition, 10 instances each).}
+
+\begin{center}
+\small
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+\textbf{Condition} & \textbf{Resolved} & \textbf{Unresolved} & \textbf{Sanitizer-rejected} & \textbf{Runtime error} & \textbf{Evaluated} & \textbf{Mean latency} \\
+\midrule
+baseline    & 0 & 0 & 10 & 0 & 0/10 & 1084~s (18~min) \\
+organism    & 0 & 0 & 10 & 0 & 0/10 & 1073~s (18~min) \\
+langgraph   & 0 & 0 & 10 & 0 & 0/10 & 1130~s (19~min) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Zero submissions reached the harness under any condition. Zero retry-recovered patches across all 30 submissions, even with targeted reason-code prompts. Zero runtime errors (the 900~s timeout introduced in v0.34.5 absorbs the long \texttt{<think>} blocks reasoning models produce; the mean per-call latency is 18--19~min vs gemma4's 2--3~min, but every call completed cleanly).
+
+\paragraph{Comparison with gemma4 v0.34.5.}
+
+\begin{center}
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & \textbf{gemma4:latest (v0.34.5)} & \textbf{deepseek-r1:8b (v0.35.0)} \\
+\midrule
+Total evaluated                   & 1/30 & 0/30 \\
+Sanitizer-rejected                & 27   & 30 \\
+Runtime errors                    & 2    & 0 \\
+Resolved                          & 0    & 0 \\
+Retry active                      & no   & yes \\
+Retry-recovered patches           & ---  & 0 \\
+Mean latency (baseline, completed)& 131~s & 1084~s \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Two observations.
+
+First, \textbf{the cross-model ceiling is sharp.} Both 8B models (gemma4 instruction-tuned, deepseek-r1 reasoning-distilled-onto-Qwen3) produce zero resolved instances. Gemma4 crossed the sanitizer once; deepseek-r1 crossed it zero times. The single v0.34.5 ``survivor'' (\texttt{django-11001} baseline, \texttt{unresolved}) was gemma4-specific: deepseek-r1 also could not produce a \texttt{git apply}-clean diff for that instance under any of the three conditions. The 8B-class format-discipline ceiling reported in v0.34.5 is not a single-model artifact.
+
+Second, \textbf{retry-with-reason-code did not break the ceiling.} Across 30 submissions, every sanitizer rejection was followed by a retry that was also rejected --- zero ``retry recovered'' events in the logs. The retry mechanism is not broken: the reason-code vocabulary fires (we observed \texttt{overlong\_hunk} and \texttt{truncated\_hunk} in the live logs; the remaining codes in \texttt{SANITIZE\_REASONS} are exercised by unit tests), the retry callback is invoked exactly when expected, and the retry prompts embed the reason and the failed output verbatim with reason-specific guidance (``use real integer line numbers'' for \texttt{placeholder\_hunk}; ``use exact paths from the repository context'' for \texttt{path\_not\_found}; etc.). What the retry cannot do is move the model across the capability boundary. At 8B, diff-format failure appears not to be \emph{mistake-that-can-be-corrected} but \emph{cannot-produce-format-at-all}: each retry produces a different shape of malformed output, not a correction of the first. This is a sharper negative result than the v0.34.5 paper predicted (we suggested retry ``might recover 20--40\% of sanitizer drops''); at 8B, it recovers zero.
+
+\paragraph{What Phase C does and does not say.} It says: (i)~the 8B format-discipline ceiling holds across training regimes, (ii)~reasoning-distilled training does not, on its own, improve diff-format production, (iii)~retry-with-targeted-guidance is the wrong lever for a capability ceiling and requires a model that is at least close to producing correct output --- which 8B models largely are not. It does not say retry is universally useless; stronger models that make occasional format mistakes may recover meaningfully. Cloud-GPU reruns against a 70B class model are the natural next wedge, outside this paper's local-only scope. The patch-apply pipeline (sanitizer + repo grounding + reason-coded retry) is instrumented for exactly that follow-up.
