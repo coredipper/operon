@@ -939,6 +939,13 @@ def _rewrite_envelope(
         results=existing["results"],
         summary=existing["summary"],
         dataset=existing.get("dataset", "SWE-bench/SWE-bench_Lite"),
+        # Review #758: the run-defining flags must survive envelope
+        # rewrite. Without this, rewriting for envelope freshness
+        # silently resets both flags to False and corrupts the record
+        # of what pipeline produced the results. Pre-flag artifacts
+        # (no key present) default to False.
+        grounding=bool(existing.get("grounding", False)),
+        retry_on_reject=bool(existing.get("retry_on_reject", False)),
     )
     write_to = output_path if output_path is not None else path
     write_to.parent.mkdir(parents=True, exist_ok=True)

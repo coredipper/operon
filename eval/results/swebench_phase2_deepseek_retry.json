@@ -21,10 +21,10 @@
     "organism",
     "langgraph"
   ],
-  "timestamp": "2026-04-18T19:07:15.972497+00:00",
+  "timestamp": "2026-04-18T19:12:07.006194+00:00",
   "skip_harness": false,
-  "grounding": false,
-  "retry_on_reject": false,
+  "grounding": true,
+  "retry_on_reject": true,
   "results": [
     {
       "instance_id": "astropy__astropy-12907",
