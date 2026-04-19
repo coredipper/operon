@@ -362,7 +362,8 @@ def certificate_from_dict(d: dict[str, Any]) -> Certificate:
     if fn is None:
         raise KeyError(
             f"No verify function registered for theorem {theorem!r}. "
-            f"Known theorems: {sorted(_VERIFY_REGISTRY)}"
+            f"Known theorems: "
+            f"{sorted(set(_VERIFY_REGISTRY) | set(_THEOREM_FN_PATHS))}"
         )
     return Certificate(
         theorem=theorem,
