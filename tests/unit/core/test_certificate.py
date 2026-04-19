@@ -440,6 +440,123 @@ class TestBehavioralStability:
         assert result.holds is False
 
 
+class TestBehavioralStabilityWindowed:
+    """Sibling of TestBehavioralStability for rolling-window detectors.
+
+    The windowed verifier stores one mean per violating rolling window
+    (not a flattened history) and checks ``max(signal_values) <= threshold``.
+    Used by ``operon-langgraph-gates`` and ``operon-openhands-gates`` to
+    keep cert replay faithful to per-window detection semantics.
+    """
+
+    def test_verify_holds_when_all_windows_within_bound(self):
+        from operon_ai.core.certificate import _verify_behavioral_stability_windowed
+
+        cert = Certificate(
+            theorem="behavioral_stability_windowed",
+            parameters={"signal_values": (0.1, 0.2, 0.15), "threshold": 0.5},
+            conclusion="test",
+            source="test",
+            _verify_fn=_verify_behavioral_stability_windowed,
+        )
+        result = cert.verify()
+        assert result.holds is True
+        assert result.evidence["max"] == 0.2
+        assert result.evidence["mean"] == 0.15
+        assert result.evidence["n"] == 3
+
+    def test_verify_fails_when_any_window_above_threshold(self):
+        from operon_ai.core.certificate import _verify_behavioral_stability_windowed
+
+        cert = Certificate(
+            theorem="behavioral_stability_windowed",
+            parameters={"signal_values": (0.3, 0.6, 0.4), "threshold": 0.5},
+            conclusion="test",
+            source="test",
+            _verify_fn=_verify_behavioral_stability_windowed,
+        )
+        result = cert.verify()
+        assert result.holds is False
+        assert result.evidence["max"] == 0.6
+
+    def test_verify_treats_threshold_equality_as_stable(self):
+        """Boundary: ``<=`` mirrors detection's strict ``<``. When a
+        window mean is exactly at the stability threshold, the detector
+        treats the complementary integral as stable (``integral >= τ``),
+        so the verifier must agree."""
+        from operon_ai.core.certificate import _verify_behavioral_stability_windowed
+
+        for window_mean, expected_holds in [
+            (0.799, True),   # below threshold — stable
+            (0.800, True),   # exactly at threshold — stable (inclusive)
+            (0.801, False),  # above threshold — unstable
+        ]:
+            cert = Certificate(
+                theorem="behavioral_stability_windowed",
+                parameters={"signal_values": (window_mean,), "threshold": 0.8},
+                conclusion="test",
+                source="test",
+                _verify_fn=_verify_behavioral_stability_windowed,
+            )
+            assert cert.verify().holds is expected_holds, (
+                f"expected holds={expected_holds} for window_mean={window_mean}"
+            )
+
+    def test_verify_rejects_overlapping_window_flat_mean_blind_spot(self):
+        """Overlapping rolling windows weight interior samples more than a
+        flat mean does. With ``window=2, critical_duration=2`` and
+        severities ``[0.61, 1.0, 0.61]``, both window means are ``0.805``
+        (detection fires against stability threshold ``0.8``), but a
+        flat mean over the union is only ``0.74`` and would incorrectly
+        say stability held. The windowed verifier takes per-window means
+        directly, so it returns holds=False as expected.
+        """
+        from operon_ai.core.certificate import _verify_behavioral_stability_windowed
+
+        cert = Certificate(
+            theorem="behavioral_stability_windowed",
+            parameters={"signal_values": (0.805, 0.805), "threshold": 0.8},
+            conclusion="test",
+            source="test",
+            _verify_fn=_verify_behavioral_stability_windowed,
+        )
+        result = cert.verify()
+        assert result.holds is False
+        assert result.evidence["max"] == 0.805
+
+    def test_verify_rejects_empty_evidence_as_malformed(self):
+        """Empty ``signal_values`` is not vacuous stability — emitters
+        that can legitimately produce a windowed cert always carry at
+        least one violating window. Treat empty as malformed."""
+        from operon_ai.core.certificate import _verify_behavioral_stability_windowed
+
+        cert = Certificate(
+            theorem="behavioral_stability_windowed",
+            parameters={"signal_values": (), "threshold": 0.8},
+            conclusion="test",
+            source="test",
+            _verify_fn=_verify_behavioral_stability_windowed,
+        )
+        result = cert.verify()
+        assert result.holds is False
+        assert result.evidence["reason"] == "empty_evidence"
+        assert result.evidence["n"] == 0
+
+    def test_theorem_resolves_without_prior_import(self):
+        """The registry entry must let deserialized certs round-trip
+        without any sibling package being imported. This is the core
+        reason for upstreaming the verifier — sibling packages no longer
+        need to call ``register_verify_fn`` as an import-time side effect.
+        """
+        from operon_ai.core.certificate import (
+            _resolve_verify_fn,
+            _verify_behavioral_stability_windowed,
+        )
+
+        resolved = _resolve_verify_fn("behavioral_stability_windowed")
+        assert resolved is _verify_behavioral_stability_windowed
+
+
 class TestBehavioralNoAnomaly:
     def test_verify_holds(self):
         from operon_ai.core.certificate import _verify_behavioral_no_anomaly
