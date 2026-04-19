@@ -175,6 +175,10 @@ _THEOREM_FN_PATHS: dict[str, tuple[str, str]] = {
     # Behavioral certificates
     "behavioral_quality": ("operon_ai.core.certificate", "_verify_behavioral_quality"),
     "behavioral_stability": ("operon_ai.core.certificate", "_verify_behavioral_stability"),
+    "behavioral_stability_windowed": (
+        "operon_ai.core.certificate",
+        "_verify_behavioral_stability_windowed",
+    ),
     "behavioral_no_anomaly": ("operon_ai.core.certificate", "_verify_behavioral_no_anomaly"),
 }
 
@@ -208,6 +212,47 @@ def _verify_behavioral_stability(params: Mapping[str, Any]) -> tuple[bool, dict[
     return mean_v < threshold, {
         "mean": round(mean_v, 4),
         "max": round(max(values), 4),
+        "n": len(values),
+    }
+
+
+def _verify_behavioral_stability_windowed(
+    params: Mapping[str, Any],
+) -> tuple[bool, dict[str, Any]]:
+    """Replay: every windowed-signal mean is within the stability bound.
+
+    Stable ⟺ ``max(signal_values) <= threshold``.
+
+    Sibling of :func:`_verify_behavioral_stability` for rolling-window
+    detectors. ``signal_values`` is a sequence of per-window means — one
+    entry per violating window — and the predicate is the max-based
+    inclusive bound rather than a flattened-history mean. This preserves
+    the per-window structure that a rolling-window detector operates on;
+    a flat mean over the union of overlapping windows weights interior
+    samples more heavily than any individual window's mean and can
+    disagree with detection.
+
+    ``threshold`` is the stability threshold in the signal domain (e.g.
+    ``1 - τ_detect`` when the detector's τ is in the complementary domain).
+    The ``<=`` (not ``<``) mirrors a strict ``< τ_detect`` detection
+    predicate: ``integral < τ`` ⟺ ``stable ⟺ integral >= τ`` ⟺
+    ``mean(signal) <= 1 - τ``, which is inclusive at the boundary.
+
+    Empty ``signal_values`` is treated as malformed evidence (``holds=False``
+    with ``reason="empty_evidence"``). A stagnation certificate without
+    per-window evidence is a contradiction in terms; emitters that can
+    legitimately produce one already enforce ``len(signal_values) >= 1``
+    at construction time.
+    """
+    values = list(params["signal_values"])
+    threshold = params["threshold"]
+    if not values:
+        return False, {"max": 0.0, "mean": 0.0, "n": 0, "reason": "empty_evidence"}
+    max_v = max(values)
+    mean_v = sum(values) / len(values)
+    return max_v <= threshold, {
+        "max": round(max_v, 4),
+        "mean": round(mean_v, 4),
         "n": len(values),
     }
 
