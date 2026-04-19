@@ -621,6 +621,60 @@ class TestPublicTheoremResolution:
                 source="test",
             )
 
+    def test_from_theorem_error_lists_both_registries_even_on_cold_process(self):
+        """Regression for roborev #791 Low.
+
+        The ``KeyError`` raised when a theorem is unknown must enumerate
+        theorems from BOTH ``_VERIFY_REGISTRY`` (dynamic) and
+        ``_THEOREM_FN_PATHS`` (static built-ins). On a cold process where
+        no theorem has been resolved yet, ``_VERIFY_REGISTRY`` is empty
+        but several built-ins (e.g. ``behavioral_stability``,
+        ``behavioral_stability_windowed``) are available through the path
+        map. The error message must surface those to the user, not say
+        ``Known theorems: []``.
+        """
+        import pytest
+
+        # Use a subprocess to guarantee a cold ``_VERIFY_REGISTRY`` —
+        # earlier tests in this session will have populated it by now
+        # via theorem resolutions.
+        import subprocess
+        import sys
+
+        probe = (
+            "from operon_ai.core.certificate import Certificate\n"
+            "try:\n"
+            "    Certificate.from_theorem(\n"
+            "        theorem='definitely_not_a_real_theorem',\n"
+            "        parameters={'x': 1},\n"
+            "        conclusion='t',\n"
+            "        source='t',\n"
+            "    )\n"
+            "except KeyError as e:\n"
+            "    msg = str(e)\n"
+            "else:\n"
+            "    raise SystemExit('expected KeyError')\n"
+            "\n"
+            "# The error must name at least the built-in behavioral theorems\n"
+            "# that live in _THEOREM_FN_PATHS, proving we didn't restrict\n"
+            "# the listing to _VERIFY_REGISTRY only.\n"
+            "assert 'behavioral_stability' in msg, f'missing built-in: {msg!r}'\n"
+            "assert 'behavioral_stability_windowed' in msg, (\n"
+            "    f'missing built-in: {msg!r}'\n"
+            ")\n"
+            "print('ok')\n"
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", probe],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        assert result.returncode == 0, (
+            f"subprocess failed:\nstdout: {result.stdout}\nstderr: {result.stderr}"
+        )
+        assert result.stdout.strip().endswith("ok")
+
     def test_from_theorem_round_trip_matches_direct_construction(self):
         """Certs built via ``from_theorem`` must have the same verify
         behavior as certs built via the public constructor — the factory
