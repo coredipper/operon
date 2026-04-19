@@ -699,6 +699,51 @@ class TestPublicTheoremResolution:
         assert f_result.holds == d_result.holds
         assert f_result.evidence == d_result.evidence
 
+    def test_certificate_from_dict_error_lists_both_registries_cold(self):
+        """Regression for roborev #794 Low.
+
+        ``certificate_from_dict`` (the deserialization path) must use the
+        same union-of-registries diagnostic as ``Certificate.from_theorem``.
+        The earlier #791 fix only updated the classmethod; this test pins
+        that ``certificate_from_dict`` got the same treatment, and does
+        so on a cold-process path — which is the exact scenario that
+        matters (deserializing a cert somewhere other than where it was
+        produced).
+        """
+        import subprocess
+        import sys
+
+        probe = (
+            "from operon_ai.core.certificate import certificate_from_dict\n"
+            "try:\n"
+            "    certificate_from_dict({\n"
+            "        'theorem': 'definitely_not_a_real_theorem',\n"
+            "        'parameters': {'x': 1},\n"
+            "        'conclusion': 't',\n"
+            "        'source': 't',\n"
+            "    })\n"
+            "except KeyError as e:\n"
+            "    msg = str(e)\n"
+            "else:\n"
+            "    raise SystemExit('expected KeyError')\n"
+            "\n"
+            "assert 'behavioral_stability' in msg, f'missing built-in: {msg!r}'\n"
+            "assert 'behavioral_stability_windowed' in msg, (\n"
+            "    f'missing built-in: {msg!r}'\n"
+            ")\n"
+            "print('ok')\n"
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", probe],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        assert result.returncode == 0, (
+            f"subprocess failed:\nstdout: {result.stdout}\nstderr: {result.stderr}"
+        )
+        assert result.stdout.strip().endswith("ok")
+
 
 class TestBehavioralNoAnomaly:
     def test_verify_holds(self):
