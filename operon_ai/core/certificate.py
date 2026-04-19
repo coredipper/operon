@@ -116,6 +116,47 @@ class Certificate:
             evidence=_freeze(evidence),
         )
 
+    @classmethod
+    def from_theorem(
+        cls,
+        theorem: str,
+        parameters: dict[str, Any] | Mapping[str, Any],
+        conclusion: str,
+        source: str,
+    ) -> "Certificate":
+        """Construct a certificate by resolving its verify function from
+        the theorem registry.
+
+        This is the preferred entry point for downstream packages that
+        emit certificates — it removes the need to import and bind a
+        verify function directly, which would couple them to a specific
+        internal symbol. Raises :class:`KeyError` if the theorem is not
+        registered (via ``_THEOREM_FN_PATHS`` or :func:`register_verify_fn`).
+
+        Example::
+
+            cert = Certificate.from_theorem(
+                theorem="behavioral_stability_windowed",
+                parameters={"signal_values": (0.5,), "threshold": 0.8},
+                conclusion="Stagnation detected after 21 measurements",
+                source="my_gate_package",
+            )
+            assert cert.verify().holds is True
+        """
+        fn = _resolve_verify_fn(theorem)
+        if fn is None:
+            raise KeyError(
+                f"No verify function registered for theorem {theorem!r}. "
+                f"Known theorems: {sorted(_VERIFY_REGISTRY)}"
+            )
+        return cls(
+            theorem=theorem,
+            parameters=parameters,
+            conclusion=conclusion,
+            source=source,
+            _verify_fn=fn,
+        )
+
 
 @dataclass(frozen=True)
 class CertificateVerification:
@@ -298,6 +339,16 @@ def _resolve_verify_fn(theorem: str) -> Callable | None:
     if fn is not None:
         _VERIFY_REGISTRY[theorem] = fn
     return fn
+
+
+# Public alias of ``_resolve_verify_fn`` for downstream packages that need to
+# resolve a verify function by theorem name. Exposes the lookup as part of the
+# public API surface so consumers are not coupled to the underscore-prefixed
+# internal name. Preferred over direct use of ``_resolve_verify_fn``.
+#
+# Direct alias (not a wrapper) so the two stay in sync automatically and
+# ``resolve_verify_fn is _resolve_verify_fn`` holds.
+resolve_verify_fn = _resolve_verify_fn
 
 
 def certificate_from_dict(d: dict[str, Any]) -> Certificate:

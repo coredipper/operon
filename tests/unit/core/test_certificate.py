@@ -557,6 +557,95 @@ class TestBehavioralStabilityWindowed:
         assert resolved is _verify_behavioral_stability_windowed
 
 
+class TestPublicTheoremResolution:
+    """Public API surface for theorem resolution (since 0.36.1).
+
+    ``resolve_verify_fn`` and ``Certificate.from_theorem`` let downstream
+    packages emit + verify certificates without coupling to any
+    underscore-prefixed internal symbol. Reviewer-requested; prevents
+    a class of private-API-coupling findings in sibling packages.
+    """
+
+    def test_resolve_verify_fn_returns_registered_callable(self):
+        from operon_ai.core.certificate import resolve_verify_fn
+
+        fn = resolve_verify_fn("behavioral_stability_windowed")
+        assert fn is not None
+        assert callable(fn)
+
+    def test_resolve_verify_fn_returns_none_for_unknown_theorem(self):
+        from operon_ai.core.certificate import resolve_verify_fn
+
+        assert resolve_verify_fn("not_a_real_theorem_xyz") is None
+
+    def test_resolve_verify_fn_is_public_alias_of_internal(self):
+        """The public name should be a direct alias so the two stay in
+        sync automatically. Downstream packages can import either, but
+        the public name is preferred."""
+        from operon_ai.core.certificate import (
+            _resolve_verify_fn,
+            resolve_verify_fn,
+        )
+
+        assert resolve_verify_fn is _resolve_verify_fn
+
+    def test_from_theorem_builds_verifiable_certificate(self):
+        cert = Certificate.from_theorem(
+            theorem="behavioral_stability_windowed",
+            parameters={"signal_values": (0.1, 0.15), "threshold": 0.5},
+            conclusion="test",
+            source="test",
+        )
+        assert cert.theorem == "behavioral_stability_windowed"
+        result = cert.verify()
+        assert result.holds is True
+        assert result.evidence["n"] == 2
+
+    def test_from_theorem_detects_instability_like_direct_construction(self):
+        cert = Certificate.from_theorem(
+            theorem="behavioral_stability_windowed",
+            parameters={"signal_values": (0.805, 0.805), "threshold": 0.8},
+            conclusion="test",
+            source="test",
+        )
+        assert cert.verify().holds is False
+
+    def test_from_theorem_raises_for_unknown_theorem(self):
+        import pytest
+
+        with pytest.raises(KeyError, match="not_a_real_theorem"):
+            Certificate.from_theorem(
+                theorem="not_a_real_theorem",
+                parameters={"x": 1},
+                conclusion="test",
+                source="test",
+            )
+
+    def test_from_theorem_round_trip_matches_direct_construction(self):
+        """Certs built via ``from_theorem`` must have the same verify
+        behavior as certs built via the public constructor — the factory
+        is sugar, not a behavior change."""
+        from operon_ai.core.certificate import _verify_behavioral_stability_windowed
+
+        factory_cert = Certificate.from_theorem(
+            theorem="behavioral_stability_windowed",
+            parameters={"signal_values": (0.3,), "threshold": 0.5},
+            conclusion="test",
+            source="test",
+        )
+        direct_cert = Certificate(
+            theorem="behavioral_stability_windowed",
+            parameters={"signal_values": (0.3,), "threshold": 0.5},
+            conclusion="test",
+            source="test",
+            _verify_fn=_verify_behavioral_stability_windowed,
+        )
+        f_result = factory_cert.verify()
+        d_result = direct_cert.verify()
+        assert f_result.holds == d_result.holds
+        assert f_result.evidence == d_result.evidence
+
+
 class TestBehavioralNoAnomaly:
     def test_verify_holds(self):
         from operon_ai.core.certificate import _verify_behavioral_no_anomaly
