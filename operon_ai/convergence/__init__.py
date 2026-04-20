@@ -114,6 +114,22 @@ from .swarms_compiler import (
     organism_to_swarms,
     swarms_to_topology,
 )
+from .gepa_adapter import (
+    EvaluationBatch,
+    OperonCertificateAdapter,
+    default_obligation_formatter,
+)
+from .a2a_certificate import (
+    A2A_CERTIFICATE_MIME_TYPE,
+    A2A_CERTIFICATE_SCHEMA,
+    InvalidCertificatePartError,
+    UnknownTheoremError,
+    agent_card_skill_for_theorem,
+    certificate_from_a2a_part,
+    certificate_to_a2a_part,
+    is_certificate_part,
+    safe_certificate_from_a2a_part,
+)
 from .categorical import (
     Architecture,
     CompilationResult,
@@ -248,4 +264,18 @@ __all__ = [
     "ReasoningGenerator",
     "HeuristicGenerator",
     "generate_and_register",
+    # GEPA adapter (C8 — certificate-based evaluator)
+    "OperonCertificateAdapter",
+    "EvaluationBatch",
+    "default_obligation_formatter",
+    # A2A certificate codec (C8 — cross-vendor certificate transport)
+    "A2A_CERTIFICATE_SCHEMA",
+    "A2A_CERTIFICATE_MIME_TYPE",
+    "UnknownTheoremError",
+    "InvalidCertificatePartError",
+    "certificate_to_a2a_part",
+    "certificate_from_a2a_part",
+    "safe_certificate_from_a2a_part",
+    "is_certificate_part",
+    "agent_card_skill_for_theorem",
 ]
