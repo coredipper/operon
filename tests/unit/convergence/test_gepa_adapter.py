@@ -230,6 +230,58 @@ class TestReflectiveDataset:
         assert len(reflective["a"]) == 1
         assert len(reflective["b"]) == 1
 
+    def test_unknown_component_name_raises(self) -> None:
+        """Regression: components_to_update must respect the declared allowlist."""
+        adapter = OperonCertificateAdapter(
+            theorem="behavioral_quality",
+            harness=_passing_quality_harness,
+            components=["planner_prompt"],
+        )
+        eval_batch = adapter.evaluate(
+            [1], {"planner_prompt": "x"}, capture_traces=True
+        )
+        with pytest.raises(ValueError, match="not declared on this adapter"):
+            adapter.make_reflective_dataset(
+                candidate={"planner_prompt": "x"},
+                eval_batch=eval_batch,
+                components_to_update=["typo_not_in_allowlist"],
+            )
+
+    def test_partial_unknown_component_raises(self) -> None:
+        """Even one typoed component in the list should raise."""
+        adapter = OperonCertificateAdapter(
+            theorem="behavioral_quality",
+            harness=_passing_quality_harness,
+            components=["planner_prompt", "executor_prompt"],
+        )
+        eval_batch = adapter.evaluate(
+            [1], {"planner_prompt": "x"}, capture_traces=True
+        )
+        with pytest.raises(ValueError, match="typo"):
+            adapter.make_reflective_dataset(
+                candidate={"planner_prompt": "x"},
+                eval_batch=eval_batch,
+                components_to_update=["planner_prompt", "typo"],
+            )
+
+    def test_empty_components_allowlist_accepts_anything(self) -> None:
+        """Backward compat: empty components tuple disables the allowlist check."""
+        adapter = OperonCertificateAdapter(
+            theorem="behavioral_quality",
+            harness=_passing_quality_harness,
+            # no components declared
+        )
+        eval_batch = adapter.evaluate(
+            [1], {"planner_prompt": "x"}, capture_traces=True
+        )
+        # Any component name should pass through without a ValueError.
+        reflective = adapter.make_reflective_dataset(
+            candidate={"planner_prompt": "x"},
+            eval_batch=eval_batch,
+            components_to_update=["anything_at_all"],
+        )
+        assert "anything_at_all" in reflective
+
     def test_bypass_evaluate_yields_empty_feedback(self) -> None:
         """If a caller constructs an EvaluationBatch without going through
         evaluate(), the verifications side-channel is absent and the

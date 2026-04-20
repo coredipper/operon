@@ -208,7 +208,23 @@ class OperonCertificateAdapter(Generic[DataInst, Trajectory, RolloutOutput]):
         to a list of records, one per batch item, each with ``"Inputs"``,
         ``"Generated Outputs"``, and ``"Feedback"`` keys.  The
         ``"Feedback"`` string is produced by :attr:`obligation_formatter`.
+
+        If :attr:`components` is non-empty, ``components_to_update`` must
+        be a subset of it — :class:`ValueError` is raised otherwise.  This
+        enforces the configuration contract declared at adapter
+        construction and catches typos or unintended component names.  If
+        :attr:`components` is empty, any component name is accepted
+        (backward-compatible no-allowlist mode).
         """
+        if self.components:
+            unknown = [c for c in components_to_update if c not in self.components]
+            if unknown:
+                raise ValueError(
+                    "components_to_update contains names not declared on this "
+                    f"adapter: {unknown!r}. Declared components: "
+                    f"{list(self.components)!r}."
+                )
+
         verifications: list[CertificateVerification] = getattr(
             eval_batch, "_operon_verifications", []
         )

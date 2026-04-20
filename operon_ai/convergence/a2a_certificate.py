@@ -49,6 +49,7 @@ from typing import Any
 
 from ..core.certificate import (
     Certificate,
+    _thaw,
     certificate_from_dict,
     certificate_to_dict,
     resolve_verify_fn,
@@ -114,7 +115,11 @@ def certificate_to_a2a_part(
         verification = cert.verify()
         payload["verification"] = {
             "holds": verification.holds,
-            "evidence": dict(verification.evidence),
+            # Deep-thaw: ``Certificate.verify`` freezes evidence recursively
+            # (MappingProxyType, tuples, frozensets), which is not a portable
+            # JSON payload.  Reuse the same thaw helper ``certificate_to_dict``
+            # uses for parameters.
+            "evidence": _thaw(verification.evidence),
         }
     else:
         payload["verification"] = None
@@ -187,21 +192,44 @@ def certificate_from_a2a_part(part: dict[str, Any]) -> Certificate:
     if not isinstance(data, dict):
         raise InvalidCertificatePartError("Part 'data' field is not a dict")
 
-    for key in ("theorem", "parameters", "conclusion", "source"):
+    # Validate required field presence and types at the codec boundary so
+    # malformed payloads surface as InvalidCertificatePartError rather than
+    # as deeper ValueError/TypeError from certificate_from_dict.
+    _expected_types: dict[str, type | tuple[type, ...]] = {
+        "theorem": str,
+        "parameters": dict,
+        "conclusion": str,
+        "source": str,
+    }
+    for key, expected in _expected_types.items():
         if key not in data:
             raise InvalidCertificatePartError(
                 f"Certificate Part missing required field: {key!r}"
+            )
+        if not isinstance(data[key], expected):
+            raise InvalidCertificatePartError(
+                f"Certificate Part field {key!r} has wrong type: "
+                f"expected {expected.__name__ if isinstance(expected, type) else expected}, "
+                f"got {type(data[key]).__name__}"
             )
 
     if resolve_verify_fn(data["theorem"]) is None:
         raise UnknownTheoremError(data["theorem"])
 
-    return certificate_from_dict({
-        "theorem": data["theorem"],
-        "parameters": data["parameters"],
-        "conclusion": data["conclusion"],
-        "source": data["source"],
-    })
+    try:
+        return certificate_from_dict({
+            "theorem": data["theorem"],
+            "parameters": data["parameters"],
+            "conclusion": data["conclusion"],
+            "source": data["source"],
+        })
+    except (ValueError, TypeError) as exc:
+        # Any deeper deserialization error becomes a codec-boundary error
+        # so receivers only need to handle InvalidCertificatePartError
+        # (and UnknownTheoremError) from this entry point.
+        raise InvalidCertificatePartError(
+            f"Certificate Part payload failed to deserialize: {exc}"
+        ) from exc
 
 
 def safe_certificate_from_a2a_part(

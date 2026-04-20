@@ -6,9 +6,13 @@ Covers:
 - Unknown theorem handling: strict raises, safe returns None (Theorem 4)
 - Part schema detection (``is_certificate_part``)
 - AgentCard skill entry shape
+- Deep-thaw of nested verification evidence (JSON serializability)
+- Type-validation at the codec boundary (malformed payloads)
 """
 
 from __future__ import annotations
+
+import json
 
 import pytest
 
@@ -23,7 +27,7 @@ from operon_ai.convergence.a2a_certificate import (
     is_certificate_part,
     safe_certificate_from_a2a_part,
 )
-from operon_ai.core.certificate import Certificate
+from operon_ai.core.certificate import Certificate, register_verify_fn
 
 
 # ---------------------------------------------------------------------------
@@ -100,6 +104,39 @@ class TestCertificateToA2APart:
     def test_failing_cert_marks_holds_false(self, failing_cert: Certificate) -> None:
         part = certificate_to_a2a_part(failing_cert)
         assert part["data"]["verification"]["holds"] is False
+
+    def test_nested_evidence_json_serializes(self) -> None:
+        """Regression: nested evidence must deep-thaw to plain Python types.
+
+        ``Certificate.verify`` freezes evidence recursively (MappingProxyType,
+        tuples, frozensets).  A shallow ``dict(...)`` copy leaves the nested
+        values frozen, which breaks ``json.dumps``.  Ensure the encoded Part
+        is end-to-end JSON-serializable even for nested evidence.
+        """
+        def _nested_evidence_verify(params):
+            del params
+            return True, {
+                "nested": {"inner_tuple": (1, 2, 3), "inner_set": frozenset({"a"})},
+                "list": [{"k": 1}, {"k": 2}],
+            }
+
+        register_verify_fn("nested_evidence_test_theorem", _nested_evidence_verify)
+        cert = Certificate.from_theorem(
+            theorem="nested_evidence_test_theorem",
+            parameters={"dummy": 1},
+            conclusion="nested evidence regression",
+            source="test_a2a_certificate",
+        )
+        part = certificate_to_a2a_part(cert)
+        # The critical assertion: the entire Part round-trips through JSON.
+        encoded = json.dumps(part)
+        decoded = json.loads(encoded)
+        evidence = decoded["data"]["verification"]["evidence"]
+        # Nested container types are plain Python after thawing.
+        assert isinstance(evidence["nested"], dict)
+        assert evidence["nested"]["inner_tuple"] == [1, 2, 3]
+        assert evidence["nested"]["inner_set"] == ["a"]
+        assert evidence["list"] == [{"k": 1}, {"k": 2}]
 
 
 # ---------------------------------------------------------------------------
@@ -253,6 +290,31 @@ class TestMalformedPart:
             },
         }
         with pytest.raises(InvalidCertificatePartError, match="theorem"):
+            certificate_from_a2a_part(part)
+
+    @pytest.mark.parametrize(
+        "bad_field, bad_value",
+        [
+            ("theorem", 42),
+            ("parameters", "not a dict"),
+            ("conclusion", 123),
+            ("source", ["list", "not", "str"]),
+        ],
+    )
+    def test_wrong_type_field_raises_codec_error(
+        self, bad_field: str, bad_value: object
+    ) -> None:
+        """Malformed payloads surface as InvalidCertificatePartError at the boundary."""
+        payload = {
+            "schema": A2A_CERTIFICATE_SCHEMA,
+            "theorem": "behavioral_quality",
+            "parameters": {"scores": [0.9], "threshold": 0.5},
+            "conclusion": "ok",
+            "source": "test",
+        }
+        payload[bad_field] = bad_value  # type: ignore[assignment]
+        part = {"kind": "data", "data": payload}
+        with pytest.raises(InvalidCertificatePartError, match=bad_field):
             certificate_from_a2a_part(part)
 
 
