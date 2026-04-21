@@ -16,6 +16,7 @@ from eval.convergence.scalar_with_evidence_adapter import (
 )
 from eval.convergence.synthetic_signal_harness import (
     SEED_COMPONENT_NAME,
+    candidate_text_with_throttle,
     run_rollout,
 )
 
@@ -62,14 +63,14 @@ class TestScalarReward:
 class TestScalarRewardAdapter:
     def test_evaluate_returns_graded_scores_not_binary(self) -> None:
         adapter = ScalarRewardAdapter(harness=_harness)
-        cand = {SEED_COMPONENT_NAME: "policy_throttle = 0.25"}
+        cand = {SEED_COMPONENT_NAME: candidate_text_with_throttle(0.25)}
         batch = adapter.evaluate([0, 1], cand)
         for score in batch.scores:
             assert 0.0 < score < 1.0 or score == 0.0 or score == 1.0
 
     def test_feedback_is_minimal_score_only(self) -> None:
         adapter = ScalarRewardAdapter(harness=_harness)
-        cand = {SEED_COMPONENT_NAME: "policy_throttle = 0.25"}
+        cand = {SEED_COMPONENT_NAME: candidate_text_with_throttle(0.25)}
         batch = adapter.evaluate([0], cand)
         reflective = adapter.make_reflective_dataset(
             candidate=cand,
@@ -84,7 +85,7 @@ class TestScalarRewardAdapter:
 
     def test_rejects_unknown_component(self) -> None:
         adapter = ScalarRewardAdapter(harness=_harness)
-        cand = {SEED_COMPONENT_NAME: "policy_throttle = 0.25"}
+        cand = {SEED_COMPONENT_NAME: candidate_text_with_throttle(0.25)}
         batch = adapter.evaluate([0], cand)
         with pytest.raises(ValueError, match="not declared"):
             adapter.make_reflective_dataset(
@@ -102,7 +103,7 @@ class TestScalarRewardAdapter:
 class TestScalarWithEvidenceAdapter:
     def test_feedback_contains_window_evidence(self) -> None:
         adapter = ScalarWithEvidenceAdapter(harness=_harness)
-        cand = {SEED_COMPONENT_NAME: "policy_throttle = 1.0"}  # failing
+        cand = {SEED_COMPONENT_NAME: candidate_text_with_throttle(1.0)}  # failing
         batch = adapter.evaluate([0, 1], cand)
         reflective = adapter.make_reflective_dataset(
             candidate=cand,
@@ -116,7 +117,7 @@ class TestScalarWithEvidenceAdapter:
 
     def test_passing_feedback_has_no_adjust_line(self) -> None:
         adapter = ScalarWithEvidenceAdapter(harness=_harness)
-        cand = {SEED_COMPONENT_NAME: "policy_throttle = 0.1"}  # passing
+        cand = {SEED_COMPONENT_NAME: candidate_text_with_throttle(0.1)}  # passing
         batch = adapter.evaluate([0], cand)
         reflective = adapter.make_reflective_dataset(
             candidate=cand,
@@ -129,7 +130,7 @@ class TestScalarWithEvidenceAdapter:
     def test_feedback_does_not_mention_theorem_framing(self) -> None:
         """Active control: evidence text, NOT theorem framing."""
         adapter = ScalarWithEvidenceAdapter(harness=_harness)
-        cand = {SEED_COMPONENT_NAME: "policy_throttle = 1.0"}
+        cand = {SEED_COMPONENT_NAME: candidate_text_with_throttle(1.0)}
         batch = adapter.evaluate([0], cand)
         reflective = adapter.make_reflective_dataset(
             candidate=cand,
@@ -208,7 +209,7 @@ class TestCertBinaryContentMatched:
         return cert_fb, scalar_fb
 
     def test_tails_are_byte_identical_on_failing_candidate(self) -> None:
-        cert_fb, scalar_fb = self._render_both_arms("policy_throttle = 1.0")
+        cert_fb, scalar_fb = self._render_both_arms(candidate_text_with_throttle(1.0))
         # Strip the single framing line from each; the remainder must match.
         cert_tail = "\n".join(cert_fb.splitlines()[1:])
         scalar_tail = "\n".join(scalar_fb.splitlines()[1:])
@@ -219,13 +220,13 @@ class TestCertBinaryContentMatched:
         )
 
     def test_tails_are_byte_identical_on_passing_candidate(self) -> None:
-        cert_fb, scalar_fb = self._render_both_arms("policy_throttle = 0.1")
+        cert_fb, scalar_fb = self._render_both_arms(candidate_text_with_throttle(0.1))
         cert_tail = "\n".join(cert_fb.splitlines()[1:])
         scalar_tail = "\n".join(scalar_fb.splitlines()[1:])
         assert cert_tail == scalar_tail
 
     def test_first_lines_are_the_only_intended_difference(self) -> None:
-        cert_fb, scalar_fb = self._render_both_arms("policy_throttle = 1.0")
+        cert_fb, scalar_fb = self._render_both_arms(candidate_text_with_throttle(1.0))
         cert_first = cert_fb.splitlines()[0]
         scalar_first = scalar_fb.splitlines()[0]
         # cert-binary: Theorem framing with pass/fail state
@@ -240,7 +241,7 @@ class TestCertBinaryContentMatched:
         ``capture_traces=False``.  Any future drift in the no-trace
         path fails this test — not just the traced path."""
         cert_fb, scalar_fb = self._render_both_arms(
-            "policy_throttle = 1.0", capture_traces=False
+            candidate_text_with_throttle(1.0), capture_traces=False
         )
         cert_tail = "\n".join(cert_fb.splitlines()[1:])
         scalar_tail = "\n".join(scalar_fb.splitlines()[1:])
@@ -274,7 +275,7 @@ class TestTrajectoryRetentionOptIn:
             source="test-default",
             # retain_trajectories_for_reflection left at default False
         )
-        cand = {SEED_COMPONENT_NAME: "policy_throttle = 1.0"}
+        cand = {SEED_COMPONENT_NAME: candidate_text_with_throttle(1.0)}
         batch = adapter.evaluate([0], cand, capture_traces=False)
         # No hidden retention.
         assert not hasattr(batch, "_operon_trajectories")
@@ -294,7 +295,7 @@ class TestTrajectoryRetentionOptIn:
             components=[SEED_COMPONENT_NAME],
             source="test-captured",
         )
-        cand = {SEED_COMPONENT_NAME: "policy_throttle = 1.0"}
+        cand = {SEED_COMPONENT_NAME: candidate_text_with_throttle(1.0)}
         batch = adapter.evaluate([0], cand, capture_traces=True)
         assert batch.trajectories is not None
         # Even with traces captured publicly, no side-channel copy.
@@ -320,7 +321,7 @@ class TestTrajectoryRetentionOptIn:
             retain_trajectories_for_reflection=True,
             source="test-optin",
         )
-        cand = {SEED_COMPONENT_NAME: "policy_throttle = 1.0"}
+        cand = {SEED_COMPONENT_NAME: candidate_text_with_throttle(1.0)}
         batch_default = adapter.evaluate([0, 1], cand, capture_traces=False)
         batch_captured = adapter.evaluate([0, 1], cand, capture_traces=True)
         # Public attribute respects capture_traces contract.
@@ -434,7 +435,7 @@ class TestTrajectoryRetentionOptIn:
             retain_trajectories_for_reflection=True,
             source="test",
         )
-        cand = {SEED_COMPONENT_NAME: "policy_throttle = 1.0"}
+        cand = {SEED_COMPONENT_NAME: candidate_text_with_throttle(1.0)}
         batch = adapter.evaluate([0, 1], cand, capture_traces=False)
         reflective = adapter.make_reflective_dataset(
             cand, batch, [SEED_COMPONENT_NAME]
