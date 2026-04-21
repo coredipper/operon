@@ -43,11 +43,17 @@ class TestParseThrottle:
         # clamps.
         assert parse_throttle("policy_throttle = -0.5") == 0.0
 
-    def test_extra_text_around_marker(self) -> None:
-        assert (
-            parse_throttle("some prose. policy_throttle = 0.25 more prose.")
-            == 0.25
-        )
+    def test_marker_on_its_own_line(self) -> None:
+        """Real assignments are expected to start a line (possibly
+        indented).  Leading prose + trailing prose on *other* lines is
+        fine; mid-line mentions are treated as prose (see
+        test_prose_mention_does_not_override)."""
+        text = "preamble text\npolicy_throttle = 0.25\ntrailing explanation"
+        assert parse_throttle(text) == 0.25
+
+    def test_indented_marker(self) -> None:
+        """Leading whitespace on the assignment line is allowed."""
+        assert parse_throttle("  policy_throttle = 0.7") == 0.7
 
     def test_multiple_assignments_last_wins(self) -> None:
         """Regression for Roborev #864 H.
@@ -97,6 +103,38 @@ class TestParseThrottle:
             parse_throttle("policy_throttle = nope\npolicy_throttle = 0.2")
             == 0.2
         )
+
+    def test_prose_mention_does_not_override(self) -> None:
+        """Regression for Roborev #868.
+
+        A real assignment followed by a prose mention of the keyword
+        (e.g. an LM quoting an earlier attempt in explanatory text)
+        must NOT be treated as overriding.  The prose mention is not
+        at a line start, so the anchored header regex ignores it.
+        """
+        text = (
+            "policy_throttle = 0.2\n"
+            "Previous bad output: policy_throttle = nope"
+        )
+        assert parse_throttle(text) == 0.2
+
+    def test_prose_mention_with_valid_number_also_ignored(self) -> None:
+        """Even numeric-looking prose mentions mid-line are prose."""
+        text = (
+            "policy_throttle = 0.2\n"
+            "For reference, the old value was policy_throttle = 0.9."
+        )
+        assert parse_throttle(text) == 0.2
+
+    def test_quoted_example_does_not_override(self) -> None:
+        """Example: an LM that explains its reasoning by quoting an
+        earlier attempt.  The explanation must not be read as an
+        assignment."""
+        text = (
+            "policy_throttle = 0.3\n"
+            "(As a reminder, initial was policy_throttle = 1.0.)"
+        )
+        assert parse_throttle(text) == 0.3
 
 
 class TestRunRollout:
