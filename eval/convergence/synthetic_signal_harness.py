@@ -34,16 +34,21 @@ from typing import Any
 # Candidate parsing — the LM's only lever
 # ---------------------------------------------------------------------------
 
-# Locate ``policy_throttle`` assignment *headers* (the keyword and the
-# ``=`` or ``:`` separator).  We intentionally do NOT capture the
-# right-hand side here — capturing would make empty or whitespace-only
-# RHS vanish from the match list, causing the parser to silently fall
-# through to an earlier valid assignment.  Instead, we find the LAST
-# header location and slice the rest of that line ourselves
-# (Roborev #867).
+# Locate ``policy_throttle`` assignment *headers* — anchored to the
+# start of a line (with optional leading whitespace) so that prose
+# mentions like ``Previous attempt: policy_throttle = nope`` do NOT
+# count as assignments (Roborev #868).  The MULTILINE flag lets ``^``
+# match each line boundary rather than only the string start.
+#
+# We intentionally do NOT capture the right-hand side here —
+# capturing would make empty or whitespace-only RHS vanish from the
+# match list, causing the parser to silently fall through to an
+# earlier valid assignment (Roborev #867).  Instead, we find the LAST
+# header location and slice the first token of that line's suffix
+# ourselves.
 _THROTTLE_HEADER_PATTERN = re.compile(
-    r"policy_throttle\s*[:=]",
-    re.IGNORECASE,
+    r"^\s*policy_throttle\s*[:=]",
+    re.IGNORECASE | re.MULTILINE,
 )
 
 _DEFAULT_THROTTLE = 1.0
