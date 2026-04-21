@@ -56,35 +56,55 @@ class TestParseThrottleConfigPrefix:
         """Leading whitespace on the CONFIG line is allowed."""
         assert parse_throttle("  CONFIG: policy_throttle = 0.7") == 0.7
 
-    def test_last_config_line_wins(self) -> None:
-        """Regression for Roborev #864 H: append-to-revise."""
-        text = f"{_config(1.0)}\n# refined:\n{_config(0.3)}"
-        assert parse_throttle(text) == 0.3
 
-    def test_multiple_config_lines_three_way(self) -> None:
+class TestParseThrottleExactlyOneConfigLine:
+    """Regression for Roborev #871 — a second line-start ``CONFIG:``
+    line (example, quoted prior attempt, append-to-revise, etc.)
+    makes the candidate ambiguous.  The parser returns
+    ``_DEFAULT_THROTTLE`` in that case so reflection feedback tells
+    the LM to consolidate to exactly one CONFIG: line."""
+
+    def test_two_config_lines_returns_default(self) -> None:
+        """Two CONFIG: lines with different values → default."""
+        text = f"{_config(0.3)}\n{_config(1.0)}"
+        assert parse_throttle(text) == 1.0
+
+    def test_reviewer_scenario_example_after_real_config(self) -> None:
+        """Reviewer's exact scenario: ``CONFIG: policy_throttle = 0.3``
+        then ``Example of prior output:\\nCONFIG: policy_throttle = 1.0``.
+        Both lines match the CONFIG: anchor; the parser defaults."""
+        text = (
+            f"{_config(0.3)}\n\n"
+            "Example of prior output:\n"
+            f"{_config(1.0)}"
+        )
+        assert parse_throttle(text) == 1.0
+
+    def test_three_config_lines_also_returns_default(self) -> None:
         text = f"{_config(0.9)}\n{_config(0.6)}\n{_config(0.2)}"
-        assert parse_throttle(text) == 0.2
-
-
-class TestParseThrottleMalformedFinalAssignment:
-    """Regression for Roborev #867 — malformed FINAL CONFIG: line must
-    default, never fall through to an earlier valid one."""
-
-    def test_non_numeric_last(self) -> None:
-        text = f"{_config(0.3)}\nCONFIG: policy_throttle = nope"
         assert parse_throttle(text) == 1.0
 
-    def test_empty_rhs_last(self) -> None:
-        text = f"{_config(0.3)}\nCONFIG: policy_throttle ="
-        assert parse_throttle(text) == 1.0
+    def test_single_config_line_parses_correctly(self) -> None:
+        """Positive-case sanity: the exactly-one contract works when
+        the LM follows it."""
+        assert parse_throttle(_config(0.4)) == 0.4
 
-    def test_just_dash_last(self) -> None:
-        text = f"{_config(0.3)}\nCONFIG: policy_throttle = -"
-        assert parse_throttle(text) == 1.0
 
-    def test_valid_last_overrides_invalid_earlier(self) -> None:
-        text = f"CONFIG: policy_throttle = nope\n{_config(0.2)}"
-        assert parse_throttle(text) == 0.2
+class TestParseThrottleMalformedSingleCONFIG:
+    """Regression for Roborev #867 — a malformed CONFIG: line (empty
+    RHS, non-numeric, just punctuation) defaults safely.  Updated
+    from the pre-#871 ``malformed final assignment`` contract: we
+    no longer accept multi-line CONFIG: sequences, so there is no
+    "earlier valid" to fall back to."""
+
+    def test_non_numeric_rhs(self) -> None:
+        assert parse_throttle("CONFIG: policy_throttle = nope") == 1.0
+
+    def test_empty_rhs(self) -> None:
+        assert parse_throttle("CONFIG: policy_throttle =") == 1.0
+
+    def test_just_dash_rhs(self) -> None:
+        assert parse_throttle("CONFIG: policy_throttle = -") == 1.0
 
 
 class TestParseThrottleOutsideConfigIgnored:

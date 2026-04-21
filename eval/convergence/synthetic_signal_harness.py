@@ -35,25 +35,24 @@ from typing import Any
 # ---------------------------------------------------------------------------
 
 # ``CONFIG:`` prefix marker.  Real policy_throttle assignments must
-# appear on a line whose whole payload is ``CONFIG: policy_throttle =
-# VALUE`` (optionally indented).  Any other mention — line-start
-# prose, mid-line prose, quoted prior attempts, markdown examples —
-# is ignored because it lacks the prefix.
+# appear on a line starting with the ``CONFIG:`` (or ``CONFIG =``)
+# prefix, e.g. ``CONFIG: policy_throttle = 0.3`` (optionally
+# indented).  Line-start anchoring under re.MULTILINE; case-insensitive.
 #
-# We chose a prefix rather than a markdown fenced code block because
-# GEPA's default reflective proposer strips markdown fences when it
-# normalizes an LM's mutation output (observed empirically: a mock
-# returning ``` ```config\npolicy_throttle=X\n``` `` arrives at the
-# harness as bare ``policy_throttle=X``, so the fence marker is lost
-# across the round trip).  A plain-text prefix survives GEPA's
-# normalization intact while still distinguishing config from prose,
-# which was the underlying requirement of Roborev #868, #869, and #870.
+# We chose a plain-text prefix rather than a markdown fenced code
+# block because GEPA's default reflective proposer strips fences
+# during normalization (observed empirically: a fenced mock output
+# arrives at the harness as bare ``policy_throttle=X``, so the fence
+# marker is lost across the round trip).
 #
-# The CONFIG prefix is case-insensitive and the colon/equals between
-# CONFIG and the keyword is required — matching ``CONFIG:``,
-# ``config:``, etc.  The anchoring is line-start (with optional
-# indentation) under re.MULTILINE so mid-line prose like
-# ``Example config: CONFIG: policy_throttle = 1.0`` is not a match.
+# A single CONFIG: line is still distinguishable from prose by the
+# line-start anchor + prefix keyword, but multiple CONFIG: lines in
+# the same candidate are semantically ambiguous — the LM may have
+# quoted a prior attempt as an example, revised by appending, or
+# emitted garbage.  Rather than guess which is "real", the parser
+# treats any candidate with more than one CONFIG: line as malformed
+# and defaults to ``_DEFAULT_THROTTLE`` so the reflection LM sees a
+# clear failure signal (Roborev #871).
 _CONFIG_LINE_PATTERN = re.compile(
     r"^\s*CONFIG\s*[:=]\s*policy_throttle\s*[:=]",
     re.IGNORECASE | re.MULTILINE,
@@ -67,36 +66,38 @@ def parse_throttle(candidate_text: str) -> float:
     """Extract the policy_throttle value from a candidate prompt.
 
     The parser follows a strict machine-readable protocol: the
-    assignment MUST appear on a line starting with the ``CONFIG:``
-    prefix, e.g. ``CONFIG: policy_throttle = 0.3`` (optionally
-    indented).  Any ``policy_throttle = ...`` without the prefix is
-    treated as prose/example and ignored.
+    candidate must contain **exactly one** line starting with the
+    ``CONFIG:`` prefix, e.g. ``CONFIG: policy_throttle = 0.3``
+    (optionally indented).
 
-    - Multi-assignment: the LAST valid CONFIG: line wins
-      (append-to-revise is supported).
-    - Values clip to [0, 1].  Negative values clip to 0; large
-      values clip to 1.
-    - Malformed final assignments (``= nope``, ``=`` with empty RHS,
-      ``= -``) fall back to ``_DEFAULT_THROTTLE`` rather than to an
-      earlier valid CONFIG: line (Roborev #867).
-    - Lines without the ``CONFIG:`` prefix are ignored, which defends
-      against prose mentions (#868), line-start examples after a
-      real config (#869), and non-config markdown fences (#870).
-
-    When no CONFIG: line is present, returns ``_DEFAULT_THROTTLE`` —
-    the strict format is a precondition, and malformed prompts score
-    as failing so GEPA's reflection LM sees a signal to restore it.
+    - **Exactly one** CONFIG: line is required.  Zero → the LM forgot
+      the protocol.  Two or more → ambiguous (quoted example vs. real
+      config; stale vs. revised; copy-paste residue).  Both cases
+      return ``_DEFAULT_THROTTLE`` so GEPA's reflection feedback
+      signals a clear "emit exactly one CONFIG: line" instruction.
+    - Values clip to [0, 1].  Negative clips to 0; large clips to 1.
+    - Malformed RHS (``= nope``, ``=`` with empty RHS, ``= -``) on
+      the single CONFIG: line falls back to ``_DEFAULT_THROTTLE``.
+    - Lines without the ``CONFIG:`` prefix are ignored, defending
+      against prose mentions (#868) and line-start examples (#869).
+    - Markdown-fenced ``policy_throttle = X`` is ignored unless also
+      CONFIG:-prefixed (#870).
+    - Quoted or example ``CONFIG: policy_throttle = ...`` lines are
+      defended against by the exactly-one constraint (#871).
     """
     text = candidate_text or ""
-    last_header: re.Match[str] | None = None
-    for header in _CONFIG_LINE_PATTERN.finditer(text):
-        last_header = header
-    if last_header is None:
+    headers = list(_CONFIG_LINE_PATTERN.finditer(text))
+    if len(headers) != 1:
+        # Zero CONFIG: lines → LM lost the protocol; emit default so
+        # reflection feedback tells it to restore a CONFIG: line.
+        # Two or more → ambiguous (real-vs-example, real-vs-stale,
+        # real-vs-append); defaulting signals the LM to consolidate
+        # to exactly one CONFIG: line (Roborev #871).
         return _DEFAULT_THROTTLE
-    # Parse the first whitespace-separated token after the last
-    # header.  A malformed RHS falls back to _DEFAULT_THROTTLE, never
-    # to an earlier valid assignment.
-    rest_of_line = text[last_header.end():].split("\n", 1)[0]
+    header = headers[0]
+    # Parse the first whitespace-separated token after the CONFIG: line
+    # header.  A malformed RHS falls back to _DEFAULT_THROTTLE.
+    rest_of_line = text[header.end():].split("\n", 1)[0]
     tokens = rest_of_line.split()
     if not tokens:
         return _DEFAULT_THROTTLE
@@ -254,7 +255,11 @@ class SyntheticDataset:
 SEED_CANDIDATE_TEXT = """You operate a synthetic throttled source.
 
 Emit observations drawn around the configured policy value.
-Adjust the ``CONFIG:`` line below.
+
+PROTOCOL: your output must contain **exactly one** CONFIG: line
+giving the chosen policy_throttle.  Do not include examples, prior
+attempts, or prose mentions of ``CONFIG: policy_throttle`` — any
+extra CONFIG: line makes the output ambiguous and is rejected.
 
 CONFIG: policy_throttle = 1.0
 """.strip()
@@ -263,10 +268,10 @@ CONFIG: policy_throttle = 1.0
 The assignment is prefixed with ``CONFIG:`` so that explanatory
 prose, examples, or quoted prior attempts elsewhere in the prompt
 cannot be mistaken for the real assignment (Roborev #868/#869/#870).
-We chose a plain-text prefix rather than a markdown fenced block
-because GEPA's default reflective proposer strips markdown fences
-during normalization, losing the marker across the mutation round
-trip."""
+The protocol paragraph instructs the LM to emit exactly one
+CONFIG: line — the parser rejects any candidate with two or more
+CONFIG: lines as ambiguous (Roborev #871), and reflection feedback
+signals the LM to consolidate."""
 
 
 SEED_COMPONENT_NAME = "policy_prompt"
