@@ -8,100 +8,120 @@ pipeline**, not realism.  A real agent would introduce retrieval noise,
 API flakiness, and agent-complexity variance that would confound the
 signal we are trying to isolate.
 
-The candidate prompt encodes a single numeric knob — ``policy_throttle``
-in [0, 1] — via a well-known parser.  The harness simulates an agent
-that emits per-window means drawn from a Gaussian centered on the
-throttle value.  If ``max(window_means) > threshold``, the
-``behavioral_stability_windowed`` theorem fails; the LM's job during
-reflective evolution is to lower the throttle value in the candidate
-text.
+Candidate shape (Roborev #872 root-cause fix)
+---------------------------------------------
+
+The candidate is a two-component dict:
+
+- ``policy_prompt``: prose the LM is free to evolve.  The harness
+  **never** parses this component.  It exists so the reflection LM has
+  a scratch-space for reasoning and framing.
+- ``policy_throttle``: a numeric-only component whose value is the
+  throttle the harness uses.  The harness reads it directly via
+  :func:`parse_throttle` — no regex, no anchoring, no structural
+  validation beyond ``float()``.
+
+Rationale
+---------
+
+Earlier revisions (see Roborev #864, #867, #868, #869, #870, #871,
+#872) tried to parse the throttle out of the prose prompt by pattern
+matching.  Each pattern-based rule (``re.search`` first-match,
+line-start anchoring, fenced code blocks, ``CONFIG:`` prefixes, the
+exactly-one constraint) was defeated by a slightly different LM
+output shape: stale first match, later line-start example, fenced
+example, quoted ``CONFIG:`` example, multi-line split ``CONFIG:``.
+The class of bug is structural: *semantic* validation (real config
+vs. quoted example) cannot be performed reliably on LM-generated
+free-form text.
+
+The root-cause fix is to take the throttle out of the prose entirely
+and make it its own GEPA component.  Reading
+``candidate["policy_throttle"]`` has no text-level failure modes; it
+either is a parseable number or it isn't.  This closes the entire
+spoofing bug class and trivializes validation to a single ``float()``
+call with a clip.
 
 The task is deliberately degenerate in content (no actual domain
-behavior) but non-trivial in *signal*: the LM must read feedback, map
-it to a numeric edit, and propose a coherent replacement prompt.  That
-is exactly the channel the Theorem 3 conjecture is about.
+behavior) but non-trivial in *signal*: the LM still reads obligation
+text (or scalar rewards) from the reflection feedback and must
+propose an updated numeric component value.  That is exactly the
+channel the Theorem 3 conjecture is about.
 """
 
 from __future__ import annotations
 
 import hashlib
 import random
-import re
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Mapping
 
 # ---------------------------------------------------------------------------
-# Candidate parsing — the LM's only lever
+# Candidate shape — two GEPA components
 # ---------------------------------------------------------------------------
 
-# ``CONFIG:`` prefix marker.  Real policy_throttle assignments must
-# appear on a line starting with the ``CONFIG:`` (or ``CONFIG =``)
-# prefix, e.g. ``CONFIG: policy_throttle = 0.3`` (optionally
-# indented).  Line-start anchoring under re.MULTILINE; case-insensitive.
-#
-# We chose a plain-text prefix rather than a markdown fenced code
-# block because GEPA's default reflective proposer strips fences
-# during normalization (observed empirically: a fenced mock output
-# arrives at the harness as bare ``policy_throttle=X``, so the fence
-# marker is lost across the round trip).
-#
-# A single CONFIG: line is still distinguishable from prose by the
-# line-start anchor + prefix keyword, but multiple CONFIG: lines in
-# the same candidate are semantically ambiguous — the LM may have
-# quoted a prior attempt as an example, revised by appending, or
-# emitted garbage.  Rather than guess which is "real", the parser
-# treats any candidate with more than one CONFIG: line as malformed
-# and defaults to ``_DEFAULT_THROTTLE`` so the reflection LM sees a
-# clear failure signal (Roborev #871).
-_CONFIG_LINE_PATTERN = re.compile(
-    r"^\s*CONFIG\s*[:=]\s*policy_throttle\s*[:=]",
-    re.IGNORECASE | re.MULTILINE,
+PROMPT_COMPONENT_NAME = "policy_prompt"
+"""Name of the prose component (LM scratch-space; harness never parses it)."""
+
+THROTTLE_COMPONENT_NAME = "policy_throttle"
+"""Name of the numeric component read directly by the harness."""
+
+CANDIDATE_COMPONENTS: tuple[str, ...] = (
+    PROMPT_COMPONENT_NAME,
+    THROTTLE_COMPONENT_NAME,
 )
+"""Public tuple of GEPA components paper-6 candidates expose."""
+
+# Backward-compatible alias retained so callers that only ever touched
+# the prose component (pre-#872) continue to import it.  New code
+# should use ``PROMPT_COMPONENT_NAME``.
+SEED_COMPONENT_NAME = PROMPT_COMPONENT_NAME
 
 _DEFAULT_THROTTLE = 1.0
 """Starting throttle value — fails the theorem.  The LM must reduce it."""
 
 
-def parse_throttle(candidate_text: str) -> float:
-    """Extract the policy_throttle value from a candidate prompt.
+# ---------------------------------------------------------------------------
+# Read throttle from the numeric component directly.
+# No regex.  No structural validation of prose.  No spoofing class.
+# ---------------------------------------------------------------------------
 
-    The parser follows a strict machine-readable protocol: the
-    candidate must contain **exactly one** line starting with the
-    ``CONFIG:`` prefix, e.g. ``CONFIG: policy_throttle = 0.3``
-    (optionally indented).
 
-    - **Exactly one** CONFIG: line is required.  Zero → the LM forgot
-      the protocol.  Two or more → ambiguous (quoted example vs. real
-      config; stale vs. revised; copy-paste residue).  Both cases
-      return ``_DEFAULT_THROTTLE`` so GEPA's reflection feedback
-      signals a clear "emit exactly one CONFIG: line" instruction.
-    - Values clip to [0, 1].  Negative clips to 0; large clips to 1.
-    - Malformed RHS (``= nope``, ``=`` with empty RHS, ``= -``) on
-      the single CONFIG: line falls back to ``_DEFAULT_THROTTLE``.
-    - Lines without the ``CONFIG:`` prefix are ignored, defending
-      against prose mentions (#868) and line-start examples (#869).
-    - Markdown-fenced ``policy_throttle = X`` is ignored unless also
-      CONFIG:-prefixed (#870).
-    - Quoted or example ``CONFIG: policy_throttle = ...`` lines are
-      defended against by the exactly-one constraint (#871).
+def parse_throttle(candidate: Mapping[str, str]) -> float:
+    """Read ``policy_throttle`` from a GEPA candidate dict.
+
+    The candidate is expected to contain a ``policy_throttle`` component
+    whose value is a numeric string (e.g. ``"0.3"``, ``"1.0"``).  The
+    function does exactly three things:
+
+    1. Extract the string.
+    2. ``float()`` it.  A non-numeric / empty value falls back to
+       ``_DEFAULT_THROTTLE`` so GEPA's reflection feedback sees a clear
+       "that value isn't a number" signal.
+    3. Clip to ``[0, 1]``.
+
+    No regex.  No line-start anchoring.  No prose-vs-example
+    disambiguation.  The spoofing bug class that produced Roborev #864,
+    #867, #868, #869, #870, #871, and #872 is structurally absent
+    because there is no text-level parsing surface.
+
+    For safety with legacy callers that still pass the prose string,
+    passing a ``str`` rather than a dict raises ``TypeError`` — this
+    is a breaking contract change, documented in the module docstring.
     """
-    text = candidate_text or ""
-    headers = list(_CONFIG_LINE_PATTERN.finditer(text))
-    if len(headers) != 1:
-        # Zero CONFIG: lines → LM lost the protocol; emit default so
-        # reflection feedback tells it to restore a CONFIG: line.
-        # Two or more → ambiguous (real-vs-example, real-vs-stale,
-        # real-vs-append); defaulting signals the LM to consolidate
-        # to exactly one CONFIG: line (Roborev #871).
+    if not isinstance(candidate, Mapping):
+        raise TypeError(
+            "parse_throttle now takes a candidate dict "
+            "({'policy_prompt': ..., 'policy_throttle': ...}) rather than "
+            "a prose string.  The prose prompt is no longer parsed — see "
+            "the module docstring for the post-#872 contract."
+        )
+    raw = candidate.get(THROTTLE_COMPONENT_NAME, "")
+    if not isinstance(raw, str):
         return _DEFAULT_THROTTLE
-    header = headers[0]
-    # Parse the first whitespace-separated token after the CONFIG: line
-    # header.  A malformed RHS falls back to _DEFAULT_THROTTLE.
-    rest_of_line = text[header.end():].split("\n", 1)[0]
-    tokens = rest_of_line.split()
-    if not tokens:
+    raw = raw.strip()
+    if not raw:
         return _DEFAULT_THROTTLE
-    raw = tokens[0].rstrip(".,;")
     try:
         value = float(raw)
     except (TypeError, ValueError):
@@ -154,7 +174,7 @@ class Trajectory:
     """Record of a single harness rollout.  Consumed by reflection feedback."""
 
     data_inst_id: int
-    candidate_text: str
+    candidate: Mapping[str, str]
     parsed_throttle: float
     window_means: tuple[float, ...]
     violating_windows: tuple[int, ...]
@@ -170,7 +190,7 @@ def _seed_for(data_inst_id: int, run_seed: int) -> int:
 
 
 def run_rollout(
-    candidate_text: str,
+    candidate: Mapping[str, str],
     data_inst_id: int,
     *,
     config: TaskConfig | None = None,
@@ -180,10 +200,12 @@ def run_rollout(
 
     This signature matches the contract :class:`OperonCertificateAdapter`
     expects from its harness callback (see
-    ``operon_ai/convergence/gepa_adapter.py``).
+    ``operon_ai/convergence/gepa_adapter.py``).  The harness reads
+    ``candidate["policy_throttle"]`` directly — the prose component is
+    not parsed.
     """
     cfg = config or TaskConfig()
-    throttle = parse_throttle(candidate_text)
+    throttle = parse_throttle(candidate)
 
     rng = random.Random(_seed_for(data_inst_id, run_seed))
     window_means: list[float] = []
@@ -200,7 +222,7 @@ def run_rollout(
 
     trajectory = Trajectory(
         data_inst_id=data_inst_id,
-        candidate_text=candidate_text,
+        candidate=dict(candidate),
         parsed_throttle=throttle,
         window_means=tuple(window_means),
         violating_windows=violating,
@@ -248,54 +270,60 @@ class SyntheticDataset:
 
 
 # ---------------------------------------------------------------------------
-# Seed candidate — the starting prompt every arm begins from
+# Seed candidate — the starting candidate every arm begins from
 # ---------------------------------------------------------------------------
 
 
-SEED_CANDIDATE_TEXT = """You operate a synthetic throttled source.
+SEED_PROMPT_TEXT = """You operate a synthetic throttled source.
 
-Emit observations drawn around the configured policy value.
+Emit observations drawn around the configured policy value.  Lower
+values are safer; higher values violate the stability threshold.
 
-PROTOCOL: your output must contain **exactly one** CONFIG: line
-giving the chosen policy_throttle.  Do not include examples, prior
-attempts, or prose mentions of ``CONFIG: policy_throttle`` — any
-extra CONFIG: line makes the output ambiguous and is rejected.
-
-CONFIG: policy_throttle = 1.0
+You will be asked to revise the ``policy_throttle`` component.  That
+component is a bare number; respond with a single float.
 """.strip()
-"""Starting prompt — contains the policy_throttle marker at 1.0 (fails).
-
-The assignment is prefixed with ``CONFIG:`` so that explanatory
-prose, examples, or quoted prior attempts elsewhere in the prompt
-cannot be mistaken for the real assignment (Roborev #868/#869/#870).
-The protocol paragraph instructs the LM to emit exactly one
-CONFIG: line — the parser rejects any candidate with two or more
-CONFIG: lines as ambiguous (Roborev #871), and reflection feedback
-signals the LM to consolidate."""
+"""Starting prose prompt.  Harness never parses this.  Exists so the
+reflection LM has a scratch-space for reasoning."""
 
 
-SEED_COMPONENT_NAME = "policy_prompt"
-"""Name of the single mutable component in the GEPA candidate dict."""
+SEED_CANDIDATE: Mapping[str, str] = {
+    PROMPT_COMPONENT_NAME: SEED_PROMPT_TEXT,
+    THROTTLE_COMPONENT_NAME: str(_DEFAULT_THROTTLE),
+}
+"""Starting candidate — throttle at 1.0 (fails the theorem)."""
+
+
+# Backward-compatible alias; pre-#872 code referred to the prose body
+# directly via ``SEED_CANDIDATE_TEXT``.  New code should read the
+# component out of ``SEED_CANDIDATE`` by name.
+SEED_CANDIDATE_TEXT = SEED_PROMPT_TEXT
 
 
 def seed_candidate() -> dict[str, str]:
-    """Return the starting candidate mapping: ``{policy_prompt: "..."}``."""
-    return {SEED_COMPONENT_NAME: SEED_CANDIDATE_TEXT}
+    """Return a fresh copy of the starting candidate dict."""
+    return dict(SEED_CANDIDATE)
 
 
-def candidate_text_with_throttle(value: float) -> str:
-    """Build a well-formed candidate prompt with ``policy_throttle = value``.
+def candidate_dict_with_throttle(value: float | str) -> dict[str, str]:
+    """Build a well-formed candidate dict with the given throttle value.
 
-    Prefixes the assignment with the ``CONFIG:`` marker so
-    :func:`parse_throttle` reads it as real config rather than prose.
-    Use this when writing tests or synthetic candidates — hand-crafting
-    the prefix boilerplate at every call site is error-prone and
-    obscures the scenario being tested.
+    Canonical builder for tests and synthetic candidates under the
+    post-#872 two-component candidate contract.  Callers pass the
+    numeric value they want the harness to read; the prose component
+    defaults to the seed prompt.
     """
-    return (
-        "You operate a synthetic throttled source.\n\n"
-        f"CONFIG: policy_throttle = {value}"
-    )
+    return {
+        PROMPT_COMPONENT_NAME: SEED_PROMPT_TEXT,
+        THROTTLE_COMPONENT_NAME: str(value),
+    }
+
+
+# Backward-compatible alias.  Pre-#872 callers used
+# ``candidate_text_with_throttle`` to build a prose string.  The shape
+# is now a dict; we keep the old name pointing at the new builder to
+# minimise downstream churn.  New code should use
+# ``candidate_dict_with_throttle``.
+candidate_text_with_throttle = candidate_dict_with_throttle
 
 
 # ---------------------------------------------------------------------------

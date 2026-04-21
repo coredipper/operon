@@ -48,7 +48,7 @@ from operon_ai.convergence.gepa_adapter import OperonCertificateAdapter
 from .scalar_reward_adapter import ScalarRewardAdapter
 from .scalar_with_evidence_adapter import ScalarWithEvidenceAdapter
 from .synthetic_signal_harness import (
-    SEED_COMPONENT_NAME,
+    THROTTLE_COMPONENT_NAME,
     SyntheticDataset,
     TaskConfig,
     Trajectory,
@@ -98,15 +98,27 @@ THEOREM = "behavioral_stability_windowed"
 def _build_harness(
     config: TaskConfig, run_seed: int
 ) -> Callable[[dict[str, str], Any], tuple[Any, Any, dict[str, Any]]]:
-    """Return a closure ``(candidate, data_inst) -> rollout`` bound to config+seed."""
+    """Return a closure ``(candidate, data_inst) -> rollout`` bound to config+seed.
+
+    Under the post-#872 two-component contract, the harness passes the
+    full candidate dict through to :func:`run_rollout`; the numeric
+    component is read there, no prose parsing is performed.
+    """
 
     def harness(
         candidate: dict[str, str], data_inst: int
     ) -> tuple[Any, Any, dict[str, Any]]:
-        text = candidate.get(SEED_COMPONENT_NAME, "")
-        return run_rollout(text, data_inst, config=config, run_seed=run_seed)
+        return run_rollout(candidate, data_inst, config=config, run_seed=run_seed)
 
     return harness
+
+
+#: Only the numeric throttle component is mutable.  The prose prompt
+#: is held constant at the seed.  This matches GEPA's per-component
+#: mutation model (each reflection call produces a new value for ONE
+#: component) and keeps the experiment's degrees of freedom equal to
+#: what the task actually tests (a one-knob search).
+MUTABLE_COMPONENTS: tuple[str, ...] = (THROTTLE_COMPONENT_NAME,)
 
 
 def build_adapter(arm: str, config: TaskConfig, run_seed: int) -> Any:
@@ -116,7 +128,7 @@ def build_adapter(arm: str, config: TaskConfig, run_seed: int) -> Any:
         return OperonCertificateAdapter(
             theorem=THEOREM,
             harness=harness,
-            components=[SEED_COMPONENT_NAME],
+            components=list(MUTABLE_COMPONENTS),
             # Trajectory-aware formatter so cert-binary and scalar-evidence
             # carry the same per-window obligation *content*; the only
             # remaining difference is binarization + the theorem framing
@@ -130,9 +142,9 @@ def build_adapter(arm: str, config: TaskConfig, run_seed: int) -> Any:
             source=f"paper6/cert-binary/seed={run_seed}",
         )
     if arm == "scalar":
-        return ScalarRewardAdapter(harness=harness)
+        return ScalarRewardAdapter(harness=harness, components=MUTABLE_COMPONENTS)
     if arm == "scalar-evidence":
-        return ScalarWithEvidenceAdapter(harness=harness)
+        return ScalarWithEvidenceAdapter(harness=harness, components=MUTABLE_COMPONENTS)
     raise ValueError(f"unknown arm: {arm!r} (expected one of {ARMS})")
 
 
@@ -161,21 +173,12 @@ class _MockReflectionLM:
         self.call_count += 1
         del prompt  # Ignore — mock mutates its own state, not the prompt's.
         self._current = max(self.floor, self._current - self.decrement)
-        # Emit a ``CONFIG:``-prefixed line so the harness's
-        # parse_throttle reads the assignment as real config instead
-        # of defaulting to 1.0 (Roborev #870).  We intentionally do
-        # NOT wrap in a markdown fenced code block: GEPA's default
-        # reflective proposer strips fences during normalization, so
-        # a fenced mock output would arrive at parse_throttle as
-        # bare ``policy_throttle = X`` and every smoke run would
-        # silently score as "never converged."  The plain CONFIG:
-        # prefix survives GEPA's round-trip intact.
-        return (
-            f"<{SEED_COMPONENT_NAME}>\n"
-            "You operate a synthetic throttled source.\n\n"
-            f"CONFIG: policy_throttle = {self._current:.3f}\n"
-            f"</{SEED_COMPONENT_NAME}>"
-        )
+        # Under the post-#872 contract the mutable component is just
+        # ``policy_throttle`` (a bare float).  GEPA's default proposer
+        # uses the LM's full response verbatim as the new value for the
+        # component being updated, so the mock returns only the numeric
+        # text — no tags, no prose, no markup to be stripped.
+        return f"{self._current:.3f}"
 
 
 # ---------------------------------------------------------------------------
