@@ -161,10 +161,19 @@ class _MockReflectionLM:
         self.call_count += 1
         del prompt  # Ignore — mock mutates its own state, not the prompt's.
         self._current = max(self.floor, self._current - self.decrement)
+        # Emit a ``CONFIG:``-prefixed line so the harness's
+        # parse_throttle reads the assignment as real config instead
+        # of defaulting to 1.0 (Roborev #870).  We intentionally do
+        # NOT wrap in a markdown fenced code block: GEPA's default
+        # reflective proposer strips fences during normalization, so
+        # a fenced mock output would arrive at parse_throttle as
+        # bare ``policy_throttle = X`` and every smoke run would
+        # silently score as "never converged."  The plain CONFIG:
+        # prefix survives GEPA's round-trip intact.
         return (
             f"<{SEED_COMPONENT_NAME}>\n"
-            f"You operate a synthetic throttled source.\n"
-            f"policy_throttle = {self._current:.3f}\n"
+            "You operate a synthetic throttled source.\n\n"
+            f"CONFIG: policy_throttle = {self._current:.3f}\n"
             f"</{SEED_COMPONENT_NAME}>"
         )
 
