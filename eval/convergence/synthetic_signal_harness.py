@@ -34,18 +34,22 @@ from typing import Any
 # Candidate parsing — the LM's only lever
 # ---------------------------------------------------------------------------
 
+# Fenced-code-block extractor.  The candidate's config lives inside a
+# fenced block so prose, examples, and quoted prior attempts outside
+# the fence cannot masquerade as assignments (Roborev #868, #869).
+# Matches both ``` and ~~~ fences, optional language tag, DOTALL so
+# newlines inside the block are captured.
+_FENCED_BLOCK_PATTERN = re.compile(
+    r"(?:```|~~~)[^\n]*\n(.*?)\n?(?:```|~~~)",
+    re.DOTALL,
+)
+
 # Locate ``policy_throttle`` assignment *headers* — anchored to the
-# start of a line (with optional leading whitespace) so that prose
-# mentions like ``Previous attempt: policy_throttle = nope`` do NOT
-# count as assignments (Roborev #868).  The MULTILINE flag lets ``^``
-# match each line boundary rather than only the string start.
-#
-# We intentionally do NOT capture the right-hand side here —
-# capturing would make empty or whitespace-only RHS vanish from the
-# match list, causing the parser to silently fall through to an
-# earlier valid assignment (Roborev #867).  Instead, we find the LAST
-# header location and slice the first token of that line's suffix
-# ourselves.
+# start of a line (with optional leading whitespace).  The MULTILINE
+# flag lets ``^`` match each line boundary.  We intentionally do NOT
+# capture the right-hand side here so empty/whitespace-only RHS
+# doesn't vanish from the match list and trigger silent fall-through
+# to an earlier assignment (Roborev #867).
 _THROTTLE_HEADER_PATTERN = re.compile(
     r"^\s*policy_throttle\s*[:=]",
     re.IGNORECASE | re.MULTILINE,
@@ -58,38 +62,48 @@ _DEFAULT_THROTTLE = 1.0
 def parse_throttle(candidate_text: str) -> float:
     """Extract the policy_throttle value from a candidate prompt.
 
-    Returns ``_DEFAULT_THROTTLE`` if the prompt is missing the marker
-    (unparseable prompts get the worst-case value rather than raising,
-    so GEPA's reflection loop can still make progress from any garbage
-    seed mutation the LM produces).
+    The parser follows a strict machine-readable protocol: the
+    assignment MUST appear inside a fenced code block (``` or ~~~).
+    Any ``policy_throttle = ...`` outside a fenced block is treated
+    as prose/example and ignored.  This defends against LM outputs
+    that quote a prior attempt on its own line outside the config
+    block (Roborev #868 tightened line-start anchoring; #869 further
+    noticed that line-start alone doesn't distinguish real config
+    from standalone examples).
 
-    Values are clipped to [0, 1] so an LM that emits ``policy_throttle=5``
-    behaves identically to ``policy_throttle=1`` — this makes the
-    failure-to-convergence a one-way function of *direction*, not
-    magnitude.
+    Inside the fenced scope:
 
-    **Last assignment wins** — a common LM failure mode is to append a
-    revised value without removing the old one, and the harness must
-    honor the author's final intent.  If the final assignment's
-    right-hand side cannot be parsed as a float (``policy_throttle = nope``,
-    ``policy_throttle =``), the function returns ``_DEFAULT_THROTTLE``
-    rather than falling through to an earlier valid assignment — that
-    fall-through would silently score an invalid final mutation
-    against a stale earlier value (Roborev #867).
+    - Multi-assignment: the LAST line-start assignment wins
+      (append-to-revise is supported).
+    - Values clip to [0, 1].  Negative values clip to 0, large
+      values clip to 1.
+    - Malformed final assignments (``= nope``, ``=`` with empty RHS,
+      ``= -``) fall back to ``_DEFAULT_THROTTLE`` rather than to an
+      earlier valid assignment (Roborev #867).
+
+    When no fenced block is present, returns ``_DEFAULT_THROTTLE`` —
+    the strict format is a precondition, and malformed prompts score
+    as failing so GEPA's reflection LM sees a signal to restore it.
     """
     text = candidate_text or ""
+    # Extract every fenced code block's inner content; concatenate so
+    # a final fenced block still wins on "last assignment" semantics.
+    blocks = _FENCED_BLOCK_PATTERN.findall(text)
+    if not blocks:
+        # No fenced block → malformed; default to failing throttle so
+        # reflection feedback tells the LM to restore the config fence.
+        return _DEFAULT_THROTTLE
+    scope = "\n".join(blocks)
+
     last_header: re.Match[str] | None = None
-    for header in _THROTTLE_HEADER_PATTERN.finditer(text):
+    for header in _THROTTLE_HEADER_PATTERN.finditer(scope):
         last_header = header
     if last_header is None:
         return _DEFAULT_THROTTLE
-    # Parse ONLY the first whitespace-separated token after the last
-    # header.  A malformed right-hand side (empty, non-numeric, ...)
-    # falls back to _DEFAULT_THROTTLE, never to an earlier valid
-    # assignment.  Taking the first token (rather than the whole rest
-    # of the line) keeps inline prose like
-    # ``some prose. policy_throttle = 0.25 more prose.`` working.
-    rest_of_line = text[last_header.end():].split("\n", 1)[0]
+    # Parse the first whitespace-separated token after the last
+    # header.  A malformed RHS falls back to _DEFAULT_THROTTLE, never
+    # to an earlier valid assignment.
+    rest_of_line = scope[last_header.end():].split("\n", 1)[0]
     tokens = rest_of_line.split()
     if not tokens:
         return _DEFAULT_THROTTLE
@@ -247,10 +261,17 @@ class SyntheticDataset:
 SEED_CANDIDATE_TEXT = """You operate a synthetic throttled source.
 
 Emit observations drawn around the configured policy value.
+Adjust ``policy_throttle`` inside the config block below.
 
+```config
 policy_throttle = 1.0
+```
 """.strip()
-"""Starting prompt — contains the policy_throttle marker at 1.0 (fails)."""
+"""Starting prompt — contains the policy_throttle marker at 1.0 (fails).
+
+The marker lives inside a fenced code block so that explanatory
+prose, examples, or quoted prior attempts elsewhere in the prompt
+cannot be mistaken for the real assignment (Roborev #869)."""
 
 
 SEED_COMPONENT_NAME = "policy_prompt"
@@ -260,6 +281,23 @@ SEED_COMPONENT_NAME = "policy_prompt"
 def seed_candidate() -> dict[str, str]:
     """Return the starting candidate mapping: ``{policy_prompt: "..."}``."""
     return {SEED_COMPONENT_NAME: SEED_CANDIDATE_TEXT}
+
+
+def candidate_text_with_throttle(value: float) -> str:
+    """Build a well-formed candidate prompt with ``policy_throttle = value``.
+
+    Wraps the assignment in a fenced code block so :func:`parse_throttle`
+    reads it as real config rather than prose.  Use this when writing
+    tests or synthetic candidates — hand-crafting the fence
+    boilerplate at every call site is error-prone and obscures the
+    scenario being tested.
+    """
+    return (
+        "You operate a synthetic throttled source.\n\n"
+        "```config\n"
+        f"policy_throttle = {value}\n"
+        "```"
+    )
 
 
 # ---------------------------------------------------------------------------
