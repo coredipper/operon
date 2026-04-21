@@ -1,0 +1,53 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage[hypertexnames=false]{hyperref}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{listings}
+\usepackage{graphicx}
+
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newcommand{\placeholder}[1]{%
+  \PackageWarning{placeholder}{Unresolved placeholder: #1}%
+  \textbf{[#1]}%
+}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  columns=fullflexible,
+  xleftmargin=1em,
+}
+
+\title{\textbf{Counterexample-Guided Reflective Evolution}\\
+\large A GEPA/Operon Certificate Experiment\\[0.5em]
+\normalsize Preprint -- Feedback Welcome}
+
+\author{Bogdan Banu\\\texttt{bogdan@banu.be}}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\input{sections/00-abstract}
+\input{sections/01-introduction}
+\input{sections/02-related-work}
+\input{sections/03-methods}
+\input{sections/04-results}
+\input{sections/05-discussion}
+\input{sections/06-limitations}
+\input{sections/07-conclusion}
+
+\newpage
+\bibliographystyle{plain}
+\bibliography{../references}
+
+\end{document}

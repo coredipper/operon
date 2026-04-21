@@ -1,0 +1,48 @@
+\section{Limitations}\label{sec:limits}
+
+\paragraph{Single theorem.}  Only
+\texttt{behavioral\_stability\_windowed} is tested.  The conjecture
+(memo Theorem~3) applies to theorems with \emph{enumerable} failure
+modes; generalization to, e.g., \texttt{behavioral\_quality}
+(continuous-score theorems) or \texttt{no\_false\_activation}
+(structural theorems) is untested.  If the primary result is
+positive, a follow-up sweep across at least
+\texttt{behavioral\_quality} and \texttt{behavioral\_no\_anomaly}
+is the natural next experiment.
+
+\paragraph{Single LM.}  The reflection model is fixed at Gemma~4.
+Frontier models may parse structured obligation text differently.
+A cross-LM re-run on the treatment and strongest baseline is
+declared as follow-up.
+
+\paragraph{Single-component candidate.}  Our candidate has one
+mutable text slot (\texttt{policy\_prompt}).  GEPA's
+component-selection machinery is therefore exercised trivially.
+Multi-component candidates --- where different components fail
+different obligations --- may change the picture.
+
+\paragraph{Synthetic task.}  The harness is deliberately a
+one-knob task to isolate the evaluator-to-optimizer pipeline.  A
+strong result here suggests but does not establish that real
+agent tasks will behave the same way; realistic tasks introduce
+retrieval noise, API flakiness, and agent-complexity variance
+that may interact with either arm.
+
+\paragraph{GEPA version coupling.}  Results are reported for GEPA
+\texttt{0.1.1}.  GEPA's adapter protocol may evolve; the
+\texttt{propose\_new\_texts} attribute, for instance, is a required
+member even when unused.  Future GEPA versions may change the
+conditions under which certificate-based adapters are picked up.
+
+\paragraph{Mock-smoke and real-run separation.}  The experiment
+driver supports a mock reflection LM for CI smoke testing.  Mocked
+runs are flagged in the output JSON (\texttt{mock\_reflection\_lm:
+true}) and filtered by the analysis script by default.  Measured
+results in Section~\ref{sec:results} use real Gemma~4 only.
+
+\paragraph{No compute-adjusted comparison.}  The arms use the same
+budget in GEPA iterations, but the reflection-LM token cost differs
+by arm (the cert-binary feedback is longer than the scalar arm's
+single-line score).  A compute-adjusted re-run, matching total
+reflection-LM token budget rather than iteration count, is a
+follow-up.

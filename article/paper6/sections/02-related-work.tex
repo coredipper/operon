@@ -1,0 +1,47 @@
+\section{Related Work}\label{sec:related}
+
+\paragraph{Reflective-evolution prompt optimization.}
+GEPA~\cite{agrawal2025gepa} evolves text components via
+reflection-driven mutation over a Pareto front.  Earlier work on
+prompt-optimization for LLMs (OPRO~\cite{yang2024opro},
+APE~\cite{zhou2022ape}) uses scalar reward or rank-based comparison
+as the primary evaluator signal; feedback is either absent or
+free-form output from a grading LLM.  Our paper tests whether
+replacing that scalar channel with a constrained, formal-predicate
+verifier changes mutation efficiency in the reflective branch.
+
+\paragraph{Verifier-guided LLM generation.}  Outcome verification has
+been used to filter, rerank, or constrain LLM outputs in program
+synthesis, math, and theorem proving.  The signal there is typically
+used \emph{outside} the optimization loop --- as a final gate or as
+part of best-of-$N$ selection.  Our work differs in using verifier
+output as the optimizer's \emph{inner-loop} score, driving which
+candidates the reflection model sees and how.
+
+\paragraph{Operon certificates.}  The Operon project~\cite{banu2026operon}
+exposes a registry of theorems with associated verify functions
+(e.g.\ \texttt{behavioral\_stability\_windowed},
+\texttt{behavioral\_quality}) over structural and behavioral
+predicates drawn from biological agent designs.  A certificate
+records the theorem name, parameters, a conclusion, and a source
+trace; \texttt{verify()} re-derives the predicate from parameters and
+returns \texttt{(holds, evidence)}.  The evidence dictionary is what
+this paper's treatment arm feeds to GEPA's reflection LM as
+obligation text.
+
+\paragraph{DSPy and GEPA integration.}  DSPy~\cite{khattab2024dspy}
+provides a compile abstraction for LLM programs that can host
+GEPA-evolved components via the \texttt{DSPyFullProgramAdapter}.  We
+do not use DSPy here --- our candidate is a single text component
+rather than a program --- but the same certificate mechanism could
+bind to DSPy compile artifacts in a follow-up experiment (Theorem~2
+of the companion memo).
+
+\paragraph{Agent2Agent (A2A) protocol.}  The A2A
+specification~\cite{a2a2025} is a JSON-RPC-2.0 interoperability
+layer that defines \texttt{Message} objects with polymorphic
+\texttt{Part} payloads.  The companion memo proposes a canonical
+\texttt{DataPart} schema for Operon certificates.  The paper-6
+experiment does not exchange certificates over A2A wire, but every
+candidate score reported here is in principle serializable as such a
+\texttt{Part}.

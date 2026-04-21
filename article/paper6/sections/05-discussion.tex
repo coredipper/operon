@@ -1,0 +1,67 @@
+\section{Discussion}\label{sec:discussion}
+
+\subsection{What the arms hold constant and what they vary}
+
+The three arms share the same task, the same harness, the same
+reflection LM, the same GEPA configuration, and the same convergence
+predicate.  What they vary is strictly the evaluator's output
+channel:
+
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=2pt]
+\item \textbf{cert-binary}: $\{0,1\}$ score plus structured
+obligation text derived from the theorem's verify function's
+evidence dictionary.
+\item \textbf{scalar}: graded score on $[0, 1]$ peaking at theorem-holds, no
+feedback text beyond the score.
+\item \textbf{scalar-evidence}: graded score on $[0, 1]$ peaking at
+theorem-holds, plus free-form text enumerating the violating
+windows and their means.  No theorem framing.
+\end{itemize}
+
+Any observed performance difference, therefore, attaches to one of:
+(a) binarization of the score, (b) presence of obligation
+evidence text, or (c) presence of the theorem framing line that
+names the predicate explicitly.  The active-control arm separates
+(a) from (b).  Comparing cert-binary to scalar-evidence isolates
+(a) + (c): if the two tie, framing alone did not help; if
+cert-binary wins, (a) or (c) carries signal.  The formatter
+ablation on seeds 0--4 further separates (b) from
+(b) + (c) by stripping the evidence numbers while keeping the
+window index, giving three grain levels of text structure.
+
+\subsection{Reading the outcome}
+
+\placeholder{Interpretation of the observed table: which signal
+channel the reflection LM is most responsive to.  Specifically,
+comment on the cert-binary vs scalar-evidence gap (isolates
+binarization and framing), and on the formatter-ablation gap
+(isolates numbers vs indices).}
+
+\subsection{What this does not show}
+
+The synthetic task is a \emph{signal-channel} test, not a
+general-capability test.  A cert-binary win on a one-knob task does
+not establish that certificate-based evaluators dominate on
+multi-component DSPy programs, on non-enumerable failure modes, or
+on tasks where the reflection LM is weaker at parsing structured
+constraints than numeric gradients.
+
+Our LM is Gemma 4, run locally via Ollama.  Frontier models may
+behave differently, particularly on the scalar-evidence arm where
+the feedback is rich English.  A cross-LM robustness follow-up is
+declared as out of scope here; see Section~\ref{sec:followups}.
+
+\subsection{Relationship to Operon's broader thesis}\label{sec:thesis}
+
+The Operon convergence layer already supports six external
+frameworks at the \emph{topology} level (swarms, DeerFlow,
+AnimaWorks, Ralph, A-Evolve, Scion).  This paper's contribution is
+to extend convergence to the \emph{evaluator} level: a single
+integration module (\texttt{operon\_ai/convergence/gepa\_adapter.py})
+lets any of Operon's eight registered theorems stand in for
+GEPA's scalar reward.  Whether that integration \emph{helps} is the
+empirical question this paper answers.  The theorem
+registry~\cite{banu2026operon} is append-only: downstream users register a
+verify function once via
+\texttt{operon\_ai.core.certificate.register\_verify\_fn} and the
+GEPA adapter picks it up automatically.

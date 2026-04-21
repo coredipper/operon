@@ -2,6 +2,21 @@
 
 This page tracks the recent direction of the project.
 
+## v0.37.1
+
+- New `retain_trajectories_for_reflection` keyword-only field on
+  `OperonCertificateAdapter`.  Default `False` preserves GEPA's
+  `capture_traces` semantics exactly (no hidden trajectory retention).
+  Set to `True` when your `obligation_formatter` needs trajectory
+  content at reflection time regardless of the caller's
+  `capture_traces` setting.
+- Paper 6 experiment scaffold under `eval/convergence/`: synthetic
+  windowed-stability harness, baseline and active-control GEPA
+  adapters, experiment driver with mock-LM smoke mode, and an
+  analysis pipeline with Mann-Whitney U, Wilson CIs, and
+  right-censored CDF plot.
+- Paper-style write-up at `article/paper6/` (tectonic build).
+
 ## v0.37.0
 
 - New `OperonCertificateAdapter` (`operon_ai/convergence/gepa_adapter.py`) —

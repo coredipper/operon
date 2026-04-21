@@ -137,6 +137,25 @@ class OperonCertificateAdapter(Generic[DataInst, Trajectory, RolloutOutput]):
     )
     conclusion_template: str = "{theorem} on GEPA candidate"
     source: str = "gepa_adapter"
+    # GEPAAdapter protocol: ``propose_new_texts`` is an optional hook
+    # that lets the adapter override the default LM-based reflection
+    # proposer.  We don't override (we want GEPA's standard reflective
+    # proposer), but GEPA dereferences this attribute unconditionally,
+    # so it must exist.  ``None`` tells GEPA to fall back to the
+    # default proposer.  Kept positional to preserve the pre-existing
+    # public signature (Roborev #859).
+    propose_new_texts: Any = None
+    # Trajectory retention policy for the reflective pass.  When False
+    # (default), ``capture_traces`` governs retention exactly as GEPA
+    # expects — no hidden retention, no memory/privacy surprise.  Set to
+    # True only when the caller's ``obligation_formatter`` needs
+    # trajectory content to render full evidence (e.g. the paper-6
+    # stability_windowed formatter).  In that case the adapter
+    # side-channels trajectories for reflection regardless of
+    # ``capture_traces``.  Keyword-only so that inserting the field
+    # does not shift any existing positional __init__ arity
+    # (Roborev #858).
+    retain_trajectories_for_reflection: bool = field(default=False, kw_only=True)
 
     def __post_init__(self) -> None:
         if resolve_verify_fn(self.theorem) is None:
@@ -190,10 +209,19 @@ class OperonCertificateAdapter(Generic[DataInst, Trajectory, RolloutOutput]):
             trajectories=trajectories if capture_traces else None,
             num_metric_calls=len(batch),
         )
-        # Side-channel: attach verifications for the reflective pass.
-        # GEPA ignores unknown attributes; this lets reflection access them
-        # without plumbing a second return value.
+        # Always side-channel verifications — they are compact
+        # (theorem name, params, holds-bool, evidence dict) and the
+        # reflective pass needs them unconditionally to score.
         object.__setattr__(batch_obj, "_operon_verifications", verifications)
+        # Only side-channel raw trajectories when the caller explicitly
+        # opted in.  Callers who leave ``retain_trajectories_for_reflection``
+        # at its default (False) get the pre-#856 behavior: no hidden
+        # retention beyond what ``capture_traces`` grants.  Callers whose
+        # obligation formatter needs trajectory content (paper-6
+        # stability_windowed) opt in explicitly so the retention shows
+        # up at the call site (Roborev #857 fix).
+        if self.retain_trajectories_for_reflection:
+            object.__setattr__(batch_obj, "_operon_trajectories", trajectories)
         return batch_obj
 
     def make_reflective_dataset(
@@ -228,7 +256,18 @@ class OperonCertificateAdapter(Generic[DataInst, Trajectory, RolloutOutput]):
         verifications: list[CertificateVerification] = getattr(
             eval_batch, "_operon_verifications", []
         )
-        trajectories = list(eval_batch.trajectories or [None] * len(eval_batch.outputs))
+        # Prefer the side-channel trajectories populated by ``evaluate``
+        # — they are always present regardless of ``capture_traces``.
+        # Fall back to ``eval_batch.trajectories`` (which GEPA may have
+        # populated) and finally to a list of None sentinels so the zip
+        # below always has something to iterate over.
+        sideband_trajectories = getattr(eval_batch, "_operon_trajectories", None)
+        if sideband_trajectories is not None:
+            trajectories = list(sideband_trajectories)
+        else:
+            trajectories = list(
+                eval_batch.trajectories or [None] * len(eval_batch.outputs)
+            )
         outputs = list(eval_batch.outputs)
 
         if not verifications:
