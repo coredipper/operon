@@ -2,6 +2,21 @@
 
 This page tracks the recent direction of the project.
 
+## v0.37.0
+
+- New `OperonCertificateAdapter` (`operon_ai/convergence/gepa_adapter.py`) —
+  duck-typed `gepa.core.adapter.GEPAAdapter` that drives GEPA reflective
+  evolution with Operon certificates. `{0.0, 1.0}` scores plus
+  obligation-formatted feedback; no `gepa` import required.
+- New A2A certificate codec (`operon_ai/convergence/a2a_certificate.py`) —
+  canonical `operon.cert.v1` `DataPart` encoder/decoder, graceful
+  degradation via `safe_certificate_from_a2a_part`, and
+  `agent_card_skill_for_theorem` for AgentCard skill declarations.
+- Companion memo (`docs/site/external-frameworks.md`) with four
+  certificate-transport theorems: Transport Preservation, DSPy
+  compile-time binding, GEPA counterexample-guided convergence
+  (conjecture), and A2A graceful degradation.
+
 ## v0.28.1
 
 - Certificate preservation through convergence compilers (Swarms, DeerFlow, Ralph, Scion)
