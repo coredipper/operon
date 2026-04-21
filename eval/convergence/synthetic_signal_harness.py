@@ -318,12 +318,13 @@ def candidate_dict_with_throttle(value: float | str) -> dict[str, str]:
     }
 
 
-# Backward-compatible alias.  Pre-#872 callers used
-# ``candidate_text_with_throttle`` to build a prose string.  The shape
-# is now a dict; we keep the old name pointing at the new builder to
-# minimise downstream churn.  New code should use
-# ``candidate_dict_with_throttle``.
-candidate_text_with_throttle = candidate_dict_with_throttle
+# NOTE: the pre-#872 name ``candidate_text_with_throttle`` (which
+# returned a prose *string*) is intentionally NOT re-exported.  The
+# post-#872 return shape is a dict and the old name became actively
+# misleading — it suggested a string return while producing a dict,
+# which broke the one in-repo caller that wrapped it back under
+# ``SEED_COMPONENT_NAME`` (Roborev #873).  Callers should use
+# ``candidate_dict_with_throttle`` directly.
 
 
 # ---------------------------------------------------------------------------

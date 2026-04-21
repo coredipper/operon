@@ -14,7 +14,6 @@ from eval.convergence.synthetic_signal_harness import (
     TaskConfig,
     Trajectory,
     candidate_dict_with_throttle,
-    candidate_text_with_throttle,
     parse_throttle,
     run_rollout,
     seed_candidate,
@@ -187,11 +186,15 @@ class TestCandidateDictBuilder:
         c = candidate_dict_with_throttle(0.3)
         assert set(c.keys()) == {PROMPT_COMPONENT_NAME, THROTTLE_COMPONENT_NAME}
 
-    def test_text_builder_alias_is_the_same_function(self) -> None:
-        """Backward-compat alias: old code referenced
-        ``candidate_text_with_throttle``; it now points at the dict
-        builder so old call sites keep working without churn."""
-        assert candidate_text_with_throttle is candidate_dict_with_throttle
+    def test_text_builder_alias_is_removed(self) -> None:
+        """The pre-#872 ``candidate_text_with_throttle`` name is
+        intentionally NOT re-exported (Roborev #873): it would return
+        a dict despite its ``_text`` suffix, which misled the one
+        in-repo caller that wrapped the result under
+        SEED_COMPONENT_NAME."""
+        import eval.convergence.synthetic_signal_harness as harness_module
+
+        assert not hasattr(harness_module, "candidate_text_with_throttle")
 
 
 # ---------------------------------------------------------------------------
