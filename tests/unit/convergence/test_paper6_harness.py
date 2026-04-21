@@ -47,6 +47,21 @@ class TestParseThrottle:
             == 0.25
         )
 
+    def test_multiple_assignments_last_wins(self) -> None:
+        """Regression for Roborev #864 H.
+
+        LM mutations commonly append a revised value without removing
+        the old one.  The harness must read the *last* assignment —
+        otherwise valid mutations score against a stale throttle and
+        convergence rates are systematically wrong.
+        """
+        text = "policy_throttle = 1.0\n# I've refined this:\npolicy_throttle = 0.3"
+        assert parse_throttle(text) == 0.3
+
+    def test_multiple_assignments_three_way(self) -> None:
+        text = "policy_throttle: 0.9\npolicy_throttle = 0.6\npolicy_throttle=0.2"
+        assert parse_throttle(text) == 0.2
+
 
 class TestRunRollout:
     """Tests for run_rollout — determinism and theorem-parameter shape."""

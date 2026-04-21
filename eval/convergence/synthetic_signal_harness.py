@@ -55,12 +55,20 @@ def parse_throttle(candidate_text: str) -> float:
     behaves identically to ``policy_throttle=1`` — this makes the
     failure-to-convergence a one-way function of *direction*, not
     magnitude.
+
+    If the candidate text contains *multiple* ``policy_throttle``
+    assignments (a common LM failure mode where a revised value is
+    appended without removing the old one), the **last** assignment
+    wins.  This matches the author's intent — editing by append is
+    syntactically messy but semantically a refinement — and prevents
+    stale first-assignment values from silently scoring valid
+    mutations as failures (Roborev #864 H).
     """
-    match = _THROTTLE_PATTERN.search(candidate_text or "")
-    if match is None:
+    matches = _THROTTLE_PATTERN.findall(candidate_text or "")
+    if not matches:
         return _DEFAULT_THROTTLE
     try:
-        value = float(match.group(1))
+        value = float(matches[-1])  # last assignment wins
     except (TypeError, ValueError):
         return _DEFAULT_THROTTLE
     return max(0.0, min(1.0, value))

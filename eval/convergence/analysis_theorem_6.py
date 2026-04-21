@@ -95,10 +95,21 @@ def load_arm_records(
         return []
     records: list[dict[str, Any]] = []
     for path in sorted(arm_dir.glob("seed_*.json")):
+        # Fail loudly on unreadable / corrupt JSON.  Silently continuing
+        # would quietly shrink n_runs and skew Wilson CIs / Mann-Whitney
+        # without any signal in the summary (Roborev #864 M2).  A
+        # truncated result file is a bug in the run, not a routine
+        # condition to tolerate.
         try:
-            rec = json.loads(path.read_text())
-        except (OSError, json.JSONDecodeError):
-            continue
+            text = path.read_text()
+        except OSError as exc:
+            raise RuntimeError(f"Unreadable result file: {path}") from exc
+        try:
+            rec = json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(
+                f"Corrupt result file (JSON parse failed): {path}"
+            ) from exc
         if rec.get("mock_reflection_lm") and not include_mock:
             continue
         if rec.get("gepa_error") is not None and not include_errored:
@@ -108,15 +119,26 @@ def load_arm_records(
 
 
 def count_errored_records(arm_dir: Path, *, include_mock: bool = False) -> int:
-    """Count errored runs in ``arm_dir`` (non-null ``gepa_error``)."""
+    """Count errored runs in ``arm_dir`` (non-null ``gepa_error``).
+
+    Raises ``RuntimeError`` on unreadable or corrupt result files, same
+    as :func:`load_arm_records` — incomplete datasets must not
+    masquerade as valid results (Roborev #864 M2).
+    """
     if not arm_dir.exists():
         return 0
     n = 0
     for path in sorted(arm_dir.glob("seed_*.json")):
         try:
-            rec = json.loads(path.read_text())
-        except (OSError, json.JSONDecodeError):
-            continue
+            text = path.read_text()
+        except OSError as exc:
+            raise RuntimeError(f"Unreadable result file: {path}") from exc
+        try:
+            rec = json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(
+                f"Corrupt result file (JSON parse failed): {path}"
+            ) from exc
         if rec.get("mock_reflection_lm") and not include_mock:
             continue
         if rec.get("gepa_error") is not None:
