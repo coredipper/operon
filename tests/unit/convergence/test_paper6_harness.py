@@ -36,10 +36,12 @@ class TestParseThrottle:
         assert parse_throttle("policy_throttle = 5") == 1.0
 
     def test_clips_below_zero(self) -> None:
-        # regex requires an optional decimal — negative numbers don't match,
-        # so they fall back to default.  This is intentional: the LM is
-        # meant to emit non-negative floats.
-        assert parse_throttle("policy_throttle = -0.5") == 1.0
+        # Negative values parse and clip to 0 (the best-case throttle
+        # from the LM's perspective — the theorem passes trivially).
+        # Previous restrictive regex defaulted to 1.0; the broader
+        # header-location parser (Roborev #867) accepts negatives and
+        # clamps.
+        assert parse_throttle("policy_throttle = -0.5") == 0.0
 
     def test_extra_text_around_marker(self) -> None:
         assert (
@@ -61,6 +63,40 @@ class TestParseThrottle:
     def test_multiple_assignments_three_way(self) -> None:
         text = "policy_throttle: 0.9\npolicy_throttle = 0.6\npolicy_throttle=0.2"
         assert parse_throttle(text) == 0.2
+
+    def test_invalid_last_assignment_falls_back_to_default(self) -> None:
+        """Regression for Roborev #867.
+
+        If the FINAL policy_throttle assignment is malformed (non-numeric
+        RHS, empty RHS, or just punctuation), parse_throttle must fall
+        back to _DEFAULT_THROTTLE — NOT to an earlier valid assignment.
+        Falling through to a stale earlier value would silently score
+        an invalid LM revision as if it were the prior valid one.
+        """
+        # Non-numeric word as last assignment.
+        assert (
+            parse_throttle(
+                "policy_throttle = 0.3\npolicy_throttle = nope"
+            )
+            == 1.0
+        )
+        # Empty RHS.
+        assert parse_throttle("policy_throttle = 0.3\npolicy_throttle =") == 1.0
+        # Just a dash.
+        assert (
+            parse_throttle(
+                "policy_throttle = 0.3\npolicy_throttle = -"
+            )
+            == 1.0
+        )
+
+    def test_valid_last_overrides_invalid_earlier(self) -> None:
+        """Mirror of the above: an invalid earlier assignment does not
+        prevent the valid last assignment from being read."""
+        assert (
+            parse_throttle("policy_throttle = nope\npolicy_throttle = 0.2")
+            == 0.2
+        )
 
 
 class TestRunRollout:
