@@ -59,8 +59,12 @@ class TestWilsonCI:
 # ---------------------------------------------------------------------------
 
 
-@requires_scipy
 class TestMannWhitney:
+    """Most of mann_whitney() is pure Python; the scipy call is only
+    reached when both inputs are non-empty.  Keep the empty-input guard
+    test scipy-free so CI still exercises it."""
+
+    @requires_scipy
     def test_clear_treatment_win_is_significant(self) -> None:
         treatment = [1, 2, 3, 4, 5]
         baseline = [40, 41, 42, 43, 44]
@@ -69,6 +73,7 @@ class TestMannWhitney:
         # Convention: positive rb = treatment dominates (smaller iters).
         assert result["effect_size_rank_biserial"] > 0.8
 
+    @requires_scipy
     def test_clear_treatment_loss_is_not_significant_under_less(self) -> None:
         treatment = [40, 41, 42, 43, 44]
         baseline = [1, 2, 3, 4, 5]
@@ -77,6 +82,7 @@ class TestMannWhitney:
         assert result["p_value"] > 0.5
 
     def test_empty_inputs_return_none(self) -> None:
+        """Empty-input guard returns before any scipy call."""
         result = mann_whitney([], [1, 2])
         assert result["p_value"] is None
         result = mann_whitney([1, 2], [])
@@ -218,10 +224,13 @@ class TestAnalyzeEndToEnd:
 # ---------------------------------------------------------------------------
 
 
-@requires_scipy
 class TestErroredRunFiltering:
     """The paper's methods text says errored runs are excluded from
-    statistics; these tests lock that contract in."""
+    statistics; these tests lock that contract in.
+
+    Only the end-to-end ``analyze()``-invoking test needs scipy; the
+    helper tests (load_arm_records / count_errored_records) are
+    pure-Python and should run scipy-free in CI."""
 
     def test_load_arm_records_filters_errored_by_default(
         self, tmp_path: Path
@@ -267,6 +276,7 @@ class TestErroredRunFiltering:
             (arm_dir / f"seed_{i}.json").write_text(json.dumps(rec))
         assert count_errored_records(arm_dir) == 2
 
+    @requires_scipy
     def test_analyze_reports_errored_counts_and_excludes_them(
         self, tmp_path: Path
     ) -> None:
@@ -376,22 +386,21 @@ class TestConvergenceIterIsGEPAIteration:
 # ---------------------------------------------------------------------------
 
 
-@requires_scipy
 class TestCDFNoImputation:
     """The CDF should treat non-converged runs as right-censored: they
     contribute to the denominator but never to the numerator.  The
     curve for an arm with convergence rate < 1.0 must level off below
     1.0, not at 1.0.
+
+    ``plot_cdf`` itself is scipy-free; only the end-to-end test that
+    calls ``analyze()`` needs scipy.
     """
 
     def test_cdf_signature_uses_arm_to_series(self, tmp_path: Path) -> None:
         """``plot_cdf`` takes ``(converged_iters, total_runs)`` pairs per arm."""
-        import matplotlib
-        try:
-            matplotlib.use("Agg")
-            import matplotlib.pyplot as plt  # noqa: F401
-        except ImportError:
-            pytest.skip("matplotlib not installed")
+        matplotlib = pytest.importorskip("matplotlib")
+        matplotlib.use("Agg")
+        pytest.importorskip("matplotlib.pyplot")
 
         # Arm with 3 converged (iters 5, 10, 15) out of 10 total runs.
         # At x=50, cumulative = 3/10 = 0.3, not 1.0.
@@ -404,6 +413,7 @@ class TestCDFNoImputation:
         assert ok is True
         assert out_path.exists()
 
+    @requires_scipy
     def test_cdf_curve_levels_off_at_convergence_rate_not_one(
         self, tmp_path: Path
     ) -> None:
