@@ -31,7 +31,7 @@ from typing import Any, Callable, Mapping, Sequence
 
 from operon_ai.convergence.gepa_adapter import EvaluationBatch
 
-from .synthetic_signal_harness import SEED_COMPONENT_NAME
+from .synthetic_signal_harness import THROTTLE_COMPONENT_NAME
 
 
 @dataclass
@@ -47,12 +47,16 @@ class ScalarRewardAdapter:
         read the same underlying evidence the certificate arm sees.
     components:
         Mutable component names in the candidate mapping.  Defaults to
-        the single seed component used by the paper-6 harness.
+        ``(THROTTLE_COMPONENT_NAME,)`` — the only component the paper-6
+        harness reads.  Pre-#872 callers that passed the single prose
+        component would have worked by accident; post-#872 the harness
+        reads ``policy_throttle``, so any default other than that would
+        have GEPA mutate a component the harness ignores (Roborev #873).
     """
 
     harness: Callable[[dict[str, str], Any], tuple[Any, Any, dict[str, Any]]]
     components: Sequence[str] = field(
-        default_factory=lambda: (SEED_COMPONENT_NAME,)
+        default_factory=lambda: (THROTTLE_COMPONENT_NAME,)
     )
     # GEPAAdapter protocol hook — must exist even when unused.  See
     # ``OperonCertificateAdapter.propose_new_texts`` for rationale.

@@ -32,7 +32,7 @@ from operon_ai.convergence.gepa_adapter import EvaluationBatch
 
 from .scalar_reward_adapter import _scalar_reward
 from .synthetic_signal_harness import (
-    SEED_COMPONENT_NAME,
+    THROTTLE_COMPONENT_NAME,
     Trajectory,
     render_window_evidence,
 )
@@ -48,11 +48,16 @@ class ScalarWithEvidenceAdapter:
     from those fields into the form the cert arm's obligation
     formatter produces — matched token-for-token on the window index
     and mean value, minus the "Theorem: ..." framing.
+
+    Default ``components`` points at ``THROTTLE_COMPONENT_NAME`` — the
+    only component the paper-6 harness reads.  See Roborev #873 for
+    the defect this prevents: defaulting to the prose component would
+    have GEPA mutate a component the harness ignores.
     """
 
     harness: Callable[[dict[str, str], Any], tuple[Any, Any, dict[str, Any]]]
     components: Sequence[str] = field(
-        default_factory=lambda: (SEED_COMPONENT_NAME,)
+        default_factory=lambda: (THROTTLE_COMPONENT_NAME,)
     )
     propose_new_texts: Any = None  # GEPAAdapter protocol hook
 

@@ -16,7 +16,8 @@ from eval.convergence.scalar_with_evidence_adapter import (
 )
 from eval.convergence.synthetic_signal_harness import (
     SEED_COMPONENT_NAME,
-    candidate_text_with_throttle,
+    THROTTLE_COMPONENT_NAME,
+    candidate_dict_with_throttle,
     run_rollout,
 )
 
@@ -65,21 +66,21 @@ class TestScalarReward:
 class TestScalarRewardAdapter:
     def test_evaluate_returns_graded_scores_not_binary(self) -> None:
         adapter = ScalarRewardAdapter(harness=_harness)
-        cand = candidate_text_with_throttle(0.25)
+        cand = candidate_dict_with_throttle(0.25)
         batch = adapter.evaluate([0, 1], cand)
         for score in batch.scores:
             assert 0.0 < score < 1.0 or score == 0.0 or score == 1.0
 
     def test_feedback_is_minimal_score_only(self) -> None:
         adapter = ScalarRewardAdapter(harness=_harness)
-        cand = candidate_text_with_throttle(0.25)
+        cand = candidate_dict_with_throttle(0.25)
         batch = adapter.evaluate([0], cand)
         reflective = adapter.make_reflective_dataset(
             candidate=cand,
             eval_batch=batch,
-            components_to_update=[SEED_COMPONENT_NAME],
+            components_to_update=[THROTTLE_COMPONENT_NAME],
         )
-        feedback = reflective[SEED_COMPONENT_NAME][0]["Feedback"]
+        feedback = reflective[THROTTLE_COMPONENT_NAME][0]["Feedback"]
         assert feedback.startswith("Score:")
         # Must NOT include any obligation/evidence text.
         assert "window" not in feedback.lower()
@@ -87,7 +88,7 @@ class TestScalarRewardAdapter:
 
     def test_rejects_unknown_component(self) -> None:
         adapter = ScalarRewardAdapter(harness=_harness)
-        cand = candidate_text_with_throttle(0.25)
+        cand = candidate_dict_with_throttle(0.25)
         batch = adapter.evaluate([0], cand)
         with pytest.raises(ValueError, match="not declared"):
             adapter.make_reflective_dataset(
@@ -105,41 +106,41 @@ class TestScalarRewardAdapter:
 class TestScalarWithEvidenceAdapter:
     def test_feedback_contains_window_evidence(self) -> None:
         adapter = ScalarWithEvidenceAdapter(harness=_harness)
-        cand = candidate_text_with_throttle(1.0)  # failing
+        cand = candidate_dict_with_throttle(1.0)  # failing
         batch = adapter.evaluate([0, 1], cand)
         reflective = adapter.make_reflective_dataset(
             candidate=cand,
             eval_batch=batch,
-            components_to_update=[SEED_COMPONENT_NAME],
+            components_to_update=[THROTTLE_COMPONENT_NAME],
         )
-        feedback = reflective[SEED_COMPONENT_NAME][0]["Feedback"]
+        feedback = reflective[THROTTLE_COMPONENT_NAME][0]["Feedback"]
         assert "Score:" in feedback
         assert "window" in feedback
         assert "VIOLATING" in feedback
 
     def test_passing_feedback_has_no_adjust_line(self) -> None:
         adapter = ScalarWithEvidenceAdapter(harness=_harness)
-        cand = candidate_text_with_throttle(0.1)  # passing
+        cand = candidate_dict_with_throttle(0.1)  # passing
         batch = adapter.evaluate([0], cand)
         reflective = adapter.make_reflective_dataset(
             candidate=cand,
             eval_batch=batch,
-            components_to_update=[SEED_COMPONENT_NAME],
+            components_to_update=[THROTTLE_COMPONENT_NAME],
         )
-        feedback = reflective[SEED_COMPONENT_NAME][0]["Feedback"]
+        feedback = reflective[THROTTLE_COMPONENT_NAME][0]["Feedback"]
         assert "Adjust candidate" not in feedback
 
     def test_feedback_does_not_mention_theorem_framing(self) -> None:
         """Active control: evidence text, NOT theorem framing."""
         adapter = ScalarWithEvidenceAdapter(harness=_harness)
-        cand = candidate_text_with_throttle(1.0)
+        cand = candidate_dict_with_throttle(1.0)
         batch = adapter.evaluate([0], cand)
         reflective = adapter.make_reflective_dataset(
             candidate=cand,
             eval_batch=batch,
-            components_to_update=[SEED_COMPONENT_NAME],
+            components_to_update=[THROTTLE_COMPONENT_NAME],
         )
-        feedback = reflective[SEED_COMPONENT_NAME][0]["Feedback"]
+        feedback = reflective[THROTTLE_COMPONENT_NAME][0]["Feedback"]
         # The cert arm's obligation formatter uses "Theorem:" — the active
         # control must not, otherwise it isn't a control.
         assert "Theorem:" not in feedback
@@ -220,44 +221,52 @@ class TestCertBinaryContentMatched:
 
     def _render_both_arms(
         self,
-        candidate_text: str,
+        candidate: dict[str, str],
         *,
         capture_traces: bool = True,
     ) -> tuple[str, str]:
         """Return the full feedback from (cert-binary, scalar-evidence)
         on the same candidate + data instance.  ``capture_traces``
-        exercises both GEPA code paths."""
+        exercises both GEPA code paths.
+
+        Takes the full candidate dict directly — do NOT wrap it under
+        ``THROTTLE_COMPONENT_NAME``; post-#872 the candidate IS the dict
+        (Roborev #873).
+        """
         from operon_ai.convergence.gepa_adapter import OperonCertificateAdapter
 
         from eval.convergence.theorem_6_experiment import (
+            MUTABLE_COMPONENTS,
             stability_windowed_obligation_formatter,
         )
 
         cert = OperonCertificateAdapter(
             theorem="behavioral_stability_windowed",
             harness=_harness,
-            components=[SEED_COMPONENT_NAME],
+            components=list(MUTABLE_COMPONENTS),
             obligation_formatter=stability_windowed_obligation_formatter,
             # Same opt-in the paper-6 driver uses.
             retain_trajectories_for_reflection=True,
             source="test",
         )
         scalar_ev = ScalarWithEvidenceAdapter(harness=_harness)
-        cand = {SEED_COMPONENT_NAME: candidate_text}
 
-        cert_batch = cert.evaluate([0], cand, capture_traces=capture_traces)
-        scalar_batch = scalar_ev.evaluate([0], cand)
+        cert_batch = cert.evaluate([0], candidate, capture_traces=capture_traces)
+        scalar_batch = scalar_ev.evaluate([0], candidate)
 
+        component = MUTABLE_COMPONENTS[0]
         cert_fb = cert.make_reflective_dataset(
-            cand, cert_batch, [SEED_COMPONENT_NAME]
-        )[SEED_COMPONENT_NAME][0]["Feedback"]
+            candidate, cert_batch, [component]
+        )[component][0]["Feedback"]
         scalar_fb = scalar_ev.make_reflective_dataset(
-            cand, scalar_batch, [SEED_COMPONENT_NAME]
-        )[SEED_COMPONENT_NAME][0]["Feedback"]
+            candidate, scalar_batch, [component]
+        )[component][0]["Feedback"]
         return cert_fb, scalar_fb
 
     def test_tails_are_byte_identical_on_failing_candidate(self) -> None:
-        cert_fb, scalar_fb = self._render_both_arms(candidate_text_with_throttle(1.0))
+        cert_fb, scalar_fb = self._render_both_arms(
+            candidate_dict_with_throttle(1.0)
+        )
         # Strip the single framing line from each; the remainder must match.
         cert_tail = "\n".join(cert_fb.splitlines()[1:])
         scalar_tail = "\n".join(scalar_fb.splitlines()[1:])
@@ -268,13 +277,15 @@ class TestCertBinaryContentMatched:
         )
 
     def test_tails_are_byte_identical_on_passing_candidate(self) -> None:
-        cert_fb, scalar_fb = self._render_both_arms(candidate_text_with_throttle(0.1))
+        cert_fb, scalar_fb = self._render_both_arms(
+            candidate_dict_with_throttle(0.1)
+        )
         cert_tail = "\n".join(cert_fb.splitlines()[1:])
         scalar_tail = "\n".join(scalar_fb.splitlines()[1:])
         assert cert_tail == scalar_tail
 
     def test_first_lines_are_the_only_intended_difference(self) -> None:
-        cert_fb, scalar_fb = self._render_both_arms(candidate_text_with_throttle(1.0))
+        cert_fb, scalar_fb = self._render_both_arms(candidate_dict_with_throttle(1.0))
         cert_first = cert_fb.splitlines()[0]
         scalar_first = scalar_fb.splitlines()[0]
         # cert-binary: Theorem framing with pass/fail state
@@ -289,7 +300,7 @@ class TestCertBinaryContentMatched:
         ``capture_traces=False``.  Any future drift in the no-trace
         path fails this test — not just the traced path."""
         cert_fb, scalar_fb = self._render_both_arms(
-            candidate_text_with_throttle(1.0), capture_traces=False
+            candidate_dict_with_throttle(1.0), capture_traces=False
         )
         cert_tail = "\n".join(cert_fb.splitlines()[1:])
         scalar_tail = "\n".join(scalar_fb.splitlines()[1:])
@@ -319,11 +330,11 @@ class TestTrajectoryRetentionOptIn:
         adapter = OperonCertificateAdapter(
             theorem="behavioral_stability_windowed",
             harness=_harness,
-            components=[SEED_COMPONENT_NAME],
+            components=[THROTTLE_COMPONENT_NAME],
             source="test-default",
             # retain_trajectories_for_reflection left at default False
         )
-        cand = candidate_text_with_throttle(1.0)
+        cand = candidate_dict_with_throttle(1.0)
         batch = adapter.evaluate([0], cand, capture_traces=False)
         # No hidden retention.
         assert not hasattr(batch, "_operon_trajectories")
@@ -340,10 +351,10 @@ class TestTrajectoryRetentionOptIn:
         adapter = OperonCertificateAdapter(
             theorem="behavioral_stability_windowed",
             harness=_harness,
-            components=[SEED_COMPONENT_NAME],
+            components=[THROTTLE_COMPONENT_NAME],
             source="test-captured",
         )
-        cand = candidate_text_with_throttle(1.0)
+        cand = candidate_dict_with_throttle(1.0)
         batch = adapter.evaluate([0], cand, capture_traces=True)
         assert batch.trajectories is not None
         # Even with traces captured publicly, no side-channel copy.
@@ -364,12 +375,12 @@ class TestTrajectoryRetentionOptIn:
         adapter = OperonCertificateAdapter(
             theorem="behavioral_stability_windowed",
             harness=_harness,
-            components=[SEED_COMPONENT_NAME],
+            components=[THROTTLE_COMPONENT_NAME],
             obligation_formatter=stability_windowed_obligation_formatter,
             retain_trajectories_for_reflection=True,
             source="test-optin",
         )
-        cand = candidate_text_with_throttle(1.0)
+        cand = candidate_dict_with_throttle(1.0)
         batch_default = adapter.evaluate([0, 1], cand, capture_traces=False)
         batch_captured = adapter.evaluate([0, 1], cand, capture_traces=True)
         # Public attribute respects capture_traces contract.
@@ -408,7 +419,7 @@ class TestTrajectoryRetentionOptIn:
         adapter = OperonCertificateAdapter(
             "behavioral_stability_windowed",  # theorem
             _harness,                         # harness
-            (SEED_COMPONENT_NAME,),           # components
+            (THROTTLE_COMPONENT_NAME,),           # components
             custom_formatter,                 # obligation_formatter
             "custom template for {theorem}",  # conclusion_template
             "legacy_positional_test",         # source
@@ -457,7 +468,7 @@ class TestTrajectoryRetentionOptIn:
             OperonCertificateAdapter(  # pyright: ignore[reportCallIssue]
                 "behavioral_stability_windowed",  # theorem
                 _harness,                         # harness
-                (SEED_COMPONENT_NAME,),           # components
+                (THROTTLE_COMPONENT_NAME,),           # components
                 None,                             # obligation_formatter
                 "c",                              # conclusion_template
                 "s",                              # source
@@ -478,17 +489,17 @@ class TestTrajectoryRetentionOptIn:
         adapter = OperonCertificateAdapter(
             theorem="behavioral_stability_windowed",
             harness=_harness,
-            components=[SEED_COMPONENT_NAME],
+            components=[THROTTLE_COMPONENT_NAME],
             obligation_formatter=stability_windowed_obligation_formatter,
             retain_trajectories_for_reflection=True,
             source="test",
         )
-        cand = candidate_text_with_throttle(1.0)
+        cand = candidate_dict_with_throttle(1.0)
         batch = adapter.evaluate([0, 1], cand, capture_traces=False)
         reflective = adapter.make_reflective_dataset(
-            cand, batch, [SEED_COMPONENT_NAME]
+            cand, batch, [THROTTLE_COMPONENT_NAME]
         )
-        feedback = reflective[SEED_COMPONENT_NAME][0]["Feedback"]
+        feedback = reflective[THROTTLE_COMPONENT_NAME][0]["Feedback"]
         for idx in range(4):
             assert f"window {idx}:" in feedback
         assert feedback.splitlines()[0].startswith("Theorem:")
