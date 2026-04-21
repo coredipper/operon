@@ -156,6 +156,50 @@ class TestFormatFeedbackWithEvidence:
 
 
 # ---------------------------------------------------------------------------
+# Roborev #870: _MockReflectionLM must emit fenced config
+# ---------------------------------------------------------------------------
+
+
+class TestMockReflectionLMEmitsFencedConfig:
+    """Regression for Roborev #870.
+
+    The fenced-block-required protocol from #869 would silently break
+    every ``--mock-reflection-lm`` smoke run if the mock kept emitting
+    bare ``policy_throttle = X``.  Ensure the mock's output parses
+    cleanly via the same ``parse_throttle`` the real harness uses."""
+
+    def test_mock_output_parses_via_parse_throttle(self) -> None:
+        from eval.convergence.synthetic_signal_harness import parse_throttle
+        from eval.convergence.theorem_6_experiment import _MockReflectionLM
+
+        mock = _MockReflectionLM(decrement=0.3, floor=0.1)
+        # Each call decrements self._current by 0.3 from start 1.0.
+        first = mock("reflection prompt")
+        assert parse_throttle(first) == 0.7
+
+        second = mock("reflection prompt")
+        assert parse_throttle(second) == 0.4
+
+        third = mock("reflection prompt")
+        # Floor clamps at 0.1.
+        assert parse_throttle(third) == 0.1
+
+    def test_mock_output_uses_config_prefix_protocol(self) -> None:
+        """Verify the mock emits a ``CONFIG:``-prefixed line, which
+        survives GEPA's reflective-proposer normalization (unlike
+        markdown fences — see Roborev #870)."""
+        from eval.convergence.theorem_6_experiment import _MockReflectionLM
+
+        mock = _MockReflectionLM()
+        out = mock("p")
+        # Must contain a real CONFIG: line at line start.
+        import re as _re
+        assert _re.search(
+            r"^\s*CONFIG\s*[:=]\s*policy_throttle", out, _re.MULTILINE | _re.IGNORECASE
+        ), f"mock output missing CONFIG: prefix line:\n{out}"
+
+
+# ---------------------------------------------------------------------------
 # Roborev #854 H1 + #855: arms share the same evidence block byte-for-byte
 # ---------------------------------------------------------------------------
 

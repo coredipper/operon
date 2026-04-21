@@ -34,24 +34,28 @@ from typing import Any
 # Candidate parsing — the LM's only lever
 # ---------------------------------------------------------------------------
 
-# Fenced-code-block extractor.  The candidate's config lives inside a
-# fenced block so prose, examples, and quoted prior attempts outside
-# the fence cannot masquerade as assignments (Roborev #868, #869).
-# Matches both ``` and ~~~ fences, optional language tag, DOTALL so
-# newlines inside the block are captured.
-_FENCED_BLOCK_PATTERN = re.compile(
-    r"(?:```|~~~)[^\n]*\n(.*?)\n?(?:```|~~~)",
-    re.DOTALL,
-)
-
-# Locate ``policy_throttle`` assignment *headers* — anchored to the
-# start of a line (with optional leading whitespace).  The MULTILINE
-# flag lets ``^`` match each line boundary.  We intentionally do NOT
-# capture the right-hand side here so empty/whitespace-only RHS
-# doesn't vanish from the match list and trigger silent fall-through
-# to an earlier assignment (Roborev #867).
-_THROTTLE_HEADER_PATTERN = re.compile(
-    r"^\s*policy_throttle\s*[:=]",
+# ``CONFIG:`` prefix marker.  Real policy_throttle assignments must
+# appear on a line whose whole payload is ``CONFIG: policy_throttle =
+# VALUE`` (optionally indented).  Any other mention — line-start
+# prose, mid-line prose, quoted prior attempts, markdown examples —
+# is ignored because it lacks the prefix.
+#
+# We chose a prefix rather than a markdown fenced code block because
+# GEPA's default reflective proposer strips markdown fences when it
+# normalizes an LM's mutation output (observed empirically: a mock
+# returning ``` ```config\npolicy_throttle=X\n``` `` arrives at the
+# harness as bare ``policy_throttle=X``, so the fence marker is lost
+# across the round trip).  A plain-text prefix survives GEPA's
+# normalization intact while still distinguishing config from prose,
+# which was the underlying requirement of Roborev #868, #869, and #870.
+#
+# The CONFIG prefix is case-insensitive and the colon/equals between
+# CONFIG and the keyword is required — matching ``CONFIG:``,
+# ``config:``, etc.  The anchoring is line-start (with optional
+# indentation) under re.MULTILINE so mid-line prose like
+# ``Example config: CONFIG: policy_throttle = 1.0`` is not a match.
+_CONFIG_LINE_PATTERN = re.compile(
+    r"^\s*CONFIG\s*[:=]\s*policy_throttle\s*[:=]",
     re.IGNORECASE | re.MULTILINE,
 )
 
@@ -63,47 +67,36 @@ def parse_throttle(candidate_text: str) -> float:
     """Extract the policy_throttle value from a candidate prompt.
 
     The parser follows a strict machine-readable protocol: the
-    assignment MUST appear inside a fenced code block (``` or ~~~).
-    Any ``policy_throttle = ...`` outside a fenced block is treated
-    as prose/example and ignored.  This defends against LM outputs
-    that quote a prior attempt on its own line outside the config
-    block (Roborev #868 tightened line-start anchoring; #869 further
-    noticed that line-start alone doesn't distinguish real config
-    from standalone examples).
+    assignment MUST appear on a line starting with the ``CONFIG:``
+    prefix, e.g. ``CONFIG: policy_throttle = 0.3`` (optionally
+    indented).  Any ``policy_throttle = ...`` without the prefix is
+    treated as prose/example and ignored.
 
-    Inside the fenced scope:
-
-    - Multi-assignment: the LAST line-start assignment wins
+    - Multi-assignment: the LAST valid CONFIG: line wins
       (append-to-revise is supported).
-    - Values clip to [0, 1].  Negative values clip to 0, large
+    - Values clip to [0, 1].  Negative values clip to 0; large
       values clip to 1.
     - Malformed final assignments (``= nope``, ``=`` with empty RHS,
       ``= -``) fall back to ``_DEFAULT_THROTTLE`` rather than to an
-      earlier valid assignment (Roborev #867).
+      earlier valid CONFIG: line (Roborev #867).
+    - Lines without the ``CONFIG:`` prefix are ignored, which defends
+      against prose mentions (#868), line-start examples after a
+      real config (#869), and non-config markdown fences (#870).
 
-    When no fenced block is present, returns ``_DEFAULT_THROTTLE`` —
+    When no CONFIG: line is present, returns ``_DEFAULT_THROTTLE`` —
     the strict format is a precondition, and malformed prompts score
     as failing so GEPA's reflection LM sees a signal to restore it.
     """
     text = candidate_text or ""
-    # Extract every fenced code block's inner content; concatenate so
-    # a final fenced block still wins on "last assignment" semantics.
-    blocks = _FENCED_BLOCK_PATTERN.findall(text)
-    if not blocks:
-        # No fenced block → malformed; default to failing throttle so
-        # reflection feedback tells the LM to restore the config fence.
-        return _DEFAULT_THROTTLE
-    scope = "\n".join(blocks)
-
     last_header: re.Match[str] | None = None
-    for header in _THROTTLE_HEADER_PATTERN.finditer(scope):
+    for header in _CONFIG_LINE_PATTERN.finditer(text):
         last_header = header
     if last_header is None:
         return _DEFAULT_THROTTLE
     # Parse the first whitespace-separated token after the last
     # header.  A malformed RHS falls back to _DEFAULT_THROTTLE, never
     # to an earlier valid assignment.
-    rest_of_line = scope[last_header.end():].split("\n", 1)[0]
+    rest_of_line = text[last_header.end():].split("\n", 1)[0]
     tokens = rest_of_line.split()
     if not tokens:
         return _DEFAULT_THROTTLE
@@ -261,17 +254,19 @@ class SyntheticDataset:
 SEED_CANDIDATE_TEXT = """You operate a synthetic throttled source.
 
 Emit observations drawn around the configured policy value.
-Adjust ``policy_throttle`` inside the config block below.
+Adjust the ``CONFIG:`` line below.
 
-```config
-policy_throttle = 1.0
-```
+CONFIG: policy_throttle = 1.0
 """.strip()
 """Starting prompt — contains the policy_throttle marker at 1.0 (fails).
 
-The marker lives inside a fenced code block so that explanatory
+The assignment is prefixed with ``CONFIG:`` so that explanatory
 prose, examples, or quoted prior attempts elsewhere in the prompt
-cannot be mistaken for the real assignment (Roborev #869)."""
+cannot be mistaken for the real assignment (Roborev #868/#869/#870).
+We chose a plain-text prefix rather than a markdown fenced block
+because GEPA's default reflective proposer strips markdown fences
+during normalization, losing the marker across the mutation round
+trip."""
 
 
 SEED_COMPONENT_NAME = "policy_prompt"
@@ -286,17 +281,15 @@ def seed_candidate() -> dict[str, str]:
 def candidate_text_with_throttle(value: float) -> str:
     """Build a well-formed candidate prompt with ``policy_throttle = value``.
 
-    Wraps the assignment in a fenced code block so :func:`parse_throttle`
-    reads it as real config rather than prose.  Use this when writing
-    tests or synthetic candidates — hand-crafting the fence
-    boilerplate at every call site is error-prone and obscures the
-    scenario being tested.
+    Prefixes the assignment with the ``CONFIG:`` marker so
+    :func:`parse_throttle` reads it as real config rather than prose.
+    Use this when writing tests or synthetic candidates — hand-crafting
+    the prefix boilerplate at every call site is error-prone and
+    obscures the scenario being tested.
     """
     return (
         "You operate a synthetic throttled source.\n\n"
-        "```config\n"
-        f"policy_throttle = {value}\n"
-        "```"
+        f"CONFIG: policy_throttle = {value}"
     )
 
 
