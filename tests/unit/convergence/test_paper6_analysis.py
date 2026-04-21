@@ -276,6 +276,24 @@ class TestErroredRunFiltering:
             (arm_dir / f"seed_{i}.json").write_text(json.dumps(rec))
         assert count_errored_records(arm_dir) == 2
 
+    def test_corrupt_json_raises_instead_of_silent_skip(
+        self, tmp_path: Path
+    ) -> None:
+        """Regression for Roborev #864 M2.
+
+        A truncated or corrupt ``seed_*.json`` would previously be
+        silently skipped, shrinking ``n_runs`` and skewing statistics
+        with no signal in the summary.  Now both loaders raise so
+        incomplete datasets cannot masquerade as valid results.
+        """
+        arm_dir = tmp_path / "cert-binary"
+        arm_dir.mkdir(parents=True)
+        (arm_dir / "seed_0.json").write_text('{"convergence_iteration": 5')  # missing close
+        with pytest.raises(RuntimeError, match="Corrupt result file"):
+            load_arm_records(arm_dir)
+        with pytest.raises(RuntimeError, match="Corrupt result file"):
+            count_errored_records(arm_dir)
+
     @requires_scipy
     def test_analyze_reports_errored_counts_and_excludes_them(
         self, tmp_path: Path
@@ -379,6 +397,24 @@ class TestConvergenceIterIsGEPAIteration:
             for i in range(10)
         ]
         assert _first_convergence_iter(events) is None
+
+    def test_streak_starting_at_iter_0_reports_as_1(self) -> None:
+        """Regression for Roborev #864 M1.
+
+        GEPA iteration 0 is the initial evaluation, not a mutation
+        step.  If the streak happens to start at iteration 0 (initial
+        candidate already passes and stays passing), the
+        mutations-to-convergence metric should still be reported as
+        1 — the first mutation step that continues the streak — not 0.
+        """
+        from eval.convergence.theorem_6_experiment import _first_convergence_iter
+
+        events = [
+            {"iteration": 0, "best_score": 1.0},
+            {"iteration": 1, "best_score": 1.0},
+            {"iteration": 2, "best_score": 1.0},
+        ]
+        assert _first_convergence_iter(events) == 1  # clamped from 0
 
 
 # ---------------------------------------------------------------------------

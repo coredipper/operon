@@ -224,7 +224,19 @@ def _first_convergence_iter(
                 # Prefer GEPA's own iteration counter; fall back to list
                 # index if the event is malformed.
                 reported = first.get("iteration")
-                return int(reported) if reported is not None else i - consecutive + 1
+                value = (
+                    int(reported)
+                    if reported is not None
+                    else i - consecutive + 1
+                )
+                # Clamp to ≥ 1: GEPA's iteration 0 is the initial
+                # evaluation, not a mutation step.  If the streak
+                # starts at iter 0, the candidate converged
+                # pre-mutation — report as 1 (the first mutation
+                # step, which continues the passing streak) so the
+                # mutations-to-convergence metric stays 1-based as
+                # the paper defines it (Roborev #864 M1).
+                return max(1, value)
         else:
             streak = 0
     return None
