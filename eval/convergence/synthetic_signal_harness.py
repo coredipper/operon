@@ -34,8 +34,15 @@ from typing import Any
 # Candidate parsing — the LM's only lever
 # ---------------------------------------------------------------------------
 
-_THROTTLE_PATTERN = re.compile(
-    r"policy_throttle\s*[:=]\s*([0-9]*\.?[0-9]+)",
+# Locate ``policy_throttle`` assignment *headers* (the keyword and the
+# ``=`` or ``:`` separator).  We intentionally do NOT capture the
+# right-hand side here — capturing would make empty or whitespace-only
+# RHS vanish from the match list, causing the parser to silently fall
+# through to an earlier valid assignment.  Instead, we find the LAST
+# header location and slice the rest of that line ourselves
+# (Roborev #867).
+_THROTTLE_HEADER_PATTERN = re.compile(
+    r"policy_throttle\s*[:=]",
     re.IGNORECASE,
 )
 
@@ -56,19 +63,34 @@ def parse_throttle(candidate_text: str) -> float:
     failure-to-convergence a one-way function of *direction*, not
     magnitude.
 
-    If the candidate text contains *multiple* ``policy_throttle``
-    assignments (a common LM failure mode where a revised value is
-    appended without removing the old one), the **last** assignment
-    wins.  This matches the author's intent — editing by append is
-    syntactically messy but semantically a refinement — and prevents
-    stale first-assignment values from silently scoring valid
-    mutations as failures (Roborev #864 H).
+    **Last assignment wins** — a common LM failure mode is to append a
+    revised value without removing the old one, and the harness must
+    honor the author's final intent.  If the final assignment's
+    right-hand side cannot be parsed as a float (``policy_throttle = nope``,
+    ``policy_throttle =``), the function returns ``_DEFAULT_THROTTLE``
+    rather than falling through to an earlier valid assignment — that
+    fall-through would silently score an invalid final mutation
+    against a stale earlier value (Roborev #867).
     """
-    matches = _THROTTLE_PATTERN.findall(candidate_text or "")
-    if not matches:
+    text = candidate_text or ""
+    last_header: re.Match[str] | None = None
+    for header in _THROTTLE_HEADER_PATTERN.finditer(text):
+        last_header = header
+    if last_header is None:
         return _DEFAULT_THROTTLE
+    # Parse ONLY the first whitespace-separated token after the last
+    # header.  A malformed right-hand side (empty, non-numeric, ...)
+    # falls back to _DEFAULT_THROTTLE, never to an earlier valid
+    # assignment.  Taking the first token (rather than the whole rest
+    # of the line) keeps inline prose like
+    # ``some prose. policy_throttle = 0.25 more prose.`` working.
+    rest_of_line = text[last_header.end():].split("\n", 1)[0]
+    tokens = rest_of_line.split()
+    if not tokens:
+        return _DEFAULT_THROTTLE
+    raw = tokens[0].rstrip(".,;")
     try:
-        value = float(matches[-1])  # last assignment wins
+        value = float(raw)
     except (TypeError, ValueError):
         return _DEFAULT_THROTTLE
     return max(0.0, min(1.0, value))
