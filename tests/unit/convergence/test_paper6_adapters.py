@@ -22,8 +22,10 @@ from eval.convergence.synthetic_signal_harness import (
 
 
 def _harness(candidate: dict[str, str], data_inst: Any) -> tuple[Any, Any, dict[str, Any]]:
-    text = candidate.get(SEED_COMPONENT_NAME, "")
-    return run_rollout(text, data_inst, run_seed=0)
+    # Post-#872: the harness consumes the full candidate dict; the
+    # throttle is read from the ``policy_throttle`` component inside
+    # ``run_rollout``.
+    return run_rollout(candidate, data_inst, run_seed=0)
 
 
 # ---------------------------------------------------------------------------
@@ -63,14 +65,14 @@ class TestScalarReward:
 class TestScalarRewardAdapter:
     def test_evaluate_returns_graded_scores_not_binary(self) -> None:
         adapter = ScalarRewardAdapter(harness=_harness)
-        cand = {SEED_COMPONENT_NAME: candidate_text_with_throttle(0.25)}
+        cand = candidate_text_with_throttle(0.25)
         batch = adapter.evaluate([0, 1], cand)
         for score in batch.scores:
             assert 0.0 < score < 1.0 or score == 0.0 or score == 1.0
 
     def test_feedback_is_minimal_score_only(self) -> None:
         adapter = ScalarRewardAdapter(harness=_harness)
-        cand = {SEED_COMPONENT_NAME: candidate_text_with_throttle(0.25)}
+        cand = candidate_text_with_throttle(0.25)
         batch = adapter.evaluate([0], cand)
         reflective = adapter.make_reflective_dataset(
             candidate=cand,
@@ -85,7 +87,7 @@ class TestScalarRewardAdapter:
 
     def test_rejects_unknown_component(self) -> None:
         adapter = ScalarRewardAdapter(harness=_harness)
-        cand = {SEED_COMPONENT_NAME: candidate_text_with_throttle(0.25)}
+        cand = candidate_text_with_throttle(0.25)
         batch = adapter.evaluate([0], cand)
         with pytest.raises(ValueError, match="not declared"):
             adapter.make_reflective_dataset(
@@ -103,7 +105,7 @@ class TestScalarRewardAdapter:
 class TestScalarWithEvidenceAdapter:
     def test_feedback_contains_window_evidence(self) -> None:
         adapter = ScalarWithEvidenceAdapter(harness=_harness)
-        cand = {SEED_COMPONENT_NAME: candidate_text_with_throttle(1.0)}  # failing
+        cand = candidate_text_with_throttle(1.0)  # failing
         batch = adapter.evaluate([0, 1], cand)
         reflective = adapter.make_reflective_dataset(
             candidate=cand,
@@ -117,7 +119,7 @@ class TestScalarWithEvidenceAdapter:
 
     def test_passing_feedback_has_no_adjust_line(self) -> None:
         adapter = ScalarWithEvidenceAdapter(harness=_harness)
-        cand = {SEED_COMPONENT_NAME: candidate_text_with_throttle(0.1)}  # passing
+        cand = candidate_text_with_throttle(0.1)  # passing
         batch = adapter.evaluate([0], cand)
         reflective = adapter.make_reflective_dataset(
             candidate=cand,
@@ -130,7 +132,7 @@ class TestScalarWithEvidenceAdapter:
     def test_feedback_does_not_mention_theorem_framing(self) -> None:
         """Active control: evidence text, NOT theorem framing."""
         adapter = ScalarWithEvidenceAdapter(harness=_harness)
-        cand = {SEED_COMPONENT_NAME: candidate_text_with_throttle(1.0)}
+        cand = candidate_text_with_throttle(1.0)
         batch = adapter.evaluate([0], cand)
         reflective = adapter.make_reflective_dataset(
             candidate=cand,
@@ -160,43 +162,45 @@ class TestFormatFeedbackWithEvidence:
 # ---------------------------------------------------------------------------
 
 
-class TestMockReflectionLMEmitsFencedConfig:
-    """Regression for Roborev #870.
+class TestMockReflectionLMMultiComponent:
+    """Regression for Roborev #870→#872.
 
-    The fenced-block-required protocol from #869 would silently break
-    every ``--mock-reflection-lm`` smoke run if the mock kept emitting
-    bare ``policy_throttle = X``.  Ensure the mock's output parses
-    cleanly via the same ``parse_throttle`` the real harness uses."""
+    Under the post-#872 two-component contract, the mutable component
+    is ``policy_throttle`` (a bare numeric string).  GEPA's default
+    proposer takes the LM's full response verbatim as the new value
+    for whichever component is being updated.  The mock must therefore
+    emit only the new numeric text — no prose, no CONFIG: prefix, no
+    tags — otherwise GEPA sets ``policy_throttle = <tagged junk>`` and
+    every smoke run silently fails to converge."""
 
-    def test_mock_output_parses_via_parse_throttle(self) -> None:
-        from eval.convergence.synthetic_signal_harness import parse_throttle
+    def test_mock_emits_bare_numeric_string(self) -> None:
         from eval.convergence.theorem_6_experiment import _MockReflectionLM
 
         mock = _MockReflectionLM(decrement=0.3, floor=0.1)
         # Each call decrements self._current by 0.3 from start 1.0.
-        first = mock("reflection prompt")
-        assert parse_throttle(first) == 0.7
-
-        second = mock("reflection prompt")
-        assert parse_throttle(second) == 0.4
-
-        third = mock("reflection prompt")
+        assert mock("reflection prompt").strip() == "0.700"
+        assert mock("reflection prompt").strip() == "0.400"
         # Floor clamps at 0.1.
-        assert parse_throttle(third) == 0.1
+        assert mock("reflection prompt").strip() == "0.100"
 
-    def test_mock_output_uses_config_prefix_protocol(self) -> None:
-        """Verify the mock emits a ``CONFIG:``-prefixed line, which
-        survives GEPA's reflective-proposer normalization (unlike
-        markdown fences — see Roborev #870)."""
+    def test_mock_output_setting_throttle_component_parses(self) -> None:
+        """Simulate GEPA's proposer: the mock's output becomes the new
+        value of ``policy_throttle``.  ``parse_throttle`` then reads
+        that component directly."""
+        from eval.convergence.synthetic_signal_harness import (
+            PROMPT_COMPONENT_NAME,
+            THROTTLE_COMPONENT_NAME,
+            parse_throttle,
+        )
         from eval.convergence.theorem_6_experiment import _MockReflectionLM
 
-        mock = _MockReflectionLM()
+        mock = _MockReflectionLM(decrement=0.3, floor=0.1)
         out = mock("p")
-        # Must contain a real CONFIG: line at line start.
-        import re as _re
-        assert _re.search(
-            r"^\s*CONFIG\s*[:=]\s*policy_throttle", out, _re.MULTILINE | _re.IGNORECASE
-        ), f"mock output missing CONFIG: prefix line:\n{out}"
+        candidate = {
+            PROMPT_COMPONENT_NAME: "whatever",
+            THROTTLE_COMPONENT_NAME: out,  # GEPA writes LM output here
+        }
+        assert parse_throttle(candidate) == 0.7
 
 
 # ---------------------------------------------------------------------------
@@ -319,7 +323,7 @@ class TestTrajectoryRetentionOptIn:
             source="test-default",
             # retain_trajectories_for_reflection left at default False
         )
-        cand = {SEED_COMPONENT_NAME: candidate_text_with_throttle(1.0)}
+        cand = candidate_text_with_throttle(1.0)
         batch = adapter.evaluate([0], cand, capture_traces=False)
         # No hidden retention.
         assert not hasattr(batch, "_operon_trajectories")
@@ -339,7 +343,7 @@ class TestTrajectoryRetentionOptIn:
             components=[SEED_COMPONENT_NAME],
             source="test-captured",
         )
-        cand = {SEED_COMPONENT_NAME: candidate_text_with_throttle(1.0)}
+        cand = candidate_text_with_throttle(1.0)
         batch = adapter.evaluate([0], cand, capture_traces=True)
         assert batch.trajectories is not None
         # Even with traces captured publicly, no side-channel copy.
@@ -365,7 +369,7 @@ class TestTrajectoryRetentionOptIn:
             retain_trajectories_for_reflection=True,
             source="test-optin",
         )
-        cand = {SEED_COMPONENT_NAME: candidate_text_with_throttle(1.0)}
+        cand = candidate_text_with_throttle(1.0)
         batch_default = adapter.evaluate([0, 1], cand, capture_traces=False)
         batch_captured = adapter.evaluate([0, 1], cand, capture_traces=True)
         # Public attribute respects capture_traces contract.
@@ -479,7 +483,7 @@ class TestTrajectoryRetentionOptIn:
             retain_trajectories_for_reflection=True,
             source="test",
         )
-        cand = {SEED_COMPONENT_NAME: candidate_text_with_throttle(1.0)}
+        cand = candidate_text_with_throttle(1.0)
         batch = adapter.evaluate([0, 1], cand, capture_traces=False)
         reflective = adapter.make_reflective_dataset(
             cand, batch, [SEED_COMPONENT_NAME]
