@@ -1,0 +1,127 @@
+\section{Methods}\label{sec:methods}
+
+\subsection{Task}\label{sec:task}
+
+The target predicate is
+\texttt{behavioral\_stability\_windowed}~\cite{banu2026operon}, defined in
+\texttt{operon\_ai/core/certificate.py}:261:
+\[
+\mathrm{holds}(\mathbf{x}, \tau) \iff \max_{i} x_i \le \tau,
+\]
+where $\mathbf{x}$ is a vector of per-window means and $\tau$ is a
+stability threshold.  The obligation set is enumerable: every
+violating window $(i, x_i)$ is a concrete obligation.
+
+The task is intentionally synthetic.  The harness
+(\texttt{eval/convergence/synthetic\_signal\_harness.py}) parses a
+single numeric knob, \texttt{policy\_throttle} $\in [0, 1]$, from the
+candidate's prompt text.  It then draws
+$W \cdot O$ observations from $\mathcal{N}(\text{throttle},
+\sigma^2)$ --- $W$ non-overlapping windows of $O$ observations each
+--- and returns the per-window means as the theorem's
+\texttt{signal\_values}.  The default calibration is
+$\tau = 0.5$, $\sigma = 0.08$, $W = 4$, $O = 8$, target throttle
+$\approx 0.35$.  The seed prompt uses \texttt{policy\_throttle = 1.0}
+(uniformly failing).  Per-rollout RNG is seeded
+deterministically via SHA-256 of \texttt{(run\_seed, data\_inst\_id)}
+so every batch is reproducible.
+
+\subsection{Arms}\label{sec:arms}
+
+\paragraph{cert-binary (treatment).}
+\texttt{OperonCertificateAdapter} bound to
+\texttt{behavioral\_stability\_windowed}.  Score
+$\in \{0.0, 1.0\}$; reflection feedback is produced by a
+task-specific \texttt{stability\_windowed\_obligation\_formatter}
+that reads the harness trajectory and emits, in order: a theorem
+framing line (\texttt{Theorem: behavioral\_stability\_windowed
+[FAILED/HOLDS]}), a conclusion line, per-window means with
+\texttt{[VIOLATING]} markers on windows that exceed $\tau$, and a
+final \texttt{Unmet obligation} line.  The per-window text is
+deliberately content-matched to the active-control arm so that the
+only remaining differences between cert-binary and scalar-evidence
+are (a) binarization of the score and (b) the theorem framing
+line.
+
+\paragraph{scalar-reward (baseline).}
+\texttt{ScalarRewardAdapter}.  Score is the graded reward
+\[
+r(\mathbf{x}, \tau) = \begin{cases}
+1.0 & \max \mathbf{x} \le \tau,\\
+\tau / \max \mathbf{x} & \text{otherwise},
+\end{cases}
+\]
+which peaks at 1.0 exactly when the theorem holds, ensuring
+cross-arm convergence detection uses the same predicate.  Reflection
+feedback is the single line \texttt{Score: <value>}.
+
+\paragraph{scalar-with-evidence (active control).}
+\texttt{ScalarWithEvidenceAdapter}.  Same graded reward; reflection
+feedback adds a list of per-window means annotated with a
+\texttt{[VIOLATING]} marker wherever the window exceeds $\tau$,
+plus a final line asking the LM to lower every window mean to
+$\le \tau$.  Crucially, this arm does \emph{not} name the theorem
+(no ``Theorem:'' line), so the only signal it adds over
+scalar-reward is evidence content, not theorem framing.  The arm
+exists to separate two confounds in a positive cert-binary result:
+(a) binarization, and (b) obligation-text content.
+
+\subsection{Convergence criterion}\label{sec:conv}
+
+A run converges at iteration $k$ iff the best candidate's GEPA
+validation aggregate score equals 1.0 for three consecutive
+iterations starting at $k$.  For all three arms, the best score
+is aggregated over a held-out validation set of 16 rollouts.
+Because the scalar arms peak at 1.0 only when the theorem holds
+(see $r(\cdot)$ above), the threshold is the same across arms.
+
+\subsection{Protocol}\label{sec:protocol}
+
+Each cell is one \emph{(arm, seed)} pair.  Ten seeds per arm, three
+arms, $10 \times 3 = 30$ cells.  GEPA is configured with
+\texttt{max\_metric\_calls} $= 50 \cdot 16 \cdot 2 = 1600$, batch
+size 16 for training and 16 for validation, reflection LM
+\texttt{ollama/gemma4} at default settings, and a
+\texttt{raise\_on\_exception=False} policy (GEPA failures are
+recorded and excluded from statistics with a note).
+
+\subsection{Statistics}\label{sec:stats}
+
+Primary: mutations-to-convergence, reported as the GEPA
+iteration number (1-based; GEPA's iteration 0 is the initial
+evaluation, not a mutation step) at the first event of the
+convergence streak.  Non-converged runs are imputed at
+\texttt{budget\_iterations} (50) for the central-tendency
+statistics (mean iterations, Mann-Whitney U); the CDF plot
+(Section~\ref{sec:results}) is built \emph{without} imputation and
+treats non-converged runs as right-censored, so arm curves level
+off at the arm's convergence rate rather than at 1.0.
+Runs that raised an exception inside GEPA
+(\texttt{gepa\_error} non-null) are excluded from all statistics
+and reported separately in \texttt{summary.json} under
+\texttt{errored\_runs\_excluded}.  Mann-Whitney U
+(\texttt{alternative="less"}) compares cert-binary against each
+baseline.  Rank-biserial correlation is reported as effect size;
+by convention in this paper, positive rank-biserial means the
+treatment dominates (fewer iterations).  Convergence rates are
+reported with Wilson 95\% confidence intervals, matching the
+statistical conventions of
+papers~\cite{banu2026benchmarks,banu2026convergence}.
+
+The predeclared success criterion, matching the companion memo's
+decision gate, is:
+\[
+\frac{\bar n_{\text{cert-binary}}}{\min(\bar n_{\text{scalar}},\, \bar n_{\text{scalar-evidence}})} \le 0.75
+\quad\text{with}\quad p < 0.05.
+\]
+Any smaller observed effect is reported as inconclusive rather than
+as a win.
+
+\subsection{Ablation}\label{sec:ablation}
+
+On seeds 0--4, we rerun cert-binary with a \emph{minimal} obligation
+formatter that replaces \texttt{default\_obligation\_formatter} with a
+single-line variant: \texttt{"constraint violated: window $k$"} (no
+evidence numbers, no theorem framing).  If the minimal-formatter arm
+matches the default-formatter arm, the signal is in the binarization;
+if it underperforms, the signal is in the evidence content.

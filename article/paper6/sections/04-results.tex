@@ -1,0 +1,107 @@
+\section{Results}\label{sec:results}
+
+All results are aggregated across 10 seeds per arm.  Per-seed
+trajectories live at \texttt{eval/results/theorem\_6/\{arm\}/seed\_*.json}.
+The analysis pipeline
+(\texttt{eval/convergence/analysis\_theorem\_6.py}) produces the
+machine-readable summary at \texttt{eval/results/theorem\_6/summary.json};
+numbers reported here are copied verbatim from that file.
+
+\subsection{Convergence rate per arm}
+
+Table~\ref{tab:paper6-convergence-rate} reports the fraction of
+runs that reached the predicate $\max \mathbf{x} \le \tau$ on the
+validation set within the 50-iteration budget.
+
+\begin{table}[h]
+\caption{Convergence rate within 50 iterations (10 seeds per arm,
+Wilson 95\% CIs).}
+\label{tab:paper6-convergence-rate}
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+Arm & Converged / N & Rate & 95\% CI \\
+\midrule
+cert-binary       & \placeholder{c/10} & \placeholder{0.xxx} & \placeholder{[lo, hi]} \\
+scalar            & \placeholder{c/10} & \placeholder{0.xxx} & \placeholder{[lo, hi]} \\
+scalar-evidence   & \placeholder{c/10} & \placeholder{0.xxx} & \placeholder{[lo, hi]} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Mutations-to-convergence}
+
+Table~\ref{tab:paper6-mutations} reports mean iterations to
+convergence per arm; non-converged runs are imputed at the
+budget (50).
+
+\begin{table}[h]
+\caption{Mean iterations to convergence per arm, with
+Mann-Whitney U comparison (\texttt{alternative="less"}) and
+rank-biserial effect size (positive = treatment dominates).}
+\label{tab:paper6-mutations}
+\centering
+\small
+\begin{tabular}{lcccc}
+\toprule
+Arm & Mean iters & U & $p$ & Effect size \\
+\midrule
+cert-binary (treatment)   & \placeholder{m} & ---           & ---           & ---           \\
+scalar                    & \placeholder{m} & \placeholder{u} & \placeholder{p} & \placeholder{rb} \\
+scalar-evidence           & \placeholder{m} & \placeholder{u} & \placeholder{p} & \placeholder{rb} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Convergence CDF}
+
+Figure~\ref{fig:paper6-cdf} shows the empirical cumulative
+distribution function of mutations-to-convergence across arms.  At
+iteration $k$, each arm's curve gives the probability that a run
+had converged by iteration $k$ or earlier.
+
+\begin{figure}[h]
+\centering
+\placeholder{CDF plot: eval/results/theorem\_6/cdf.png}
+\caption{Empirical CDF of iterations to convergence.  Lines that
+reach 1.0 faster indicate arms that converge more reliably.}
+\label{fig:paper6-cdf}
+\end{figure}
+
+\subsection{Ablation: minimal vs default obligation formatter}
+
+On seeds 0--4, we compare cert-binary run with
+\texttt{default\_obligation\_formatter} against cert-binary run with
+a minimal formatter (\texttt{"constraint violated: window k"}, no
+numbers, no theorem framing).  Table~\ref{tab:paper6-ablation}
+reports mean iterations for each.
+
+\begin{table}[h]
+\caption{Formatter ablation on seeds 0--4 (cert-binary only).}
+\label{tab:paper6-ablation}
+\centering
+\small
+\begin{tabular}{lc}
+\toprule
+Formatter & Mean iters \\
+\midrule
+default (numbers + theorem framing) & \placeholder{m} \\
+minimal (window index only)         & \placeholder{m} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Honest verdict}
+
+\placeholder{One of the three outcomes declared in the companion
+memo:
+\emph{Strong positive} --- mean-iters ratio $\le 0.75$ with $p <
+0.05$; the conjecture is accepted as Theorem~3 for this task.
+\emph{Null} --- ratio in $(0.75, 1.0)$ or $p \ge 0.05$; the
+conjecture is retained as a conjecture; ablation results inform
+which pipeline stage carries what signal.
+\emph{Negative} --- cert-binary is slower than the stronger
+baseline; the conjecture is refuted for this task and the memo is
+updated to report the refutation.
+}

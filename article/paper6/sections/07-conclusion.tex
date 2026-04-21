@@ -1,0 +1,66 @@
+\section{Conclusion}\label{sec:conclusion}
+
+We tested Theorem~3 of Operon's external-frameworks integration
+memo --- the conjecture that certificate-based evaluators converge
+faster than scalar-reward evaluators on tasks with enumerable
+failure modes --- by running GEPA with three evaluator shapes on a
+synthetic windowed-stability task.  The cert-binary arm replaces
+the scalar reward with a pass/fail verdict plus structured
+obligation text drawn from an Operon theorem verifier.  The
+scalar-reward and scalar-with-evidence arms form a minimal pair
+that isolates binarization from obligation-text content.
+
+\placeholder{Final one-sentence verdict: accept, refine, or reject
+the conjecture.  Mean iterations-to-convergence by arm.  Effect
+size and p-value for cert-binary vs the stronger baseline.
+Formatter-ablation outcome.}
+
+\subsection{Follow-ups unblocked}\label{sec:followups}
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt,topsep=2pt]
+\item \textbf{Theorem-shape sweep}: rerun the protocol on
+\texttt{behavioral\_quality} (continuous) and
+\texttt{behavioral\_no\_anomaly} (structural).
+\item \textbf{Cross-LM robustness}: rerun cert-binary and the
+strongest baseline with a frontier LM.
+\item \textbf{Operon--autocontext adapter}: wire Operon certificates
+into autocontext's staged-validation loop~\cite{autocontext2025},
+giving a second external framework that consumes certificates as
+evaluator output.  A plan for this is logged separately; this is a
+paper-7 candidate.
+\item \textbf{Lightweight DSPy reproducibility theorem}: ship
+\texttt{dspy\_compile\_pinned\_inputs} as the cheap variant of
+memo Theorem~2.
+\item \textbf{\texttt{gepa\_candidate\_improvement} theorem}:
+certify that an evolved candidate Pareto-dominates its parent on
+the validation set; close GEPA's outer loop with a certificate.
+\end{enumerate}
+
+\subsection{Artifacts}
+
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=2pt]
+\item Experiment driver:
+\texttt{eval/convergence/theorem\_6\_experiment.py}
+\item Harness:
+\texttt{eval/convergence/synthetic\_signal\_harness.py}
+\item Baseline adapters:
+\texttt{scalar\_reward\_adapter.py},
+\texttt{scalar\_with\_evidence\_adapter.py}
+\item Analysis:
+\texttt{eval/convergence/analysis\_theorem\_6.py}
+\item Per-arm trajectories:
+\texttt{eval/results/theorem\_6/\{arm\}/seed\_*.json}
+\item Summary:
+\texttt{eval/results/theorem\_6/summary.json}
+\item Unit tests:
+\texttt{tests/unit/convergence/test\_paper6\_*.py}
+\end{itemize}
+
+\paragraph{Reproducibility.}
+\begin{verbatim}
+pip install gepa matplotlib scipy
+ollama pull gemma4  # if not already local
+python -m eval.convergence.theorem_6_experiment --sweep
+python -m eval.convergence.analysis_theorem_6
+cd article/paper6 && tectonic main.tex
+\end{verbatim}

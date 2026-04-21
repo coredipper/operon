@@ -1,0 +1,29 @@
+\begin{abstract}
+Reflective-evolution optimizers such as GEPA evolve text components
+(prompts, code, configs) by scoring candidates with a user-supplied
+evaluator and feeding the results, plus free-form feedback, to a
+reflection language model that proposes mutations.  The evaluator
+traditionally returns a scalar reward.  We test an alternative in
+which the evaluator returns a binary pass/fail verdict paired with
+structured obligation text drawn from a formal theorem verifier
+(``Operon certificates'').  The conjecture is that, on tasks with
+enumerable failure modes, binary-plus-obligations converges in fewer
+mutations than a scalar reward of comparable information density.
+
+We run three arms on a synthetic windowed-stability task
+(\texttt{behavioral\_stability\_windowed}): \emph{cert-binary} (the
+treatment), \emph{scalar-reward} (a graded reward that peaks when the
+theorem holds), and \emph{scalar-with-evidence} (an active control
+carrying the same per-window violation text as the cert arm but
+without the theorem framing).  Ten seeds per arm, 50-iteration
+budget, Gemma~4 as the reflection LM.  \placeholder{Primary result:
+cert-binary vs strongest baseline mutations-to-convergence ratio,
+Mann-Whitney U p-value, rank-biserial effect size, Wilson 95\% CIs.}
+
+\placeholder{Ablation on the obligation formatter} isolates whether
+the signal comes from binarization or from obligation content.  The
+work is an engineering test of a theoretical claim (Theorem~3 of the
+companion integration memo) rather than a new algorithm; the
+deliverable is an honest measurement, and negative results are
+reported as such.
+\end{abstract}

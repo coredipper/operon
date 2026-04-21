@@ -1,0 +1,58 @@
+\section{Introduction}\label{sec:intro}
+
+Reflective-evolution optimizers decouple three concerns: a
+\emph{candidate} (the text being optimized), an \emph{evaluator} (a
+function that scores a candidate on a data instance and optionally
+emits feedback), and a \emph{reflection model} (a language model that
+reads the evaluator's output and proposes a mutated candidate).  GEPA
+\cite{agrawal2025gepa} is a representative instance: it evolves
+candidates through LM-authored mutations guided by reflective
+feedback, Pareto-front candidate selection, and optional merge
+operators.
+
+The evaluator's contract with the rest of the system is deceptively
+simple.  It returns a numeric score and a blob of feedback text.  In
+practice, the information density of that feedback is the
+optimizer's dominant lever.  A scalar reward is small-content,
+small-precision, and domain-agnostic.  A structured verifier output
+--- specifically, a pass/fail verdict plus a list of unmet
+obligations --- is large-content, high-precision, and bound to a
+formal predicate.
+
+The companion integration memo (external-frameworks, v0.36.3 of the
+Operon repository \cite{banu2026operon}) states this as a conjecture: for
+theorems with enumerable failure modes, a certificate-based evaluator
+that returns \emph{(holds, obligations)} should converge in fewer
+mutations than a scalar-reward evaluator of comparable information
+density.  The memo does not ship evidence.  This paper does.
+
+Our contribution is engineering, not theory:
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt,topsep=2pt]
+\item An \emph{OperonCertificateAdapter} that wraps any Operon
+theorem verifier as a GEPA-compatible evaluator
+(\texttt{operon\_ai/convergence/gepa\_adapter.py}).
+\item Two baseline adapters:
+\emph{ScalarRewardAdapter} (continuous reward, no structured
+feedback) and \emph{ScalarWithEvidenceAdapter} (continuous reward
+plus text-matched per-window violation evidence, but without theorem
+framing) --- the latter is the active control that separates
+binarization from obligation-text content.
+\item A synthetic, single-knob task
+(\texttt{policy\_throttle}) that isolates the evaluator-to-optimizer
+pipeline from retrieval noise, API flakiness, and
+agent-complexity variance.
+\item Ten-seed runs per arm, with convergence determined by the
+\emph{same} predicate --- the theorem holds on the full validation
+set --- across arms.
+\item An honest decision gate: positive, null, and negative
+outcomes each lead to a specific follow-up action, declared before
+the experiment was run.
+\end{enumerate}
+
+Section~\ref{sec:related} situates the work against prior reflective
+and verifier-guided optimization.  Section~\ref{sec:methods} details
+the three arms, the synthetic task, and the statistical protocol.
+Section~\ref{sec:results} reports measurements.
+Section~\ref{sec:discussion} interprets them.  Section~\ref{sec:limits}
+enumerates what we did not do and why.
