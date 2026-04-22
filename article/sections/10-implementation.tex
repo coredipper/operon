@@ -14,9 +14,9 @@ The implementation follows the biological organization:
 \item \textbf{Core Types} (\texttt{core/types.py}): Signal, ActionProtein, FoldedProtein, CellState---the
 categorical objects with their biological semantics.
 \item \textbf{Core Wiring} (\texttt{core/wagent.py}): WiringDiagram, ModuleSpec, PortType, Wire,
-DiagramExecutor---typed wiring with integrity labels and capabilities.
+DiagramExecutor\allowbreak---typed wiring with integrity labels and capabilities.
 \item \textbf{Core Optics} (\texttt{core/optics.py}): PrismOptic, TraversalOptic,
-ComposedOptic---wire-level conditional routing and batch transforms.
+ComposedOptic\allowbreak---wire-level conditional routing and batch transforms.
 \item \textbf{Core Denaturation} (\texttt{core/denature.py}): StripMarkupFilter, NormalizeFilter,
 ChainFilter---wire-level anti-injection sanitization.
 \item \textbf{Core Coalgebra} (\texttt{core/coalgebra.py}): FunctionalCoalgebra, StateMachine,
@@ -263,10 +263,10 @@ A \texttt{BiTemporalFact} carries 12 fields: subject/predicate/value triple, val
 Three operations modify the store: \texttt{record\_fact()} inserts a new active record; \texttt{correct\_fact()} closes the old record's transaction interval via \texttt{dataclasses.replace()} and appends a new record with \texttt{supersedes} set; \texttt{invalidate\_fact()} marks a record as no longer active. The internal \texttt{\_facts} list is append-only except for the in-place close of \texttt{recorded\_to} on corrected records.
 
 \paragraph{Retrieval.}
-Three query methods implement the temporal epistemic operators: \texttt{retrieve\_valid\_at(at)} filters for facts valid at world-time \texttt{at} with active records only; \texttt{retrieve\_known\_at(at)} filters for facts recorded by system-time \texttt{at}; \texttt{retrieve\_belief\_state(at\_valid, at\_record)} intersects both axes, reconstructing the system's belief at any historical coordinate.
+Three query methods implement the temporal epistemic operators: \texttt{retrieve\_valid\_at(at)} filters for facts valid at world-time \texttt{at} with active records only; \texttt{retrieve\_known\_at(at)} filters for facts recorded by system-time \texttt{at}; \texttt{retrieve\_belief\_state}\allowbreak\texttt{(at\_valid, at\_record)} intersects both axes, reconstructing the system's belief at any historical coordinate.
 
 \paragraph{History and Audit.}
-\texttt{history(subject)} returns all facts (including closed) sorted by record time; \texttt{diff\_between(t1, t2, axis)} computes set differences on either axis; \texttt{timeline\_for(subject)} returns all facts sorted by valid time. Together, these support the audit question: ``what changed between $t_1$ and $t_2$, and on which axis?''
+\texttt{history(subject)} returns all facts (including closed) sorted by record time; \texttt{diff\_between}\allowbreak\texttt{(t1, t2, axis)} computes set differences on either axis; \texttt{timeline\_for(subject)} returns all facts sorted by valid time. Together, these support the audit question: ``what changed between $t_1$ and $t_2$, and on which axis?''
 
 This subsystem is intentionally decoupled from \texttt{HistoneStore} and \texttt{EpisodicMemory}. Integration bridges---converting histone marks to bi-temporal facts, or promoting episodic memories into the bi-temporal substrate---are planned for future work (\S\ref{sec:conclusion}).
 
@@ -306,7 +306,7 @@ The intervention-count convergence signal operationalizes the BIGMAS finding~\ci
 
 \paragraph{Adaptive Assembly Implementation.}
 \label{sec:adaptive-impl}
-The \texttt{AdaptiveSkillOrganism} wrapper composes the full adaptive loop. The public factory \texttt{adaptive\_skill\_organism(task, fingerprint, library, ...)} auto-fingerprints the task if no fingerprint is provided, queries \texttt{PatternLibrary.top\_templates\_for()} for the best template, and calls \texttt{assemble\_pattern()} to convert the template's \texttt{stage\_specs} into a runnable topology (dispatching on \texttt{topology}: \texttt{skill\_organism}, \texttt{reviewer\_gate}, \texttt{specialist\_swarm}, or \texttt{single\_worker}). A \texttt{WatcherComponent} and \texttt{TelemetryProbe} are automatically attached.
+The \texttt{AdaptiveSkillOrganism} wrapper composes the full adaptive loop. The public factory \texttt{adaptive\_skill\_organism}\allowbreak\texttt{(task, fingerprint, library, ...)} auto-fingerprints the task if no fingerprint is provided, queries \texttt{PatternLibrary.}\allowbreak\texttt{top\_templates\_for()} for the best template, and calls \texttt{assemble\_pattern()} to convert the template's \texttt{stage\_specs} into a runnable topology (dispatching on \texttt{topology}: \texttt{skill\_organism}, \texttt{reviewer\_gate}, \texttt{specialist\_swarm}, or \texttt{single\_worker}). A \texttt{WatcherComponent} and \texttt{TelemetryProbe} are automatically attached.
 
 After execution, the wrapper records a \texttt{PatternRunRecord} in the library (closing the scoring feedback loop) and populates the watcher's experience pool with \texttt{ExperienceRecord} instances for each intervention. The experience pool persists across runs: when rule-based decision logic returns no intervention, the watcher consults past experiences with matching (stage, signal category, fingerprint shape) and recommends the intervention kind that was most often successful. Rule-based decisions always take priority; experience is a fallback. Example~74 demonstrates the full lifecycle; Example~75 demonstrates experience-driven recommendations.
 
@@ -316,9 +316,9 @@ The \texttt{CognitiveMode} enum classifies stages as \texttt{OBSERVATIONAL} (Sys
 
 \paragraph{Sleep Consolidation Implementation.}
 \label{sec:consolidation-impl}
-The \texttt{SleepConsolidation} class composes \texttt{AutophagyDaemon}, \texttt{PatternLibrary}, \texttt{EpisodicMemory}, \texttt{HistoneStore}, and optionally \texttt{BiTemporalMemory} into a five-step post-batch consolidation cycle: (1)~prune stale context via autophagy, (2)~replay successful run records and promote them from WORKING to EPISODIC tier in episodic memory, (3)~compress recurring high-success patterns into new consolidated \texttt{PatternTemplate} instances, (4)~run counterfactual replay over bi-temporal corrections to detect cases where updated facts would have changed the outcome, and (5)~promote frequently-accessed ACETYLATION histone marks to permanent METHYLATION.
+The \texttt{SleepConsolidation} class composes \texttt{AutophagyDaemon}, \allowbreak \texttt{PatternLibrary}, \allowbreak \texttt{EpisodicMemory}, \allowbreak \texttt{HistoneStore}, and optionally \texttt{BiTemporalMemory} into a five-step post-batch consolidation cycle: (1)~prune stale context via autophagy, (2)~replay successful run records and promote them from WORKING to EPISODIC tier in episodic memory, (3)~compress recurring high-success patterns into new consolidated \texttt{PatternTemplate} instances, (4)~run counterfactual replay over bi-temporal corrections to detect cases where updated facts would have changed the outcome, and (5)~promote frequently-accessed ACETYLATION histone marks to permanent METHYLATION.
 
-The \texttt{counterfactual\_replay()} function performs static analysis: it calls \texttt{diff\_between(run\_time, now, axis="record")} to find corrections that occurred after the original run, then matches corrected fact subjects/predicates against stage names in the template. When matches are found, it reports that the outcome may have differed, without re-executing the workflow. Example~77 demonstrates the full consolidation cycle.
+The \texttt{counterfactual\_replay()} function performs static analysis: it calls \texttt{diff\_between}\allowbreak\texttt{(run\_time, now, axis="record")} to find corrections that occurred after the original run, then matches corrected fact subjects/predicates against stage names in the template. When matches are found, it reports that the outcome may have differed, without re-executing the workflow. Example~77 demonstrates the full consolidation cycle.
 
 \paragraph{Social Learning Implementation.}
 \label{sec:social-learning-impl}
