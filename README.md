@@ -19,6 +19,15 @@ A worker can hallucinate and nobody checks it. A sequential chain accumulates ha
 
 Operon is a library for making that structure explicit. It gives you pattern-first building blocks like reviewer gates, specialist swarms, skill organisms, and topology advice, while keeping the lower-level wiring and analysis layers available when you need them.
 
+## What Operon Is Opinionated About
+
+Agent frameworks tend to converge on a similar feature set — tools, memory, handoffs, retries. Operon is deliberately opinionated on a different axis: what kinds of claim the library lets you make about the system you have built.
+
+- **Structural guarantees as verifiable proofs.** A gate is not just a conditional. `Certificate` pairs a theorem name with a `verify_fn` that re-checks the claim externally; `ApprovalToken` carries proofs through two-key execution. Quality, priority gating, and integrity become artifacts you can re-verify, not assertions you trust.
+- **Topology is a first-class, analyzable object.** `advise_topology()` and `EpistemicAnalysis` classify a wiring diagram's risk profile — observability, routing cost, convergence depth — *before* a run. You can reason about the shape of the system, not only its outputs.
+- **Framework-neutral by design.** `operon_ai.convergence` adapts six external agent frameworks (Swarms, DeerFlow, AnimaWorks, Ralph, A-Evolve, Scion) into a common IR and back out, with certificates transporting across framework boundaries via A2A parts. Operon is meant to wrap your existing runner, not replace it.
+- **Theory you can inspect.** Six papers in [`article/`](article/README.md) develop the foundations — epistemic topology, categorical convergence, structural-guarantee benchmarks, harness-as-categorical-architecture — alongside the code that implements them. Biological motifs (gene regulatory networks, immune systems, metabolic priority gating, quorum sensing) are applied concretely, not as metaphor.
+
 ## Installation
 
 ```bash
