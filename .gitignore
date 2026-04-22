@@ -55,3 +55,14 @@ docs/*
 
 # Topology validation generated artifacts
 eval/results/topology_validation/
+
+# LaTeX build artifacts (article/)
+article/**/*.aux
+article/**/*.log
+article/**/*.bbl
+article/**/*.blg
+article/**/*.out
+article/**/*.toc
+article/**/*.fls
+article/**/*.fdb_latexmk
+article/**/*.synctex.gz
