@@ -41,7 +41,15 @@ cd article && tectonic monograph.tex
 - `paper4/arxiv-submission.zip` — prepared, not yet in git (LaTeX build artifacts ignored per `.gitignore`)
 - `paper5/arxiv-submission.zip` — committed in `v0.34.4` (`84c3bcd`)
 
-To rebuild a submission zip, build the paper with `tectonic` and zip `main.tex`, `main.bbl`, and `sections/` into `arxiv-submission.zip`.
+To rebuild a submission zip from a fresh checkout:
+
+```
+cd article/paper5
+tectonic --keep-intermediates main.tex   # emits main.pdf AND main.bbl
+zip -r arxiv-submission.zip main.tex main.bbl sections/
+```
+
+The `--keep-intermediates` flag is required — without it, tectonic does not write `main.bbl` to disk, and arXiv's server needs the pre-built `.bbl` because it does not run BibTeX. Both `main.bbl` and the `arxiv-submission.zip` artifacts (except paper5's committed archive) are gitignored as LaTeX build output.
 
 ## Why are the directories named `paperN`?
 
