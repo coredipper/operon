@@ -1,0 +1,46 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
+\usepackage{enumitem}
+\usepackage[hypertexnames=false]{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+
+\title{\textbf{Biological Motifs for Agentic Control}\\
+\large A Typed Interface Correspondence between Gene Regulatory Networks and Agentic Software Architectures\\[0.5em]
+\normalsize Preprint -- Feedback Welcome}
+\author{Bogdan Banu\\\texttt{bogdan@banu.be}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\input{sections/00-abstract}
+
+\tableofcontents
+\newpage
+
+\input{sections/01-introduction}
+\input{sections/02-related-work}
+\input{sections/03-mapping}
+\input{sections/04-operad}
+\input{sections/05-pathology}
+\input{sections/06-multicellular}
+\input{sections/07-epistemic}
+\input{sections/08-discussion}
+\input{sections/09-optimization}
+\input{sections/10-implementation}
+\input{sections/11-convergence}
+\input{sections/12-conclusion}
+
+\newpage
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}
