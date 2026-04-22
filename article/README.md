@@ -17,7 +17,7 @@ Each `paperN/` directory is a standalone paper with its own `main.tex`,
 
 ## Monograph
 
-- **`monograph.tex`** — modular entry point (`\input{sections/...}`), currently the active build on branch `docs/monograph-and-pdf-rebuild`.
+- **`monograph.tex`** — modular entry point (`\input{sections/...}`); the active monograph build.
 - **`main.tex`** — older inline version of the same treatise; both title as *Biological Motifs for Agentic Control*.
 - **`sections/01-introduction.tex` … `12-conclusion.tex`** — shared section files pulled in by `monograph.tex`.
 - **`references.bib`** — shared bibliography for the monograph.
@@ -41,7 +41,7 @@ cd article && tectonic monograph.tex
 - `paper4/arxiv-submission.zip` — prepared, not yet in git (LaTeX build artifacts ignored per `.gitignore`)
 - `paper5/arxiv-submission.zip` — committed in `v0.34.4` (`84c3bcd`)
 
-Submission build commands for paper4/paper5 are captured in `.claude/settings.local.json` auto-allow rules.
+To rebuild a submission zip, build the paper with `tectonic` and zip `main.tex`, `main.bbl`, and `sections/` into `arxiv-submission.zip`.
 
 ## Why are the directories named `paperN`?
 
