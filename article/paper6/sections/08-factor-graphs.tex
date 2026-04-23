@@ -121,7 +121,7 @@ is positive.  The rolling window $w$ is implicit --- it is the
 window the scan considers, currently one step plus the standing
 checkpoint.
 
-\paragraph{Future graph = post-guard. [derived]}
+\paragraph{Future graph = post-guard. [implemented]}
 The \texttt{post\_guard} in \texttt{compile\_guarded\_graph}
 evaluates the stage output against a rubric
 (\texttt{\_evaluate\_quality}, line~248), threads a simplified
@@ -130,35 +130,43 @@ watcher state, and routes RETRY / ESCALATE / HALT via
 graph collapses to a single goal factor ``quality $\ge$
 rubric-threshold''; if it fails, the conditional router fires.
 This is the degenerate but operationally honest version of a STAG
-future graph: horizon $h = 1$, goal expressed as a discrete
-rubric predicate, no cross-step control variables.  Certificate
-emission for behavioural quality happens separately, in the
-\texttt{VerifierComponent} / \texttt{WatcherComponent} runtime
-components, and is consumed back into the compile path only as a
-verification-of-existing-certificates step in
-\texttt{run\_guarded\_graph} (line~557, \texttt{certificate\_from\_dict}),
-which populates \texttt{GuardedGraphResult.certificates\_verified}.
-The post-guard node in the compiled graph therefore does not
-\emph{emit} the behavioural certificate inline; it emits the
-rubric-based routing decision that the certificate later attests
-to.  This is the right place to pressure-test the ``future graph''
-framing: in the compile path the goal factor is a discrete rubric
-predicate, and the certificate is a separate artefact attached at
-run time.
+future graph: horizon $h = 1$, goal expressed as a discrete rubric
+predicate, no cross-step control variables.  The rubric is called
+as \texttt{rubric(output, stage\_name)} --- it does not read the
+standing checkpoint.
+
+\paragraph{Certificates are a separate channel. [implemented]}
+Behavioural and structural certificates are carried in the
+\emph{compiled organism artefact}, not emitted at run time by the
+post-guard.  \texttt{run\_guarded\_graph} iterates
+\texttt{compiled.get("certificates", [])} after the graph finishes
+and re-verifies each one via
+\texttt{certificate\_from\_dict} (line~557--572), populating
+\texttt{GuardedGraphResult.certificates\_verified}.  The
+factor-graph reading therefore has two distinct surfaces: the
+compile-path post-guard that produces the routing decision (above),
+and a post-run replay of compile-time certificates that attests
+preservation-under-compilation rather than attaching a fresh
+behavioural factor.  This split is the right place to pressure-test
+the ``future graph'' framing: the goal factor realised in the
+compiled graph is a rubric predicate, while the certificate layer
+is a compile-time artefact that the runtime only \emph{replays}.
 
 \paragraph{Shared dynamics. [analogy]}
 STAG's past- and future-graph share a dynamics model.  In Operon,
-the object that plays the same role is the standing
-\texttt{StateCheckpoint}: it is consulted by the pre-guard for
-integrity, and it is the reference state against which the
-post-guard's rubric is judged.  The category-theoretic machinery in
+the object that plays the closest role is the standing
+\texttt{StateCheckpoint}, but only for the pre-guard: the pre-guard
+consults it for integrity, the post-guard does not (the rubric call
+does not take \texttt{checkpoint} as an argument).  The
+category-theoretic machinery in
 \texttt{operon\_ai/core/coalgebra.py} formalises discrete dynamics
 for Operon in the abstract --- readout / update / bisimulation ---
-and the compile path does not import it; the analogy is at the
-level of ``both graphs refer to the same dynamics object,'' not
-``both graphs call into the same module.''  Flagging this so
-downstream work does not build on a coalgebra/compile coupling that
-does not exist.
+and the compile path does not import it.  So this mapping is a
+loose conceptual anchor, not a shared runtime object: both guards
+live in a world whose dynamics model is discrete and deterministic,
+but the compile path does not thread a single dynamics object
+through both.  Flagging this so downstream work does not build on a
+shared-object or coalgebra/compile coupling that does not exist.
 
 \paragraph{Joining factor graphs across agents. [derived]}
 In the continuous STAG loop, two robots with overlapping
@@ -210,13 +218,16 @@ Past graph = pre-guard & \texttt{convergence/guarded\_graph.py}:93,
 Future graph = post-guard (rubric routing) &
 \texttt{convergence/guarded\_graph.py}:248, 300 &
 Conditional-router decision trace in the compiled graph\\[2pt]
-Future graph = post-guard (certificate emission) &
-\texttt{VerifierComponent} / \texttt{WatcherComponent} runtime
-components; consumed at \texttt{guarded\_graph.py}:557 via
-\texttt{certificate\_from\_dict} &
-\texttt{GuardedGraphResult.certificates\_verified}\\[2pt]
-Shared dynamics & \texttt{StateCheckpoint} object (no code path
-through \texttt{core/coalgebra.py}) & --- \emph{[analogy]}\\[2pt]
+Certificates are a separate channel (post-run replay of
+compile-time certificates) &
+\texttt{convergence/guarded\_graph.py}:554--572
+(\texttt{compiled.get("certificates")} +
+\texttt{certificate\_from\_dict}) &
+\texttt{GuardedGraphResult.certificates\_verified}; this attests
+preservation-under-compilation, not runtime emission\\[2pt]
+Shared dynamics (pre-guard only via \texttt{StateCheckpoint}; no
+coalgebra coupling; rubric call \texttt{(output, stage\_name)}
+ignores checkpoint) & --- & --- \emph{[analogy]}\\[2pt]
 Joining factor graphs across agents &
 \texttt{convergence/a2a\_certificate.py} &
 A2A DataPart round-trip; graceful-degradation rule in
