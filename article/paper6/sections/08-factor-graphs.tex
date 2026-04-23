@@ -370,12 +370,17 @@ $4,5,6$ all score $1.0$
   robotics state estimation since~\cite{kaess2012isam2}.  The
   LangGraph-gates wedge's theoretical-basis paragraph can cite this
   directly.
-\item \textbf{Certificate composition is factor joining.}  The A2A
-  codec stops being an ad-hoc serialisation and becomes the
-  cross-agent analogue of graph joining along shared variables.
-  This is the property that makes model-agnostic reliability
-  plausible --- agents that never read each other's weights still
-  share a common factor structure.
+\item \textbf{Certificate composition has the \emph{shape} of
+  factor joining.}  The A2A codec is transport plus graceful
+  degradation; under this framing it reads as the transport-layer
+  analogue of graph joining along shared theorem variables, not an
+  implemented graph-join operation (see
+  Section~\ref{sec:fg-mapping}, ``Joining factor graphs across
+  agents'', tagged \textbf{[analogy]}).  What the framing gives us
+  is a common vocabulary for cross-agent reliability ---
+  model-agnostic agents still share a factor-structured
+  certificate shape --- not a semantic claim about joint
+  inference.
 \item \textbf{A vocabulary for future scope.}  Any future extension
   --- longer pre-guard windows, $h > 1$ future graphs, learned
   residuals --- can be stated and bounded in this vocabulary.  The
