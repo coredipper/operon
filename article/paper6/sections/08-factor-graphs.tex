@@ -120,9 +120,12 @@ $x_t$ against a \emph{static} checkpoint baseline and routes to
 HALT if any residual is positive.  This is deliberately \emph{not}
 a rolling past-graph smoother: there is no per-stage checkpoint
 evolution, no $W$-step window over evolving states, and no MAP
-re-estimate across stages.  The same caller-supplied
-\texttt{StateCheckpoint} is re-checked before every stage
-(\texttt{guarded\_graph.py}:186--199, 539).  The factor-graph
+re-estimate across stages.  The caller-supplied
+\texttt{StateCheckpoint} is plumbed once into
+\texttt{compile\_guarded\_graph} (lines~524--535) and closed over
+inside \texttt{make\_pre\_guard}; the same object is then re-checked
+by the pre-guard before every stage, and retry routing sends
+control back through the pre-guard (lines~186--199, 448).  The factor-graph
 reading of the pre-guard is therefore ``repeated invariant
 re-validation against a fixed baseline,'' and a genuine past-graph
 smoother --- with per-stage checkpoint advancement and a
@@ -233,7 +236,7 @@ Dynamics factors & \texttt{state/dna\_repair.py}:292--305 +
 (Paper~4 \S4.1)\\[2pt]
 Pre-guard = repeated invariant re-validation (static checkpoint;
 no rolling window) & \texttt{convergence/guarded\_graph.py}:93,
-187--199, 539 & Pre-guard halts on damage; Paper~4 \S4.1\\[2pt]
+186--199, 448, 524--535 & Pre-guard halts on damage; Paper~4 \S4.1\\[2pt]
 Future graph = post-guard (rubric routing) &
 \texttt{convergence/guarded\_graph.py}:248, 300 &
 Conditional-router decision trace in the compiled graph\\[2pt]
@@ -257,14 +260,33 @@ internal-graph join is implemented\\
 \end{center}
 
 \paragraph{Reproducibility prerequisites.}
-The \texttt{[implemented]} guarded-graph claims require the
-optional LangGraph dependency
-(\texttt{pip install operon-ai[langgraph]}; see
-\texttt{compile\_guarded\_graph}, lines~133--140).  The
-\texttt{[implemented]} certificate and harness claims do not.  The
-worked example in Section~\ref{sec:fg-worked-example} runs purely
-from the harness \texttt{run\_rollout} function and needs no LM or
-LangGraph stack.
+Claims split into three reproducibility tiers:
+
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=2pt]
+\item \textbf{No dependencies.} The worked example in
+Section~\ref{sec:fg-worked-example} runs purely from the harness
+\texttt{run\_rollout} function
+(\texttt{eval/convergence/synthetic\_signal\_harness.py}:192).  No
+LM, no LangGraph, no model server.  Standalone verification of a
+constructed \texttt{Certificate} via
+\texttt{certificate\_from\_dict} + \texttt{verify()} also lives in
+this tier.
+\item \textbf{LangGraph optional-import.}  The
+\texttt{[implemented]} guarded-graph claims require
+\texttt{pip install operon-ai[langgraph]}:
+\texttt{compile\_guarded\_graph} raises
+\texttt{ImportError} at lines~133--140 without it, and
+\texttt{run\_guarded\_graph} does the same at line~517--522.
+Consequently the post-run certificate-replay claim (``Certificates
+are a separate channel'') is in \emph{this} tier, not the
+no-dependencies tier: it is reached via
+\texttt{run\_guarded\_graph.certificates\_verified}
+(lines~554--572), and therefore needs LangGraph.
+\item \textbf{LangGraph + LM.}  End-to-end execution of the pre- /
+post-guard routing needs a live or mock LM (Ollama or equivalent)
+in addition to LangGraph.  The appendix does not depend on any
+claim in this tier.
+\end{itemize}
 
 \paragraph{Maintenance checklist (documentation-drift contract).}
 This appendix cites exact line numbers.  On any change to the
@@ -278,11 +300,11 @@ rebuild PDF if signature changes.
 351, 381 --- five scan components; retag row as
 \textbf{[analogy]} if any component is removed.
 \item \texttt{operon\_ai/convergence/guarded\_graph.py}:93, 186--199,
-248, 255, 300, 554--572 --- pre-guard, rubric call signature,
-post-run certificate replay.  If \texttt{run\_guarded\_graph}
-begins emitting fresh certificates from the post-guard, the
-``certificates are a separate channel'' paragraph must be
-rewritten.
+248, 255, 300, 448, 524--535, 554--572 --- pre-guard, rubric call
+signature, retry routing, checkpoint plumbing, post-run certificate
+replay.  If \texttt{run\_guarded\_graph} begins emitting fresh
+certificates from the post-guard, the ``certificates are a separate
+channel'' paragraph must be rewritten.
 \item \texttt{operon\_ai/convergence/a2a\_certificate.py} --- if any
 internal graph-join API is added, the ``Joining factor graphs
 across agents'' row may be re-tagged from \textbf{[analogy]} to
