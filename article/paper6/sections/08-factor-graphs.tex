@@ -1,0 +1,242 @@
+\appendix
+\section{Factor-graph framing}\label{sec:factor-graphs}
+
+This appendix re-expresses the gates and verifiers of
+Section~\ref{sec:methods} in the language of \emph{factor
+graphs}~\cite{dellaert2017factor}, the formalism that underpins
+fixed-lag smoothing in robotics state estimation.  The point is not
+novelty: the Operon code described here already runs and has been the
+subject of this paper.  The point is \emph{lineage}.  A recent
+exposition by Dellaert frames factor graphs as a concrete, structured
+implementation of the energy-based ``world models'' currently
+discussed in the JEPA literature, and calls the resulting rolling-past
+/ rolling-future loop STAG\footnote{Sense-Think-Act with Graphs.}~\cite{dellaert2026stag}.
+In that vocabulary, Operon's runtime guards are a discrete-state STAG
+loop over symbolic agent trajectories, and \texttt{behavioral\_stability\_windowed}
+(Section~\ref{sec:task}) is its past-graph smoother.
+
+Making this correspondence explicit does two things.  First, it gives
+the wedge artefacts of Operon --- \texttt{StagnationGate},
+\texttt{IntegrityGate}, and the certificate codec --- a citable prior
+art: the analogues in SLAM have been used in production robotics for
+two decades.  Second, it clarifies what Operon is and is not doing.
+It is \emph{not} training an energy function.  It is running the
+classical fixed-structure variant of the same loop --- factor topology
+and residual predicates fixed in advance, solver replaced by a
+verifier over a discrete symbolic state.  Section~\ref{sec:fg-limits}
+records where the analogy stops.
+
+\subsection{Factor graphs in one paragraph}\label{sec:fg-recap}
+
+A factor graph is a bipartite graph with variable nodes $x_i$ and
+factor nodes $\varphi_j$, where each factor $\varphi_j$ is a
+non-negative function of its adjacent variables.  The joint
+distribution factors as $p(\mathbf{x} \mid \mathbf{z}) \propto
+\prod_j \varphi_j(\mathbf{x}_{\partial j})$ and, in energy form,
+$E(\mathbf{x}) = -\log p(\mathbf{x} \mid \mathbf{z}) =
+\sum_j E_j(\mathbf{x}_{\partial j})$.  In the STAG presentation two
+graphs share a common variable $x_t$ at the current time and a
+common dynamics model: a \emph{past graph} anchored at $x_{t-w},
+\ldots, x_t$ with measurement factors $\varphi^{\text{obs}}$ from
+sensors and dynamics factors $\varphi^{\text{dyn}}$ between
+consecutive states (fixed-lag smoothing), and a \emph{future graph}
+anchored at $x_t, \ldots, x_{t+h}$ with the same dynamics and
+goal / objective factors (predictive control)~\cite{dellaert2026stag}.
+Perception is smoothing; planning is control; both are energy
+minimisation.
+
+\subsection{Operon gates as a discrete STAG loop}\label{sec:fg-mapping}
+
+We translate the ingredients of Section~\ref{sec:methods} term by
+term.  The translation is literal: no existing code changes, only
+its description.
+
+\paragraph{Variables.}
+The latent variable $x_t$ is the \emph{agent state at stage $t$} ---
+the tuple \texttt{(genome, expression, short-term memory)} tracked
+by the Operon runtime between stages.  It is symbolic, not
+Euclidean.
+
+\paragraph{Measurement factors.}
+A measurement factor is a non-negative function of $x_t$ and an
+observation $z_t$; high values indicate consistency.  In Operon:
+
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=2pt]
+\item For \texttt{behavioral\_stability\_windowed}, the observation
+  at stage $t$ is the per-window mean $x_t^{\text{(obs)}}$ computed
+  by the verifier at
+  \texttt{operon\_ai/core/certificate.py}:261, and the residual is
+  $r_t = \max(0, x_t^{\text{(obs)}} - \tau)$ where $\tau$ is the
+  stability threshold.  The factor is
+  $\varphi^{\text{obs}}_t = \mathbb{1}[r_t = 0]$.  A violating window
+  contributes a zero factor; the smoothed belief --- ``the system is
+  stable over the last $W$ windows'' --- is the product
+  $\prod_{i=t-W+1}^{t} \varphi^{\text{obs}}_i$, which equals
+  $\mathbb{1}[\max_i x_i \le \tau]$ and recovers exactly the predicate
+  of Section~\ref{sec:task}.
+\item For \texttt{DNARepair.scan()}
+  (\texttt{operon\_ai/state/dna\_repair.py}:268), the observation is
+  the current $(\mathrm{hash}, \mathrm{gene\_count},
+  \mathrm{expression})$ and the residual is the number of damage
+  reports emitted.  Each of the four scans (checksum, gene-value,
+  gene-count, expression) corresponds to one measurement-factor
+  component; their conjunction is the integrity certificate.
+\end{itemize}
+
+\paragraph{Dynamics factors.}
+A dynamics factor $\varphi^{\text{dyn}}_t$ is a non-negative
+function of $(x_{t-1}, x_t)$ that encodes which transitions are
+admissible.  In Operon, the admissible transition from $x_{t-1}$ to
+$x_t$ is recorded by the checkpoint written in
+\texttt{StateCheckpoint}.  The dynamics-residual at stage $t$ is the
+mismatch between what the checkpoint predicts and what
+\texttt{DNARepair.scan} sees at $t$; this is the ``DSB analog''
+(checksum mismatch) in \texttt{dna\_repair.py}:292--305.  Dynamics
+factors are thus not learned; they are deterministic consistency
+factors driven by the genome-hash invariant.
+
+\paragraph{Past graph = pre-guard.}
+\texttt{compile\_guarded\_graph}
+(\texttt{operon\_ai/convergence/guarded\_graph.py}:93) installs a
+\texttt{pre\_guard} node before every LLM stage.  The pre-guard runs
+\texttt{DNARepair.scan(genome, checkpoint)} and halts the run if any
+damage is detected (lines~187--199).  In factor-graph language: the
+pre-guard computes the MAP residual of the past-graph smoother
+anchored at $x_t$ and routes the execution to HALT when the residual
+is positive.  The rolling window $w$ is implicit --- it is the
+window the scan considers, currently one step plus the standing
+checkpoint.
+
+\paragraph{Future graph = post-guard.}
+The \texttt{post\_guard} (same file, \texttt{VerifierComponent} and
+\texttt{WatcherComponent}) evaluates the stage output against a
+rubric and emits a behavioural certificate.  The $h$-step future
+graph collapses to a single goal factor ``quality $\ge$
+rubric-threshold''; if it fails, the conditional router returns
+RETRY / ESCALATE.  This is the degenerate but operationally honest
+version of a STAG future graph: horizon $h = 1$, goal expressed as a
+discrete predicate, no cross-step control variables.
+
+\paragraph{Shared dynamics = shared coalgebra.}
+STAG's past- and future-graph share a dynamics model.  Operon's
+past- and future-guard share the Moore coalgebra defined in
+\texttt{operon\_ai/core/coalgebra.py} --- readout and update are the
+same maps regardless of which guard invokes them.  This is the
+structural-guarantee spine: a single dynamics model lets us reason
+about both what happened and what should happen next without
+double-book-keeping.
+
+\paragraph{Joining factor graphs across agents.}
+In the continuous STAG loop, two robots with overlapping
+trajectories can join their graphs by sharing the variable nodes
+their observations agree on.  The Operon analogue is the A2A
+certificate codec (\texttt{operon\_ai/convergence/a2a\_certificate.py}),
+which exchanges certificates as \texttt{DataPart} payloads.  The
+sending agent's verified certificate is, on the wire, exactly a
+packaged past-graph smoother output: a theorem name $+$ parameters
+$+$ a \texttt{verification.holds} boolean.  The receiving agent joins
+this factor into its own graph along the shared-theorem variable,
+or forwards-without-verify under the graceful-degradation rule (file
+cited, \S3.3 of \texttt{docs/site/external-frameworks.md}).  The
+monoidal-category structure Operon's optimiser already exposes
+(\texttt{operon\_ai/core/optimizer.py}, endofunctor composition) is
+the category-theoretic statement that certificate joining is
+associative.
+
+\subsection{Worked example}\label{sec:fg-worked-example}
+
+We replay the harness of Section~\ref{sec:task} deterministically on
+$(\texttt{data\_inst\_id}{=}0,\ \texttt{run\_seed}{=}0)$ at default
+calibration ($W=4$, $\tau=0.5$, $\sigma=0.08$, $O=8$).  The harness
+seed is SHA-256 of $(\texttt{run\_seed}, \texttt{data\_inst\_id})$,
+so these values are reproducible with no LM in the loop
+(\texttt{eval/convergence/synthetic\_signal\_harness.py}:210).
+
+\paragraph{Before convergence --- $\mathtt{policy\_throttle}=0.55$.}
+The harness draws per-window means
+\[
+\mathbf{x}^{\text{(obs)}} = (0.5769,\ 0.5653,\ 0.4934,\ 0.5172).
+\]
+The past-graph smoother of this appendix attaches four measurement
+factors
+\[
+\varphi^{\text{obs}}_i = \mathbb{1}[x_i^{\text{(obs)}} \le \tau],
+\quad i = 0,1,2,3,
+\]
+with residuals $r_i = \max(0, x_i^{\text{(obs)}} - \tau) = (0.0769,
+0.0653, 0,\ 0.0172)$.  Three factors are zero, so the smoothed
+predicate $\prod_i \varphi^{\text{obs}}_i = 0$: the certificate does
+not hold.  The obligation formatter of Section~\ref{sec:arms}
+serialises exactly the windows $i \in \{0,1,3\}$ with positive
+residuals --- these are the ``\texttt{[VIOLATING]}'' entries in the
+reflection feedback handed to GEPA.  The
+\texttt{scalar-with-evidence} arm sees the same per-window evidence
+line but without the theorem-framing prefix.
+
+\paragraph{After a reducing mutation --- $\mathtt{policy\_throttle}=0.42$.}
+Replaying with the same instance under a smaller throttle gives
+\[
+\mathbf{x}^{\text{(obs)}} = (0.4469,\ 0.4353,\ 0.3634,\ 0.3872),
+\]
+residuals $(0,0,0,0)$, and $\prod_i \varphi^{\text{obs}}_i = 1$.
+The certificate holds on this rollout.  Convergence
+(Section~\ref{sec:conv}) is the first iteration whose best
+candidate has $\mathrm{holds}=1$ for three consecutive
+aggregate-over-16 validation evaluations.  Seed~0 of the
+\texttt{cert-binary} arm reaches that streak at iteration 4; the
+first three iterations have aggregate score $0.0$ and iterations
+$4,5,6$ all score $1.0$
+(\texttt{eval/results/theorem\_6/cert-binary/seed\_0.json}).
+
+\subsection{What this framing buys}\label{sec:fg-buys}
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt,topsep=2pt]
+\item \textbf{Citation lineage.}  The pre-/post-guard pattern is no
+  longer a novel construct; it is the symbolic-state analogue of the
+  rolling-past / rolling-future loop that has been standard in
+  robotics state estimation since~\cite{kaess2012isam2}.  The
+  LangGraph-gates wedge's theoretical-basis paragraph can cite this
+  directly.
+\item \textbf{Certificate composition is factor joining.}  The A2A
+  codec stops being an ad-hoc serialisation and becomes the
+  cross-agent analogue of graph joining along shared variables.
+  This is the property that makes model-agnostic reliability
+  plausible --- agents that never read each other's weights still
+  share a common factor structure.
+\item \textbf{A vocabulary for future scope.}  Any future extension
+  --- longer pre-guard windows, $h > 1$ future graphs, learned
+  residuals --- can be stated and bounded in this vocabulary.  The
+  scope-discipline rule we adopt here is: \emph{factors and
+  topology fixed; only the set of theorems grows.}
+\end{enumerate}
+
+\subsection{Where the analogy stops}\label{sec:fg-limits}
+
+We record the load-bearing disanalogies so later work does not
+overclaim.
+
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=2pt]
+\item \textbf{No metric on state.}  Symbolic agent state has no
+  inner product.  ``Energy'' in our usage is a residual count, not a
+  differentiable potential; the gradient step behind MAP smoothing
+  in SLAM has no counterpart.  Solving is replaced by verification.
+\item \textbf{No learned factors.}  Every factor in the mapping
+  above is a deterministic predicate defined in code.  The moment a
+  factor is fit to data, the guarantee flips from structural to
+  empirical.  This is the Paper 3 lesson (\cite{banu2026convergence}
+  §``evolution did not beat random mutation''): the structure held,
+  the learning did not.
+\item \textbf{Future graph is degenerate.}  Operon's post-guard has
+  horizon $h=1$.  A non-degenerate future graph would plan multiple
+  stages ahead and fold goal factors into the run, which is the
+  direction of energy-based agent planning we deliberately do not
+  pursue.
+\item \textbf{No variable elimination.}  SLAM's speed comes from
+  eliminating variables in topological order.  Operon's guards
+  verify one certificate at a time; there is no dual benefit from
+  the structure, only a dual \emph{description}.
+\end{itemize}
+
+The framing is load-bearing for \emph{how we talk about} the gates,
+not for how they are computed.  That is the correct line for a
+structural-guarantees paper, and the line this appendix commits to.
