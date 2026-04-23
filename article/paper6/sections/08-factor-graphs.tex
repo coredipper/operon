@@ -109,17 +109,28 @@ mismatch between what the checkpoint predicts and what
 factors are thus not learned; they are deterministic consistency
 factors driven by the genome-hash invariant.
 
-\paragraph{Past graph = pre-guard. [implemented]}
+\paragraph{Pre-guard = repeated invariant re-validation. [implemented]}
 \texttt{compile\_guarded\_graph}
 (\texttt{operon\_ai/convergence/guarded\_graph.py}:93) installs a
 \texttt{pre\_guard} node before every LLM stage.  The pre-guard runs
 \texttt{DNARepair.scan(genome, checkpoint)} and halts the run if any
-damage is detected (lines~187--199).  In factor-graph language: the
-pre-guard computes the MAP residual of the past-graph smoother
-anchored at $x_t$ and routes the execution to HALT when the residual
-is positive.  The rolling window $w$ is implicit --- it is the
-window the scan considers, currently one step plus the standing
-checkpoint.
+damage is detected (lines~187--199).  In factor-graph language: each
+stage evaluates the measurement-factor conjunction at a single
+$x_t$ against a \emph{static} checkpoint baseline and routes to
+HALT if any residual is positive.  This is deliberately \emph{not}
+a rolling past-graph smoother: there is no per-stage checkpoint
+evolution, no $W$-step window over evolving states, and no MAP
+re-estimate across stages.  The same caller-supplied
+\texttt{StateCheckpoint} is re-checked before every stage
+(\texttt{guarded\_graph.py}:186--199, 539).  The factor-graph
+reading of the pre-guard is therefore ``repeated invariant
+re-validation against a fixed baseline,'' and a genuine past-graph
+smoother --- with per-stage checkpoint advancement and a
+bounded-lag window --- is a deliberate non-goal at this scope
+(see Section~\ref{sec:fg-limits}).  The windowed \emph{verifier}
+(Section~\ref{sec:fg-mapping}, Measurement factors) is what plays
+the smoother role; the pre-guard is its one-step invariant
+counterpart in the compiled runtime.
 
 \paragraph{Future graph = post-guard. [implemented]}
 The \texttt{post\_guard} in \texttt{compile\_guarded\_graph}
@@ -168,18 +179,25 @@ but the compile path does not thread a single dynamics object
 through both.  Flagging this so downstream work does not build on a
 shared-object or coalgebra/compile coupling that does not exist.
 
-\paragraph{Joining factor graphs across agents. [derived]}
+\paragraph{Joining factor graphs across agents. [analogy]}
 In the continuous STAG loop, two robots with overlapping
 trajectories can join their graphs by sharing the variable nodes
-their observations agree on.  The Operon analogue is the A2A
-certificate codec (\texttt{operon\_ai/convergence/a2a\_certificate.py}),
-which exchanges certificates as \texttt{DataPart} payloads.  The
-sending agent's verified certificate is, on the wire, exactly a
-packaged past-graph smoother output: a theorem name $+$ parameters
-$+$ a \texttt{verification.holds} boolean.  The receiving agent joins
-this factor into its own graph along the shared-theorem variable,
-or forwards-without-verify under the graceful-degradation rule (file
-cited, \S3.3 of \texttt{docs/site/external-frameworks.md}).  The
+their observations agree on.  The Operon code that plays a
+superficially similar role is the A2A certificate codec
+(\texttt{operon\_ai/convergence/a2a\_certificate.py}): it encodes
+certificates as \texttt{DataPart} payloads, decodes them on
+receipt, and implements a graceful-degradation rule for unknown
+theorems (\S3.3 of \texttt{docs/site/external-frameworks.md}).
+What the code does \emph{not} do is maintain an internal factor
+graph, attach received factors to any shared-variable state, or
+perform graph-level composition or joint inference.  A receiver
+either verifies a single certificate locally or forwards it; there
+is no ``my graph, your graph, joined along a shared variable''
+surface anywhere in the codebase.  So the mapping here is analogy
+only --- transport plus schema agreement, not graph joining.
+Downgrading to \textbf{[analogy]} so readers do not treat the
+transport layer as evidence of implemented cross-agent graph
+composition semantics.  The
 monoidal-category structure Operon's optimiser already exposes
 (\texttt{operon\_ai/core/optimizer.py}, endofunctor composition) is
 the category-theoretic statement that certificate joining is
@@ -213,8 +231,9 @@ Unit tests in \texttt{tests/unit/state/test\_dna\_repair*}\\[2pt]
 Dynamics factors & \texttt{state/dna\_repair.py}:292--305 +
 \texttt{StateCheckpoint} & Integrity certificate on pre-guard
 (Paper~4 \S4.1)\\[2pt]
-Past graph = pre-guard & \texttt{convergence/guarded\_graph.py}:93,
-187--199 & Pre-guard halts on damage; Paper~4 \S4.1\\[2pt]
+Pre-guard = repeated invariant re-validation (static checkpoint;
+no rolling window) & \texttt{convergence/guarded\_graph.py}:93,
+187--199, 539 & Pre-guard halts on damage; Paper~4 \S4.1\\[2pt]
 Future graph = post-guard (rubric routing) &
 \texttt{convergence/guarded\_graph.py}:248, 300 &
 Conditional-router decision trace in the compiled graph\\[2pt]
@@ -228,19 +247,52 @@ preservation-under-compilation, not runtime emission\\[2pt]
 Shared dynamics (pre-guard only via \texttt{StateCheckpoint}; no
 coalgebra coupling; rubric call \texttt{(output, stage\_name)}
 ignores checkpoint) & --- & --- \emph{[analogy]}\\[2pt]
-Joining factor graphs across agents &
+A2A transport of certificates (not graph joining) &
 \texttt{convergence/a2a\_certificate.py} &
-A2A DataPart round-trip; graceful-degradation rule in
-\S3.3 of \texttt{docs/site/external-frameworks.md}\\
+A2A DataPart round-trip + graceful-degradation (\S3.3,
+\texttt{external-frameworks.md}); \emph{[analogy]} --- no
+internal-graph join is implemented\\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\noindent A practical consequence: if any of the \texttt{.py} line
-numbers cited in this appendix drifts, the corresponding row of
-this table must be updated or the claim re-tagged as
-\textbf{[analogy]}.  The appendix is part of the paper; the table
-is the documentation-drift contract for the appendix.
+\paragraph{Reproducibility prerequisites.}
+The \texttt{[implemented]} guarded-graph claims require the
+optional LangGraph dependency
+(\texttt{pip install operon-ai[langgraph]}; see
+\texttt{compile\_guarded\_graph}, lines~133--140).  The
+\texttt{[implemented]} certificate and harness claims do not.  The
+worked example in Section~\ref{sec:fg-worked-example} runs purely
+from the harness \texttt{run\_rollout} function and needs no LM or
+LangGraph stack.
+
+\paragraph{Maintenance checklist (documentation-drift contract).}
+This appendix cites exact line numbers.  On any change to the
+files below, a reviewer must verify or retag:
+
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=2pt]
+\item \texttt{operon\_ai/core/certificate.py}:261 ---
+verifier signature and \texttt{signal\_values} contract;
+rebuild PDF if signature changes.
+\item \texttt{operon\_ai/state/dna\_repair.py}:268, 291, 307, 335,
+351, 381 --- five scan components; retag row as
+\textbf{[analogy]} if any component is removed.
+\item \texttt{operon\_ai/convergence/guarded\_graph.py}:93, 186--199,
+248, 255, 300, 554--572 --- pre-guard, rubric call signature,
+post-run certificate replay.  If \texttt{run\_guarded\_graph}
+begins emitting fresh certificates from the post-guard, the
+``certificates are a separate channel'' paragraph must be
+rewritten.
+\item \texttt{operon\_ai/convergence/a2a\_certificate.py} --- if any
+internal graph-join API is added, the ``Joining factor graphs
+across agents'' row may be re-tagged from \textbf{[analogy]} to
+\textbf{[derived]} or \textbf{[implemented]}.
+\end{itemize}
+
+The contract is \emph{retag-or-rewrite}: a drifted anchor does not
+block the build, but the corresponding row or paragraph must be
+re-tagged as \textbf{[analogy]} until a reviewer has re-verified
+the code.
 
 \subsection{Worked example}\label{sec:fg-worked-example}
 
