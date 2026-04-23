@@ -48,16 +48,28 @@ minimisation.
 \subsection{Operon gates as a discrete STAG loop}\label{sec:fg-mapping}
 
 We translate the ingredients of Section~\ref{sec:methods} term by
-term.  The translation is literal: no existing code changes, only
-its description.
+term.  Each paragraph tags its claim as either
+\textbf{[implemented]} --- the cited code already discharges the
+mapping directly, \textbf{[derived]} --- the mapping follows from
+existing behaviour but is not surfaced at the named line, or
+\textbf{[analogy]} --- the structure lines up but no single code
+path instantiates it; this is a description layered on top.  The
+validation surface per claim is summarised in
+Section~\ref{sec:fg-validation}.
 
-\paragraph{Variables.}
-The latent variable $x_t$ is the \emph{agent state at stage $t$} ---
-the tuple \texttt{(genome, expression, short-term memory)} tracked
-by the Operon runtime between stages.  It is symbolic, not
+\paragraph{Variables. [analogy]}
+The latent variable $x_t$ is the \emph{abstract agent state at
+stage $t$} --- the tuple \texttt{(genome, expression, short-term
+memory)} tracked by the Operon runtime between stages.  This is
+not the LangGraph \texttt{GuardedState} dict
+(\texttt{operon\_ai/convergence/guarded\_graph.py}:59), which also
+carries compile-time plumbing (\texttt{messages},
+\texttt{stage\_outputs}, \texttt{retry\_count},
+\texttt{watcher\_state}); those fields are part of the runtime
+envelope, not of the factor-graph reading.  $x_t$ is symbolic, not
 Euclidean.
 
-\paragraph{Measurement factors.}
+\paragraph{Measurement factors. [implemented]}
 A measurement factor is a non-negative function of $x_t$ and an
 observation $z_t$; high values indicate consistency.  In Operon:
 
@@ -77,13 +89,15 @@ observation $z_t$; high values indicate consistency.  In Operon:
 \item For \texttt{DNARepair.scan()}
   (\texttt{operon\_ai/state/dna\_repair.py}:268), the observation is
   the current $(\mathrm{hash}, \mathrm{gene\_count},
-  \mathrm{expression})$ and the residual is the number of damage
-  reports emitted.  Each of the four scans (checksum, gene-value,
-  gene-count, expression) corresponds to one measurement-factor
-  component; their conjunction is the integrity certificate.
+  \mathrm{expression}, \mathrm{required\_genes})$ and the residual is
+  the number of damage reports emitted.  Each of the five scans ---
+  checksum (\S291), gene-value (\S307), gene-count (\S335),
+  expression (\S351), and required-gene presence (\S381) ---
+  corresponds to one measurement-factor component; their conjunction
+  is the integrity certificate.
 \end{itemize}
 
-\paragraph{Dynamics factors.}
+\paragraph{Dynamics factors. [implemented]}
 A dynamics factor $\varphi^{\text{dyn}}_t$ is a non-negative
 function of $(x_{t-1}, x_t)$ that encodes which transitions are
 admissible.  In Operon, the admissible transition from $x_{t-1}$ to
@@ -95,7 +109,7 @@ mismatch between what the checkpoint predicts and what
 factors are thus not learned; they are deterministic consistency
 factors driven by the genome-hash invariant.
 
-\paragraph{Past graph = pre-guard.}
+\paragraph{Past graph = pre-guard. [implemented]}
 \texttt{compile\_guarded\_graph}
 (\texttt{operon\_ai/convergence/guarded\_graph.py}:93) installs a
 \texttt{pre\_guard} node before every LLM stage.  The pre-guard runs
@@ -107,26 +121,46 @@ is positive.  The rolling window $w$ is implicit --- it is the
 window the scan considers, currently one step plus the standing
 checkpoint.
 
-\paragraph{Future graph = post-guard.}
-The \texttt{post\_guard} (same file, \texttt{VerifierComponent} and
-\texttt{WatcherComponent}) evaluates the stage output against a
-rubric and emits a behavioural certificate.  The $h$-step future
+\paragraph{Future graph = post-guard. [derived]}
+The \texttt{post\_guard} in \texttt{compile\_guarded\_graph}
+evaluates the stage output against a rubric
+(\texttt{\_evaluate\_quality}, line~248), threads a simplified
+watcher state, and routes RETRY / ESCALATE / HALT via
+\texttt{\_route\_intervention} (line~300).  The $h$-step future
 graph collapses to a single goal factor ``quality $\ge$
-rubric-threshold''; if it fails, the conditional router returns
-RETRY / ESCALATE.  This is the degenerate but operationally honest
-version of a STAG future graph: horizon $h = 1$, goal expressed as a
-discrete predicate, no cross-step control variables.
+rubric-threshold''; if it fails, the conditional router fires.
+This is the degenerate but operationally honest version of a STAG
+future graph: horizon $h = 1$, goal expressed as a discrete
+rubric predicate, no cross-step control variables.  Certificate
+emission for behavioural quality happens separately, in the
+\texttt{VerifierComponent} / \texttt{WatcherComponent} runtime
+components, and is consumed back into the compile path only as a
+verification-of-existing-certificates step in
+\texttt{run\_guarded\_graph} (line~557, \texttt{certificate\_from\_dict}),
+which populates \texttt{GuardedGraphResult.certificates\_verified}.
+The post-guard node in the compiled graph therefore does not
+\emph{emit} the behavioural certificate inline; it emits the
+rubric-based routing decision that the certificate later attests
+to.  This is the right place to pressure-test the ``future graph''
+framing: in the compile path the goal factor is a discrete rubric
+predicate, and the certificate is a separate artefact attached at
+run time.
 
-\paragraph{Shared dynamics = shared coalgebra.}
-STAG's past- and future-graph share a dynamics model.  Operon's
-past- and future-guard share the Moore coalgebra defined in
-\texttt{operon\_ai/core/coalgebra.py} --- readout and update are the
-same maps regardless of which guard invokes them.  This is the
-structural-guarantee spine: a single dynamics model lets us reason
-about both what happened and what should happen next without
-double-book-keeping.
+\paragraph{Shared dynamics. [analogy]}
+STAG's past- and future-graph share a dynamics model.  In Operon,
+the object that plays the same role is the standing
+\texttt{StateCheckpoint}: it is consulted by the pre-guard for
+integrity, and it is the reference state against which the
+post-guard's rubric is judged.  The category-theoretic machinery in
+\texttt{operon\_ai/core/coalgebra.py} formalises discrete dynamics
+for Operon in the abstract --- readout / update / bisimulation ---
+and the compile path does not import it; the analogy is at the
+level of ``both graphs refer to the same dynamics object,'' not
+``both graphs call into the same module.''  Flagging this so
+downstream work does not build on a coalgebra/compile coupling that
+does not exist.
 
-\paragraph{Joining factor graphs across agents.}
+\paragraph{Joining factor graphs across agents. [derived]}
 In the continuous STAG loop, two robots with overlapping
 trajectories can join their graphs by sharing the variable nodes
 their observations agree on.  The Operon analogue is the A2A
@@ -142,6 +176,60 @@ monoidal-category structure Operon's optimiser already exposes
 (\texttt{operon\_ai/core/optimizer.py}, endofunctor composition) is
 the category-theoretic statement that certificate joining is
 associative.
+
+\subsection{Claim-validation table}\label{sec:fg-validation}
+
+Each mapping in Section~\ref{sec:fg-mapping} is tagged
+\textbf{[implemented]}, \textbf{[derived]}, or \textbf{[analogy]}.
+The table below names, for each \textbf{[implemented]} and
+\textbf{[derived]} mapping, the owning code path and the artefact
+that validates it.  The \textbf{[analogy]}-tagged mappings are
+descriptive and have no validation artefact by design; they are
+included for completeness and flagged so downstream work does not
+treat them as code-level contracts.
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{3.6cm}p{5.8cm}p{4.4cm}@{}}
+\toprule
+Mapping & Owning code path & Validation artefact\\
+\midrule
+Variables & N/A (abstract) & --- \emph{[analogy]}\\[2pt]
+Measurement factors ($\mathtt{behavioral\_stability\_windowed}$) &
+\texttt{core/certificate.py}:261 &
+Unit test \texttt{tests/unit/convergence/test\_paper6\_*.py};
+Section~\ref{sec:fg-worked-example}\\[2pt]
+Measurement factors ($\mathtt{DNARepair.scan}$) &
+\texttt{state/dna\_repair.py}:268 (5 scans, \S291, 307, 335, 351, 381) &
+Unit tests in \texttt{tests/unit/state/test\_dna\_repair*}\\[2pt]
+Dynamics factors & \texttt{state/dna\_repair.py}:292--305 +
+\texttt{StateCheckpoint} & Integrity certificate on pre-guard
+(Paper~4 \S4.1)\\[2pt]
+Past graph = pre-guard & \texttt{convergence/guarded\_graph.py}:93,
+187--199 & Pre-guard halts on damage; Paper~4 \S4.1\\[2pt]
+Future graph = post-guard (rubric routing) &
+\texttt{convergence/guarded\_graph.py}:248, 300 &
+Conditional-router decision trace in the compiled graph\\[2pt]
+Future graph = post-guard (certificate emission) &
+\texttt{VerifierComponent} / \texttt{WatcherComponent} runtime
+components; consumed at \texttt{guarded\_graph.py}:557 via
+\texttt{certificate\_from\_dict} &
+\texttt{GuardedGraphResult.certificates\_verified}\\[2pt]
+Shared dynamics & \texttt{StateCheckpoint} object (no code path
+through \texttt{core/coalgebra.py}) & --- \emph{[analogy]}\\[2pt]
+Joining factor graphs across agents &
+\texttt{convergence/a2a\_certificate.py} &
+A2A DataPart round-trip; graceful-degradation rule in
+\S3.3 of \texttt{docs/site/external-frameworks.md}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent A practical consequence: if any of the \texttt{.py} line
+numbers cited in this appendix drifts, the corresponding row of
+this table must be updated or the claim re-tagged as
+\textbf{[analogy]}.  The appendix is part of the paper; the table
+is the documentation-drift contract for the appendix.
 
 \subsection{Worked example}\label{sec:fg-worked-example}
 
