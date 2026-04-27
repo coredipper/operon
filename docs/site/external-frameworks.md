@@ -265,6 +265,7 @@ All 41 tests pass under `pytest tests/unit/convergence/test_gepa_adapter.py test
 - **Swarms gate injection** — swarms is already integrated bidirectionally at L1; deepening (e.g., injecting `StagnationGate`/`IntegrityGate` at `GraphWorkflow` edges) is a separate PR.
 - **Full DSPy prototype** — Theorem 2 is stated and an API sketch is given; the shipping verifier is deferred pending a lightweight reproducibility predicate (see §3.1).
 - **A2A runtime hosting** — codec ships; spinning up an A2A server with `a2a-inspector` is per-deployment.
+- **LLM output validation** — Operon validates *process* (gates, certificates), not *output content*. No LLM output validation for toxicity, schema conformance, or hallucination filtering ships from this codebase; data-layer frameworks such as Guardrails AI are the sibling layer for that surface (see §8.2).
 
 ## 7. Follow-up tasks
 
@@ -275,7 +276,7 @@ All 41 tests pass under `pytest tests/unit/convergence/test_gepa_adapter.py test
 
 ## 8. Landscape addenda (2026-04-24)
 
-Triage pass on two repos surfaced as possible convergence targets. Placed against the L1/L2/L3 taxonomy of §1 with a verdict — no code ships in this addendum.
+Triage pass on three repos surfaced as possible convergence targets. Placed against the L1/L2/L3 taxonomy of §1 with a verdict — no code ships in this addendum.
 
 ### 8.1 gascity — L1 coordination runtime, wedge deferred
 
