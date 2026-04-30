@@ -278,13 +278,15 @@ All 41 tests pass under `pytest tests/unit/convergence/test_gepa_adapter.py test
 
 Triage pass on three repos surfaced as possible convergence targets. Placed against the L1/L2/L3 taxonomy of §1 with a verdict — no code ships in this addendum.
 
-### 8.1 gascity — L1 coordination runtime, wedge deferred
+**Update (2026-04-30):** the `operon-langgraph-gates` wedge that gated §8.1 and §8.3 below has shipped as `v0.1.0` ([release](https://github.com/coredipper/operon-langgraph-gates/releases/tag/v0.1.0), [PyPI](https://pypi.org/project/operon-langgraph-gates/0.1.0/)). The queue positions and "deferred" verdicts have been updated to reflect post-ship state; original analysis is preserved in git history (commit `375aedb`).
+
+### 8.1 gascity — L1 coordination runtime, next wedge candidate
 
 Gas City (`gastownhall/gascity`, v1.0 released 2026-04-21) is Steve Yegge's Go-based coordination runtime for durable, long-lived agent teams. Core primitives are **Packs** (declarative module bundles), **Beads** (two-level work-routing abstraction with formulas/molecules/waits as first-class), **MEOW** (versioned knowledge graphs), and persistent agents running in tmux sessions with git-versioned Dolt audit trails. It ships no validation surface of its own — `internal/validation/` covers config schema only — but exposes rich lifecycle hooks (`SessionStart`, `PreToolUse`, `UserPromptSubmit`, `Stop`) plus a four-tier integration model (JSON preset → settings hook → plugin → non-interactive).
 
 **Placement.** L1, same layer as the existing Swarms / DeerFlow / AnimaWorks / Ralph / A-Evolve / Scion adapters and the LangGraph guarded-graph compiler. Natural gate attach points: `hooks/` (per-turn invariant re-validation, akin to pre-guard), `dispatch/` (pre-nudge structural check), `mail/` (message-boundary certificates). Certificates would emit into the Beads/Dolt audit trail — an unusually strong home for compile-time artefacts, since Dolt gives versioned queryable history for free.
 
-**Verdict — wedge candidate, deferred.** Gascity's hook surface is the cleanest gate attach point of any L1 framework surveyed to date. Defer until `operon-langgraph-gates` v0.1 (StagnationGate + IntegrityGate) ships and validates the gate-adapter template; then instantiate `operon-gascity-gates` against that template via a duck-typed adapter at `operon_ai/convergence/gascity_adapter.py`, mirroring `gepa_adapter.py`. Do not pre-empt the LangGraph wedge.
+**Verdict — wedge candidate, now next in queue.** Gascity's hook surface is the cleanest gate attach point of any L1 framework surveyed to date. The blocking dependency — `operon-langgraph-gates` v0.1 validating the gate-adapter template — has lifted with the [`v0.1.0` release on 2026-04-30](https://github.com/coredipper/operon-langgraph-gates/releases/tag/v0.1.0); a duck-typed `operon-gascity-gates` adapter at `operon_ai/convergence/gascity_adapter.py` (mirroring `gepa_adapter.py`) is now the natural follow-up. Public theorem-name constants `STAGNATION_THEOREM` and `INTEGRITY_THEOREM` exposed in v0.1.0 give the adapter stable identifiers to key on without binding to upstream string literals.
 
 ### 8.2 Guardrails AI — complement, not wedge
 
@@ -294,14 +296,14 @@ Guardrails AI (`guardrails-ai/guardrails`) is a mature ($7.5M seed, ~2.9k stars,
 
 **Verdict — complement, not wedge.** Guardrails covers the exact territory §6 marks as explicitly out of scope for Operon ("No LLM output validation for toxicity, schema conformance, or hallucination filtering"). This addendum reaffirms that scope line: Operon should not build output validators, and does not need a Guardrails adapter to claim coverage of that layer — pointing at Guardrails as the sibling framework is the right answer. A joint-demo snippet (one guarded LangGraph node wrapped by both a `Guard` and an Operon pre/post-guard) is the only artefact worth considering, and only if a user asks.
 
-### 8.3 agentflow — L1+L2 wedge candidate, queue position 3
+### 8.3 agentflow — L1+L2 wedge candidate, queue position 2
 
 BeraBuilds AgentFlow (`berabuddies/agentflow`, ~1.1k stars, active Apr 2026, no tagged releases) is a Python DAG orchestrator for codex/claude/kimi agents. Primitives are `Graph()` context manager, named agent nodes, operators `>>` (sequence), `fanout` + `merge` (parallel), `on_failure` (loops), `max_iterations` (bounded recursion), and Jinja2 output interpolation. Distinctive secondary feature: a built-in **agent evolution / tuning pipeline** — `agentflow evolve` compiles successful traces into tuned agent versions written to `.agentflow/tuned_agents/`. Ships as Python library + CLI; no plugin surface, no middleware, no config serialization layer (topology is pure Python).
 
 **Placement.** Primary **L1 topology** (`Graph` is a DAG of agent calls — same shape as Swarms/DeerFlow/LangGraph/gascity). Secondary **L2 artefact** — the tuned-agent output is a frozen-prompt-equivalent artefact, landing in the same territory as DSPy compile (§2 Theorem 2) and GEPA optimization (§2 Theorem 3). This is the first L1 framework surveyed with a native L2 evolution loop baked in.
 
-**Verdict — wedge candidate, queue position 3.** Two separate wedge angles exist, both deferred:
-1. **L1 adapter** — weaker surface than gascity (no hooks; would require wrapping `Graph.run()` or monkey-patching node transitions to inject StagnationGate/IntegrityGate). Queue position: behind `operon-langgraph-gates` v0.1 and `operon-gascity-gates`.
-2. **L2 certificate hook for `evolve`** — the more interesting angle. Tuned-agent compilation is a natural site for `Certificate.from_agentflow_compile(...)` mirroring the Theorem 2 DSPy binding, certifying trace-hash reproducibility of the tuned artefact. This is independent of the L1 wedge queue and could ship earlier if the LangGraph wedge confirms the template.
+**Verdict — wedge candidate, queue position 2.** Two separate wedge angles exist:
+1. **L1 adapter** — weaker surface than gascity (no hooks; would require wrapping `Graph.run()` or monkey-patching node transitions to inject `StagnationGate`/`IntegrityGate` from `operon-langgraph-gates` v0.1.0). Queue position: behind `operon-gascity-gates` (the natural next L1 instantiation off the validated template).
+2. **L2 certificate hook for `evolve`** — the more interesting angle, and now **unblocked**. Tuned-agent compilation is a natural site for `Certificate.from_agentflow_compile(...)` mirroring the Theorem 2 DSPy binding, certifying trace-hash reproducibility of the tuned artefact. The LangGraph wedge has confirmed the template (cf. v0.1.0 §"Public API" + the enforced A2A round-trip binding); the L2 hook is independent of the L1 wedge queue and ready to scope when prioritised.
 
-Do not pre-empt either queue. If prioritized later, the L2 angle is the distinctive play — no other L1 framework in §1 ships its own optimizer.
+If prioritised later, the L2 angle is the distinctive play — no other L1 framework in §1 ships its own optimizer.
