@@ -37,9 +37,15 @@ class TestConstruction:
         assert isinstance(cert, Certificate)
         assert cert.theorem == "agentflow_evolve_pinned_inputs"
 
-    def test_default_source_label(self) -> None:
+    def test_classmethod_default_source_label(self) -> None:
         cert = Certificate.from_agentflow_compile(_HASH_A, _HASH_B, _HASH_C)
         assert cert.source == "Certificate.from_agentflow_compile"
+
+    def test_helper_default_source_label(self) -> None:
+        """Helper-direct callers get the helper's name, not the classmethod's
+        (Roborev #922)."""
+        cert = make_agentflow_compile_certificate(_HASH_A, _HASH_B, _HASH_C)
+        assert cert.source == "make_agentflow_compile_certificate"
 
     def test_source_override(self) -> None:
         cert = make_agentflow_compile_certificate(

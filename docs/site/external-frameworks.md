@@ -43,13 +43,19 @@ for every certificate $c$ whose theorem is registered at both endpoints. Then $F
 
 *Witness.* See `TestRoundTrip` in `tests/unit/convergence/test_a2a_certificate.py` — four assertions establish the required equality for the A2A codec $(\phi, \psi) = (\texttt{certificate\_to\_a2a\_part},\, \texttt{certificate\_from\_a2a\_part})$.
 
-### Theorem 2 (Compile-time binding — DSPy)
+### Theorem 2 (Compile-time binding — DSPy, two variants)
 
-Let $\pi = \texttt{dspy.compile}(\pi_0,\, D_{\text{train}},\, m)$ be a compiled DSPy program. If
-$$c = \texttt{Certificate.from\_dspy\_compile}(\pi,\, D_{\text{train}},\, m,\, h)$$
-where $h = \texttt{hash}(\texttt{traces}(\pi, D_{\text{train}}))$, then $c.\mathrm{verify}()$ is a *reproducibility witness*: re-executing `dspy.compile` with the same $(\pi_0,\, D_{\text{train}},\, m,\, \text{seed})$ should yield a program $\pi'$ with $\texttt{hash}(\texttt{traces}(\pi', D_{\text{train}})) = h$. Certificate failure is therefore a compilation non-determinism signal.
+Let $\pi = \texttt{dspy.compile}(\pi_0,\, D_{\text{train}},\, m)$ be a compiled DSPy program, and let
 
-*Status (2026-05-01).* The cheap variant `dspy_compile_pinned_inputs` is shipped as `Certificate.from_dspy_compile(...)` and registered in `operon_ai.core.certificate._THEOREM_FN_PATHS`; the verifier checks that all four pinned hashes are recorded and well-formed. The heavy variant `dspy_compile_reproducible` (which would re-run compilation and compare trace hashes) is still deferred for the same reason given in §3.1 — verification cost. See §3.1 for the alternative-framing note.
+$$h_{\text{program}} = \texttt{hash}(\pi_0),\ h_{\text{trainset}} = \texttt{hash}(D_{\text{train}}),\ h_{\text{metric}} = \texttt{hash}(\texttt{source}(m)),\ h_{\text{trace}} = \texttt{hash}(\texttt{traces}(\pi, D_{\text{train}})).$$
+
+**Variant 2a (cheap, shipped 2026-05-01).** The certificate
+$$c_{\text{cheap}} = \texttt{Certificate.from\_dspy\_compile}(h_{\text{program}},\, h_{\text{trainset}},\, h_{\text{metric}},\, h_{\text{trace}})$$
+asserts the four pinned hashes are recorded. $c_{\text{cheap}}.\mathrm{verify}()$ confirms each hash is well-formed (lowercase hex, length $\geq 8$). Reproducibility itself is checked *downstream*: a later run of `dspy.compile` with the same $(\pi_0,\, D_{\text{train}},\, m,\, \text{seed})$ that produces a different $h_{\text{trace}}$ is the audit signal — model drift, sampling noise, unstable prompt tokenizer, or trainset drift.
+
+**Variant 2b (heavy, deferred).** A hypothetical `Certificate.from_dspy_compile_reproducible(π, D_train, m, h)` would have $c.\mathrm{verify}()$ re-execute compile and check $\texttt{hash}(\texttt{traces}(\pi',\, D_{\text{train}})) = h$ directly. Deferred per §3.1 — re-running compile costs seconds to minutes per `verify()`, which is too expensive for routine verification.
+
+*Status.* Variant 2a (the cheap provenance marker) shipped 2026-05-01, registered as `dspy_compile_pinned_inputs` in `operon_ai.core.certificate._THEOREM_FN_PATHS`. Variant 2b remains future work.
 
 ### Theorem 3 (Counterexample-guided convergence — GEPA)
 
@@ -89,16 +95,16 @@ The compile boundary — `Program.compile(π₀, D_train, m) → π` — is the 
 - The identity of the metric function (source-level hash)
 - The trace hash `h = hash(traces(π, D_train))` — the reproducibility fingerprint
 
-The intended public surface is
+The shipped public surface (cheap variant 2a) is
 ```python
 cert = Certificate.from_dspy_compile(
-    program=π,
-    trainset=D_train,
-    metric=m,
-    trace_hash=h,
+    program_hash=hash(π_0),
+    trainset_hash=hash(D_train),
+    metric_hash=hash(source(m)),
+    trace_hash=hash(traces(π, D_train)),
 )
 ```
-bound to a theorem `dspy_compile_reproducible` whose verifier re-runs compilation with the same inputs and checks that the new trace hash matches. Failure = either nondeterminism (model drift, sampling noise, unstable prompt tokenizer) or trainset drift — both are audit-worthy.
+bound to the theorem `dspy_compile_pinned_inputs`, whose verifier confirms each hash is recorded and well-formed. The heavy variant 2b would instead re-run compilation with the same inputs and check that the new trace hash matches — that future hook would carry a different name (e.g. `Certificate.from_dspy_compile_reproducible`) and is deferred. Failure of either variant points to the same audit-worthy causes: nondeterminism (model drift, sampling noise, unstable prompt tokenizer) or trainset drift.
 
 **Why not ship the heavy variant now?** The full-reproducibility prototype is deferred because (a) re-running compilation is expensive (seconds to minutes), which makes the verifier too slow for routine `verify()` calls, and (b) the composition example in §4 exercises DSPy implicitly via GEPA's `DSPyFullProgramAdapter`, where DSPy serves as the *host* for evolved programs rather than the compile boundary. Adding the heavy verifier is a follow-up PR.
 
@@ -241,8 +247,8 @@ Operon proposer ──► GEPA optimizer ──► DSPy compiled program ──�
 
 1. **Operon proposer** emits candidate prompts paired with *unmet* certificates — a theorem it wants satisfied and a current failure. Certificates serialize via `certificate_to_dict` and travel as annotations in the proposer's output format.
 2. **GEPA optimizer** ingests the candidate via `OperonCertificateAdapter.evaluate`. The adapter runs a harness, constructs a certificate per batch item, and returns `(score ∈ {0,1}, trajectories)`. The reflection pass reads obligation text from `_operon_verifications` and feeds it to GEPA's reflection LM. Candidates mutate against *specific unmet obligations* — the Theorem 3 conjecture.
-3. **DSPy compiled program.** GEPA's built-in `DSPyFullProgramAdapter` evolves a `dspy.Module`. At compile completion, `Certificate.from_dspy_compile` (future hook — Theorem 2) binds an audit cert to the compiled artifact.
-4. **A2A agent hosting.** The compiled program is wrapped as an A2A agent. Every response message includes certificate Parts — one for the GEPA-evolved behavioral theorem, one for the DSPy compile audit (when Theorem 2 ships). Downstream agents that share the theorem registry can re-verify; others forward or ignore (Theorem 4).
+3. **DSPy compiled program.** GEPA's built-in `DSPyFullProgramAdapter` evolves a `dspy.Module`. At compile completion, `Certificate.from_dspy_compile` (Theorem 2 cheap variant 2a, shipped 2026-05-01) binds a provenance cert recording the four pinned hashes. The heavy reproducibility verifier (variant 2b) remains deferred.
+4. **A2A agent hosting.** The compiled program is wrapped as an A2A agent. Every response message includes certificate Parts — one for the GEPA-evolved behavioral theorem, one for the DSPy compile-provenance cert (Theorem 2 cheap variant). Downstream agents that share the theorem registry can re-verify; others forward or ignore (Theorem 4).
 5. **Theorem 1** governs the entire chain: because each hop's encode/decode pair preserves `verify()`, the terminal A2A message's certificate agrees with the original proposer's claim. Audit is preserved across vendors.
 
 This diagram is the main asset of this memo for paper-adjacent reuse: it unifies Operon's proposer interface, GEPA's optimizer, DSPy's artifact layer, and A2A's protocol into a single provenance chain, gated on certificate-valued boundaries at every hop.
@@ -265,7 +271,7 @@ All 41 tests pass under `pytest tests/unit/convergence/test_gepa_adapter.py test
 
 - **OpenMythos** (`kyegomez/OpenMythos`) — model architecture, not an agent framework. Could appear as an `LLMProvider` backend, identical to any other model wrapper.
 - **Swarms gate injection** — swarms is already integrated bidirectionally at L1; deepening (e.g., injecting `StagnationGate`/`IntegrityGate` at `GraphWorkflow` edges) is a separate PR.
-- **Full DSPy prototype** — Theorem 2 is stated and an API sketch is given; the shipping verifier is deferred pending a lightweight reproducibility predicate (see §3.1).
+- **Heavy DSPy reproducibility verifier** — Theorem 2 *cheap variant* (`dspy_compile_pinned_inputs`) shipped 2026-05-01; the heavy variant that re-executes compile and checks trace-hash equality remains deferred per §3.1's cost argument.
 - **A2A runtime hosting** — codec ships; spinning up an A2A server with `a2a-inspector` is per-deployment.
 - **LLM output validation** — Operon validates *process* (gates, certificates), not *output content*. No LLM output validation for toxicity, schema conformance, or hallucination filtering ships from this codebase; data-layer frameworks such as Guardrails AI are the sibling layer for that surface (see §8.2).
 

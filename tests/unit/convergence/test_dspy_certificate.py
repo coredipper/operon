@@ -43,9 +43,19 @@ class TestConstruction:
         assert isinstance(cert, Certificate)
         assert cert.theorem == "dspy_compile_pinned_inputs"
 
-    def test_default_source_label(self) -> None:
+    def test_classmethod_default_source_label(self) -> None:
         cert = Certificate.from_dspy_compile(_HASH_A, _HASH_B, _HASH_C, _HASH_D)
         assert cert.source == "Certificate.from_dspy_compile"
+
+    def test_helper_default_source_label(self) -> None:
+        """Calling the helper directly should label provenance as the helper.
+
+        Regression: the helper used to default to the classmethod's name,
+        which mislabelled provenance for direct helper callers (Roborev
+        #922).
+        """
+        cert = make_dspy_compile_certificate(_HASH_A, _HASH_B, _HASH_C, _HASH_D)
+        assert cert.source == "make_dspy_compile_certificate"
 
     def test_source_override(self) -> None:
         cert = make_dspy_compile_certificate(

@@ -92,7 +92,7 @@ def make_agentflow_compile_certificate(
     traces_hash: str,
     tuned_agent_hash: str,
     *,
-    source: str = "Certificate.from_agentflow_compile",
+    source: str = "make_agentflow_compile_certificate",
 ) -> Certificate:
     """Build an agentflow evolve-pinned-inputs provenance certificate.
 

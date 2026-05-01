@@ -98,7 +98,7 @@ def make_dspy_compile_certificate(
     metric_hash: str,
     trace_hash: str,
     *,
-    source: str = "Certificate.from_dspy_compile",
+    source: str = "make_dspy_compile_certificate",
 ) -> Certificate:
     """Build a DSPy compile-pinned-inputs provenance certificate.
 
