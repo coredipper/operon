@@ -158,6 +158,63 @@ class Certificate:
             _verify_fn=fn,
         )
 
+    @classmethod
+    def from_dspy_compile(
+        cls,
+        program_hash: str,
+        trainset_hash: str,
+        metric_hash: str,
+        trace_hash: str,
+        *,
+        source: str = "Certificate.from_dspy_compile",
+    ) -> "Certificate":
+        """Build a DSPy compile-pinned-inputs provenance certificate.
+
+        Cheap variant of Theorem 2 (``docs/site/external-frameworks.md``
+        §2). Records the four hashes that pin the DSPy compile boundary
+        (program structure, trainset content, metric source, trace) but
+        does not re-run compilation. Failure of ``verify()`` indicates a
+        malformed or missing hash; reproducibility itself is checked
+        downstream by re-running ``dspy.compile`` and comparing.
+        """
+        from ..convergence.dspy_certificate import make_dspy_compile_certificate
+
+        return make_dspy_compile_certificate(
+            program_hash=program_hash,
+            trainset_hash=trainset_hash,
+            metric_hash=metric_hash,
+            trace_hash=trace_hash,
+            source=source,
+        )
+
+    @classmethod
+    def from_agentflow_compile(
+        cls,
+        graph_hash: str,
+        traces_hash: str,
+        tuned_agent_hash: str,
+        *,
+        source: str = "Certificate.from_agentflow_compile",
+    ) -> "Certificate":
+        """Build an agentflow evolve-pinned-inputs provenance certificate.
+
+        L2 cert hook for ``agentflow evolve``
+        (``docs/site/external-frameworks.md`` §8.3); mirrors the §2
+        cheap-variant T2 DSPy binding. Records the three hashes that
+        pin agentflow's evolve compile boundary: uncompiled graph
+        structure, input traces content, and tuned-agent output.
+        """
+        from ..convergence.agentflow_certificate import (
+            make_agentflow_compile_certificate,
+        )
+
+        return make_agentflow_compile_certificate(
+            graph_hash=graph_hash,
+            traces_hash=traces_hash,
+            tuned_agent_hash=tuned_agent_hash,
+            source=source,
+        )
+
 
 @dataclass(frozen=True)
 class CertificateVerification:
@@ -222,6 +279,15 @@ _THEOREM_FN_PATHS: dict[str, tuple[str, str]] = {
         "_verify_behavioral_stability_windowed",
     ),
     "behavioral_no_anomaly": ("operon_ai.core.certificate", "_verify_behavioral_no_anomaly"),
+    # Compile-time provenance markers (§2 cheap-variant T2 / §8.3 L2)
+    "dspy_compile_pinned_inputs": (
+        "operon_ai.convergence.dspy_certificate",
+        "_verify_dspy_compile_pinned_inputs",
+    ),
+    "agentflow_evolve_pinned_inputs": (
+        "operon_ai.convergence.agentflow_certificate",
+        "_verify_agentflow_evolve_pinned_inputs",
+    ),
 }
 
 
