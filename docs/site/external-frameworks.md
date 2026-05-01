@@ -95,16 +95,25 @@ The compile boundary — `Program.compile(π₀, D_train, m) → π` — is the 
 - The identity of the metric function (source-level hash)
 - The trace hash `h = hash(traces(π, D_train))` — the reproducibility fingerprint
 
-The shipped public surface (cheap variant 2a) is
+The shipped public surface (cheap variant 2a) takes pre-computed `sha256` hex digests — *not* Python's built-in `hash()`, which is process-randomized and signed and will not pass the verifier (`length ≥ 8`, lowercase hex). Hashes are computed by the caller from a stable serialization of each artefact:
 ```python
+import hashlib
+
+def _digest(payload: bytes) -> str:
+    # operon-ai's convention: sha256 lowercase hexdigest; truncation to
+    # 8/12/16 chars is permitted (see operon_ai/convergence/memory_bridge.py).
+    return hashlib.sha256(payload).hexdigest()
+
 cert = Certificate.from_dspy_compile(
-    program_hash=hash(π_0),
-    trainset_hash=hash(D_train),
-    metric_hash=hash(source(m)),
-    trace_hash=hash(traces(π, D_train)),
+    program_hash=_digest(repr(π_0).encode()),
+    trainset_hash=_digest(json.dumps(D_train, sort_keys=True).encode()),
+    metric_hash=_digest(inspect.getsource(m).encode()),
+    trace_hash=_digest(json.dumps(traces(π, D_train), sort_keys=True).encode()),
 )
 ```
-bound to the theorem `dspy_compile_pinned_inputs`, whose verifier confirms each hash is recorded and well-formed. The heavy variant 2b would instead re-run compilation with the same inputs and check that the new trace hash matches — that future hook would carry a different name (e.g. `Certificate.from_dspy_compile_reproducible`) and is deferred. Failure of either variant points to the same audit-worthy causes: nondeterminism (model drift, sampling noise, unstable prompt tokenizer) or trainset drift.
+bound to the theorem `dspy_compile_pinned_inputs`, whose verifier confirms each hash is recorded and well-formed. The heavy variant 2b would instead re-run compilation with the same inputs and check that the new trace hash matches — that future hook would carry a different name (e.g. `Certificate.from_dspy_compile_reproducible`) and is deferred.
+
+**Failure modes differ by variant.** Cheap variant 2a's `c.verify()` fails iff the recorded hashes are malformed (missing key, wrong length, non-hex, uppercase) — that is a *recording-integrity* signal, not a drift signal. The cert's role is to pin the four hashes at compile time; **drift is detected downstream**, when a later re-execution of `dspy.compile` with the same inputs produces a different `trace_hash` than the one in the cert. Heavy variant 2b's `c.verify()` would do that re-execution itself, collapsing the recording check and the drift check into one call. Either way, a mismatch (cheap-downstream or heavy-direct) points to the same causes: model drift, sampling noise, unstable prompt tokenizer, or trainset drift.
 
 **Why not ship the heavy variant now?** The full-reproducibility prototype is deferred because (a) re-running compilation is expensive (seconds to minutes), which makes the verifier too slow for routine `verify()` calls, and (b) the composition example in §4 exercises DSPy implicitly via GEPA's `DSPyFullProgramAdapter`, where DSPy serves as the *host* for evolved programs rather than the compile boundary. Adding the heavy verifier is a follow-up PR.
 
