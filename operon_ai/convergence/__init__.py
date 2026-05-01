@@ -119,6 +119,13 @@ from .gepa_adapter import (
     OperonCertificateAdapter,
     default_obligation_formatter,
 )
+from .gascity_adapter import (
+    DispatchEvent,
+    GascityCertificateAdapter,
+    HookEvent,
+    MailEvent,
+    verification_to_dolt_envelope,
+)
 from .a2a_certificate import (
     A2A_CERTIFICATE_MIME_TYPE,
     A2A_CERTIFICATE_SCHEMA,
@@ -268,6 +275,12 @@ __all__ = [
     "OperonCertificateAdapter",
     "EvaluationBatch",
     "default_obligation_formatter",
+    # Gas City adapter (§8.1 — gates on hook/dispatch/mail attach points)
+    "GascityCertificateAdapter",
+    "HookEvent",
+    "DispatchEvent",
+    "MailEvent",
+    "verification_to_dolt_envelope",
     # A2A certificate codec (C8 — cross-vendor certificate transport)
     "A2A_CERTIFICATE_SCHEMA",
     "A2A_CERTIFICATE_MIME_TYPE",
