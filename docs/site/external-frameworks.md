@@ -49,7 +49,7 @@ Let $\pi = \texttt{dspy.compile}(\pi_0,\, D_{\text{train}},\, m)$ be a compiled 
 $$c = \texttt{Certificate.from\_dspy\_compile}(\pi,\, D_{\text{train}},\, m,\, h)$$
 where $h = \texttt{hash}(\texttt{traces}(\pi, D_{\text{train}}))$, then $c.\mathrm{verify}()$ is a *reproducibility witness*: re-executing `dspy.compile` with the same $(\pi_0,\, D_{\text{train}},\, m,\, \text{seed})$ should yield a program $\pi'$ with $\texttt{hash}(\texttt{traces}(\pi', D_{\text{train}})) = h$. Certificate failure is therefore a compilation non-determinism signal.
 
-*Status.* Theorem 2 is stated for completeness but not shipped in this iteration — it requires a new registered theorem `dspy_compile_reproducible` with a verifier that re-runs compilation. The integration section §3.1 describes the intended hook; implementation is deferred.
+*Status (2026-05-01).* The cheap variant `dspy_compile_pinned_inputs` is shipped as `Certificate.from_dspy_compile(...)` and registered in `operon_ai.core.certificate._THEOREM_FN_PATHS`; the verifier checks that all four pinned hashes are recorded and well-formed. The heavy variant `dspy_compile_reproducible` (which would re-run compilation and compare trace hashes) is still deferred for the same reason given in §3.1 — verification cost. See §3.1 for the alternative-framing note.
 
 ### Theorem 3 (Counterexample-guided convergence — GEPA)
 
@@ -100,9 +100,11 @@ cert = Certificate.from_dspy_compile(
 ```
 bound to a theorem `dspy_compile_reproducible` whose verifier re-runs compilation with the same inputs and checks that the new trace hash matches. Failure = either nondeterminism (model drift, sampling noise, unstable prompt tokenizer) or trainset drift — both are audit-worthy.
 
-**Why not ship it now?** The prototype is deferred because (a) re-running compilation is expensive (seconds to minutes), which makes the verifier too slow for routine `verify()` calls, and (b) the composition example in §4 exercises DSPy implicitly via GEPA's `DSPyFullProgramAdapter`, where DSPy serves as the *host* for evolved programs rather than the compile boundary. Theorem 2 is therefore stated without a shipping verifier; adding one is a follow-up PR.
+**Why not ship the heavy variant now?** The full-reproducibility prototype is deferred because (a) re-running compilation is expensive (seconds to minutes), which makes the verifier too slow for routine `verify()` calls, and (b) the composition example in §4 exercises DSPy implicitly via GEPA's `DSPyFullProgramAdapter`, where DSPy serves as the *host* for evolved programs rather than the compile boundary. Adding the heavy verifier is a follow-up PR.
 
-**Alternative framing.** If the verifier is too expensive to re-run compilation, a weaker theorem — `dspy_compile_pinned_inputs`, which only checks that the recorded hashes are well-formed and non-empty — is cheap and still useful as a provenance marker. This is the recommended first step when the full reproducibility theorem arrives.
+**Cheap variant shipped (2026-05-01).** Per the alternative-framing note below, `dspy_compile_pinned_inputs` is now registered: `Certificate.from_dspy_compile(program_hash, trainset_hash, metric_hash, trace_hash)` builds a provenance certificate whose `verify()` confirms the four hashes are recorded and well-formed (lowercase-hex, length ≥ 8). Code: `operon_ai/convergence/dspy_certificate.py`. The reproducibility witness is downstream — anyone who later re-runs `dspy.compile` with the same inputs and obtains a matching `trace_hash` has confirmed the witness; mismatch is the audit signal. The §8.3 agentflow L2 cert hook (`Certificate.from_agentflow_compile`) shipped same-day, mirroring this binding.
+
+**Alternative framing (now shipped).** A weaker theorem — `dspy_compile_pinned_inputs`, which only checks that the recorded hashes are well-formed and non-empty — was named in this section as the "recommended first step when the full reproducibility theorem arrives." It is now the shipped artefact described in the cheap-variant note above.
 
 ### 3.2 GEPA — certificate-based evaluator (Prototype A)
 
@@ -282,6 +284,8 @@ Triage pass on three repos surfaced as possible convergence targets. Placed agai
 
 **Update (2026-05-01):** the §8.1 follow-up has shipped. `operon_ai.convergence.GascityCertificateAdapter` lands in-tree alongside the existing GEPA / Swarms / DeerFlow / Ralph / Scion / A-Evolve adapters, with a dogfood test that consumes `STAGNATION_THEOREM` and `INTEGRITY_THEOREM` directly from `operon-langgraph-gates` v0.1.0. agentflow (§8.3) is promoted to queue position 1.
 
+**Update (2026-05-01, later):** the §2 cheap-variant T2 binding (`Certificate.from_dspy_compile`) and the §8.3 L2 agentflow cert hook (`Certificate.from_agentflow_compile`) ship together as a coherent pair. Both are provenance markers — they record the pinned-input hashes at compile time but do not re-run compilation. See §2 *Status* and §8.3 *Verdict* for details.
+
 ### 8.1 gascity — L1 coordination runtime, adapter shipped
 
 Gas City (`gastownhall/gascity`, v1.0 released 2026-04-21) is Steve Yegge's Go-based coordination runtime for durable, long-lived agent teams. Core primitives are **Packs** (declarative module bundles), **Beads** (two-level work-routing abstraction with formulas/molecules/waits as first-class), **MEOW** (versioned knowledge graphs), and persistent agents running in tmux sessions with git-versioned Dolt audit trails. It ships no validation surface of its own — `internal/validation/` covers config schema only — but exposes rich lifecycle hooks (`SessionStart`, `PreToolUse`, `UserPromptSubmit`, `Stop`) plus a four-tier integration model (JSON preset → settings hook → plugin → non-interactive).
@@ -304,8 +308,8 @@ BeraBuilds AgentFlow (`berabuddies/agentflow`, ~1.1k stars, active Apr 2026, no 
 
 **Placement.** Primary **L1 topology** (`Graph` is a DAG of agent calls — same shape as Swarms/DeerFlow/LangGraph/gascity). Secondary **L2 artefact** — the tuned-agent output is a frozen-prompt-equivalent artefact, landing in the same territory as DSPy compile (§2 Theorem 2) and GEPA optimization (§2 Theorem 3). This is the first L1 framework surveyed with a native L2 evolution loop baked in.
 
-**Verdict — wedge candidate, queue position 1 (promoted 2026-05-01 after §8.1 shipped).** Two separate wedge angles exist:
+**Verdict — L2 cert hook shipped (2026-05-01); L1 adapter is queue head.** Two separate wedge angles exist:
 1. **L1 adapter** — weaker surface than gascity (no hooks; would require wrapping `Graph.run()` or monkey-patching node transitions to inject `StagnationGate`/`IntegrityGate` from `operon-langgraph-gates` v0.1.0). Now queue head for L1 work.
-2. **L2 certificate hook for `evolve`** — the more interesting angle, and **unblocked**. Tuned-agent compilation is a natural site for `Certificate.from_agentflow_compile(...)` mirroring the Theorem 2 DSPy binding, certifying trace-hash reproducibility of the tuned artefact. The LangGraph wedge has confirmed the template (cf. v0.1.0 §"Public API" + the enforced A2A round-trip binding); the L2 hook is independent of the L1 wedge queue and ready to scope when prioritised.
+2. **L2 certificate hook for `evolve` — shipped (2026-05-01).** `Certificate.from_agentflow_compile(graph_hash, traces_hash, tuned_agent_hash)` registers a `agentflow_evolve_pinned_inputs` provenance certificate, mirroring the §2 cheap-variant T2 DSPy binding (which shipped the same day). The verifier checks that the three pinned hashes — uncompiled `Graph()`, input traces, and tuned-agent output — are recorded and well-formed; reproducibility itself is checked downstream by re-running `agentflow evolve` and comparing the tuned-agent hash. Code: `operon_ai/convergence/agentflow_certificate.py`. A heavy variant that re-runs `evolve` and checks for hash equality is the natural follow-up but not yet scoped.
 
 If prioritised later, the L2 angle is the distinctive play — no other L1 framework in §1 ships its own optimizer.
