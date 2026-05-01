@@ -276,7 +276,7 @@ All 41 tests pass under `pytest tests/unit/convergence/test_gepa_adapter.py test
 
 ## 8. Landscape addenda (2026-04-24)
 
-Triage pass on three repos surfaced as possible convergence targets. Placed against the L1/L2/L3 taxonomy of §1 with a verdict — no code ships in this addendum.
+Triage pass on three repos surfaced as possible convergence targets. Placed against the L1/L2/L3 taxonomy of §1 with a verdict — no code shipped in this initial triage; subsequent updates (below) record code that has since landed off the verdicts.
 
 **Update (2026-04-30):** the `operon-langgraph-gates` wedge that gated §8.1 and §8.3 below has shipped as `v0.1.0` ([release](https://github.com/coredipper/operon-langgraph-gates/releases/tag/v0.1.0), [PyPI](https://pypi.org/project/operon-langgraph-gates/0.1.0/)). The queue positions and "deferred" verdicts have been updated to reflect post-ship state; original analysis is preserved in git history (commit `375aedb`).
 
