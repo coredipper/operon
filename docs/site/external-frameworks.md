@@ -98,6 +98,8 @@ The compile boundary — `Program.compile(π₀, D_train, m) → π` — is the 
 The shipped public surface (cheap variant 2a) takes pre-computed `sha256` hex digests — *not* Python's built-in `hash()`, which is process-randomized and signed and will not pass the verifier (`length ≥ 8`, lowercase hex). Hashes are computed by the caller from a stable serialization of each artefact:
 ```python
 import hashlib
+import inspect
+import json
 
 def _digest(payload: bytes) -> str:
     # operon-ai's convention: sha256 lowercase hexdigest; truncation to
