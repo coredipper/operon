@@ -126,6 +126,8 @@ from .gascity_adapter import (
     MailEvent,
     verification_to_dolt_envelope,
 )
+from .dspy_certificate import make_dspy_compile_certificate
+from .agentflow_certificate import make_agentflow_compile_certificate
 from .a2a_certificate import (
     A2A_CERTIFICATE_MIME_TYPE,
     A2A_CERTIFICATE_SCHEMA,
@@ -281,6 +283,9 @@ __all__ = [
     "DispatchEvent",
     "MailEvent",
     "verification_to_dolt_envelope",
+    # Compile-time provenance markers (§2 cheap-variant T2 / §8.3 L2)
+    "make_dspy_compile_certificate",
+    "make_agentflow_compile_certificate",
     # A2A certificate codec (C8 — cross-vendor certificate transport)
     "A2A_CERTIFICATE_SCHEMA",
     "A2A_CERTIFICATE_MIME_TYPE",
