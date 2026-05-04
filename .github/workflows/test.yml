@@ -29,3 +29,20 @@ jobs:
       - name: Run tests
         run: |
           pytest tests/ -v
+
+  sentrux-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install sentrux
+        run: |
+          curl -fsSL -o sentrux \
+            https://github.com/sentrux/sentrux/releases/latest/download/sentrux-linux-x86_64
+          chmod +x sentrux
+          mkdir -p "$HOME/.local/bin"
+          mv sentrux "$HOME/.local/bin/"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Check architectural rules
+        run: sentrux check
