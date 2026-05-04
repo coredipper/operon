@@ -36,9 +36,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install sentrux
+        env:
+          SENTRUX_VERSION: v0.5.7
+          SENTRUX_SHA256: 3237f80fe20d54aad4deefa8a143f0d60543bb5d2d6ad891eb42432f155725a6
         run: |
           curl -fsSL -o sentrux \
-            https://github.com/sentrux/sentrux/releases/latest/download/sentrux-linux-x86_64
+            "https://github.com/sentrux/sentrux/releases/download/${SENTRUX_VERSION}/sentrux-linux-x86_64"
+          echo "${SENTRUX_SHA256}  sentrux" | sha256sum -c -
           chmod +x sentrux
           mkdir -p "$HOME/.local/bin"
           mv sentrux "$HOME/.local/bin/"
