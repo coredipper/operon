@@ -1,0 +1,4 @@
+[constraints]
+max_cycles = 0
+min_modularity = 0.3
+min_quality = 0.6
