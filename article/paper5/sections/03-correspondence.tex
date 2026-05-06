@@ -22,7 +22,7 @@ Three composition operations are available:
 \item \textbf{Trace} ($\mathrm{Tr}(A)$): A feedback loop where some outputs feed back as inputs. Homeostatic control.
 \end{itemize}
 
-Ma et al.~\cite{ma2026atomic} demonstrate empirically that five atomic coding skills---localize, edit, test, reproduce, review---compose without negative interference under joint training. This is precisely the behavior the operad is designed to guarantee structurally: typed composition preserves component properties.
+Ma et al.~\cite{ma2026atomic} demonstrate empirically that five atomic coding skills---localize, edit, test, reproduce, review---compose without negative interference under joint training. This is precisely the behavior the operad is designed to support structurally: typed composition can preserve component properties when the relevant property is closed under the chosen operation.
 
 \subsection{Protocols as Syntactic Wiring $G$}
 
@@ -45,14 +45,14 @@ Examples of certificates in our implementation:
 \item \textbf{No oscillation}: ``mTOR scaling converges'' (from feedback gain bounds).
 \end{itemize}
 
-These certificates are attached to $\mathrm{Know}$, not to any specific model. When the model changes---or when the architecture is compiled to a different framework---the certificates remain valid because they depend on harness structure, not model behavior.
+These certificates are attached to $\mathrm{Know}$, not to any specific model. When the model changes---or when the architecture is compiled to a different framework---the supported certificates remain replayable when their hooks and parameters are preserved.
 
-\subsection{The Profunctor Interface $\Phi$}
+\subsection{The Deployment Map $\Phi$}
 
-The interface $\Phi$ maps abstract capability slots to concrete implementations. In practice, this is the \textbf{mode-to-model mapping}: each stage declares a cognitive mode (observational/action-oriented), and the harness resolves this to a specific model tier (fast/deep).
+The deployment map $\Phi$ maps abstract capability slots to concrete implementations. In practice, this is the \textbf{mode-to-model mapping}: each stage declares a cognitive mode (observational/action-oriented), and the harness resolves this to a specific model tier (fast/deep).
 
-\begin{definition}[Profunctor Interface]
-$\Phi: \mathrm{Stages} \to \mathrm{Models}$ assigns each stage a model tier. The interface is a \textbf{parameter} of the architecture, not a fixed constant---different deployments can use different $\Phi$ while preserving the same $(G, \mathrm{Know})$.
+\begin{definition}[Deployment Map]
+$\Phi: \mathrm{Stages} \to \mathrm{Models}$ assigns each stage a model tier. This map is a \textbf{parameter} of the architecture, not a fixed constant---different deployments can use different $\Phi$ while preserving the same $(G, \mathrm{Know})$.
 \end{definition}
 
-This separation is what makes the harness model-agnostic. The same harness (same $G$, same $\mathrm{Know}$) can run on different models by changing $\Phi$. The structural guarantees in $\mathrm{Know}$ are preserved because they depend on $(G, \mathrm{Know})$, not on $\Phi$.
+This separation is what makes the harness model-parametric. The same harness (same $G$, same $\mathrm{Know}$) can run on different models by changing $\Phi$. The structural certificates in $\mathrm{Know}$ are replayed against preserved hooks and parameters rather than tied to a specific model assignment.

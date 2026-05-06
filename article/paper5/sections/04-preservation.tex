@@ -1,6 +1,6 @@
 \section{Certificate Preservation}\label{sec:preservation}
 
-The correspondence in Section~\ref{sec:correspondence} would be merely descriptive if structural guarantees could not survive compilation. This section shows they can.
+The correspondence in Section~\ref{sec:correspondence} would be merely descriptive if structural guarantees could not survive compilation. This section specifies the preservation checks used by the implementation.
 
 \subsection{Compiler Functors}
 
@@ -18,8 +18,8 @@ Each compiler is wrapped in a \texttt{CompilerFunctor} class that automatically 
 
 \begin{enumerate}[leftmargin=*]
 \item \textbf{Graph preservation}: source stage names $\subseteq$ target stage names, source edges $\subseteq$ target edges.
-\item \textbf{Certificate preservation} (Prop~5.1): source certificate theorems $\subseteq$ target certificate theorems, and all certificates \texttt{verify()} $\to$ \texttt{holds=True}.
-\item \textbf{Interface preservation}: source stage names present in target (mode mapping may differ).
+\item \textbf{Certificate replay invariant}: source certificate theorems $\subseteq$ target certificate theorems, source parameters/evidence are preserved, and all certificates \texttt{verify()} $\to$ \texttt{holds=True}.
+\item \textbf{Deployment-map preservation}: source stage names present in target (mode mapping may differ).
 \end{enumerate}
 
 \subsection{The LangGraph Compiler}
@@ -28,20 +28,19 @@ The LangGraph compiler \texttt{organism\_to\_langgraph()} creates one LangGraph 
 
 This design avoids the reimplementation trap: an earlier attempt that encoded component logic directly as LangGraph nodes required 10 rounds of code review to achieve behavioral parity with \texttt{organism.run()}.  By extracting \texttt{run\_single\_stage()} from the run loop and calling it from both paths, the LangGraph graph uses the \emph{same code path} as the native runtime---zero reimplementation.
 
-\begin{proposition}[Per-Stage Certificate Preservation]
-The LangGraph compiler preserves $\mathrm{Know}$ completely: for any organism $A$, all certificates attached to $A$ verify successfully after compilation. Each stage node executes with full component hooks (CertificateGate, VerifierComponent, WatcherComponent), and interventions (RETRY, ESCALATE, HALT) are handled within the node before routing.
-\end{proposition}
+\paragraph{Implementation invariant (per-stage certificate replay).}
+The LangGraph compiler preserves certificate replay for organisms whose certificates use the supported component hooks (CertificateGate, VerifierComponent, WatcherComponent). Such certificates verify after compilation because each stage node executes with those hooks intact, and interventions (RETRY, ESCALATE, HALT) are handled within the node before routing.
 
-The per-stage graph also provides LangGraph-native observability: each stage appears as a visible node in LangGraph Studio, enabling inspection of individual stage execution, timing, and intervention decisions.  The certificates hold because \texttt{run\_single\_stage()} enforces every structural guarantee independently of graph topology.
+The per-stage graph also provides LangGraph-native observability: each stage appears as a visible node in LangGraph Studio, enabling inspection of individual stage execution, timing, and intervention decisions.  The tested certificates hold because \texttt{run\_single\_stage()} preserves the hooks and parameters they replay, not because they are independent of every possible graph topology.
 
 \paragraph{Parallel stage groups.}
 Organisms with parallel stage groups compile to a fork/join topology using LangGraph's native \texttt{Send} API.  Each parallel group generates three types of infrastructure nodes: a \emph{fork} node that snapshots state and dispatches isolated copies to each stage via \texttt{Send}, the individual \emph{stage} nodes (one per parallel stage, calling \texttt{run\_single\_stage()} as usual), and a \emph{join} node that merges results using the same conflict-detecting merge logic as the native runtime.  Sequential organisms are unchanged---each stage maps to a single node as before.
 
-Certificate preservation holds for parallel groups because each stage node still calls \texttt{run\_single\_stage()} with full component hooks.  The fork/join infrastructure is purely topological---it manages state isolation and result aggregation, not structural guarantees.
+Certificate replay holds for the supported certificates in parallel groups because each stage node still calls \texttt{run\_single\_stage()} with full component hooks.  The fork/join infrastructure is purely topological---it manages state isolation and result aggregation, not structural guarantees.
 
 \subsection{Empirical Verification}
 
-We verify certificate preservation across all five targets:
+We verify the implementation invariant across the five compiler targets, with LangGraph checked through per-stage execution rather than the configuration-dict path:
 
 \begin{center}
 \small
@@ -58,4 +57,4 @@ LangGraph & $\checkmark$ (per-stage) & $\checkmark$ (100\%) & $\checkmark$ \\
 \end{tabular}
 \end{center}
 
-All five compilers achieve 100\% certificate preservation and verification, despite varying degrees of graph topology change. Swarms and LangGraph preserve per-stage structure. DeerFlow reshapes to hub-and-spoke. Ralph converts to hat patterns. Scion adds a watcher agent. In every case, the structural guarantees survive because they are $\mathrm{Know}$-level properties, independent of $G$.
+Across the five compiler targets tested, the three supported certificate types preserve identity and verify. Swarms and LangGraph preserve per-stage structure. DeerFlow reshapes to hub-and-spoke. Ralph converts to hat patterns. Scion adds a watcher agent. In these tests, the structural guarantees survive because they are $\mathrm{Know}$-level replay artifacts whose hooks and parameters are preserved; the tested certificates do not depend on exact graph topology beyond those hooks and parameters.
