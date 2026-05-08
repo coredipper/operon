@@ -18,7 +18,7 @@ composition of multiple templates.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any, Callable, ClassVar
 from enum import Enum
 import re
 import copy
@@ -177,7 +177,7 @@ class Ribosome:
     """
 
     # Built-in filters for post-translational modification
-    BUILTIN_FILTERS: dict[str, Callable[[Any], str]] = {
+    BUILTIN_FILTERS: ClassVar[dict[str, Callable[[Any], str]]] = {
         'upper': lambda x: str(x).upper(),
         'lower': lambda x: str(x).lower(),
         'trim': lambda x: str(x).strip(),
@@ -186,6 +186,15 @@ class Ribosome:
         'json': lambda x: __import__('json').dumps(x),
         'repr': lambda x: repr(x),
     }
+
+    # Pre-compiled regular expressions for parsing the template sequence
+    _PATTERN_FILTERED: ClassVar[re.Pattern] = re.compile(r'\{\{(\w+)\|(\w+)\}\}')
+    _PATTERN_DEFAULT: ClassVar[re.Pattern] = re.compile(r'\{\{(\w+)\|([^}]+)\}\}')
+    _PATTERN_OPTIONAL: ClassVar[re.Pattern] = re.compile(r'\{\{\?(\w+)\}\}')
+    _PATTERN_SIMPLE: ClassVar[re.Pattern] = re.compile(r'\{\{(\w+)\}\}')
+    _PATTERN_CONDITIONAL: ClassVar[re.Pattern] = re.compile(r'\{\{#if\s+(\w+)\}\}(.*?)(?:\{\{#else\}\}(.*?))?\{\{/if\}\}', flags=re.DOTALL)
+    _PATTERN_LOOP: ClassVar[re.Pattern] = re.compile(r'\{\{#each\s+(\w+)\}\}(.*?)\{\{/each\}\}', flags=re.DOTALL)
+    _PATTERN_INCLUDE: ClassVar[re.Pattern] = re.compile(r'\{\{>(\w+)\}\}')
 
     def __init__(
         self,
@@ -357,22 +366,11 @@ class Ribosome:
                 return str(value)
             return match.group(0)
 
-        result = re.sub(r'\{\{(\w+)\|(\w+)\}\}', replace_filtered, result)
+        result = self._PATTERN_FILTERED.sub(replace_filtered, result)
 
         # Variables with defaults: {{name|default_value}} (not a filter)
-        def replace_with_default(match: re.Match) -> str:
-            var_name = match.group(1)
-            default = match.group(2)
-
-            if var_name in context:
-                return str(context[var_name])
-            # Check if it's a filter or a default value
-            if default not in self.filters:
-                return default
-            return match.group(0)
-
         # Only process if not already handled by filter
-        for match in re.finditer(r'\{\{(\w+)\|([^}]+)\}\}', result):
+        for match in self._PATTERN_DEFAULT.finditer(result):
             var_name = match.group(1)
             value_or_default = match.group(2)
             if value_or_default not in self.filters:
@@ -386,7 +384,7 @@ class Ribosome:
             var_name = match.group(1)
             return str(context.get(var_name, ""))
 
-        result = re.sub(r'\{\{\?(\w+)\}\}', replace_optional, result)
+        result = self._PATTERN_OPTIONAL.sub(replace_optional, result)
 
         # Simple variables: {{name}}
         def replace_simple(match: re.Match) -> str:
@@ -396,7 +394,7 @@ class Ribosome:
             warnings.append(f"Unbound variable: {var_name}")
             return match.group(0)
 
-        result = re.sub(r'\{\{(\w+)\}\}', replace_simple, result)
+        result = self._PATTERN_SIMPLE.sub(replace_simple, result)
 
         return result
 
@@ -422,8 +420,6 @@ class Ribosome:
         result = sequence
 
         # If/else blocks: {{#if var}}...{{#else}}...{{/if}}
-        pattern = r'\{\{#if\s+(\w+)\}\}(.*?)(?:\{\{#else\}\}(.*?))?\{\{/if\}\}'
-
         def replace_conditional(match: re.Match) -> str:
             var_name = match.group(1)
             if_content = match.group(2)
@@ -434,7 +430,7 @@ class Ribosome:
                 return if_content
             return else_content
 
-        result = re.sub(pattern, replace_conditional, result, flags=re.DOTALL)
+        result = self._PATTERN_CONDITIONAL.sub(replace_conditional, result)
 
         return result
 
@@ -464,8 +460,6 @@ class Ribosome:
         result = sequence
 
         # Each blocks: {{#each items}}...{{/each}}
-        pattern = r'\{\{#each\s+(\w+)\}\}(.*?)\{\{/each\}\}'
-
         def replace_loop(match: re.Match) -> str:
             var_name = match.group(1)
             content = match.group(2)
@@ -498,7 +492,7 @@ class Ribosome:
 
             return "".join(output_parts)
 
-        result = re.sub(pattern, replace_loop, result, flags=re.DOTALL)
+        result = self._PATTERN_LOOP.sub(replace_loop, result)
 
         return result
 
@@ -526,8 +520,6 @@ class Ribosome:
         result = sequence
 
         # Include: {{>template_name}}
-        pattern = r'\{\{>(\w+)\}\}'
-
         def replace_include(match: re.Match) -> str:
             template_name = match.group(1)
             if template_name in self.templates:
@@ -535,7 +527,7 @@ class Ribosome:
                 return protein.sequence
             return f"[Unknown template: {template_name}]"
 
-        result = re.sub(pattern, replace_include, result)
+        result = self._PATTERN_INCLUDE.sub(replace_include, result)
 
         return result
 
