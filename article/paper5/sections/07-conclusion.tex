@@ -6,9 +6,9 @@ The mapping between externalization pillars and the Architecture triple is not a
 
 \begin{enumerate}[leftmargin=*]
 \item \textbf{A language for harness design}: Instead of ad~hoc descriptions (``add a safety check''), engineers can specify certificates in $\mathrm{Know}$ with verifiable semantics.
-\item \textbf{Preservation guarantees}: When compiling a harness to a different framework, the functor laws guarantee that certificates transfer. This is not aspirational---it is mechanically verified for five targets.
-\item \textbf{Composition rules}: The operad defines how skills combine (serial, parallel, trace) with type safety. Ma et al.'s empirical finding that atomic skills compose without interference validates this structural claim.
-\item \textbf{Model independence}: Structural guarantees reside in $\mathrm{Know}$, not in $\Phi$. Changing the model changes the interface, not the guarantees. The escalation experiment demonstrates this concretely.
+\item \textbf{Preservation guarantees}: When compiling a harness to a different framework, functor-law checks are paired with explicit certificate identity and replay checks. This is mechanically verified for three supported certificate types across five targets.
+\item \textbf{Composition rules}: The operad defines how skills combine (serial, parallel, trace) with type safety. Ma et al.'s empirical finding that atomic skills compose without interference is consistent with this closure-conditional structural view.
+\item \textbf{Model parametricity}: Structural guarantees reside in $\mathrm{Know}$, not in a fixed model choice. The escalation experiment demonstrates this concretely for one task and two local models.
 \end{enumerate}
 
 \subsection{Limitations}
@@ -25,7 +25,7 @@ This work has several honest limitations:
 
 \subsection{Conclusion}
 
-Harness engineering is not ad~hoc---it has a categorical formalization. The Architecture triple $(G, \mathrm{Know}, \Phi)$ from the ArchAgents framework is the formal theory behind the harness concept that the LangChain ecosystem has converged on empirically. Structural guarantees are $\mathrm{Know}$-level properties preserved under compilation via functor laws. Atomic skills compose via the operad without losing properties. The model is $\Phi$---it can change without affecting the guarantees in $\mathrm{Know}$.
+Harness engineering is not ad~hoc---it has a categorical formalization. The Architecture triple $(G, \mathrm{Know}, \Phi)$ from the ArchAgents framework is the formal theory behind the harness concept that the LangChain ecosystem has converged on empirically. Structural guarantees are $\mathrm{Know}$-level replay artifacts preserved in the tested compiler suite by explicit identity and verifier-replay checks. Atomic skills compose via the operad under closure conditions. The model is selected by $\Phi$; changing it changes the deployment map, while supported certificates remain tied to preserved hooks and parameters.
 
 The practical implication: before building a harness, define its certificates. Before compiling to a new framework, verify preservation. Before composing skills, check type compatibility. The categorical machinery provides the tools; the correspondence provides the vocabulary.
 
