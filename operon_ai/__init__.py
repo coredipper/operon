@@ -80,7 +80,6 @@ from .core.optics import (
     LensOptic,
     PrismOptic,
     TraversalOptic,
-    ComposedOptic,
 )
 from .core.epistemic import (
     TopologyClass,
@@ -450,7 +449,6 @@ __all__ = [
     "LensOptic",
     "PrismOptic",
     "TraversalOptic",
-    "ComposedOptic",
     # Epistemic Topology (Paper §6.5.4)
     "TopologyClass",
     "EpistemicAnalysis",
