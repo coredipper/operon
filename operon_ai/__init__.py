@@ -111,7 +111,6 @@ from .state.metabolism import (
     MetabolicState,
     EnergyType,
     EnergyTransaction,
-    MetabolicReport,
 )
 from .state.histone import (
     HistoneStore,
@@ -531,7 +530,6 @@ __all__ = [
     "MetabolicState",
     "EnergyType",
     "EnergyTransaction",
-    "MetabolicReport",
 
     # State - Histone
     "HistoneStore",
