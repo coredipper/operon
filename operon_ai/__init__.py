@@ -151,7 +151,6 @@ from .state.dna_repair import (
     DamageSeverity,
     DamageReport,
     RepairStrategy,
-    RepairResult,
 )
 
 # =============================================================================
@@ -571,7 +570,6 @@ __all__ = [
     "DamageSeverity",
     "DamageReport",
     "RepairStrategy",
-    "RepairResult",
 
     # Topology - Loops
     "CoherentFeedForwardLoop",
