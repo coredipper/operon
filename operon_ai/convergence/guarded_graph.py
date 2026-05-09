@@ -30,6 +30,7 @@ All external imports are lazy — the module is importable without LangGraph.
 from __future__ import annotations
 
 import operator
+import os
 import time
 from dataclasses import dataclass, field
 from typing import Annotated, Any, TypedDict
@@ -146,7 +147,7 @@ def compile_guarded_graph(
         fast_model = ChatOpenAI(
             base_url=ollama_base_url,
             model=fast_model_name,
-            api_key="ollama",
+            api_key=os.environ.get("OLLAMA_API_KEY", "ollama"),
             temperature=0.0,
             max_tokens=1024,
         )
@@ -154,7 +155,7 @@ def compile_guarded_graph(
         deep_model = ChatOpenAI(
             base_url=ollama_base_url,
             model=deep_model_name,
-            api_key="ollama",
+            api_key=os.environ.get("OLLAMA_API_KEY", "ollama"),
             temperature=0.0,
             max_tokens=2048,
         )
