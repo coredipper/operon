@@ -72,7 +72,6 @@ def cli_handler(
     input_mode: str = "arg",
     parse_output: Callable[[str], Any] | None = None,
     success_codes: tuple[int, ...] = (0,),
-    shell: bool = False,
     sanitize_task: bool = True,
 ) -> Callable[..., dict[str, Any]]:
     """Build a SkillStage handler that shells out to a CLI tool.
@@ -86,8 +85,7 @@ def cli_handler(
             "none" — run command without task input
         parse_output: Optional callable to transform stdout into structured data.
         success_codes: Return codes that count as success (default: only 0).
-        shell: If True, run via shell (required for pipes/redirects). Use carefully.
-        sanitize_task: Strip shell metacharacters from task when shell=False.
+        sanitize_task: Strip shell metacharacters from task.
 
     Returns:
         A handler function compatible with SkillStage.handler.
@@ -101,7 +99,7 @@ def cli_handler(
             cmd_parts = list(command)
 
         task_input = task
-        if sanitize_task and not shell:
+        if sanitize_task:
             task_input = _sanitize(task)
 
         stdin_data = None
@@ -114,27 +112,18 @@ def cli_handler(
         else:
             raise ValueError(f"Unknown input_mode: {input_mode!r}")
 
-        if shell:
-            # Build shell string from the original command, plus any appended args
-            base = command if isinstance(command, str) else " ".join(command)
-            if input_mode == "arg":
-                cmd_str = f"{base} {shlex.quote(task_input)}"
-            else:
-                cmd_str = base
-        else:
-            cmd_str = " ".join(cmd_parts)
+        cmd_str = " ".join(cmd_parts)
 
         # Execute
         start = time.time()
         timed_out = False
         try:
             result = subprocess.run(
-                cmd_parts if not shell else cmd_str,
+                cmd_parts,
                 capture_output=True,
                 text=True,
                 timeout=timeout,
                 input=stdin_data,
-                shell=shell,
             )
             stdout = result.stdout
             stderr = result.stderr
