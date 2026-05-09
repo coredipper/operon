@@ -1,5 +1,4 @@
 """Integrated Cell - combines Quality, Surveillance, and Coordination systems."""
-from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import Any, Callable, Optional
