@@ -58,7 +58,6 @@ from .core.wagent import (
     PortType,
     ModuleSpec,
     Wire,
-    WiringDiagram,
 )
 from .core.denature import (
     DenatureFilter,
@@ -440,7 +439,6 @@ __all__ = [
     "PortType",
     "ModuleSpec",
     "Wire",
-    "WiringDiagram",
     "DenatureFilter",
     "SummarizeFilter",
     "StripMarkupFilter",
