@@ -121,7 +121,6 @@ from .state.genome import (
     GeneType,
     ExpressionLevel,
     Mutation,
-    ExpressionState,
 )
 from .state.telomere import (
     Telomere,
@@ -533,7 +532,6 @@ __all__ = [
     "GeneType",
     "ExpressionLevel",
     "Mutation",
-    "ExpressionState",
 
     # State - Telomere
     "Telomere",
