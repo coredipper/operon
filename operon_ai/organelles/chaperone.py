@@ -15,7 +15,7 @@ outputs are rejected or repaired before they can corrupt downstream systems.
 """
 
 from dataclasses import dataclass, field
-from typing import Type, TypeVar, Callable, Any
+from typing import Type, TypeVar, Callable, Any, ClassVar
 from enum import Enum
 import json
 import re
@@ -122,7 +122,7 @@ class Chaperone:
     """
 
     # Patterns for extracting JSON from text
-    JSON_EXTRACTION_PATTERNS = [
+    JSON_EXTRACTION_PATTERNS: ClassVar[list[tuple[str, str]]] = [
         (r'```json\s*([\s\S]*?)\s*```', "markdown_json_block"),
         (r'```\s*([\s\S]*?)\s*```', "markdown_code_block"),
         (r'<json>([\s\S]*?)</json>', "xml_json_tag"),
@@ -131,7 +131,7 @@ class Chaperone:
     ]
 
     # Common JSON repairs
-    JSON_REPAIRS = [
+    JSON_REPAIRS: ClassVar[list[tuple[str, str, str]]] = [
         # Fix trailing commas
         (r',\s*}', '}', "removed_trailing_comma_object"),
         (r',\s*]', ']', "removed_trailing_comma_array"),
@@ -147,6 +147,17 @@ class Chaperone:
         # Fix common typos
         (r':\s*undefined\b', ': null', "converted_undefined"),
         (r':\s*NaN\b', ': null', "converted_nan"),
+    ]
+
+    # Pre-compiled regex patterns for performance
+    _COMPILED_JSON_EXTRACTION_PATTERNS: ClassVar[list[tuple[re.Pattern, str]]] = [
+        (re.compile(pattern, re.MULTILINE | re.DOTALL), name)
+        for pattern, name in JSON_EXTRACTION_PATTERNS
+    ]
+
+    _COMPILED_JSON_REPAIRS: ClassVar[list[tuple[re.Pattern, str, str]]] = [
+        (re.compile(pattern), replacement, name)
+        for pattern, replacement, name in JSON_REPAIRS
     ]
 
     def __init__(
@@ -391,8 +402,8 @@ class Chaperone:
 
     def _fold_extraction(self, raw: str, schema: Type[T]) -> FoldedProtein[T]:
         """Extract JSON from surrounding text."""
-        for pattern, _ in self.JSON_EXTRACTION_PATTERNS:
-            matches = re.findall(pattern, raw, re.MULTILINE | re.DOTALL)
+        for compiled_pattern, _ in self._COMPILED_JSON_EXTRACTION_PATTERNS:
+            matches = compiled_pattern.findall(raw)
             for match in matches:
                 try:
                     data = json.loads(match.strip())
@@ -413,8 +424,8 @@ class Chaperone:
 
     def _fold_extraction_enhanced(self, raw: str, schema: Type[T]) -> EnhancedFoldedProtein:
         """Extraction with enhanced tracking."""
-        for pattern, pattern_name in self.JSON_EXTRACTION_PATTERNS:
-            matches = re.findall(pattern, raw, re.MULTILINE | re.DOTALL)
+        for compiled_pattern, pattern_name in self._COMPILED_JSON_EXTRACTION_PATTERNS:
+            matches = compiled_pattern.findall(raw)
             for match in matches:
                 try:
                     data = json.loads(match.strip())
@@ -481,8 +492,8 @@ class Chaperone:
         """Attempt to repair malformed JSON."""
         repaired = raw.strip()
 
-        for pattern, replacement, _ in self.JSON_REPAIRS:
-            repaired = re.sub(pattern, replacement, repaired)
+        for compiled_pattern, replacement, _ in self._COMPILED_JSON_REPAIRS:
+            repaired = compiled_pattern.sub(replacement, repaired)
 
         try:
             data = json.loads(repaired)
@@ -500,8 +511,8 @@ class Chaperone:
         repaired = raw.strip()
         repairs_applied = []
 
-        for pattern, replacement, repair_name in self.JSON_REPAIRS:
-            new_repaired = re.sub(pattern, replacement, repaired)
+        for compiled_pattern, replacement, repair_name in self._COMPILED_JSON_REPAIRS:
+            new_repaired = compiled_pattern.sub(replacement, repaired)
             if new_repaired != repaired:
                 repairs_applied.append(repair_name)
                 repaired = new_repaired
@@ -523,8 +534,8 @@ class Chaperone:
 
     def _extract_json(self, raw: str) -> dict | list | None:
         """Extract first valid JSON from text."""
-        for pattern, _ in self.JSON_EXTRACTION_PATTERNS:
-            matches = re.findall(pattern, raw, re.MULTILINE | re.DOTALL)
+        for compiled_pattern, _ in self._COMPILED_JSON_EXTRACTION_PATTERNS:
+            matches = compiled_pattern.findall(raw)
             for match in matches:
                 try:
                     return json.loads(match.strip())
