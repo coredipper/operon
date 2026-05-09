@@ -32,6 +32,13 @@ class TestMemoryEntry:
 class TestEpisodicMemory:
     """Test the EpisodicMemory system."""
 
+    def test_retrieve_empty_memory(self):
+        from operon_ai.memory import EpisodicMemory
+
+        memory = EpisodicMemory()
+        results = memory.retrieve("non-existent query")
+        assert results == []
+
     def test_store_and_retrieve(self):
         from operon_ai.memory import EpisodicMemory, MemoryTier
 
