@@ -58,6 +58,10 @@ class mRNA:
     name: str = ""
     description: str = ""
 
+    _PATTERN_SIMPLE_VAR: ClassVar[re.Pattern] = re.compile(r'\{\{(\w+)\}\}')
+    _PATTERN_OPTIONAL_VAR: ClassVar[re.Pattern] = re.compile(r'\{\{\?(\w+)\}\}')
+    _PATTERN_DEFAULT_VAR: ClassVar[re.Pattern] = re.compile(r'\{\{(\w+)\|([^}]*)\}\}')
+
     def __post_init__(self):
         """Auto-detect codons from template."""
         if not self.codons:
@@ -80,14 +84,14 @@ class mRNA:
         codons = []
 
         # Simple variables: {{variable_name}}
-        for match in re.finditer(r'\{\{(\w+)\}\}', self.sequence):
+        for match in self._PATTERN_SIMPLE_VAR.finditer(self.sequence):
             codons.append(Codon(
                 codon_type=CodonType.VARIABLE,
                 name=match.group(1)
             ))
 
         # Optional variables: {{?variable_name}}
-        for match in re.finditer(r'\{\{\?(\w+)\}\}', self.sequence):
+        for match in self._PATTERN_OPTIONAL_VAR.finditer(self.sequence):
             codons.append(Codon(
                 codon_type=CodonType.VARIABLE,
                 name=match.group(1),
@@ -95,7 +99,7 @@ class mRNA:
             ))
 
         # Variables with defaults: {{variable_name|default_value}}
-        for match in re.finditer(r'\{\{(\w+)\|([^}]*)\}\}', self.sequence):
+        for match in self._PATTERN_DEFAULT_VAR.finditer(self.sequence):
             codons.append(Codon(
                 codon_type=CodonType.VARIABLE,
                 name=match.group(1),
