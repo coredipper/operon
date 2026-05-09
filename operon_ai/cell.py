@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import Any, Callable, Optional
 
-from operon_ai.quality import UbiquitinPool, UbiquitinTag, TaggedData, DegradationResult
+from operon_ai.quality import UbiquitinPool, TaggedData, DegradationResult
 from operon_ai.quality.components import ProvenanceContext
 from operon_ai.quality.proteasome import Proteasome
 
