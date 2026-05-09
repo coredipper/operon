@@ -8,7 +8,7 @@ from operon_ai.quality import UbiquitinPool, UbiquitinTag, TaggedData, Degradati
 from operon_ai.quality.components import ProvenanceContext
 from operon_ai.quality.proteasome import Proteasome
 
-from operon_ai.surveillance import ImmuneSystem, ThreatLevel, ResponseAction
+from operon_ai.surveillance import ImmuneSystem, ThreatLevel
 from operon_ai.surveillance.tcell import ImmuneResponse
 
 from operon_ai.coordination import CoordinationSystem, CoordinationResult
