@@ -164,7 +164,6 @@ from .topology.quorum import (
     VoteType,
     Vote,
     QuorumResult,
-    AgentProfile,
 )
 from .topology.cascade import (
     Cascade,
@@ -572,7 +571,6 @@ __all__ = [
     "VoteType",
     "Vote",
     "QuorumResult",
-    "AgentProfile",
 
     # Topology - Cascade
     "Cascade",
