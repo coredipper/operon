@@ -333,3 +333,20 @@ class TestParallelStageGroups:
         assert result.shared_state.get("s1") == "r1"
         assert result.shared_state.get("s2") == "r2"
         assert result.shared_state.get("last_stage") == "s2"
+
+def test_reviewer_gate_handles_reviewer_error():
+    """Verify that if the executor or reviewer raises an error, the gate fails safely."""
+    def error_reviewer(prompt, executor_output):
+        raise ValueError("Simulated reviewer failure")
+
+    gate = reviewer_gate(
+        executor=lambda p: "Output",
+        reviewer=error_reviewer,
+        enable_cache=False,
+    )
+    result = gate.run("Some test prompt")
+
+    assert result.allowed is False
+    assert result.status == "blocked"
+    assert "Simulated reviewer failure" in result.reason
+    assert result.raw.action == "ERROR"
