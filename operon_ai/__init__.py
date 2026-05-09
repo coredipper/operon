@@ -51,7 +51,6 @@ from .core.types import (
     ApprovalToken,
     FoldedProtein,
     CellState,
-    Pathway,
 )
 from .core.wagent import (
     WiringError,
@@ -427,7 +426,6 @@ __all__ = [
     "ApprovalToken",
     "FoldedProtein",
     "CellState",
-    "Pathway",
     "WiringError",
     "PortType",
     "ModuleSpec",
