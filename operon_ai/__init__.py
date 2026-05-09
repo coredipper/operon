@@ -91,7 +91,6 @@ from .core.epistemic import (
     TopologyRecommendation,
     analyze as epistemic_analyze,
     classify_topology,
-    recommend_topology,
 )
 from .core.wiring_runtime import (
     TypedValue,
@@ -460,7 +459,6 @@ __all__ = [
     "TopologyRecommendation",
     "epistemic_analyze",
     "classify_topology",
-    "recommend_topology",
     "TypedValue",
     "ModuleExecution",
     "ExecutionReport",
