@@ -73,6 +73,17 @@ class IntegratedCell:
     # Cross-system state
     agent_operations: dict[str, str] = field(default_factory=dict)  # agent_id -> operation_id
 
+    @property
+    def resources(self) -> dict:
+        return self.coordination.controller.resources
+
+    @property
+    def agents(self) -> dict:
+        return self.surveillance.displays
+
+    def __str__(self) -> str:
+        return f"<IntegratedCell resources={len(self.resources)} agents={len(self.agents)}>"
+
     def __post_init__(self):
         # Initialize subsystems
         self.quality_pool = UbiquitinPool(capacity=self.pool_capacity)
