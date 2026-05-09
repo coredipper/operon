@@ -75,7 +75,6 @@ from .core.coalgebra import (
     SequentialCoalgebra,
     TransitionRecord,
     BisimulationResult,
-    check_bisimulation,
 )
 from .core.optics import (
     Optic,
@@ -454,7 +453,6 @@ __all__ = [
     "SequentialCoalgebra",
     "TransitionRecord",
     "BisimulationResult",
-    "check_bisimulation",
     # Optics (Paper §3.4)
     "Optic",
     "OpticError",
