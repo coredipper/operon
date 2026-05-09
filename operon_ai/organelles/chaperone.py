@@ -15,7 +15,7 @@ outputs are rejected or repaired before they can corrupt downstream systems.
 """
 
 from dataclasses import dataclass, field
-from typing import Type, TypeVar, Callable, Any
+from typing import Type, TypeVar, Callable, Any, ClassVar
 from enum import Enum
 import json
 import re
@@ -122,31 +122,31 @@ class Chaperone:
     """
 
     # Patterns for extracting JSON from text
-    JSON_EXTRACTION_PATTERNS = [
-        (r'```json\s*([\s\S]*?)\s*```', "markdown_json_block"),
-        (r'```\s*([\s\S]*?)\s*```', "markdown_code_block"),
-        (r'<json>([\s\S]*?)</json>', "xml_json_tag"),
-        (r'\{[^{}]*\}', "bare_json_object"),
-        (r'\[[^\[\]]*\]', "bare_json_array"),
+    JSON_EXTRACTION_PATTERNS: ClassVar[list[tuple[re.Pattern, str]]] = [
+        (re.compile(r'```json\s*([\s\S]*?)\s*```', re.MULTILINE | re.DOTALL), "markdown_json_block"),
+        (re.compile(r'```\s*([\s\S]*?)\s*```', re.MULTILINE | re.DOTALL), "markdown_code_block"),
+        (re.compile(r'<json>([\s\S]*?)</json>', re.MULTILINE | re.DOTALL), "xml_json_tag"),
+        (re.compile(r'\{[^{}]*\}', re.MULTILINE | re.DOTALL), "bare_json_object"),
+        (re.compile(r'\[[^\[\]]*\]', re.MULTILINE | re.DOTALL), "bare_json_array"),
     ]
 
     # Common JSON repairs
-    JSON_REPAIRS = [
+    JSON_REPAIRS: ClassVar[list[tuple[re.Pattern, str, str]]] = [
         # Fix trailing commas
-        (r',\s*}', '}', "removed_trailing_comma_object"),
-        (r',\s*]', ']', "removed_trailing_comma_array"),
+        (re.compile(r',\s*}'), '}', "removed_trailing_comma_object"),
+        (re.compile(r',\s*]'), ']', "removed_trailing_comma_array"),
         # Fix single quotes to double quotes
-        (r"'([^']*)'(?=\s*:)", r'"\1"', "fixed_single_quote_key"),
-        (r":\s*'([^']*)'", r': "\1"', "fixed_single_quote_value"),
+        (re.compile(r"'([^']*)'(?=\s*:)"), r'"\1"', "fixed_single_quote_key"),
+        (re.compile(r":\s*'([^']*)'"), r': "\1"', "fixed_single_quote_value"),
         # Fix unquoted keys
-        (r'(\{|,)\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1"\2":', "quoted_unquoted_key"),
+        (re.compile(r'(\{|,)\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:'), r'\1"\2":', "quoted_unquoted_key"),
         # Fix Python literals
-        (r'\bNone\b', 'null', "converted_none_to_null"),
-        (r'\bTrue\b', 'true', "converted_true"),
-        (r'\bFalse\b', 'false', "converted_false"),
+        (re.compile(r'\bNone\b'), 'null', "converted_none_to_null"),
+        (re.compile(r'\bTrue\b'), 'true', "converted_true"),
+        (re.compile(r'\bFalse\b'), 'false', "converted_false"),
         # Fix common typos
-        (r':\s*undefined\b', ': null', "converted_undefined"),
-        (r':\s*NaN\b', ': null', "converted_nan"),
+        (re.compile(r':\s*undefined\b'), ': null', "converted_undefined"),
+        (re.compile(r':\s*NaN\b'), ': null', "converted_nan"),
     ]
 
     def __init__(
@@ -392,7 +392,7 @@ class Chaperone:
     def _fold_extraction(self, raw: str, schema: Type[T]) -> FoldedProtein[T]:
         """Extract JSON from surrounding text."""
         for pattern, _ in self.JSON_EXTRACTION_PATTERNS:
-            matches = re.findall(pattern, raw, re.MULTILINE | re.DOTALL)
+            matches = pattern.findall(raw)
             for match in matches:
                 try:
                     data = json.loads(match.strip())
@@ -414,7 +414,7 @@ class Chaperone:
     def _fold_extraction_enhanced(self, raw: str, schema: Type[T]) -> EnhancedFoldedProtein:
         """Extraction with enhanced tracking."""
         for pattern, pattern_name in self.JSON_EXTRACTION_PATTERNS:
-            matches = re.findall(pattern, raw, re.MULTILINE | re.DOTALL)
+            matches = pattern.findall(raw)
             for match in matches:
                 try:
                     data = json.loads(match.strip())
@@ -482,7 +482,7 @@ class Chaperone:
         repaired = raw.strip()
 
         for pattern, replacement, _ in self.JSON_REPAIRS:
-            repaired = re.sub(pattern, replacement, repaired)
+            repaired = pattern.sub(replacement, repaired)
 
         try:
             data = json.loads(repaired)
@@ -501,7 +501,7 @@ class Chaperone:
         repairs_applied = []
 
         for pattern, replacement, repair_name in self.JSON_REPAIRS:
-            new_repaired = re.sub(pattern, replacement, repaired)
+            new_repaired = pattern.sub(replacement, repaired)
             if new_repaired != repaired:
                 repairs_applied.append(repair_name)
                 repaired = new_repaired
@@ -524,7 +524,7 @@ class Chaperone:
     def _extract_json(self, raw: str) -> dict | list | None:
         """Extract first valid JSON from text."""
         for pattern, _ in self.JSON_EXTRACTION_PATTERNS:
-            matches = re.findall(pattern, raw, re.MULTILINE | re.DOTALL)
+            matches = pattern.findall(raw)
             for match in matches:
                 try:
                     return json.loads(match.strip())
