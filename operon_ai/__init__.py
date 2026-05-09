@@ -160,7 +160,6 @@ from .topology.loops import (
     GateLogic,
     CircuitState,
     LoopResult,
-    CircuitBreakerStats,
 )
 from .topology.quorum import (
     QuorumSensing,
@@ -573,7 +572,6 @@ __all__ = [
     "GateLogic",
     "CircuitState",
     "LoopResult",
-    "CircuitBreakerStats",
 
     # Topology - Quorum
     "QuorumSensing",
