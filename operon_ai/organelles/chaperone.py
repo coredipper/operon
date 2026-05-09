@@ -15,7 +15,7 @@ outputs are rejected or repaired before they can corrupt downstream systems.
 """
 
 from dataclasses import dataclass, field
-from typing import Type, TypeVar, Callable, Any
+from typing import Type, TypeVar, Callable, Any, ClassVar
 from enum import Enum
 import json
 import re
@@ -147,6 +147,16 @@ class Chaperone:
         # Fix common typos
         (r':\s*undefined\b', ': null', "converted_undefined"),
         (r':\s*NaN\b', ': null', "converted_nan"),
+    ]
+
+    COMPILED_EXTRACTION_PATTERNS: ClassVar[list[tuple[re.Pattern, str]]] = [
+        (re.compile(pattern, re.MULTILINE | re.DOTALL), name)
+        for pattern, name in JSON_EXTRACTION_PATTERNS
+    ]
+
+    COMPILED_JSON_REPAIRS: ClassVar[list[tuple[re.Pattern, str, str]]] = [
+        (re.compile(pattern), replacement, repair_name)
+        for pattern, replacement, repair_name in JSON_REPAIRS
     ]
 
     def __init__(
@@ -391,8 +401,8 @@ class Chaperone:
 
     def _fold_extraction(self, raw: str, schema: Type[T]) -> FoldedProtein[T]:
         """Extract JSON from surrounding text."""
-        for pattern, _ in self.JSON_EXTRACTION_PATTERNS:
-            matches = re.findall(pattern, raw, re.MULTILINE | re.DOTALL)
+        for pattern, _ in self.COMPILED_EXTRACTION_PATTERNS:
+            matches = pattern.findall(raw)
             for match in matches:
                 try:
                     data = json.loads(match.strip())
@@ -413,8 +423,8 @@ class Chaperone:
 
     def _fold_extraction_enhanced(self, raw: str, schema: Type[T]) -> EnhancedFoldedProtein:
         """Extraction with enhanced tracking."""
-        for pattern, pattern_name in self.JSON_EXTRACTION_PATTERNS:
-            matches = re.findall(pattern, raw, re.MULTILINE | re.DOTALL)
+        for pattern, pattern_name in self.COMPILED_EXTRACTION_PATTERNS:
+            matches = pattern.findall(raw)
             for match in matches:
                 try:
                     data = json.loads(match.strip())
@@ -481,8 +491,8 @@ class Chaperone:
         """Attempt to repair malformed JSON."""
         repaired = raw.strip()
 
-        for pattern, replacement, _ in self.JSON_REPAIRS:
-            repaired = re.sub(pattern, replacement, repaired)
+        for pattern, replacement, _ in self.COMPILED_JSON_REPAIRS:
+            repaired = pattern.sub(replacement, repaired)
 
         try:
             data = json.loads(repaired)
@@ -500,8 +510,8 @@ class Chaperone:
         repaired = raw.strip()
         repairs_applied = []
 
-        for pattern, replacement, repair_name in self.JSON_REPAIRS:
-            new_repaired = re.sub(pattern, replacement, repaired)
+        for pattern, replacement, repair_name in self.COMPILED_JSON_REPAIRS:
+            new_repaired = pattern.sub(replacement, repaired)
             if new_repaired != repaired:
                 repairs_applied.append(repair_name)
                 repaired = new_repaired
@@ -523,8 +533,8 @@ class Chaperone:
 
     def _extract_json(self, raw: str) -> dict | list | None:
         """Extract first valid JSON from text."""
-        for pattern, _ in self.JSON_EXTRACTION_PATTERNS:
-            matches = re.findall(pattern, raw, re.MULTILINE | re.DOTALL)
+        for pattern, _ in self.COMPILED_EXTRACTION_PATTERNS:
+            matches = pattern.findall(raw)
             for match in matches:
                 try:
                     return json.loads(match.strip())
