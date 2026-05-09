@@ -142,7 +142,6 @@ from .state.development import (
     DevelopmentStatus,
     CriticalPeriod,
     StageTransition,
-    stage_reached,
 )
 from .state.dna_repair import (
     DNARepair,
@@ -562,7 +561,6 @@ __all__ = [
     "DevelopmentStatus",
     "CriticalPeriod",
     "StageTransition",
-    "stage_reached",
 
     # State - DNA Repair
     "DNARepair",
