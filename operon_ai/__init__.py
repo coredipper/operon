@@ -100,7 +100,6 @@ from .core.wiring_runtime import (
     TypedValue,
     ModuleExecution,
     ExecutionReport,
-    DiagramExecutor,
 )
 
 # =============================================================================
@@ -474,7 +473,6 @@ __all__ = [
     "TypedValue",
     "ModuleExecution",
     "ExecutionReport",
-    "DiagramExecutor",
     # Healing
     "SleepConsolidation",
     "ConsolidationResult",
