@@ -14,6 +14,7 @@ installed.  Use :data:`HAS_DEERFLOW` to check availability at runtime.
 
 from __future__ import annotations
 
+import os
 import time
 from dataclasses import dataclass, field
 from typing import Any
@@ -180,7 +181,7 @@ def execute_deerflow(
         model = ChatOpenAI(
             base_url=ollama_base_url,
             model=model_name,
-            api_key="ollama",
+            api_key=os.environ.get("OLLAMA_API_KEY", "ollama"),
             temperature=0.0,
             max_tokens=2048 if thinking else 500,
         )
