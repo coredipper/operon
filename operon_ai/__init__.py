@@ -65,7 +65,6 @@ from .core.denature import (
     SummarizeFilter,
     StripMarkupFilter,
     NormalizeFilter,
-    ChainFilter,
 )
 from .core.coalgebra import (
     Coalgebra,
@@ -445,7 +444,6 @@ __all__ = [
     "SummarizeFilter",
     "StripMarkupFilter",
     "NormalizeFilter",
-    "ChainFilter",
     # Coalgebra (Paper §3.5)
     "Coalgebra",
     "StateMachine",
