@@ -128,7 +128,6 @@ from .state.telomere import (
     TelomereStatus,
     LifecyclePhase,
     SenescenceReason,
-    LifecycleEvent,
 )
 from .state.development import (
     DevelopmentController,
@@ -540,7 +539,6 @@ __all__ = [
     "TelomereStatus",
     "LifecyclePhase",
     "SenescenceReason",
-    "LifecycleEvent",
 
     # State - Development
     "DevelopmentController",
