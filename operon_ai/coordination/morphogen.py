@@ -118,14 +118,15 @@ class MorphogenGradient:
         morphogen_type: MorphogenType,
         value: float,
         description: str | None = None,
-    ) -> None:
-        """Set a morphogen concentration."""
+    ) -> float:
+        """Set a morphogen concentration. Returns the clamped value."""
         value = max(0.0, min(1.0, value))  # Clamp to [0, 1]
 
-        if morphogen_type in self.morphogens:
-            self.morphogens[morphogen_type].value = value
+        # ⚡ Bolt Optimization: Use single dict.get() via walrus operator instead of in check + indexing
+        if morph := self.morphogens.get(morphogen_type):
+            morph.value = value
             if description:
-                self.morphogens[morphogen_type].description = description
+                morph.description = description
         else:
             self.morphogens[morphogen_type] = MorphogenValue(
                 morphogen_type=morphogen_type,
@@ -134,17 +135,20 @@ class MorphogenGradient:
             )
 
         self.last_updated = datetime.now()
+        return value
 
     def get(self, morphogen_type: MorphogenType) -> float:
         """Get a morphogen concentration."""
-        if morphogen_type in self.morphogens:
-            return self.morphogens[morphogen_type].value
+        # ⚡ Bolt Optimization: Use single dict.get() via walrus operator
+        if morph := self.morphogens.get(morphogen_type):
+            return morph.value
         return 0.5  # Default neutral
 
     def get_level(self, morphogen_type: MorphogenType) -> str:
         """Get qualitative level for a morphogen."""
-        if morphogen_type in self.morphogens:
-            return self.morphogens[morphogen_type].level
+        # ⚡ Bolt Optimization: Use single dict.get() via walrus operator
+        if morph := self.morphogens.get(morphogen_type):
+            return morph.level
         return "medium"
 
     def to_dict(self) -> dict:
@@ -370,20 +374,22 @@ class GradientOrchestrator:
     def set_urgency(self, urgency: float, reason: str = "Manual adjustment") -> None:
         """Set urgency level."""
         current_urgency = self.gradient.get(MorphogenType.URGENCY)
-        self.gradient.set(MorphogenType.URGENCY, urgency)
+        # ⚡ Bolt Optimization: Use the clamped return value of set() to avoid redundant get() call
+        new_urgency = self.gradient.set(MorphogenType.URGENCY, urgency)
         self.update_history.append(GradientUpdate(
             MorphogenType.URGENCY,
-            self.gradient.get(MorphogenType.URGENCY) - current_urgency,
+            new_urgency - current_urgency,
             reason,
         ))
 
     def set_risk(self, risk: float, reason: str = "Manual adjustment") -> None:
         """Set risk level."""
         current_risk = self.gradient.get(MorphogenType.RISK)
-        self.gradient.set(MorphogenType.RISK, risk)
+        # ⚡ Bolt Optimization: Use the clamped return value of set() to avoid redundant get() call
+        new_risk = self.gradient.set(MorphogenType.RISK, risk)
         self.update_history.append(GradientUpdate(
             MorphogenType.RISK,
-            self.gradient.get(MorphogenType.RISK) - current_risk,
+            new_risk - current_risk,
             reason,
         ))
 
