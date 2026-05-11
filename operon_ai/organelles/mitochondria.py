@@ -401,6 +401,13 @@ class Mitochondria:
             return str(result.atp.value)
         return f"Metabolic Failure: {result.error}"
 
+    def _check_ast_depth(self, node: ast.AST, current_depth: int = 0) -> None:
+        """Recursively check AST depth to prevent stack overflows."""
+        if current_depth > MAX_AST_DEPTH:
+            raise ValueError(f"AST depth exceeds maximum allowed ({MAX_AST_DEPTH})")
+        for child in ast.iter_child_nodes(node):
+            self._check_ast_depth(child, current_depth + 1)
+
     def _detect_pathway(self, expression: str) -> MetabolicPathway:
         """Auto-detect the appropriate metabolic pathway."""
         expr_lower = expression.lower().strip()
@@ -432,6 +439,7 @@ class Mitochondria:
         Fast but limited - like real glycolysis in the cytoplasm.
         """
         tree = ast.parse(expression, mode='eval')
+        self._check_ast_depth(tree)
         return self._compute_node(tree.body)
 
     def _krebs_cycle(self, expression: str) -> bool:
@@ -446,6 +454,7 @@ class Mitochondria:
         expression = expression.replace('true', '1').replace('false', '0')
 
         tree = ast.parse(expression, mode='eval')
+        self._check_ast_depth(tree)
         return bool(self._compute_node(tree.body))
 
     def _oxidative_phosphorylation(self, expression: str) -> Any:
@@ -456,6 +465,7 @@ class Mitochondria:
         Format: "tool_name(arg1, arg2, kwarg=value)"
         """
         tree = ast.parse(expression, mode='eval')
+        self._check_ast_depth(tree)
 
         if not isinstance(tree.body, ast.Call):
             raise ValueError("Expected a tool call: tool_name(args)")
@@ -508,7 +518,9 @@ class Mitochondria:
 
         # Try Python literal (safe)
         try:
-            return ast.literal_eval(expression)
+            tree = ast.parse(expression, mode='eval')
+            self._check_ast_depth(tree)
+            return ast.literal_eval(tree)
         except (ValueError, SyntaxError):
             pass
 
