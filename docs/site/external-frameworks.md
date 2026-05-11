@@ -25,6 +25,8 @@ Every external agent framework consumes or produces a subset of three artifact c
 
 OpenMythos (`kyegomez/OpenMythos`) sits *below* L1 — it is a model architecture (Recurrent-Depth Transformer) — and is therefore out of scope for the agent-integration story; it could only appear as an `LLMProvider` backend, identical to any other model wrapper. Swarms is already handled at L1 and is included here only as the reference shape for the new adapters.
 
+**L1 synthesis vs L1 mapping.** Conductor ([Nielsen et al. 2025, ICLR 2026, arXiv:2512.04388](https://arxiv.org/abs/2512.04388); Sakana AI) sits adjacent to the L1 row by *synthesising* topologies rather than mapping fixed ones — an RL-trained policy that designs both the communication graph and per-agent prompts, with recursive topology support enabling dynamic test-time scaling. Operon's L1 adapters (`parse_X_topology()` / `organism_to_X()`) treat topology as given; Conductor treats it as the learned object. See §2 Theorem 3 for the parallel "optimize-the-agent-layer" framing on the prompt axis (GEPA).
+
 ---
 
 ## 2. Certificate transport theorems
@@ -66,6 +68,8 @@ where obligations are formal unmet proof conditions emitted as free-form text, t
 **Conjecture.** For theorems with finite obligation sets, GEPA's convergence is bounded by $|\text{Obligations}|$ rather than reward variance.
 
 This is stated as a conjecture, not a theorem: it needs an empirical experiment. The adapter shipped in `operon_ai/convergence/gepa_adapter.py` is precisely the instrument that such an experiment would use.
+
+*Parallel work — topology axis.* Conductor ([Nielsen et al. 2025, ICLR 2026, arXiv:2512.04388](https://arxiv.org/abs/2512.04388)) reaches the same "optimize the agent layer" idea on the topology axis rather than the prompt axis — an RL policy that designs communication graphs (and per-agent prompts) rather than mutating prompts under a fixed graph. Both lines of work treat the agent layer as a learned object; GEPA's reflection LM consumes obligation-shaped feedback, Conductor's policy consumes task reward. The theorem-shape question — whether either converges in a number of mutations bounded by problem structure rather than reward variance — is open for both.
 
 ### Theorem 4 (Graceful A2A degradation)
 
@@ -344,3 +348,13 @@ The L2 angle remains the distinctive play — no other L1 framework in §1 ships
 **Verdict — observational baseline, not a wedge.** The distinction is the load-bearing claim of the operon-langgraph-gates wedge: a callback can *report* that a workflow stopped materially changing, but cannot *prevent* the wasted tokens, retries, or terminal cost between the stagnation onset and the eventual `recursion_limit` exit. `StagnationGate` ends the cycle at the boundary where behavioral similarity is first detected, and the certificate it emits is a *runtime artefact* — pinned at the gate event, signed by the verifier registry, replayable through the audit trail. X-Ray's analysis is a *post-hoc artefact* — synthesised after the trace closes, with no structural authority over execution. Both can coexist on the same graph; pairing the two would let X-Ray annotate *why* a gate fired, while the gate keeps the runtime cost bounded.
 
 No code shipped with this addendum — landscape entry only. The wedge claim stands: certificates that carry *structural authority* (refuse to continue) are categorically distinct from analyses that carry *diagnostic authority* (explain after the fact), and operon-langgraph-gates remains the only framework surveyed that gates LangGraph execution at the cycle boundary with replayable certificate evidence.
+
+### 8.5 Reinforced Agent — academic validation of the runtime-gating wedge
+
+Ta et al., *Reinforced Agent: Inference-Time Feedback for Tool-Calling Agents* (2026-04-29, [arXiv:2604.27233](https://arxiv.org/abs/2604.27233)) shifts tool-call evaluation from post-hoc trajectory assessment to **inference-time review**: a specialized reviewer agent evaluates provisional tool calls before execution, mirroring operon's `reviewer_gate` pattern (`operon_ai/patterns/review.py`). The paper introduces **Helpfulness/Harmfulness** metrics quantifying the tradeoff between corrected errors and newly-introduced ones — answering, in the framing of §8.4, whether a runtime gate is net-positive at a population level rather than just structurally available.
+
+**Placement.** Same boundary as §8.4 (LangChain/LangGraph runtime, behavioral guard), but published evidence rather than a competing tool. The reviewer-agent pattern is operon's existing `reviewer_gate`; the H/H metric is the missing measurement layer over it.
+
+**Verdict — validates the wedge.** The paper supplies measured benefit-to-risk ratios for the runtime-review architecture: 3:1 for o3-mini and 2.1:1 for GPT-4o on BFCL irrelevance detection; +7.1% on multi-turn Tau2-Bench; GEPA prompt optimization adds an additional +1.5–2.8%. These numbers are the kind of evidence the §8.4 framing claimed without citing — that *structural authority* (refuse to continue) is empirically net-positive over *diagnostic authority* (post-hoc analysis), at least within the regime measured by these benchmarks. The choice of reviewer model and prompt is shown to be the load-bearing knob; the same paper's GEPA result lines up with operon's §2 Theorem 3 conjecture on the prompt axis.
+
+**What ships in operon.** An H/H metric utility lands in [`eval/patterns/reviewer_gate_hh_metric.py`](../../eval/patterns/reviewer_gate_hh_metric.py) so operon users can compute the same Helpfulness/Harmfulness population statistic over any `reviewer_gate`-instrumented harness — taking two lists of `TrajectoryOutcome(task_id, correct, intervened)` records (one base, one reviewed) and returning a `HelpfulnessHarmfulnessMetric` with the corrected/degraded counts and the benefit-to-risk ratio. No new theorem registration in this pass; registering a `reviewer_gate_net_positive` cheap-variant theorem on top of H/H is the natural follow-up if a Certificate-shaped artifact is wanted.
