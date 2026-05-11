@@ -38,7 +38,6 @@ Organelles:
 # =============================================================================
 # Core
 # =============================================================================
-from .core.agent import BioAgent
 from .core.types import (
     Signal,
     SignalType,
@@ -412,7 +411,6 @@ from .patterns import (
 # =============================================================================
 __all__ = [
     # Core
-    "BioAgent",
     "Signal",
     "SignalType",
     "SignalStrength",
