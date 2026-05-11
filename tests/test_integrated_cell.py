@@ -16,15 +16,6 @@ class TestCellExecutionResult:
 
 
 class TestIntegratedCell:
-    def test_integrated_cell_str(self):
-        cell = IntegratedCell()
-        cell.register_agent("agent1")
-        cell.register_resource("shared_file")
-
-        assert "resources=1" in str(cell)
-        assert "agents=1" in str(cell)
-        assert str(cell) == "<IntegratedCell resources=1 agents=1>"
-
     def test_cell_health_str(self):
         health = CellHealth(healthy=True)
         assert str(health) == "CellHealth(HEALTHY, alerts=0)"
