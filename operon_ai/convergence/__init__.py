@@ -289,6 +289,11 @@ __all__ = [
     "DispatchEvent",
     "MailEvent",
     "verification_to_dolt_envelope",
+    # agentflow L1 adapter (§8.3 — gates on node/edge/evolve attach points)
+    "AgentflowCertificateAdapter",
+    "NodeEvent",
+    "EdgeEvent",
+    "EvolveEvent",
     # Compile-time provenance markers (§2 cheap-variant T2 / §8.3 L2)
     "make_dspy_compile_certificate",
     "make_agentflow_compile_certificate",
