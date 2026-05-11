@@ -12,6 +12,7 @@ import re
 import shlex
 import subprocess
 import time
+import warnings
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -72,6 +73,7 @@ def cli_handler(
     input_mode: str = "arg",
     parse_output: Callable[[str], Any] | None = None,
     success_codes: tuple[int, ...] = (0,),
+    shell: bool = False,
     sanitize_task: bool = True,
 ) -> Callable[..., dict[str, Any]]:
     """Build a SkillStage handler that shells out to a CLI tool.
@@ -85,7 +87,8 @@ def cli_handler(
             "none" — run command without task input
         parse_output: Optional callable to transform stdout into structured data.
         success_codes: Return codes that count as success (default: only 0).
-        sanitize_task: Strip shell metacharacters from task.
+        shell: If True, run via shell (required for pipes/redirects). Use carefully.
+        sanitize_task: Strip shell metacharacters from task when shell=False.
 
     Returns:
         A handler function compatible with SkillStage.handler.
@@ -99,7 +102,7 @@ def cli_handler(
             cmd_parts = list(command)
 
         task_input = task
-        if sanitize_task:
+        if sanitize_task and not shell:
             task_input = _sanitize(task)
 
         stdin_data = None
@@ -112,18 +115,33 @@ def cli_handler(
         else:
             raise ValueError(f"Unknown input_mode: {input_mode!r}")
 
-        cmd_str = " ".join(cmd_parts)
+        if shell:
+            warnings.warn(
+                "The `shell=True` parameter in `cli_handler` is insecure and deprecated. "
+                "It will be removed in a future major version. Please migrate to list-based command arrays.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            # Build shell string from the original command, plus any appended args
+            base = command if isinstance(command, str) else " ".join(command)
+            if input_mode == "arg":
+                cmd_str = f"{base} {shlex.quote(task_input)}"
+            else:
+                cmd_str = base
+        else:
+            cmd_str = " ".join(cmd_parts)
 
         # Execute
         start = time.time()
         timed_out = False
         try:
             result = subprocess.run(
-                cmd_parts,
+                cmd_parts if not shell else cmd_str,
                 capture_output=True,
                 text=True,
                 timeout=timeout,
                 input=stdin_data,
+                shell=shell,
             )
             stdout = result.stdout
             stderr = result.stderr
