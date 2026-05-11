@@ -1,0 +1,29 @@
+name: Jules PR Guard
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  empty-diff:
+    if: github.event.pull_request.user.login == 'google-labs-jules[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Refuse empty squash diff
+        run: |
+          set -eu
+          git fetch origin "$GITHUB_BASE_REF" --depth=200
+          merge_base=$(git merge-base "origin/$GITHUB_BASE_REF" HEAD)
+          diff=$(git diff --stat "$merge_base" HEAD -- . ':(exclude).jules/')
+          if [ -z "$diff" ]; then
+            echo "::error::PR has no code changes against origin/$GITHUB_BASE_REF (excluding .jules/ notes)."
+            echo "This is the #87/#88 pattern — a duplicate PR whose target was already resolved on main."
+            echo "Close this PR rather than merging an empty squash commit."
+            exit 1
+          fi
+          echo "Diff stat:"
+          echo "$diff"
