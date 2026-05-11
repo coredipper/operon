@@ -128,6 +128,12 @@ from .gascity_adapter import (
 )
 from .dspy_certificate import make_dspy_compile_certificate
 from .agentflow_certificate import make_agentflow_compile_certificate
+from .agentflow_adapter import (
+    AgentflowCertificateAdapter,
+    EdgeEvent,
+    EvolveEvent,
+    NodeEvent,
+)
 from .a2a_certificate import (
     A2A_CERTIFICATE_MIME_TYPE,
     A2A_CERTIFICATE_SCHEMA,
