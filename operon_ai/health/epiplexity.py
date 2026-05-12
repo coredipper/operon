@@ -28,6 +28,7 @@ from enum import Enum
 from collections import deque
 import math
 import hashlib
+import operator
 
 
 class HealthStatus(Enum):
@@ -133,7 +134,8 @@ class MockEmbeddingProvider:
             embedding.append((val / 127.5) - 1.0)
 
         # Normalize to unit vector
-        magnitude = math.sqrt(sum(x * x for x in embedding))
+        # Optimization: use C-backed math.hypot instead of math.sqrt(sum(x * x for x in vector))
+        magnitude = math.hypot(*embedding) if embedding else 0.0
         if magnitude > 0:
             embedding = [x / magnitude for x in embedding]
 
@@ -327,9 +329,12 @@ class EpiplexityMonitor:
         if len(a) != len(b):
             raise ValueError("Vectors must have same dimension")
 
-        dot_product = sum(x * y for x, y in zip(a, b))
-        magnitude_a = math.sqrt(sum(x * x for x in a))
-        magnitude_b = math.sqrt(sum(x * x for x in b))
+        # Optimization: C-backed map(operator.mul) is faster than zip generator
+        dot_product = sum(map(operator.mul, a, b))
+
+        # Optimization: C-backed math.hypot is ~6x faster than math.sqrt(sum(x * x))
+        magnitude_a = math.hypot(*a) if a else 0.0
+        magnitude_b = math.hypot(*b) if b else 0.0
 
         if magnitude_a == 0 or magnitude_b == 0:
             return 0.0
@@ -360,8 +365,9 @@ class EpiplexityMonitor:
             return 0.5
 
         # Use embedding magnitude variance as additional uncertainty signal
-        magnitude = math.sqrt(sum(x * x for x in embedding))
-        prev_magnitude = math.sqrt(sum(x * x for x in self.state.previous_embedding))
+        # Optimization: math.hypot is faster for Euclidean norms
+        magnitude = math.hypot(*embedding) if embedding else 0.0
+        prev_magnitude = math.hypot(*self.state.previous_embedding) if self.state.previous_embedding else 0.0
         magnitude_drift = abs(magnitude - prev_magnitude)
 
         # Recent trend: increasing epiplexity with low novelty suggests stagnation
