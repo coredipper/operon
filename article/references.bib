@@ -619,6 +619,17 @@
   note={Inference-time reviewer agent that evaluates provisional tool calls before execution, shifting tool-call assessment from post-hoc trajectory analysis to proactive evaluation. Introduces Helpfulness/Harmfulness metrics quantifying the reviewer-injects-its-own-errors tradeoff (o3-mini 3:1, GPT-4o 2.1:1 on BFCL irrelevance detection). GEPA prompt optimization adds +1.5-2.8\%. Published validation of the runtime-gating wedge claim that operon-langgraph-gates rests on.}
 }
 
+@article{liu2026memorycurse,
+  title={The Memory Curse: How Expanded Recall Erodes Cooperative Intent in LLM Agents},
+  author={Liu, Jiayuan and Li, Tianqin and Du, Shiyi and Luo, Xin and Zeng, Haoxuan and Tewolde, Emanuel and Lee, Tai Sing and Wang, Tonghan and Kingsford, Carl and Conitzer, Vincent},
+  year={2026},
+  journal={arXiv preprint arXiv:2605.08060},
+  eprint={2605.08060},
+  archivePrefix={arXiv},
+  primaryClass={cs.CL},
+  note={Across 7 LLMs x 4 social-dilemma games x 500 rounds, expanded context windows degrade cooperation in 18 of 28 model-game settings via erosion of forward-looking intent. Memory sanitization (replacing visible history with synthetic cooperative records, holding prompt length fixed) restores cooperation, proving the trigger is content not length. Ablating Chain-of-Thought reasoning often reduces the collapse, so deliberation amplifies the memory curse. Defines the empirical scope-line for any multi-agent operon topology.}
+}
+
 @misc{meng2026agentharness,
   title={Agent Harness for Large Language Model Agents: A Survey},
   author={Meng, Qianyu and Wang, Yanan and Chen, Liyi and Wu, Wei and Li, Yihang and Jiang, Wenyuan and Wang, Qimeng and Lu, Chengqiang and Gao, Yan and Wu, Yi and Hu, Yao},
