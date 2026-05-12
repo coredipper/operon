@@ -154,7 +154,6 @@ class TestSchemaTransformation:
         with pytest.raises(ValueError, match="multi-agent execution"):
             execute_deerflow(compiled, task="test")
 
-
 # ---------------------------------------------------------------------------
 # Integration tests (need DeerFlow + Ollama)
 # ---------------------------------------------------------------------------
@@ -232,3 +231,28 @@ class TestDeerflowExecution:
 
         assert len(result.output) > 0
         assert result.watcher_summary == {}
+
+    def test_execution_failure_handled_gracefully(self, mocker):
+        """When agent.invoke raises an exception, the error path is triggered and captured."""
+        org = _make_organism_single()
+        compiled = organism_to_deerflow(org)
+
+        # We mock create_deerflow_agent to return an agent that raises an exception on invoke()
+        mock_agent = mocker.Mock()
+        mock_agent.invoke.side_effect = Exception("Mock execution error")
+
+        mocker.patch(
+            "operon_ai.convergence.deerflow_executor.create_deerflow_agent",
+            return_value=mock_agent,
+        )
+
+        result = execute_deerflow(
+            compiled,
+            task="This task will fail.",
+            model_name="gemma4:latest",
+        )
+
+        assert "Execution failed: Mock execution error" in result.output
+        assert len(result.messages) > 0
+        assert result.messages[-1]["type"] == "error"
+        assert result.messages[-1]["content"] == result.output
