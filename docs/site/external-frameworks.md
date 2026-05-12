@@ -311,6 +311,8 @@ Triage pass on three repos surfaced as possible convergence targets. Placed agai
 
 **Update (2026-05-11, later):** §8.3 L1 adapter has shipped. `operon_ai.convergence.AgentflowCertificateAdapter` lands in-tree alongside the existing gascity / Swarms / DeerFlow / Ralph / Scion / A-Evolve adapters; three event mirrors (`NodeEvent`, `EdgeEvent`, `EvolveEvent`) cover agentflow's runtime-observable boundaries since the framework exposes no hook surface of its own. Both wedge angles for agentflow (L1 runtime, L2 compile-time) are now closed; agentflow is the first framework in §1 with both layers shipped in-tree.
 
+**Update (2026-05-12):** §8.6 added — *The Memory Curse* (Liu et al., [arXiv:2605.08060](https://arxiv.org/abs/2605.08060)) frames the empirical failure mode for multi-agent cooperation under expanded context windows. Recorded as a scope-line addendum: the paper supplies the failure-mode characterization, operon's existing memory layer provides the surfaces where sanitization could live, no mitigation shipped this turn.
+
 ### 8.1 gascity — L1 coordination runtime, adapter shipped
 
 Gas City (`gastownhall/gascity`, v1.0 released 2026-04-21) is Steve Yegge's Go-based coordination runtime for durable, long-lived agent teams. Core primitives are **Packs** (declarative module bundles), **Beads** (two-level work-routing abstraction with formulas/molecules/waits as first-class), **MEOW** (versioned knowledge graphs), and persistent agents running in tmux sessions with git-versioned Dolt audit trails. It ships no validation surface of its own — `internal/validation/` covers config schema only — but exposes rich lifecycle hooks (`SessionStart`, `PreToolUse`, `UserPromptSubmit`, `Stop`) plus a four-tier integration model (JSON preset → settings hook → plugin → non-interactive).
@@ -358,3 +360,27 @@ Ta et al., *Reinforced Agent: Inference-Time Feedback for Tool-Calling Agents* (
 **Verdict — validates the wedge.** The paper supplies measured benefit-to-risk ratios for the runtime-review architecture: 3:1 for o3-mini and 2.1:1 for GPT-4o on BFCL irrelevance detection; +7.1% on multi-turn Tau2-Bench; GEPA prompt optimization adds an additional +1.5–2.8%. These numbers are the kind of evidence the §8.4 framing claimed without citing — that *structural authority* (refuse to continue) is empirically net-positive over *diagnostic authority* (post-hoc analysis), at least within the regime measured by these benchmarks. The choice of reviewer model and prompt is shown to be the load-bearing knob; the same paper's GEPA result lines up with operon's §2 Theorem 3 conjecture on the prompt axis.
 
 **What ships in operon.** An H/H metric utility lands in [`eval/patterns/reviewer_gate_hh_metric.py`](../../eval/patterns/reviewer_gate_hh_metric.py) so operon users can compute the same Helpfulness/Harmfulness population statistic over any `reviewer_gate`-instrumented harness — taking two lists of `TrajectoryOutcome(task_id, correct, intervened)` records (one base, one reviewed) and returning a `HelpfulnessHarmfulnessMetric` with the corrected/degraded counts and the benefit-to-risk ratio. No new theorem registration in this pass; registering a `reviewer_gate_net_positive` cheap-variant theorem on top of H/H is the natural follow-up if a Certificate-shaped artifact is wanted.
+
+### 8.6 Memory Curse — empirical scope-line for multi-agent cooperation
+
+Liu et al., *The Memory Curse: How Expanded Recall Erodes Cooperative Intent in LLM Agents* (2026-05-08, [arXiv:2605.08060](https://arxiv.org/abs/2605.08060)) report that across 7 LLMs × 4 social-dilemma games × 500 rounds, expanding the context window *degrades* cooperation in 18 of 28 model–game settings. Three findings define the failure mode:
+
+1. **Mechanism.** Lexical analysis of 378,000 reasoning traces shows the cooperation collapse is driven by erosion of *forward-looking intent*, not rising paranoia. A LoRA adapter trained exclusively on forward-looking traces mitigates the decay and transfers zero-shot to different games.
+2. **Content, not length.** Holding prompt length fixed while replacing visible history with synthetic cooperative records *restores* cooperation. The trigger is memory **content**, not size.
+3. **Deliberation amplifies the collapse.** Ablating explicit Chain-of-Thought reasoning often *reduces* the memory curse — extended deliberation makes things worse, not better.
+
+**Placement.** Cross-cuts the §1 L1 row (every multi-agent topology — `QuorumSensing`, `Cascade`, `specialist_swarm`, anything iterated over `BioAgent` collections — is in scope) and the §2 reasoning layer (the CoT-amplifies finding bears on every reviewer-gated and reflective architecture, including `reviewer_gate` and the GEPA reflection loop).
+
+**Verdict — scope line, no shipped mitigation.** This paper supplies what was previously implicit: an empirical failure-mode characterization for operon's multi-agent surface. The relevant operon-side artefacts are *adjacent*, not solutions:
+
+- `operon_ai/state/histone.py` ships `HistoneStore` with per-marker decay (`decay_hours` per `EpigeneticMarker`) — a decay schedule over memory content, not a curated-content gate.
+- `operon_ai/memory/episodic.py` ships `EpisodicMemory` with tiered retention (`WORKING` / `EPISODIC` / `LONGTERM`) and a `DECAY_RATES` table — tier policy is age-based, not cooperation-aware.
+- `operon_ai/memory/bitemporal.py` ships `BiTemporalMemory.correct_fact(...)` — overwrites stale facts but does not synthesise cooperative records.
+- `operon_ai/organelles/lysosome.py` ships `Lysosome` waste digestion (`WasteType`, `Waste`, `DigestResult`) — capacity-driven, not content-driven.
+- `operon_ai/core/denature.py` ships `NormalizeFilter`, `SummarizeFilter`, `StripMarkupFilter`, and `ChainFilter` — generic text rewriters that could in principle implement a sanitization pipeline.
+
+Each is a *surface where sanitization-at-gate-boundary could be implemented*; none currently is, and the biological metaphors they spring from (decay, autophagy, denaturation) are coincidentally well-shaped, not causally responsive to this finding. A future *memory hygiene* certificate that pairs a synthesised-cooperative-history fixture with a verified call site would be the natural follow-up artefact; explicitly out of scope for this addendum.
+
+**The operationally important claim for operon is the third.** Deliberation amplifies the collapse. Reviewer-gated patterns (`operon_ai/patterns/review.py`) and the GEPA reflection loop are deliberation-heavy; if they are deployed in iterated multi-agent settings, they may exhibit the memory curse more strongly than non-deliberative baselines. The §8.5 Helpfulness/Harmfulness metric measures reviewer net-positivity at the population level over independent trajectories; an iterated-cooperation analogue — forward-looking-intent ratio over a multi-round trajectory log — is the natural §8.6 follow-up benchmark.
+
+No code shipped with this addendum — landscape entry only. The wedge claim is that operon's structural-authority gates (refuse to continue) are categorically distinct from observational tools; the Memory Curse paper's contribution is to mark a regime where even structural-authority gates may need a *memory-content* gate alongside the structural one to preserve cooperation properties under iterated play.
