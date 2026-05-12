@@ -7,6 +7,7 @@ from operon_ai import ATP_Store, BiTemporalMemory, SkillStage, SubstrateView, Te
 from operon_ai.memory.bitemporal import BiTemporalQuery
 from operon_ai.organelles.nucleus import Nucleus
 from operon_ai.providers import MockProvider
+from operon_ai.patterns.organism import _call_arity
 
 
 def test_skill_organism_rejects_duplicate_stage_names():
@@ -699,3 +700,34 @@ def test_run_single_stage_syncs_plain_dict():
     assert decision == "continue"
     assert "s" in state, "Stage output should be synced back to the plain dict"
     assert len(results) == 1
+
+def test_call_arity():
+    """Test the _call_arity utility function."""
+
+    # 1. No arguments expected
+    def no_args():
+        return 0
+
+    assert _call_arity(no_args, 1, 2, 3) == 0
+
+    # 2. Specific number of positional arguments
+    def one_arg(a):
+        return a
+
+    assert _call_arity(one_arg, 10, 20) == 10
+
+    # 3. Variable positional arguments
+    def var_args(*args):
+        return args
+
+    assert _call_arity(var_args, 1, 2, 3) == (1, 2, 3)
+
+    # 4. Variable keyword arguments (fallback logic applies, which takes no positional arguments)
+    def var_kwargs(**kwargs):
+        return kwargs
+
+    with pytest.raises(TypeError):
+        _call_arity(var_kwargs, 1, 2)
+
+    # 5. Uninspectable callable (e.g. built-in string class constructor without inspectable signature)
+    assert _call_arity(str, 1) == "1"
