@@ -190,6 +190,27 @@ class TestEpisodicMemory:
         assert "long memory 2" in contents
         assert "short memory" not in contents
 
+    def test_save_load_without_persistence(self, memory):
+        # memory fixture has no persistence_path
+        memory.store("long memory", tier=MemoryTier.LONGTERM)
+
+        # Calling save and load should do nothing and return early
+        memory.save()
+        memory.load()
+
+        # Memories shouldn't change
+        assert len(memory.memories) == 1
+
+    def test_load_no_file(self, memory_with_persistence):
+        # Ensure no file exists yet
+        filepath = memory_with_persistence.persistence_path / "longterm.json"
+        if filepath.exists():
+            filepath.unlink()
+
+        # load should return early if file does not exist
+        memory_with_persistence.load()
+        assert len(memory_with_persistence.memories) == 0
+
     def test_format_context(self, memory):
         memory.store("user likes python", histone_marks={"reliability": 0.9})
         memory.store("user hates java", histone_marks={"reliability": 0.6})
