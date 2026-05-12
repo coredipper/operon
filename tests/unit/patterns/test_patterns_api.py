@@ -6,6 +6,11 @@ from operon_ai import advise_topology, reviewer_gate, specialist_swarm
 from operon_ai.core.epistemic import TopologyClass
 
 
+def test_reviewer_gate_unsupported_mode():
+    with pytest.raises(ValueError, match="Unsupported reviewer gate mode: fake_mode"):
+        reviewer_gate(mode="fake_mode")
+
+
 def test_reviewer_gate_allows_custom_executor_and_reviewer():
     gate = reviewer_gate(
         executor=lambda prompt: f"EXECUTE::{prompt}",
@@ -349,4 +354,38 @@ def test_reviewer_gate_handles_reviewer_error():
     assert result.allowed is False
     assert result.status == "blocked"
     assert "Simulated reviewer failure" in result.reason
+    assert result.raw.action == "ERROR"
+
+def test_reviewer_gate_handles_executor_express_error():
+    """Verify error path when no explicit executor is provided and loop.executor.express fails."""
+    gate = reviewer_gate(
+        reviewer=lambda p, c: True,
+        enable_cache=False,
+    )
+    # Mock the internal executor's express method to raise an exception
+    import unittest.mock
+    gate.loop.executor.express = unittest.mock.Mock(side_effect=ValueError("Simulated executor express failure"))
+
+    result = gate.run("Some test prompt")
+
+    assert result.allowed is False
+    assert result.status == "blocked"
+    assert "Simulated executor express failure" in result.reason
+    assert result.raw.action == "ERROR"
+
+def test_reviewer_gate_handles_assessor_express_error():
+    """Verify error path when no explicit reviewer is provided and loop.assessor.express fails."""
+    gate = reviewer_gate(
+        executor=lambda p: "Output",
+        enable_cache=False,
+    )
+    # Mock the internal assessor's express method to raise an exception
+    import unittest.mock
+    gate.loop.assessor.express = unittest.mock.Mock(side_effect=ValueError("Simulated assessor express failure"))
+
+    result = gate.run("Some test prompt")
+
+    assert result.allowed is False
+    assert result.status == "blocked"
+    assert "Simulated assessor express failure" in result.reason
     assert result.raw.action == "ERROR"

@@ -9,6 +9,11 @@ from operon_ai.organelles.nucleus import Nucleus
 from operon_ai.providers import MockProvider
 
 
+def test_skill_organism_requires_at_least_one_stage():
+    with pytest.raises(ValueError, match="skill_organism requires at least one stage"):
+        skill_organism(stages=[])
+
+
 def test_skill_organism_rejects_duplicate_stage_names():
     with pytest.raises(ValueError, match="Duplicate stage name 'echo'"):
         skill_organism(
@@ -16,6 +21,31 @@ def test_skill_organism_rejects_duplicate_stage_names():
                 SkillStage(name="echo", role="Echo", handler=lambda t: t),
                 SkillStage(name="echo", role="Echo2", handler=lambda t: t),
             ],
+        )
+
+
+def test_skill_organism_missing_fast_nucleus():
+    with pytest.raises(ValueError, match="needs a 'fast' nucleus"):
+        skill_organism(
+            stages=[SkillStage(name="echo", role="Echo", instructions="do stuff", mode="fixed")],
+        )
+
+
+def test_skill_organism_missing_deep_nucleus():
+    fast = Nucleus(provider=MockProvider(responses={}))
+    with pytest.raises(ValueError, match="needs a 'deep' nucleus"):
+        skill_organism(
+            stages=[SkillStage(name="echo", role="Echo", instructions="do stuff", mode="fuzzy")],
+            fast_nucleus=fast,
+        )
+
+
+def test_skill_organism_unknown_nucleus_alias():
+    fast = Nucleus(provider=MockProvider(responses={}))
+    with pytest.raises(ValueError, match="refers to unknown nucleus alias 'custom_alias'"):
+        skill_organism(
+            stages=[SkillStage(name="echo", role="Echo", instructions="do stuff", nucleus="custom_alias")],
+            fast_nucleus=fast,
         )
 
 
