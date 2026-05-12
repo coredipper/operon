@@ -58,6 +58,21 @@ class HelpfulnessHarmfulnessMetric:
     n_degraded: int
 
 
+def _check_unique(label: str, outcomes: list[TrajectoryOutcome]) -> None:
+    """Raise ``ValueError`` if ``outcomes`` contains duplicate ``task_id`` values."""
+    seen: set[str] = set()
+    dupes: set[str] = set()
+    for o in outcomes:
+        if o.task_id in seen:
+            dupes.add(o.task_id)
+        seen.add(o.task_id)
+    if dupes:
+        raise ValueError(
+            f"{label} contains duplicate task_ids: {sorted(dupes)!r}; "
+            "each task must appear exactly once."
+        )
+
+
 def compute_hh(
     base: list[TrajectoryOutcome],
     reviewed: list[TrajectoryOutcome],
@@ -77,8 +92,12 @@ def compute_hh(
         A :class:`HelpfulnessHarmfulnessMetric` summarising the pair.
 
     Raises:
-        ValueError: if the two lists do not share the same ``task_id`` set.
+        ValueError: if either list contains duplicate ``task_id`` values,
+            or if the two lists do not share the same ``task_id`` set.
     """
+    _check_unique("base", base)
+    _check_unique("reviewed", reviewed)
+
     base_by_id = {o.task_id: o for o in base}
     reviewed_by_id = {o.task_id: o for o in reviewed}
 
