@@ -1,5 +1,6 @@
 import pytest
 from typing import Any
+from unittest.mock import patch
 
 # Check for both LangGraph and LangChain OpenAI so that this test is isolated appropriately
 pytest.importorskip("langgraph")
@@ -53,7 +54,7 @@ def test_guarded_graph_agent_node_exception():
     assert len(error_messages) > 0, "Expected to find an AIMessage with the exception error string"
 
 
-def test_run_guarded_graph_cert_verification_error(mocker):
+def test_run_guarded_graph_cert_verification_error():
     """
     Test that when certificate.verify() raises an exception, the error is
     caught and recorded correctly, preserving the theorem name.
@@ -80,30 +81,26 @@ def test_run_guarded_graph_cert_verification_error(mocker):
     def mock_certificate_from_dict(d: dict[str, Any]):
         return FakeCertificate(d["theorem"])
 
-    mocker.patch(
-        "operon_ai.core.certificate.certificate_from_dict",
-        side_effect=mock_certificate_from_dict
-    )
-
     class FakeGraph:
         def invoke(self, inputs):
             return {"stage_outputs": {}}
 
-    mocker.patch("operon_ai.convergence.guarded_graph.compile_guarded_graph", return_value=FakeGraph())
+    with patch("operon_ai.core.certificate.certificate_from_dict", side_effect=mock_certificate_from_dict), \
+         patch("operon_ai.convergence.guarded_graph.compile_guarded_graph", return_value=FakeGraph()):
 
-    result = run_guarded_graph(
-        compiled=compiled_mock,
-        task="dummy task",
-        verify_certificates=True,
-    )
+        result = run_guarded_graph(
+            compiled=compiled_mock,
+            task="dummy task",
+            verify_certificates=True,
+        )
 
-    assert len(result.certificates_verified) == 2
-    assert result.certificates_verified[0] == {
-        "theorem": "mock_theorem",
-        "holds": False,
-        "error": "mock verification failed"
-    }
-    assert result.certificates_verified[1] == {
-        "theorem": "another_theorem",
-        "holds": True
-    }
+        assert len(result.certificates_verified) == 2
+        assert result.certificates_verified[0] == {
+            "theorem": "mock_theorem",
+            "holds": False,
+            "error": "mock verification failed"
+        }
+        assert result.certificates_verified[1] == {
+            "theorem": "another_theorem",
+            "holds": True
+        }
