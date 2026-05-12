@@ -729,3 +729,36 @@ def test_run_single_stage_syncs_plain_dict():
     assert decision == "continue"
     assert "s" in state, "Stage output should be synced back to the plain dict"
     assert len(results) == 1
+
+from operon_ai.patterns.organism import _call_arity
+
+def test_call_arity_no_args():
+    def f(): return "none"
+    assert _call_arity(f, 1, 2, 3) == "none"
+
+def test_call_arity_positional():
+    def f1(a): return a
+    def f2(a, b): return a + b
+
+    assert _call_arity(f1, 1, 2, 3) == 1
+    assert _call_arity(f2, 1, 2, 3) == 3
+
+def test_call_arity_var_args():
+    def f(*args): return args
+    assert _call_arity(f, 1, 2, 3) == (1, 2, 3)
+
+def test_call_arity_var_kwargs():
+    def f(**kwargs): return kwargs
+    # If a function only takes **kwargs, _call_arity currently passes all args because VAR_KEYWORD is present.
+    # This natively raises a TypeError since it expects 0 positional args. We ensure this behavior is tested.
+    with pytest.raises(TypeError):
+        _call_arity(f, 1, 2)
+
+def test_call_arity_mixed():
+    def f(a, *args): return a, args
+    assert _call_arity(f, 1, 2, 3) == (1, (2, 3))
+
+def test_call_arity_builtins():
+    # some builtins like `len` might not have an inspectable signature in older pythons,
+    # but in py3.12 they do. We can use a C-extension builtin or `id`.
+    assert _call_arity(len, [1, 2]) == 2
