@@ -107,6 +107,32 @@ class TestEdgeCases:
         with pytest.raises(ValueError, match="same task_ids"):
             compute_hh(base, reviewed)
 
+    def test_duplicate_task_ids_in_base_raise_valueerror(self) -> None:
+        """Silent dict-overwrite would corrupt denominators (roborev #962)."""
+        base = [_base("t1", True), _base("t1", False), _base("t2", True)]
+        reviewed = [_reviewed("t1", True), _reviewed("t2", True)]
+        with pytest.raises(ValueError, match="base contains duplicate task_ids.*t1"):
+            compute_hh(base, reviewed)
+
+    def test_duplicate_task_ids_in_reviewed_raise_valueerror(self) -> None:
+        base = [_base("t1", True), _base("t2", True)]
+        reviewed = [_reviewed("t1", True), _reviewed("t1", False), _reviewed("t2", True)]
+        with pytest.raises(ValueError, match="reviewed contains duplicate task_ids.*t1"):
+            compute_hh(base, reviewed)
+
+    def test_multiple_duplicates_are_all_listed(self) -> None:
+        """Error message must enumerate every duplicate, not just the first."""
+        base = [
+            _base("t1", True), _base("t1", False),
+            _base("t2", True), _base("t2", False),
+            _base("t3", True),
+        ]
+        reviewed = [_reviewed("t1", True), _reviewed("t2", True), _reviewed("t3", True)]
+        with pytest.raises(ValueError) as excinfo:
+            compute_hh(base, reviewed)
+        msg = str(excinfo.value)
+        assert "t1" in msg and "t2" in msg
+
     def test_order_independence_via_task_id_pairing(self) -> None:
         """Pairing must be by task_id, not list position."""
         base = [_base("t1", False), _base("t2", True)]
