@@ -1,7 +1,7 @@
 """Tests for Watchdog (apoptosis)."""
 import pytest
 from datetime import UTC, datetime, timedelta
-from operon_ai.coordination.types import Phase, ResourceLock
+from operon_ai.coordination.types import Phase, ResourceLock, DeadlockInfo
 from operon_ai.coordination.controller import (
     CellCycleController, OperationContext,
 )
@@ -249,3 +249,66 @@ class TestWatchdog:
         deadlock_events = [e for e in events if e.reason == ApoptosisReason.DEADLOCK]
         assert len(deadlock_events) == 1
         assert deadlock_events[0].operation_id == "op1"  # oldest
+
+    def test_select_deadlock_victim_none_involved(self):
+        controller = CellCycleController()
+        watchdog = Watchdog()
+        deadlock = DeadlockInfo(agents=["ghost1", "ghost2"], resources=[], cycle=[])
+
+        victim = watchdog._select_deadlock_victim(controller, deadlock)
+        assert victim is None
+
+    def test_select_deadlock_victim_fallback_strategy(self):
+        controller = CellCycleController()
+        watchdog = Watchdog(deadlock_strategy="other")
+
+        ctx1 = controller.start_operation("op1", "agent1")
+        ctx2 = controller.start_operation("op2", "agent2")
+
+        deadlock = DeadlockInfo(agents=["op1", "op2"], resources=[], cycle=[])
+
+        victim = watchdog._select_deadlock_victim(controller, deadlock)
+        assert victim == "op1"  # First involved operation
+
+    def test_manual_kill_not_found(self):
+        controller = CellCycleController()
+        watchdog = Watchdog()
+
+        event = watchdog.manual_kill(controller, "missing_op")
+        assert event is None
+        assert len(watchdog.events) == 0
+
+    def test_manual_kill_success(self):
+        controller = CellCycleController()
+        watchdog = Watchdog()
+
+        ctx = controller.start_operation("op1", "agent1")
+
+        event = watchdog.manual_kill(controller, "op1", reason="admin request")
+
+        assert event is not None
+        assert event.operation_id == "op1"
+        assert event.reason == ApoptosisReason.MANUAL
+        assert event.details == "admin request"
+        assert len(watchdog.events) == 1
+        assert "op1" not in controller.active_operations
+
+    def test_watchdog_stats(self):
+        watchdog = Watchdog()
+
+        # Add events manually
+        watchdog.events.append(ApoptosisEvent(
+            operation_id="op1", agent_id="a1", reason=ApoptosisReason.TIMEOUT, details=""
+        ))
+        watchdog.events.append(ApoptosisEvent(
+            operation_id="op2", agent_id="a2", reason=ApoptosisReason.TIMEOUT, details=""
+        ))
+        watchdog.events.append(ApoptosisEvent(
+            operation_id="op3", agent_id="a3", reason=ApoptosisReason.MANUAL, details=""
+        ))
+
+        stats = watchdog.stats()
+
+        assert stats["total_terminations"] == 3
+        assert stats["by_reason"]["timeout"] == 2
+        assert stats["by_reason"]["manual"] == 1
