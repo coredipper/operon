@@ -1,5 +1,7 @@
 """Tests for the specialist swarm pattern."""
 
+from unittest.mock import patch
+
 import pytest
 
 from operon_ai.patterns.swarm import (
@@ -91,6 +93,30 @@ def test_call_aggregate():
     assert _call_aggregate(one_arg, task_str, outputs_dict) == "keys=['a', 'b']"
     assert _call_aggregate(two_args, task_str, outputs_dict) == "task=test task, keys=['a', 'b']"
     assert _call_aggregate(kwargs_arg, task_str, outputs_dict) == {"args": ("test task", {"a": 1, "b": 2}), "kwargs": {}}
+
+
+def test_call_arity_signature_error():
+    """Test `_call_arity` falls back correctly when signature inspection fails."""
+    def mock_fn(*args):
+        return args
+
+    with patch("operon_ai.patterns.swarm.signature", side_effect=ValueError):
+        assert _call_arity(mock_fn, "prompt", "role") == ("prompt", "role")
+
+    with patch("operon_ai.patterns.swarm.signature", side_effect=TypeError):
+        assert _call_arity(mock_fn, "prompt", "role") == ("prompt", "role")
+
+
+def test_call_aggregate_signature_error():
+    """Test `_call_aggregate` falls back correctly when signature inspection fails."""
+    def mock_fn(*args):
+        return args
+
+    with patch("operon_ai.patterns.swarm.signature", side_effect=ValueError):
+        assert _call_aggregate(mock_fn, "task", {"a": 1}) == ("task", {"a": 1})
+
+    with patch("operon_ai.patterns.swarm.signature", side_effect=TypeError):
+        assert _call_aggregate(mock_fn, "task", {"a": 1}) == ("task", {"a": 1})
 
 
 def test_default_worker():

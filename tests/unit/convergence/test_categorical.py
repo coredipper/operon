@@ -5,6 +5,7 @@ and architecture extraction for all four compiler targets.
 """
 
 import pytest
+from unittest.mock import patch
 
 from operon_ai import ATP_Store, MockProvider, Nucleus, SkillStage, skill_organism
 from operon_ai.convergence.categorical import (
@@ -110,6 +111,104 @@ class TestArchitecture:
 
 class TestCompilerFunctor:
     """Test functor laws for all four compiler targets."""
+
+    @patch("operon_ai.convergence.categorical.verify_compiled")
+    def test_verify_preservation_direct(self, mock_verify):
+        """Directly test _verify_preservation covering all branches."""
+        from operon_ai.convergence.categorical import Architecture, CompilerFunctor
+        from operon_ai.core.certificate import CertificateVerification
+
+        # Mock verify_compiled to always return a successful verification
+        mock_verify.return_value = [
+            CertificateVerification(
+                certificate=None, # type: ignore
+                holds=True,
+                evidence={"mocked": True}
+            )
+        ]
+
+        functor = CompilerFunctor("dummy", lambda x: {})
+
+        source = Architecture(
+            stage_names=("a", "b"),
+            edges=(("a", "b"),),
+            certificates=({"theorem": "mock_theorem", "subject": "test", "level": "unit"},),
+            interface=(("a", "fixed"), ("b", "fixed"))
+        )
+
+        # Scenario 1: All preserved (1:1 mapping)
+        target1 = Architecture(
+            stage_names=("a", "b"),
+            edges=(("a", "b"),),
+            certificates=({"theorem": "mock_theorem", "subject": "test", "level": "unit"},),
+            interface=(("a", "fixed"), ("b", "fixed"))
+        )
+
+        res1 = functor._verify_preservation(source, target1, {})
+        assert res1.graph_preserved
+        assert res1.interface_preserved
+        assert res1.certificate_preserved
+        assert res1.all_preserved
+
+        # Scenario 2: Graph missing edge
+        target2 = Architecture(
+            stage_names=("a", "b"),
+            edges=(),
+            certificates=({"theorem": "mock_theorem", "subject": "test", "level": "unit"},),
+            interface=(("a", "fixed"), ("b", "fixed"))
+        )
+        res2 = functor._verify_preservation(source, target2, {})
+        assert not res2.graph_preserved
+        assert res2.interface_preserved
+
+        # Scenario 3: Interface missing stage
+        target3 = Architecture(
+            stage_names=("b",),
+            edges=(),
+            certificates=({"theorem": "mock_theorem", "subject": "test", "level": "unit"},),
+            interface=(("b", "fixed"),)
+        )
+        res3 = functor._verify_preservation(source, target3, {})
+        assert not res3.interface_preserved
+
+        # Scenario 4: Certificate missing
+        target4 = Architecture(
+            stage_names=("a", "b"),
+            edges=(("a", "b"),),
+            certificates=(),
+            interface=(("a", "fixed"), ("b", "fixed"))
+        )
+        res4 = functor._verify_preservation(source, target4, {})
+        assert not res4.certificate_preserved
+
+        # Scenario 5: Parallel groups reshaping
+        source_parallel = Architecture(
+            stage_names=("a", "b", "c"),
+            edges=(),
+            certificates=(),
+            interface=()
+        )
+        # Expected topology rebuilt internally:
+        target5 = Architecture(
+            stage_names=("a", "__fork_1", "b", "c", "__join_1"),
+            edges=(
+                ("a", "__fork_1"),
+                ("__fork_1", "b"), ("__fork_1", "c"),
+                ("b", "__join_1"), ("c", "__join_1")
+            ),
+            certificates=(),
+            interface=()
+        )
+        compiled_parallel = {
+            "config": {
+                "has_parallel_groups": True,
+                "_stage_groups": [["a"], ["b", "c"]],
+                "_fork_join_names": [None, ("__fork_1", "__join_1")]
+            }
+        }
+        res5 = functor._verify_preservation(source_parallel, target5, compiled_parallel)
+        assert res5.graph_preserved
+        assert res5.interface_preserved
 
     @pytest.mark.parametrize("functor", [
         swarms_functor, deerflow_functor, ralph_functor, scion_functor,

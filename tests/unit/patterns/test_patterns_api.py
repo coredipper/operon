@@ -6,6 +6,11 @@ from operon_ai import advise_topology, reviewer_gate, specialist_swarm
 from operon_ai.core.epistemic import TopologyClass
 
 
+def test_reviewer_gate_unsupported_mode():
+    with pytest.raises(ValueError, match="Unsupported reviewer gate mode: fake_mode"):
+        reviewer_gate(mode="fake_mode")
+
+
 def test_reviewer_gate_allows_custom_executor_and_reviewer():
     gate = reviewer_gate(
         executor=lambda prompt: f"EXECUTE::{prompt}",

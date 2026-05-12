@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 from operon_ai.convergence.aevolve_adapter import (
     aevolve_skills_to_stages,
     aevolve_to_template,
@@ -234,3 +236,12 @@ class TestImportAevolveSkills:
         library = PatternLibrary()
         count = import_aevolve_skills([bad_md], library)
         assert count == 0
+
+    @patch("operon_ai.convergence.aevolve_skills.skill_to_template")
+    def test_skips_on_mocked_exception(self, mock_skill_to_template) -> None:
+        mock_skill_to_template.side_effect = ValueError("Mocked ValueError")
+        skill_md = "---\nname: test_skill\ncategory: execution\n---\n\n# Test\n\n1. Run tests\n"
+        library = PatternLibrary()
+        count = import_aevolve_skills([skill_md], library)
+        assert count == 0
+        mock_skill_to_template.assert_called_once_with(skill_md)
