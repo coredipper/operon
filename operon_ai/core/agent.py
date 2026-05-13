@@ -44,6 +44,13 @@ class BioAgent:
         role: str,
         atp_store: ATP_Store,
         config: BioAgentConfig | None = None,
+        *,
+        nucleus: Nucleus | None = None,
+        instructions: str = "",
+        provider_config: ProviderConfig | None = None,
+        tool_mitochondria: Mitochondria | None = None,
+        response_mapper: ResponseMapper | None = None,
+        silent: bool = False,
     ):
         self.name = name
         self.role = role
@@ -57,8 +64,21 @@ class BioAgent:
         # Epigenetics (State)
         self.histones = HistoneStore()
 
+        if config is None:
+            if any(v is not None and v is not False and v != "" for v in (nucleus, instructions, provider_config, tool_mitochondria, response_mapper, silent)):
+                import warnings
+                warnings.warn("Using legacy kwargs in BioAgent.__init__ is deprecated. Use BioAgentConfig instead.", DeprecationWarning, stacklevel=2)
+            config = BioAgentConfig(
+                nucleus=nucleus,
+                instructions=instructions,
+                provider_config=provider_config,
+                tool_mitochondria=tool_mitochondria,
+                response_mapper=response_mapper,
+                silent=silent,
+            )
+
         # Optional provider-backed execution
-        self.config = config or BioAgentConfig()
+        self.config = config
         self.nucleus = self.config.nucleus
         self.instructions = self.config.instructions.strip()
         self.provider_config = self.config.provider_config
