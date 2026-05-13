@@ -14,6 +14,7 @@ import pytest
 from operon_ai import ATP_Store, MockProvider, Nucleus, SkillStage, skill_organism
 from operon_ai.convergence.deerflow_compiler import organism_to_deerflow
 from operon_ai.convergence.deerflow_executor import (
+    DeerFlowExecutionConfig,
     DeerFlowResult,
     HAS_DEERFLOW,
     _compiled_to_agent_kwargs,
@@ -172,8 +173,7 @@ class TestDeerflowExecution:
         result = execute_deerflow(
             compiled,
             task="What is 2 + 2? Answer in one word.",
-            model_name="gemma4:latest",
-
+            exec_config=DeerFlowExecutionConfig(model_name="gemma4:latest"),
         )
 
         assert isinstance(result, DeerFlowResult)
@@ -188,9 +188,10 @@ class TestDeerflowExecution:
         result = execute_deerflow(
             compiled,
             task="Say hello.",
-            model_name="gemma4:latest",
-            enable_watcher=True,
-
+            exec_config=DeerFlowExecutionConfig(
+                model_name="gemma4:latest",
+                enable_watcher=True,
+            ),
         )
 
         assert result.watcher_summary is not None
@@ -204,9 +205,10 @@ class TestDeerflowExecution:
         result = execute_deerflow(
             compiled,
             task="Say hello.",
-            model_name="gemma4:latest",
-            verify_certificates=True,
-
+            exec_config=DeerFlowExecutionConfig(
+                model_name="gemma4:latest",
+                verify_certificates=True,
+            ),
         )
 
         # ATP budget certificate should hold (budget > 0)
@@ -224,9 +226,10 @@ class TestDeerflowExecution:
         result = execute_deerflow(
             compiled,
             task="Say hello.",
-            model_name="gemma4:latest",
-            enable_watcher=False,
-
+            exec_config=DeerFlowExecutionConfig(
+                model_name="gemma4:latest",
+                enable_watcher=False,
+            ),
         )
 
         assert len(result.output) > 0
@@ -249,7 +252,7 @@ class TestDeerflowExecution:
         result = execute_deerflow(
             compiled,
             task="This task will fail.",
-            model_name="gemma4:latest",
+            exec_config=DeerFlowExecutionConfig(model_name="gemma4:latest"),
         )
 
         assert "Execution failed: Mock execution error" in result.output

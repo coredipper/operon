@@ -34,8 +34,31 @@ except ImportError:
 
 
 # ---------------------------------------------------------------------------
-# Result type
+# Result type and Config
 # ---------------------------------------------------------------------------
+
+
+@dataclass
+class DeerFlowExecutionConfig:
+    """Configuration for executing a compiled organism in DeerFlow."""
+
+    model: Any | None = None
+    """Pre-built ``BaseChatModel`` instance. If ``None``, one is created from *model_name* via ``ChatOpenAI`` pointed at Ollama."""
+
+    model_name: str = "gemma4:latest"
+    """Ollama model name (used when *model* is ``None``)."""
+
+    ollama_base_url: str = "http://localhost:11434/v1"
+    """Ollama OpenAI-compatible endpoint."""
+
+    enable_watcher: bool = True
+    """If ``True``, run ``operon_watcher_node`` on each stream chunk."""
+
+    watcher_config: dict[str, Any] | None = None
+    """Config dict for the watcher (max_intervention_rate, max_retries)."""
+
+    verify_certificates: bool = True
+    """If ``True``, verify certificates from the compiled dict post-run."""
 
 
 @dataclass(frozen=True)
@@ -109,12 +132,7 @@ def execute_deerflow(
     compiled: dict[str, Any],
     *,
     task: str,
-    model: Any | None = None,
-    model_name: str = "gemma4:latest",
-    ollama_base_url: str = "http://localhost:11434/v1",
-    enable_watcher: bool = True,
-    watcher_config: dict[str, Any] | None = None,
-    verify_certificates: bool = True,
+    exec_config: DeerFlowExecutionConfig | None = None,
 ) -> DeerFlowResult:
     """Execute a compiled organism dict in DeerFlow's LangGraph runtime.
 
@@ -127,19 +145,8 @@ def execute_deerflow(
         Dict produced by :func:`organism_to_deerflow`.
     task:
         The user task / prompt to execute.
-    model:
-        Pre-built ``BaseChatModel`` instance.  If ``None``, one is created
-        from *model_name* via ``ChatOpenAI`` pointed at Ollama.
-    model_name:
-        Ollama model name (used when *model* is ``None``).
-    ollama_base_url:
-        Ollama OpenAI-compatible endpoint.
-    enable_watcher:
-        If ``True``, run ``operon_watcher_node`` on each stream chunk.
-    watcher_config:
-        Config dict for the watcher (max_intervention_rate, max_retries).
-    verify_certificates:
-        If ``True``, verify certificates from the compiled dict post-run.
+    exec_config:
+        Execution configuration for the DeerFlow run.
 
     Returns
     -------
@@ -151,6 +158,8 @@ def execute_deerflow(
     ImportError
         If DeerFlow is not installed.
     """
+    exec_config = exec_config or DeerFlowExecutionConfig()
+
     # --- Reject unsupported multi-agent configs ---
     sub_agents = compiled.get("sub_agents", [])
     if sub_agents:
@@ -174,17 +183,19 @@ def execute_deerflow(
         ) from e
 
     # --- Model resolution ---
-    if model is None:
+    if exec_config.model is None:
         from langchain_openai import ChatOpenAI
 
         thinking = compiled.get("config", {}).get("thinking_enabled", False)
         model = ChatOpenAI(
-            base_url=ollama_base_url,
-            model=model_name,
+            base_url=exec_config.ollama_base_url,
+            model=exec_config.model_name,
             api_key=os.environ.get("OLLAMA_API_KEY", "ollama"),
             temperature=0.0,
             max_tokens=2048 if thinking else 500,
         )
+    else:
+        model = exec_config.model
 
     # --- Schema transformation ---
     kwargs = _compiled_to_agent_kwargs(compiled)
@@ -238,19 +249,19 @@ def execute_deerflow(
     elapsed_ms = (time.monotonic() - t0) * 1000
 
     # Feed one stage result to watcher (one agent = one stage)
-    if enable_watcher:
+    if exec_config.enable_watcher:
         watcher_state["stage_results"].append({
             "stage_name": kwargs["name"],
             "action_type": action_type,
         })
         watcher_update = operon_watcher_node(
-            watcher_state, watcher_config=watcher_config,
+            watcher_state, watcher_config=exec_config.watcher_config,
         )
         watcher_state.update(watcher_update)
 
     # --- Certificate verification ---
     cert_results: list[dict[str, Any]] = []
-    if verify_certificates:
+    if exec_config.verify_certificates:
         from ..core.certificate import certificate_from_dict
 
         for cd in compiled.get("certificates", []):
@@ -275,9 +286,9 @@ def execute_deerflow(
         watcher_summary=watcher_state.get("watcher_summary", {}),
         certificates_verified=tuple(cert_results),
         metadata={
-            "model_name": model_name,
+            "model_name": exec_config.model_name,
             "agent_name": kwargs["name"],
-            "enable_watcher": enable_watcher,
+            "enable_watcher": exec_config.enable_watcher,
             "recursion_limit": config["recursion_limit"],
         },
     )

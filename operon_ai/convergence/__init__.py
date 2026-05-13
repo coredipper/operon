@@ -83,6 +83,7 @@ from .deerflow_compiler import (
     organism_to_deerflow,
 )
 from .deerflow_executor import (
+    DeerFlowExecutionConfig,
     DeerFlowResult,
     HAS_DEERFLOW,
     execute_deerflow,
@@ -247,6 +248,7 @@ __all__ = [
     "deerflow_to_topology",
     "swarms_to_topology",
     # DeerFlow executor (C5)
+    "DeerFlowExecutionConfig",
     "DeerFlowResult",
     "HAS_DEERFLOW",
     "execute_deerflow",
