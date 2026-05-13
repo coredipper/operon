@@ -32,6 +32,7 @@ References:
 
 from __future__ import annotations
 
+from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -195,40 +196,39 @@ class DiffusionField:
             )
 
         # 2. Diffuse — accumulate deltas, then apply
-        deltas: dict[str, dict[MorphogenType, float]] = {
-            nid: {} for nid in self._nodes
-        }
+        deltas: dict[tuple[str, MorphogenType], float] = defaultdict(float)
+        diffusion_rate = self.params.diffusion_rate
+
         for node_id, concentrations in self._nodes.items():
             neighbors = self._adjacency[node_id]
             if not neighbors:
                 continue
             for mtype, conc in concentrations.items():
-                outflow = conc * self.params.diffusion_rate
+                outflow = conc * diffusion_rate
                 per_neighbor = outflow / len(neighbors)
                 # Remove from source
-                deltas[node_id][mtype] = deltas[node_id].get(mtype, 0.0) - outflow
+                deltas[(node_id, mtype)] -= outflow
                 # Add to neighbors
                 for neighbor in neighbors:
-                    deltas[neighbor][mtype] = deltas[neighbor].get(mtype, 0.0) + per_neighbor
+                    deltas[(neighbor, mtype)] += per_neighbor
 
-        for node_id in self._nodes:
-            for mtype, delta in deltas[node_id].items():
-                current = self._nodes[node_id].get(mtype, 0.0)
-                self._nodes[node_id][mtype] = current + delta
+        for (node_id, mtype), delta in deltas.items():
+            node_concs = self._nodes[node_id]
+            node_concs[mtype] = node_concs.get(mtype, 0.0) + delta
 
-        # 3. Decay
-        for node_id in self._nodes:
-            for mtype in list(self._nodes[node_id].keys()):
-                self._nodes[node_id][mtype] *= (1.0 - self.params.decay_rate)
+        # 3. Decay and 4. Clamp combined
+        decay_factor = 1.0 - self.params.decay_rate
+        min_concentration = self.params.min_concentration
 
-        # 4. Clamp
-        for node_id in self._nodes:
-            for mtype in list(self._nodes[node_id].keys()):
-                val = self._nodes[node_id][mtype]
+        for node_id, concentrations in self._nodes.items():
+            for mtype in list(concentrations.keys()):
+                val = concentrations[mtype] * decay_factor
                 if val > 1.0:
-                    self._nodes[node_id][mtype] = 1.0
-                elif val < self.params.min_concentration:
-                    del self._nodes[node_id][mtype]  # Snap to zero (absent = 0.0)
+                    concentrations[mtype] = 1.0
+                elif val < min_concentration:
+                    del concentrations[mtype]  # Snap to zero (absent = 0.0)
+                else:
+                    concentrations[mtype] = val
 
     def run(self, steps: int) -> None:
         """Advance the diffusion field by multiple steps."""
