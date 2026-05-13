@@ -104,61 +104,23 @@ def compute_group_node_names(groups, stage_names: set[str] | None = None) -> lis
     return names
 
 
-def organism_to_langgraph(organism: Any) -> Any:
-    """Compile a SkillOrganism into a per-stage LangGraph StateGraph.
+class _LangGraphBuilder:
+    """Helper class to build a LangGraph from an organism."""
+    def __init__(self, organism: Any, groups: tuple, watcher_key: str):
+        self.organism = organism
+        self.groups = groups
+        self.watcher_key = watcher_key
 
-    Each stage becomes a LangGraph node that calls
-    ``organism.run_single_stage()``. Conditional edges route based
-    on the return value.
-
-    The compiled graph requires ``task`` and ``shared_state`` in its
-    input state. Use :func:`run_organism_langgraph` for the full
-    lifecycle (``on_run_start``/``on_run_complete`` + certificate
-    verification).
-
-    Note: LangGraph checkpointing between stages does not persist
-    component instance state (watcher counters, telemetry buffers).
-    For resumable execution, use ``organism.run()`` directly.
-
-    Parameters
-    ----------
-    organism:
-        A ``SkillOrganism`` with stages and components attached.
-
-    Returns
-    -------
-    CompiledStateGraph
-        A LangGraph graph with one node per stage.
-    """
-    try:
-        from langgraph.graph import END, START, StateGraph
-    except ImportError as e:
-        raise ImportError(
-            "LangGraph is required. Install with: pip install operon-ai[langgraph]"
-        ) from e
-
-    components = organism.components
-    groups = organism.stage_groups or tuple((s,) for s in organism.stages)
-
-    # Resolve watcher key
-    watcher_key = WATCHER_STATE_KEY
-    for component in components:
-        cfg = getattr(component, "config", None)
-        sk = getattr(cfg, "state_key", None)
-        if sk is not None:
-            watcher_key = sk
-            break
-
-    def make_stage_node(stage):
+    def make_stage_node(self, stage):
         """Create a LangGraph node that calls organism.run_single_stage()."""
         def node(state: LangGraphState) -> dict:
-            ctx = RunContext(state.get("shared_state", {}), watcher_key=watcher_key)
+            ctx = RunContext(state.get("shared_state", {}), watcher_key=self.watcher_key)
             outputs = state.get("stage_outputs", {})
 
             results: list[SkillStageResult] = []
 
             try:
-                decision = organism.run_single_stage(
+                decision = self.organism.run_single_stage(
                     stage, state["task"], ctx, outputs, results,
                 )
             except Exception as exc:
@@ -193,7 +155,7 @@ def organism_to_langgraph(organism: Any) -> Any:
 
         return node
 
-    def make_parallel_stage_node(stage):
+    def make_parallel_stage_node(self, stage):
         """Create a LangGraph node for a stage within a parallel group.
 
         Like make_stage_node but also appends to _parallel_results for
@@ -203,13 +165,13 @@ def organism_to_langgraph(organism: Any) -> Any:
             import copy as _copy
             ctx = RunContext(
                 _copy.deepcopy(state.get("shared_state", {})),
-                watcher_key=watcher_key,
+                watcher_key=self.watcher_key,
             )
             outputs = _copy.deepcopy(state.get("stage_outputs", {}))
             results: list[SkillStageResult] = []
 
             try:
-                decision = organism.run_single_stage(
+                decision = self.organism.run_single_stage(
                     stage, state["task"], ctx, outputs, results,
                 )
             except Exception as exc:
@@ -249,7 +211,7 @@ def organism_to_langgraph(organism: Any) -> Any:
 
         return node
 
-    def make_fork_node():
+    def make_fork_node(self):
         """Create a fork node that snapshots state before fan-out."""
         def node(state: LangGraphState) -> dict:
             import copy as _copy
@@ -259,7 +221,7 @@ def organism_to_langgraph(organism: Any) -> Any:
             }
         return node
 
-    def make_fork_router(group):
+    def make_fork_router(self, group):
         """Create a conditional edge function that returns Send objects."""
         def router(state: LangGraphState):
             try:
@@ -285,7 +247,7 @@ def organism_to_langgraph(organism: Any) -> Any:
             ]
         return router
 
-    def make_join_node(group):
+    def make_join_node(self, group):
         """Create a join node that merges parallel results."""
         from ..patterns.organism import _merge_parallel_results
 
@@ -330,60 +292,110 @@ def organism_to_langgraph(organism: Any) -> Any:
 
         return node
 
-    # Build the graph — fan-out/fan-in for parallel groups
-    builder = StateGraph(LangGraphState)
+    def build(self) -> Any:
+        try:
+            from langgraph.graph import END, START, StateGraph
+        except ImportError as e:
+            raise ImportError(
+                "LangGraph is required. Install with: pip install operon-ai[langgraph]"
+            ) from e
 
-    # Collect all node names for sequential wiring between groups
-    group_entry_nodes: list[str] = []  # first node of each group
-    group_exit_nodes: list[str] = []   # last node of each group
+        # Build the graph — fan-out/fan-in for parallel groups
+        builder = StateGraph(LangGraphState)
 
-    for i, group in enumerate(groups):
-        if len(group) == 1:
-            # Sequential: single node
-            stage = group[0]
-            builder.add_node(stage.name, make_stage_node(stage))
-            group_entry_nodes.append(stage.name)
-            group_exit_nodes.append(stage.name)
-        else:
-            # Parallel: fork → [stage_a, stage_b, ...] → join
-            all_stage_names = {s.name for s in organism.stages}
-            fork_name = f"__fork_{i}"
-            while fork_name in all_stage_names:
-                fork_name = f"__fork_{i}_{id(group)}"
-            join_name = f"__join_{i}"
-            while join_name in all_stage_names:
-                join_name = f"__join_{i}_{id(group)}"
+        # Collect all node names for sequential wiring between groups
+        group_entry_nodes: list[str] = []  # first node of each group
+        group_exit_nodes: list[str] = []   # last node of each group
 
-            builder.add_node(fork_name, make_fork_node())
-            for stage in group:
-                builder.add_node(stage.name, make_parallel_stage_node(stage))
-            builder.add_node(join_name, make_join_node(group))
+        for i, group in enumerate(self.groups):
+            if len(group) == 1:
+                # Sequential: single node
+                stage = group[0]
+                builder.add_node(stage.name, self.make_stage_node(stage))
+                group_entry_nodes.append(stage.name)
+                group_exit_nodes.append(stage.name)
+            else:
+                # Parallel: fork → [stage_a, stage_b, ...] → join
+                all_stage_names = {s.name for s in self.organism.stages}
+                fork_name = f"__fork_{i}"
+                while fork_name in all_stage_names:
+                    fork_name = f"__fork_{i}_{id(group)}"
+                join_name = f"__join_{i}"
+                while join_name in all_stage_names:
+                    join_name = f"__join_{i}_{id(group)}"
 
-            # Fork → Send to each stage (fan-out)
-            builder.add_conditional_edges(fork_name, make_fork_router(group))
+                builder.add_node(fork_name, self.make_fork_node())
+                for stage in group:
+                    builder.add_node(stage.name, self.make_parallel_stage_node(stage))
+                builder.add_node(join_name, self.make_join_node(group))
 
-            # Each stage → join (fan-in)
-            for stage in group:
-                builder.add_edge(stage.name, join_name)
+                # Fork → Send to each stage (fan-out)
+                builder.add_conditional_edges(fork_name, self.make_fork_router(group))
 
-            group_entry_nodes.append(fork_name)
-            group_exit_nodes.append(join_name)
+                # Each stage → join (fan-in)
+                for stage in group:
+                    builder.add_edge(stage.name, join_name)
 
-    # Wire groups sequentially with routing
-    def route(state: LangGraphState) -> str:
-        return "halt" if state.get("_routing") != "continue" else "next"
+                group_entry_nodes.append(fork_name)
+                group_exit_nodes.append(join_name)
 
-    for i in range(len(group_exit_nodes)):
-        if i < len(group_entry_nodes) - 1:
-            builder.add_conditional_edges(
-                group_exit_nodes[i], route,
-                {"next": group_entry_nodes[i + 1], "halt": END},
-            )
-        else:
-            builder.add_edge(group_exit_nodes[i], END)
+        # Wire groups sequentially with routing
+        def route(state: LangGraphState) -> str:
+            return "halt" if state.get("_routing") != "continue" else "next"
 
-    builder.add_edge(START, group_entry_nodes[0])
-    return builder.compile()
+        for i in range(len(group_exit_nodes)):
+            if i < len(group_entry_nodes) - 1:
+                builder.add_conditional_edges(
+                    group_exit_nodes[i], route,
+                    {"next": group_entry_nodes[i + 1], "halt": END},
+                )
+            else:
+                builder.add_edge(group_exit_nodes[i], END)
+
+        builder.add_edge(START, group_entry_nodes[0])
+        return builder.compile()
+
+
+def organism_to_langgraph(organism: Any) -> Any:
+    """Compile a SkillOrganism into a per-stage LangGraph StateGraph.
+
+    Each stage becomes a LangGraph node that calls
+    ``organism.run_single_stage()``. Conditional edges route based
+    on the return value.
+
+    The compiled graph requires ``task`` and ``shared_state`` in its
+    input state. Use :func:`run_organism_langgraph` for the full
+    lifecycle (``on_run_start``/``on_run_complete`` + certificate
+    verification).
+
+    Note: LangGraph checkpointing between stages does not persist
+    component instance state (watcher counters, telemetry buffers).
+    For resumable execution, use ``organism.run()`` directly.
+
+    Parameters
+    ----------
+    organism:
+        A ``SkillOrganism`` with stages and components attached.
+
+    Returns
+    -------
+    CompiledStateGraph
+        A LangGraph graph with one node per stage.
+    """
+    components = organism.components
+    groups = organism.stage_groups or tuple((s,) for s in organism.stages)
+
+    # Resolve watcher key
+    watcher_key = WATCHER_STATE_KEY
+    for component in components:
+        cfg = getattr(component, "config", None)
+        sk = getattr(cfg, "state_key", None)
+        if sk is not None:
+            watcher_key = sk
+            break
+
+    builder = _LangGraphBuilder(organism, groups, watcher_key)
+    return builder.build()
 
 
 def run_organism_langgraph(
