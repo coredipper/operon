@@ -13,7 +13,7 @@ short_description: Explore the Architecture triple (G, Know, Phi)
 
 # Operon Harness Inspector
 
-Explore the **Architecture triple (G, Know, Phi)** from Paper 5: *Harness Engineering as Categorical Architecture*. Build an organism, extract its categorical structure, and see how compiler functors preserve properties.
+Explore the **Architecture triple (G, Know, Phi)** from Paper 5: *Harness Engineering as Categorical Architecture* ([arXiv:2605.12239](https://arxiv.org/abs/2605.12239)). Build an organism, extract its categorical structure, and see how compiler functors preserve properties.
 
 ## What to Try
 
@@ -30,6 +30,7 @@ Explore the **Architecture triple (G, Know, Phi)** from Paper 5: *Harness Engine
 
 ## References
 
+- **Banu [arXiv:2605.12239](https://arxiv.org/abs/2605.12239) -- Harness Engineering as Categorical Architecture (this space's primary reference)**
 - de los Riscos et al. [arXiv:2603.28906](https://arxiv.org/abs/2603.28906) -- ArchAgents category
 - Liu [arXiv:2604.11767](https://arxiv.org/abs/2604.11767) -- Typed lambda calculus for agent composition
 
