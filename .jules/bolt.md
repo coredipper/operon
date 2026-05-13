@@ -24,3 +24,7 @@
 ## 2025-02-20 - Pre-compiled Tuples for Membership Checks
 **Learning:** In Python (specifically 3.12), creating inline lists or tuples dynamically inside a frequently called function (e.g., `val in [Enum.A, Enum.B]`) is significantly slower than defining a class-level tuple and referencing it (`val in self._MY_TUPLE`). Benchmarking shows inline lists take ~1.2s per 5M calls versus ~0.65s for pre-compiled class variables, yielding almost 2x performance improvements.
 **Action:** When performing membership checks against constant or enum values, pre-compile the collection (using an unannotated class attribute) to avoid the `BUILD_TUPLE` / `LOAD_ATTR` operations on every execution path.
+
+## 2024-05-13 - String concatenation performance
+**Learning:** String concatenation using `+=` inside a loop can be slow due to memory reallocation and copying. Using a list comprehension and `''.join()` is more efficient in Python.
+**Action:** Use `''.join()` with a list comprehension or generator expression instead of `+=` for string concatenation in loops, especially for potentially large LLM responses.
