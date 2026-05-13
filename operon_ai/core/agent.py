@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+from dataclasses import dataclass
 from typing import Any, Callable
 
 from .types import ActionProtein, Signal
@@ -15,6 +16,16 @@ from ..state.metabolism import ATP_Store
 
 
 ResponseMapper = Callable[[LLMResponse, Signal], ActionProtein]
+
+
+@dataclass
+class BioAgentConfig:
+    nucleus: Nucleus | None = None
+    instructions: str = ""
+    provider_config: ProviderConfig | None = None
+    tool_mitochondria: Mitochondria | None = None
+    response_mapper: ResponseMapper | None = None
+    silent: bool = False
 
 
 class BioAgent:
@@ -32,6 +43,8 @@ class BioAgent:
         name: str,
         role: str,
         atp_store: ATP_Store,
+        config: BioAgentConfig | None = None,
+        *,
         nucleus: Nucleus | None = None,
         instructions: str = "",
         provider_config: ProviderConfig | None = None,
@@ -51,13 +64,27 @@ class BioAgent:
         # Epigenetics (State)
         self.histones = HistoneStore()
 
+        if config is None:
+            if any(v is not None and v is not False and v != "" for v in (nucleus, instructions, provider_config, tool_mitochondria, response_mapper, silent)):
+                import warnings
+                warnings.warn("Using legacy kwargs in BioAgent.__init__ is deprecated. Use BioAgentConfig instead.", DeprecationWarning, stacklevel=2)
+            config = BioAgentConfig(
+                nucleus=nucleus,
+                instructions=instructions,
+                provider_config=provider_config,
+                tool_mitochondria=tool_mitochondria,
+                response_mapper=response_mapper,
+                silent=silent,
+            )
+
         # Optional provider-backed execution
-        self.nucleus = nucleus
-        self.instructions = instructions.strip()
-        self.provider_config = provider_config
-        self.tool_mitochondria = tool_mitochondria
-        self.response_mapper = response_mapper
-        self.silent = silent
+        self.config = config
+        self.nucleus = self.config.nucleus
+        self.instructions = self.config.instructions.strip()
+        self.provider_config = self.config.provider_config
+        self.tool_mitochondria = self.config.tool_mitochondria
+        self.response_mapper = self.config.response_mapper
+        self.silent = self.config.silent
 
     def express(self, signal: Signal) -> ActionProtein:
         """
