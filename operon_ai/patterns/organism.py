@@ -8,6 +8,7 @@ from inspect import signature
 from typing import Any
 
 from ..core.agent import BioAgent
+from ..utils import call_arity
 from ..core.types import ActionProtein, Signal
 from ..memory.bitemporal import BiTemporalFact, BiTemporalMemory, BiTemporalQuery
 from ..organelles.nucleus import Nucleus
@@ -112,20 +113,6 @@ def _normalize_stage_groups(
         else:
             groups.append((item,))
     return tuple(groups)
-
-
-def _call_arity(fn, *args):
-    try:
-        params = list(signature(fn).parameters.values())
-    except (TypeError, ValueError):
-        return fn(*args)
-    if any(p.kind in (p.VAR_POSITIONAL, p.VAR_KEYWORD) for p in params):
-        return fn(*args)
-    positional = [
-        p for p in params
-        if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)
-    ]
-    return fn(*args[: len(positional)])
 
 
 def _coerce_handler_output(value: Any, stage_name: str) -> ActionProtein:
@@ -639,7 +626,7 @@ class SkillOrganism:
     ) -> SkillStageResult:
         if stage.handler is not None:
             protein = _coerce_handler_output(
-                _call_arity(
+                call_arity(
                     stage.handler, task, dict(shared_state),
                     dict(stage_outputs), stage, substrate_view,
                 ),
@@ -762,7 +749,7 @@ class SkillOrganism:
         query = stage.read_query
 
         if callable(query):
-            resolved = _call_arity(query, task, shared_state, stage_outputs, self.substrate)
+            resolved = call_arity(query, task, shared_state, stage_outputs, self.substrate)
             if isinstance(resolved, BiTemporalQuery):
                 facts = self.substrate.retrieve_known_at(
                     at=resolved.at_record or now,
@@ -818,7 +805,7 @@ class SkillOrganism:
             )
 
         if stage.fact_extractor is not None:
-            raw = _call_arity(
+            raw = call_arity(
                 stage.fact_extractor, task, shared_state, stage_outputs, stage, result,
             )
             events = _coerce_fact_events(raw, stage.name, stage.fact_tags)

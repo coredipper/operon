@@ -7,11 +7,11 @@ import pytest
 from operon_ai.patterns.swarm import (
     SpecialistSwarm,
     _call_aggregate,
-    _call_arity,
     _default_aggregate,
     _default_worker,
     specialist_swarm,
 )
+from operon_ai.utils import call_arity
 from operon_ai.patterns.types import SpecialistSwarmResult
 
 
@@ -55,7 +55,7 @@ def test_specialist_swarm_invalid_aggregation():
 
 
 def test_call_arity():
-    """Test `_call_arity` correctly invokes functions with different signatures."""
+    """Test `call_arity` correctly invokes functions with different signatures."""
 
     def no_args():
         return "no_args"
@@ -66,9 +66,9 @@ def test_call_arity():
     def kwargs_arg(*args, **kwargs):
         return {"args": args, "kwargs": kwargs}
 
-    assert _call_arity(no_args, "the_prompt", "the_role") == "no_args"
-    assert _call_arity(one_arg, "the_prompt", "the_role") == "prompt=the_prompt"
-    assert _call_arity(kwargs_arg, "the_prompt", "the_role") == {"args": ("the_prompt", "the_role"), "kwargs": {}}
+    assert call_arity(no_args, "the_prompt", "the_role") == "no_args"
+    assert call_arity(one_arg, "the_prompt", "the_role") == "prompt=the_prompt"
+    assert call_arity(kwargs_arg, "the_prompt", "the_role") == {"args": ("the_prompt", "the_role"), "kwargs": {}}
 
 
 def test_call_aggregate():
@@ -96,15 +96,15 @@ def test_call_aggregate():
 
 
 def test_call_arity_signature_error():
-    """Test `_call_arity` falls back correctly when signature inspection fails."""
+    """Test `call_arity` falls back correctly when signature inspection fails."""
     def mock_fn(*args):
         return args
 
-    with patch("operon_ai.patterns.swarm.signature", side_effect=ValueError):
-        assert _call_arity(mock_fn, "prompt", "role") == ("prompt", "role")
+    with patch("operon_ai.utils.function_utils.signature", side_effect=ValueError):
+        assert call_arity(mock_fn, "prompt", "role") == ("prompt", "role")
 
-    with patch("operon_ai.patterns.swarm.signature", side_effect=TypeError):
-        assert _call_arity(mock_fn, "prompt", "role") == ("prompt", "role")
+    with patch("operon_ai.utils.function_utils.signature", side_effect=TypeError):
+        assert call_arity(mock_fn, "prompt", "role") == ("prompt", "role")
 
 
 def test_call_aggregate_signature_error():
