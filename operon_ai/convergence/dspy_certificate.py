@@ -33,6 +33,7 @@ from __future__ import annotations
 from typing import Any, Mapping
 
 from ..core.certificate import Certificate, register_verify_fn
+from .utils import is_well_formed_hash
 
 _THEOREM_NAME = "dspy_compile_pinned_inputs"
 
@@ -42,23 +43,6 @@ _REQUIRED_KEYS: tuple[str, ...] = (
     "metric_hash",
     "trace_hash",
 )
-
-_HEX_CHARS = frozenset("0123456789abcdef")
-_MIN_HASH_LEN = 8
-
-
-def _is_well_formed_hash(value: Any) -> bool:
-    """Hex string of length >= _MIN_HASH_LEN, lowercase only.
-
-    Operon's truncation convention is sha256(...).hexdigest()[:N] with
-    N typically 8/12/16. Eight is the floor — anything shorter is too
-    weak to count as a provenance marker.
-    """
-    if not isinstance(value, str):
-        return False
-    if len(value) < _MIN_HASH_LEN:
-        return False
-    return all(ch in _HEX_CHARS for ch in value)
 
 
 def _verify_dspy_compile_pinned_inputs(
@@ -74,7 +58,7 @@ def _verify_dspy_compile_pinned_inputs(
     present = [k for k in _REQUIRED_KEYS if k in params]
     missing = [k for k in _REQUIRED_KEYS if k not in params]
     malformed = [
-        k for k in present if not _is_well_formed_hash(params[k])
+        k for k in present if not is_well_formed_hash(params[k])
     ]
     holds = not missing and not malformed
     return holds, {
