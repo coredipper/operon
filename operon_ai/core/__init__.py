@@ -11,7 +11,7 @@ The core module provides the fundamental building blocks:
 - Pathway: Signal routing
 """
 
-from .agent import BioAgent
+from .agent import BioAgent, BioAgentConfig
 from .types import (
     Signal,
     SignalType,

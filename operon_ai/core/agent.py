@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+from dataclasses import dataclass
 from typing import Any, Callable
 
 from .types import ActionProtein, Signal
@@ -15,6 +16,16 @@ from ..state.metabolism import ATP_Store
 
 
 ResponseMapper = Callable[[LLMResponse, Signal], ActionProtein]
+
+
+@dataclass
+class BioAgentConfig:
+    nucleus: Nucleus | None = None
+    instructions: str = ""
+    provider_config: ProviderConfig | None = None
+    tool_mitochondria: Mitochondria | None = None
+    response_mapper: ResponseMapper | None = None
+    silent: bool = False
 
 
 class BioAgent:
@@ -32,12 +43,7 @@ class BioAgent:
         name: str,
         role: str,
         atp_store: ATP_Store,
-        nucleus: Nucleus | None = None,
-        instructions: str = "",
-        provider_config: ProviderConfig | None = None,
-        tool_mitochondria: Mitochondria | None = None,
-        response_mapper: ResponseMapper | None = None,
-        silent: bool = False,
+        config: BioAgentConfig | None = None,
     ):
         self.name = name
         self.role = role
@@ -52,12 +58,13 @@ class BioAgent:
         self.histones = HistoneStore()
 
         # Optional provider-backed execution
-        self.nucleus = nucleus
-        self.instructions = instructions.strip()
-        self.provider_config = provider_config
-        self.tool_mitochondria = tool_mitochondria
-        self.response_mapper = response_mapper
-        self.silent = silent
+        self.config = config or BioAgentConfig()
+        self.nucleus = self.config.nucleus
+        self.instructions = self.config.instructions.strip()
+        self.provider_config = self.config.provider_config
+        self.tool_mitochondria = self.config.tool_mitochondria
+        self.response_mapper = self.config.response_mapper
+        self.silent = self.config.silent
 
     def express(self, signal: Signal) -> ActionProtein:
         """

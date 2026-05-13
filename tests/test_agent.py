@@ -2,7 +2,7 @@
 
 import pytest
 
-from operon_ai.core.agent import BioAgent
+from operon_ai.core.agent import BioAgent, BioAgentConfig
 from operon_ai.core.types import Signal
 from operon_ai.organelles.nucleus import Nucleus
 from operon_ai.providers import MockProvider
@@ -172,9 +172,11 @@ class TestBioAgent:
             name="Summarizer",
             role="Executor",
             atp_store=budget,
-            nucleus=nucleus,
-            instructions="Return a concise summary",
-            silent=True,
+            config=BioAgentConfig(
+                nucleus=nucleus,
+                instructions="Return a concise summary",
+                silent=True,
+            )
         )
 
         result = agent.express(Signal(content="Summarize the ticket"))
@@ -194,9 +196,11 @@ class TestBioAgent:
             name="Reviewer",
             role="RiskAssessor",
             atp_store=budget,
-            nucleus=nucleus,
-            instructions="Review for safety",
-            silent=True,
+            config=BioAgentConfig(
+                nucleus=nucleus,
+                instructions="Review for safety",
+                silent=True,
+            )
         )
 
         result = agent.express(Signal(content="Delete production data"))
@@ -214,9 +218,11 @@ class TestBioAgent:
             name="Reviewer",
             role="RiskAssessor",
             atp_store=budget,
-            nucleus=nucleus,
-            instructions="Review for safety",
-            silent=True,
+            config=BioAgentConfig(
+                nucleus=nucleus,
+                instructions="Review for safety",
+                silent=True,
+            )
         )
 
         result = agent.express(Signal(content="Apply the migration"))

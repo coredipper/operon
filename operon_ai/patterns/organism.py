@@ -7,7 +7,7 @@ from datetime import datetime
 from inspect import signature
 from typing import Any
 
-from ..core.agent import BioAgent
+from ..core.agent import BioAgent, BioAgentConfig
 from ..core.types import ActionProtein, Signal
 from ..memory.bitemporal import BiTemporalFact, BiTemporalMemory, BiTemporalQuery
 from ..organelles.nucleus import Nucleus
@@ -328,11 +328,13 @@ class SkillOrganism:
                 name=stage.name,
                 role=stage.role,
                 atp_store=self.budget,
-                nucleus=nucleus,
-                instructions=stage.instructions,
-                provider_config=stage.provider_config,
-                tool_mitochondria=stage.tools,
-                silent=True,
+                config=BioAgentConfig(
+                    nucleus=nucleus,
+                    instructions=stage.instructions,
+                    provider_config=stage.provider_config,
+                    tool_mitochondria=stage.tools,
+                    silent=True,
+                )
             )
 
     def collect_certificates(self) -> list:
@@ -721,11 +723,13 @@ class SkillOrganism:
             name=stage.name,
             role=stage.role,
             atp_store=self.budget,
-            nucleus=deep_nucleus,
-            instructions=stage.instructions,
-            provider_config=stage.provider_config,
-            tool_mitochondria=stage.tools,
-            silent=True,
+            config=BioAgentConfig(
+                nucleus=deep_nucleus,
+                instructions=stage.instructions,
+                provider_config=stage.provider_config,
+                tool_mitochondria=stage.tools,
+                silent=True,
+            )
         )
         try:
             result = self._run_stage(stage, task, shared_state, stage_outputs, substrate_view)
