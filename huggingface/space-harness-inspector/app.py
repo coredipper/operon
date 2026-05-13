@@ -4,8 +4,9 @@ Operon Harness Inspector -- Architecture Triple Explorer
 
 Build a multi-stage organism and explore its categorical Architecture
 triple (G, Know, Phi) from Paper 5: "Harness Engineering as Categorical
-Architecture."  Map the triple to the four-pillar framework, compile to
-external targets, and verify certificate preservation.
+Architecture" (arXiv:2605.12239, https://arxiv.org/abs/2605.12239).
+Map the triple to the four-pillar framework, compile to external
+targets, and verify certificate preservation.
 
 Run locally:  pip install gradio && python space-harness-inspector/app.py
 """
@@ -253,11 +254,12 @@ def build_app() -> gr.Blocks:
         gr.Markdown(
             "# Operon Harness Inspector\n"
             "Explore the **Architecture triple (G, Know, &Phi;)** from Paper 5: "
-            "*Harness Engineering as Categorical Architecture*. "
+            "*Harness Engineering as Categorical Architecture* "
+            "([arXiv:2605.12239](https://arxiv.org/abs/2605.12239)). "
             "Build an organism, extract its categorical structure, and see how "
             "compiler functors preserve properties.\n\n"
+            "[Paper (arXiv:2605.12239)](https://arxiv.org/abs/2605.12239) | "
             "[GitHub](https://github.com/coredipper/operon) | "
-            "[Paper](https://github.com/coredipper/operon/tree/main/article) | "
             "de los Riscos et al. [arXiv:2603.28906](https://arxiv.org/abs/2603.28906)")
 
         with gr.Row():

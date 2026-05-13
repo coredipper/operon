@@ -27,6 +27,8 @@ OpenMythos (`kyegomez/OpenMythos`) sits *below* L1 — it is a model architectur
 
 **L1 synthesis vs L1 mapping.** Conductor ([Nielsen et al. 2025, ICLR 2026, arXiv:2512.04388](https://arxiv.org/abs/2512.04388); Sakana AI) sits adjacent to the L1 row by *synthesising* topologies rather than mapping fixed ones — an RL-trained policy that designs both the communication graph and per-agent prompts, with recursive topology support enabling dynamic test-time scaling. Operon's L1 adapters (`parse_X_topology()` / `organism_to_X()`) treat topology as given; Conductor treats it as the learned object. See §2 Theorem 3 for the parallel "optimize-the-agent-layer" framing on the prompt axis (GEPA).
 
+**Categorical formalization.** The L1/L2/L3 taxonomy above and the four certificate-transport theorems in §2 are the engineering instances of a categorical Architecture triple $(G, \mathrm{Know}, \Phi)$ developed in [Banu, *Harness Engineering as Categorical Architecture*, arXiv:2605.12239](https://arxiv.org/abs/2605.12239) (bib key `banu2026harness`). The four pillars of agent externalization (Memory, Skills, Protocols, Harness) map onto the triple's components: Memory as coalgebraic state, Skills as operad-composed objects, Protocols as syntactic wiring $G$, and the full Harness as the Architecture itself. The certificates moved across L1/L2/L3 here are exactly the $\mathrm{Know}$-level objects of that triple; "property preservation under compilation" is the discriminating guarantee — distinct from output-level correctness (which Operon does not claim) and from typed-lambda termination/safety guarantees (cf. Liu's $\lambda_A$, §2 of the paper). Subsequent §2 theorems should be read as compiler-functor instances of preservation under the operon → external-framework adjunction.
+
 ---
 
 ## 2. Certificate transport theorems
@@ -267,6 +269,8 @@ Operon proposer ──► GEPA optimizer ──► DSPy compiled program ──�
 5. **Theorem 1** governs the entire chain: because each hop's encode/decode pair preserves `verify()`, the terminal A2A message's certificate agrees with the original proposer's claim. Audit is preserved across vendors.
 
 This diagram is the main asset of this memo for paper-adjacent reuse: it unifies Operon's proposer interface, GEPA's optimizer, DSPy's artifact layer, and A2A's protocol into a single provenance chain, gated on certificate-valued boundaries at every hop.
+
+**Categorical reading.** Each arrow above is a compiler functor in the sense of [Banu, *Harness Engineering as Categorical Architecture*, arXiv:2605.12239](https://arxiv.org/abs/2605.12239) (`banu2026harness`); the chain commutes on the $\mathrm{Know}$-component by construction (Theorem 1 is the preservation lemma; Theorems 2–4 specialise the lemma at the artifact, optimizer, and protocol surfaces). What this composition does not claim is output equivalence: the harness preserves recorded structural guarantees, not model behaviour. The paper's §4 (preservation) is the closest formal companion to this composition example.
 
 ---
 
