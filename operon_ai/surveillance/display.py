@@ -2,7 +2,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Optional
+from typing import Optional, ClassVar
 import hashlib
 import json
 import re
@@ -38,6 +38,11 @@ class MHCDisplay:
     agent_id: str
     window_size: int = 100
     min_observations: int = 10
+
+    _PATTERN_WORD: ClassVar[re.Pattern] = re.compile(r'\b\w+\b')
+    _PATTERN_NUMBERED_LIST: ClassVar[re.Pattern] = re.compile(r'^\d+\.\s')
+    _PATTERN_BULLET_LIST: ClassVar[re.Pattern] = re.compile(r'^[-*]\s')
+    _PATTERN_MARKDOWN: ClassVar[re.Pattern] = re.compile(r'^#')
 
     observations: list[Observation] = field(default_factory=list)
     canary_results: list[bool] = field(default_factory=list)
@@ -85,7 +90,7 @@ class MHCDisplay:
         vocabulary = set()
         for obs in self.observations:
             if obs.output:
-                words = re.findall(r'\b\w+\b', obs.output.lower())
+                words = self._PATTERN_WORD.findall(obs.output.lower())
                 vocabulary.update(words)
         vocab_str = ",".join(sorted(vocabulary))
         vocab_hash = hashlib.md5(vocab_str.encode()).hexdigest()[:12]
@@ -132,11 +137,11 @@ class MHCDisplay:
                 pass
 
         # Check for common patterns
-        if re.match(r'^\d+\.\s', output):
+        if self._PATTERN_NUMBERED_LIST.match(output):
             return "numbered_list"
-        if re.match(r'^[-*]\s', output):
+        if self._PATTERN_BULLET_LIST.match(output):
             return "bullet_list"
-        if re.match(r'^#', output):
+        if self._PATTERN_MARKDOWN.match(output):
             return "markdown"
 
         return "plain"
