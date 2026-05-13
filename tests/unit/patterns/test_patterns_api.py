@@ -389,3 +389,28 @@ def test_reviewer_gate_handles_assessor_express_error():
     assert result.status == "blocked"
     assert "Simulated assessor express failure" in result.reason
     assert result.raw.action == "ERROR"
+
+
+def test_advise_topology_preserves_advice_on_library_error():
+    """Library enrichment errors must NOT degrade the original advice — they should attach to .error and preserve the un-enriched fields."""
+    from operon_ai.patterns.advisor import advise_topology
+
+    class MockLibrary:
+        def top_templates_for(self, fingerprint):
+            raise ValueError("Simulated library resolution error")
+
+    advice = advise_topology(
+        task_shape="sequential",
+        tool_count=2,
+        subtask_count=3,
+        error_tolerance=0.02,
+        library=MockLibrary(),
+        fingerprint="mock_fingerprint",
+    )
+
+    # The error is surfaced
+    assert advice.error == "Simulated library resolution error"
+    # …but the original un-enriched fields are preserved
+    assert advice.recommended_pattern == "single_worker_with_reviewer"
+    assert advice.suggested_api == "reviewer_gate(...)"
+    assert advice.suggested_template is None

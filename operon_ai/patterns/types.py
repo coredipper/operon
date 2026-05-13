@@ -75,6 +75,7 @@ class TopologyAdvice:
     rationale: str
     raw: TopologyRecommendation
     suggested_template: Any | None = None  # PatternTemplate if library provided
+    error: str | None = None  # populated if library enrichment raised
 
 
 StageHandler = Callable[..., Any]
