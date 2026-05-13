@@ -21,3 +21,7 @@
 ## 2024-05-13 - Pre-compiled Regex class variables (caveat)
 **Learning:** Python's `re._cache` (default size 512) already memoizes literal patterns by `(pattern, flags)`, so lifting `re.findall(r'...', x)` calls to `ClassVar[re.Pattern]` slots only saves the cache *lookup* — not compilation. Wins are typically measurable only in tight micro-benchmarks at non-default workload sizes; at default workloads the change is functionally free. Do not frame this kind of refactor as a perf optimization in PR descriptions, and do not cite isolated-loop benchmarks as if they reflect end-to-end speedup.
 **Action:** Use `ClassVar[re.Pattern]` for readability/grouping of patterns owned by a class, not as a perf claim. If a regex is genuinely hot, profile the full call path end-to-end (including any surrounding `json.loads`, hashing, or stats work) before claiming a speedup, and benchmark at the production default workload size — not a synthetic large one.
+
+## 2024-05-18 - Fast membership checking
+**Learning:** Using a tuple instead of a list for constant membership testing (e.g. `x in (A, B)`) avoids a BUILD_LIST instruction and leverages constant folding, which is measurably faster than list construction.
+**Action:** Replace `[]` with `()` for inline membership checks in `operon_ai/surveillance/immune_system.py:171`.
