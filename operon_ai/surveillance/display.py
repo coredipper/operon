@@ -39,7 +39,6 @@ class MHCDisplay:
     window_size: int = 100
     min_observations: int = 10
 
-    # Pre-compiled regular expressions for performance
     _PATTERN_WORD: ClassVar[re.Pattern] = re.compile(r'\b\w+\b')
     _PATTERN_NUMBERED_LIST: ClassVar[re.Pattern] = re.compile(r'^\d+\.\s')
     _PATTERN_BULLET_LIST: ClassVar[re.Pattern] = re.compile(r'^[-*]\s')
