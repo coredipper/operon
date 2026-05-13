@@ -846,6 +846,22 @@ result = agent.express(Signal(content="Do something"))
 # Returns: ActionProtein(action_type, content, confidence)
 ```
 
+### BioAgentConfig
+
+Configuration object for the `BioAgent` constructor. This is used to pass optional provider-backed execution parameters without polluting the constructor signature.
+
+```python
+from operon_ai.core.agent import BioAgentConfig
+from operon_ai.organelles.nucleus import Nucleus
+
+config = BioAgentConfig(
+    nucleus=Nucleus(...),
+    instructions="Review this pull request carefully.",
+    silent=True
+)
+agent = BioAgent(name="Reviewer", role="RiskAssessor", atp_store=budget, config=config)
+```
+
 ### IntegratedCell
 
 Combines Quality, Surveillance, and Coordination systems.

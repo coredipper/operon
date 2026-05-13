@@ -730,7 +730,7 @@ def test_run_single_stage_syncs_plain_dict():
     assert "s" in state, "Stage output should be synced back to the plain dict"
     assert len(results) == 1
 
-from operon_ai.patterns.organism import _call_arity
+from operon_ai.utils import _call_arity
 
 def test_call_arity_no_args():
     def f(): return "none"

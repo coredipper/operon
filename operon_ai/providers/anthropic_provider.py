@@ -86,10 +86,8 @@ class AnthropicProvider:
             elapsed_ms = (time.perf_counter() - start) * 1000
 
             # Extract text from response
-            content = ""
-            for block in response.content:
-                if hasattr(block, "text"):
-                    content += block.text
+            content_parts = [block.text for block in response.content if hasattr(block, "text")]
+            content = "".join(content_parts)
             if json_prefill:
                 content = "{" + content
 
@@ -150,17 +148,18 @@ class AnthropicProvider:
 
             elapsed_ms = (time.perf_counter() - start) * 1000
 
-            content = ""
+            content_parts = []
             tool_calls = []
             for block in response.content:
                 if block.type == "text":
-                    content += block.text
+                    content_parts.append(block.text)
                 elif block.type == "tool_use":
                     tool_calls.append(ToolCall(
                         id=block.id,
                         name=block.name,
                         arguments=block.input,
                     ))
+            content = "".join(content_parts)
 
             tokens = response.usage.input_tokens + response.usage.output_tokens
 

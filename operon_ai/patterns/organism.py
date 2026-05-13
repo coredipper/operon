@@ -7,9 +7,10 @@ from datetime import datetime
 from inspect import signature
 from typing import Any
 
-from ..core.agent import BioAgent
+from ..core.agent import BioAgent, BioAgentConfig
 from ..core.types import ActionProtein, Signal
 from ..memory.bitemporal import BiTemporalFact, BiTemporalMemory, BiTemporalQuery
+from ..utils import _call_arity
 from ..organelles.nucleus import Nucleus
 from ..state.metabolism import ATP_Store
 from .types import (
@@ -112,20 +113,6 @@ def _normalize_stage_groups(
         else:
             groups.append((item,))
     return tuple(groups)
-
-
-def _call_arity(fn, *args):
-    try:
-        params = list(signature(fn).parameters.values())
-    except (TypeError, ValueError):
-        return fn(*args)
-    if any(p.kind in (p.VAR_POSITIONAL, p.VAR_KEYWORD) for p in params):
-        return fn(*args)
-    positional = [
-        p for p in params
-        if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)
-    ]
-    return fn(*args[: len(positional)])
 
 
 def _coerce_handler_output(value: Any, stage_name: str) -> ActionProtein:
@@ -328,11 +315,13 @@ class SkillOrganism:
                 name=stage.name,
                 role=stage.role,
                 atp_store=self.budget,
-                nucleus=nucleus,
-                instructions=stage.instructions,
-                provider_config=stage.provider_config,
-                tool_mitochondria=stage.tools,
-                silent=True,
+                config=BioAgentConfig(
+                    nucleus=nucleus,
+                    instructions=stage.instructions,
+                    provider_config=stage.provider_config,
+                    tool_mitochondria=stage.tools,
+                    silent=True,
+                )
             )
 
     def collect_certificates(self) -> list:
@@ -721,11 +710,13 @@ class SkillOrganism:
             name=stage.name,
             role=stage.role,
             atp_store=self.budget,
-            nucleus=deep_nucleus,
-            instructions=stage.instructions,
-            provider_config=stage.provider_config,
-            tool_mitochondria=stage.tools,
-            silent=True,
+            config=BioAgentConfig(
+                nucleus=deep_nucleus,
+                instructions=stage.instructions,
+                provider_config=stage.provider_config,
+                tool_mitochondria=stage.tools,
+                silent=True,
+            )
         )
         try:
             result = self._run_stage(stage, task, shared_state, stage_outputs, substrate_view)

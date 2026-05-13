@@ -7,11 +7,11 @@ import pytest
 from operon_ai.patterns.swarm import (
     SpecialistSwarm,
     _call_aggregate,
-    _call_arity,
     _default_aggregate,
     _default_worker,
     specialist_swarm,
 )
+from operon_ai.utils import _call_arity
 from operon_ai.patterns.types import SpecialistSwarmResult
 
 
