@@ -16,6 +16,26 @@ from operon_ai.core.types import Signal, ActionProtein
 class TestCascadeExtended:
     """Additional tests for the Cascade topology."""
 
+    def test_cascade_checkpoint_error(self):
+        """Test that a checkpoint error is handled correctly and halts the cascade if requested."""
+        cascade = Cascade("CheckpointErrorTest", silent=True, halt_on_failure=True)
+
+        def failing_checkpoint(x):
+            raise ValueError("Intentional Checkpoint Error")
+
+        cascade.add_stage(CascadeStage(
+            name="stage1",
+            processor=lambda x: x,
+            checkpoint=failing_checkpoint
+        ))
+
+        result = cascade.run("initial")
+
+        assert result.success is False
+        assert len(result.stage_results) == 1
+        assert result.stage_results[0].status == StageStatus.FAILED
+        assert result.stage_results[0].error == "Intentional Checkpoint Error"
+
     def test_cascade_run_parallel(self):
         """Test that run_parallel executes stages and aggregates results."""
         cascade = Cascade("ParallelTest", silent=True)
