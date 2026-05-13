@@ -374,14 +374,16 @@ class Ribosome:
 
         # Variables with defaults: {{name|default_value}} (not a filter)
         # Only process if not already handled by filter
-        for match in self._PATTERN_DEFAULT.finditer(result):
+        def replace_default(match: re.Match) -> str:
             var_name = match.group(1)
             value_or_default = match.group(2)
             if value_or_default not in self.filters:
                 if var_name in context:
-                    result = result.replace(match.group(0), str(context[var_name]))
-                else:
-                    result = result.replace(match.group(0), value_or_default)
+                    return str(context[var_name])
+                return value_or_default
+            return match.group(0)
+
+        result = self._PATTERN_DEFAULT.sub(replace_default, result)
 
         # Optional variables: {{?name}}
         def replace_optional(match: re.Match) -> str:
