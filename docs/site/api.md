@@ -109,6 +109,9 @@ All functions are also re-exported from `operon_ai.convergence` directly.
 - `operon_ai.convergence.deerflow_compiler`
   - `organism_to_deerflow`, `managed_to_deerflow`
 
+- `operon_ai.convergence.deerflow_executor`
+  - `execute_deerflow`, `DeerFlowExecutionConfig`, `DeerFlowResult`
+
 - `operon_ai.convergence.ralph_compiler`
   - `organism_to_ralph`, `managed_to_ralph`
 

@@ -180,6 +180,22 @@ class TestDeerflowExecution:
         assert len(result.output) > 0
         assert result.timing_ms > 0
 
+    def test_legacy_kwargs(self):
+        """Test backward compatibility with legacy kwargs."""
+        org = _make_organism_single()
+        compiled = organism_to_deerflow(org)
+
+        with pytest.warns(DeprecationWarning, match="deprecated"):
+            result = execute_deerflow(
+                compiled,
+                task="What is 2 + 2? Answer in one word.",
+                model_name="gemma4:latest",
+            )
+
+        assert isinstance(result, DeerFlowResult)
+        assert len(result.output) > 0
+        assert result.timing_ms > 0
+
     def test_watcher_summary_populated(self):
         """Watcher observes execution and produces a summary."""
         org = _make_organism_single()

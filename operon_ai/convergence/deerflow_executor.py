@@ -38,7 +38,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 
-@dataclass
+@dataclass(frozen=True)
 class DeerFlowExecutionConfig:
     """Configuration for executing a compiled organism in DeerFlow."""
 
@@ -133,6 +133,13 @@ def execute_deerflow(
     *,
     task: str,
     exec_config: DeerFlowExecutionConfig | None = None,
+    # Legacy kwargs for backward compatibility
+    model: Any | None = None,
+    model_name: str | None = None,
+    ollama_base_url: str | None = None,
+    enable_watcher: bool | None = None,
+    watcher_config: dict[str, Any] | None = None,
+    verify_certificates: bool | None = None,
 ) -> DeerFlowResult:
     """Execute a compiled organism dict in DeerFlow's LangGraph runtime.
 
@@ -147,6 +154,8 @@ def execute_deerflow(
         The user task / prompt to execute.
     exec_config:
         Execution configuration for the DeerFlow run.
+    model, model_name, ollama_base_url, enable_watcher, watcher_config, verify_certificates:
+        Legacy kwargs for backward compatibility. Prefer `exec_config`.
 
     Returns
     -------
@@ -158,7 +167,37 @@ def execute_deerflow(
     ImportError
         If DeerFlow is not installed.
     """
-    exec_config = exec_config or DeerFlowExecutionConfig()
+    if exec_config is None:
+        import warnings
+
+        # Check if any legacy kwargs were provided
+        legacy_kwargs_used = any(
+            v is not None for v in [model, model_name, ollama_base_url, enable_watcher, watcher_config, verify_certificates]
+        )
+        if legacy_kwargs_used:
+            warnings.warn(
+                "Passing configuration directly as keyword arguments to execute_deerflow is deprecated. "
+                "Use the 'exec_config' parameter with a DeerFlowExecutionConfig object instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+        # Build config from legacy kwargs, falling back to defaults if not provided
+        kwargs_to_pass = {}
+        if model is not None:
+            kwargs_to_pass["model"] = model
+        if model_name is not None:
+            kwargs_to_pass["model_name"] = model_name
+        if ollama_base_url is not None:
+            kwargs_to_pass["ollama_base_url"] = ollama_base_url
+        if enable_watcher is not None:
+            kwargs_to_pass["enable_watcher"] = enable_watcher
+        if watcher_config is not None:
+            kwargs_to_pass["watcher_config"] = watcher_config
+        if verify_certificates is not None:
+            kwargs_to_pass["verify_certificates"] = verify_certificates
+
+        exec_config = DeerFlowExecutionConfig(**kwargs_to_pass)
 
     # --- Reject unsupported multi-agent configs ---
     sub_agents = compiled.get("sub_agents", [])
