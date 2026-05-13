@@ -27,6 +27,9 @@ class ImmuneSystem:
     min_observations: int = 10
     window_size: int = 100
 
+    # Pre-compiled definitions
+    _CONFIRMED_THREATS = (ThreatLevel.CONFIRMED, ThreatLevel.CRITICAL)
+
     # Components
     thymus: Thymus = field(default_factory=Thymus)
     treg: RegulatoryTCell = field(default_factory=RegulatoryTCell)
@@ -168,7 +171,7 @@ class ImmuneSystem:
             record.record_inspection(clean=clean)
 
         # Store confirmed threats in memory
-        if response.threat_level in [ThreatLevel.CONFIRMED, ThreatLevel.CRITICAL]:
+        if response.threat_level in self._CONFIRMED_THREATS:
             violation_types = tuple(
                 v.split()[0] for v in response.violations
             )
