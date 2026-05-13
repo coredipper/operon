@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import dataclasses
+
 from ..core.epistemic import (
     TopologyClass,
     TopologyRecommendation,
@@ -126,6 +128,6 @@ def _enrich_with_library(advice: TopologyAdvice, library: object, fingerprint: o
                 raw=advice.raw,
                 suggested_template=template,
             )
-    except Exception:
-        pass
+    except Exception as e:
+        return dataclasses.replace(advice, error=str(e))
     return advice
