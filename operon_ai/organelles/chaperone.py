@@ -392,10 +392,10 @@ class Chaperone:
     def _fold_extraction(self, raw: str, schema: Type[T]) -> FoldedProtein[T]:
         """Extract JSON from surrounding text."""
         for pattern, _ in self.JSON_EXTRACTION_PATTERNS:
-            matches = pattern.findall(raw)
-            for match in matches:
+            for match in pattern.finditer(raw):
                 try:
-                    data = json.loads(match.strip())
+                    match_text = match.group(1) if pattern.groups > 0 else match.group(0)
+                    data = json.loads(match_text.strip())
                     structure = schema.model_validate(data)
                     return FoldedProtein(
                         valid=True,
@@ -414,10 +414,10 @@ class Chaperone:
     def _fold_extraction_enhanced(self, raw: str, schema: Type[T]) -> EnhancedFoldedProtein:
         """Extraction with enhanced tracking."""
         for pattern, pattern_name in self.JSON_EXTRACTION_PATTERNS:
-            matches = pattern.findall(raw)
-            for match in matches:
+            for match in pattern.finditer(raw):
                 try:
-                    data = json.loads(match.strip())
+                    match_text = match.group(1) if pattern.groups > 0 else match.group(0)
+                    data = json.loads(match_text.strip())
                     structure = schema.model_validate(data)
                     return EnhancedFoldedProtein(
                         valid=True,
@@ -524,10 +524,10 @@ class Chaperone:
     def _extract_json(self, raw: str) -> dict | list | None:
         """Extract first valid JSON from text."""
         for pattern, _ in self.JSON_EXTRACTION_PATTERNS:
-            matches = pattern.findall(raw)
-            for match in matches:
+            for match in pattern.finditer(raw):
                 try:
-                    return json.loads(match.strip())
+                    match_text = match.group(1) if pattern.groups > 0 else match.group(0)
+                    return json.loads(match_text.strip())
                 except json.JSONDecodeError:
                     continue
 
