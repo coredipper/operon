@@ -35,3 +35,6 @@
 ## 2026-05-09 - Optimize Ribosome regex string replacement overhead
 **Learning:** Iterating over `re.Pattern.finditer` and performing `.replace` within the loop causes severe O(N^2) memory allocation overhead for repeated string interpolations in templates. Using `re.Pattern.sub` with a callback closure correctly preserves logic while eliminating repeated string constructions.
 **Action:** Always prefer `pattern.sub(callback_fn, text)` over `text.replace()` loops when handling multiple dynamic string substitutions.
+## 2026-05-10 - Optimize Ribosome loop variable substitution overhead
+**Learning:** In `operon_ai/organelles/ribosome.py`, iterating over loop context variables and applying `part.replace` for each variable in the inner loop of `_process_loops` results in substantial overhead due to repeated string construction and memory allocation. Benchmarks reveal that using `re.Pattern.sub` with a pre-compiled regex `_PATTERN_LOOP_VAR` and a dictionary-lookup closure is much faster when context scales, successfully avoiding O(N^2) scaling penalties inherent to repeated full-string scanning.
+**Action:** When applying template interpolations where multiple variables may need to be replaced inside a loop structure, avoid a loop over `str.replace` calls. Instead, use a single `pattern.sub(callback, string)` pass.
