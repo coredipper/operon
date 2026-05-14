@@ -198,6 +198,7 @@ class Ribosome:
     _PATTERN_SIMPLE: ClassVar[re.Pattern] = re.compile(r'\{\{(\w+)\}\}')
     _PATTERN_CONDITIONAL: ClassVar[re.Pattern] = re.compile(r'\{\{#if\s+(\w+)\}\}(.*?)(?:\{\{#else\}\}(.*?))?\{\{/if\}\}', flags=re.DOTALL)
     _PATTERN_LOOP: ClassVar[re.Pattern] = re.compile(r'\{\{#each\s+(\w+)\}\}(.*?)\{\{/each\}\}', flags=re.DOTALL)
+    _PATTERN_LOOP_VAR: ClassVar[re.Pattern] = re.compile(r'\{\{([^}]+)\}\}')
     _PATTERN_INCLUDE: ClassVar[re.Pattern] = re.compile(r'\{\{>(\w+)\}\}')
 
     def __init__(
@@ -490,10 +491,13 @@ class Ribosome:
                     loop_context.update(item)
 
                 # Process the content with loop context
-                part = content
-                for key, value in loop_context.items():
-                    part = part.replace(f"{{{{{key}}}}}", str(value))
+                def replace_loop_var(m: re.Match) -> str:
+                    key = m.group(1)
+                    if key in loop_context:
+                        return str(loop_context[key])
+                    return m.group(0)
 
+                part = self._PATTERN_LOOP_VAR.sub(replace_loop_var, content)
                 output_parts.append(part)
 
             return "".join(output_parts)
