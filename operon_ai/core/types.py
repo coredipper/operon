@@ -13,7 +13,7 @@ biological category with morphisms defined by agent processing.
 """
 
 from dataclasses import dataclass, field
-from typing import Generic, TypeVar, Any
+from typing import Generic, TypeVar, Any, ClassVar
 from enum import Enum, IntEnum
 from datetime import datetime
 
@@ -198,6 +198,9 @@ class ActionProtein:
         timestamp: When the action was generated
         metadata: Additional context
     """
+    _SUCCESS_TYPES: ClassVar[tuple[str, ...]] = ("EXECUTE", "PERMIT", "SUCCESS")
+    _BLOCKING_TYPES: ClassVar[tuple[str, ...]] = ("BLOCK", "FAILURE")
+
     action_type: str  # Keep as str for backward compatibility
     payload: Any
     confidence: float
@@ -207,11 +210,11 @@ class ActionProtein:
 
     def is_success(self) -> bool:
         """Check if this represents a successful action."""
-        return self.action_type in ("EXECUTE", "PERMIT", "SUCCESS")
+        return self.action_type in self._SUCCESS_TYPES
 
     def is_blocking(self) -> bool:
         """Check if this blocks further processing."""
-        return self.action_type in ("BLOCK", "FAILURE")
+        return self.action_type in self._BLOCKING_TYPES
 
     def with_confidence(self, new_confidence: float) -> 'ActionProtein':
         """Create new protein with adjusted confidence."""

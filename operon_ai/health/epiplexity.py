@@ -40,6 +40,10 @@ class HealthStatus(Enum):
     CRITICAL = "critical"         # Sustained low epiplexity, intervention needed
 
 
+_HEALTHY_STATUSES = (HealthStatus.HEALTHY, HealthStatus.CONVERGING, HealthStatus.EXPLORING)
+_STAGNANT_STATUSES = (HealthStatus.STAGNANT, HealthStatus.CRITICAL)
+
+
 @dataclass
 class EpiplexityResult:
     """Result of a single epiplexity measurement."""
@@ -62,7 +66,7 @@ class EpiplexityResult:
     @property
     def is_healthy(self) -> bool:
         """Check if agent is in healthy epistemic state."""
-        return self.status in (HealthStatus.HEALTHY, HealthStatus.CONVERGING, HealthStatus.EXPLORING)
+        return self.status in _HEALTHY_STATUSES
 
 
 @dataclass
@@ -401,7 +405,7 @@ class EpiplexityMonitor:
 
     def _track_stagnation(self, status: HealthStatus) -> None:
         """Update stagnation episode counters."""
-        if status in (HealthStatus.STAGNANT, HealthStatus.CRITICAL):
+        if status in _STAGNANT_STATUSES:
             self.state.current_consecutive_stagnant += 1
             if self.state.current_consecutive_stagnant > self.state.max_consecutive_stagnant:
                 self.state.max_consecutive_stagnant = self.state.current_consecutive_stagnant
