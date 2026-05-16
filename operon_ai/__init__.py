@@ -718,14 +718,31 @@ __all__ = [
     "MetabolicAccessPolicy",
 ]
 
-# Single source of truth is pyproject.toml; read the installed distribution
-# metadata so this can never drift. Falls back when run from an uninstalled
-# source checkout (no dist metadata present).
-from importlib.metadata import PackageNotFoundError, version as _pkg_version
+# Single source of truth is pyproject.toml. importlib.metadata resolves the
+# version by *distribution name*, independent of which path `import operon_ai`
+# loaded — so a source checkout could otherwise report a different operon-ai
+# installed elsewhere in the environment. Prefer the pyproject.toml adjacent to
+# this package (source tree); fall back to installed dist metadata, then a
+# sentinel. This keeps pyproject.toml authoritative and non-drifting.
+def _resolve_version() -> str:
+    from pathlib import Path
 
-try:
-    __version__ = _pkg_version("operon-ai")
-except PackageNotFoundError:  # raw source tree, not pip-installed
-    __version__ = "0.0.0+unknown"
+    pyproject = Path(__file__).resolve().parent.parent / "pyproject.toml"
+    if pyproject.is_file():
+        try:
+            import tomllib  # stdlib >= 3.11 (project's minimum)
 
-del _pkg_version, PackageNotFoundError
+            with pyproject.open("rb") as fh:
+                return tomllib.load(fh)["project"]["version"]
+        except Exception:
+            pass  # malformed/unexpected — fall through to dist metadata
+    try:
+        from importlib.metadata import version as _v
+
+        return _v("operon-ai")
+    except Exception:
+        return "0.0.0+unknown"  # not installed and no source pyproject
+
+
+__version__ = _resolve_version()
+del _resolve_version
