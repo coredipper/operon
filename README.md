@@ -5,7 +5,7 @@
 > *From agent heuristics toward structural guarantees.*
 
 ![Status](https://img.shields.io/badge/status-experimental-orange)
-![Version](https://img.shields.io/badge/pypi-v0.39.2-blue)
+[![PyPI version](https://img.shields.io/pypi/v/operon-ai?color=blue&label=pypi)](https://pypi.org/project/operon-ai/)
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![Publish to PyPI](https://github.com/coredipper/operon/actions/workflows/publish.yml/badge.svg)](https://github.com/coredipper/operon/actions/workflows/publish.yml)
 

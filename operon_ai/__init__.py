@@ -718,4 +718,14 @@ __all__ = [
     "MetabolicAccessPolicy",
 ]
 
-__version__ = "0.39.1"
+# Single source of truth is pyproject.toml; read the installed distribution
+# metadata so this can never drift. Falls back when run from an uninstalled
+# source checkout (no dist metadata present).
+from importlib.metadata import PackageNotFoundError, version as _pkg_version
+
+try:
+    __version__ = _pkg_version("operon-ai")
+except PackageNotFoundError:  # raw source tree, not pip-installed
+    __version__ = "0.0.0+unknown"
+
+del _pkg_version, PackageNotFoundError
