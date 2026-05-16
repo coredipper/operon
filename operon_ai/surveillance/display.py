@@ -90,7 +90,9 @@ class MHCDisplay:
         vocabulary = set()
         for obs in self.observations:
             if obs.output:
-                words = self._PATTERN_WORD.findall(obs.output.lower())
+                # ⚡ Bolt: Use finditer instead of findall to avoid allocating
+                # large intermediate lists when updating the vocabulary set.
+                words = (m.group(0) for m in self._PATTERN_WORD.finditer(obs.output.lower()))
                 vocabulary.update(words)
         vocab_str = ",".join(sorted(vocabulary))
         vocab_hash = hashlib.md5(vocab_str.encode()).hexdigest()[:12]
