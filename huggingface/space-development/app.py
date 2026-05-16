@@ -61,11 +61,11 @@ def _run_lifecycle(max_ops, juv_t, adol_t, mat_t):
 
     table = f"""<table style="width:100%;border-collapse:collapse;font-size:14px">
         <thead><tr style="border-bottom:2px solid #333">
-            <th style="text-align:left;padding:8px">Tick</th>
-            <th style="text-align:left;padding:8px">From</th>
-            <th></th>
-            <th style="text-align:left;padding:8px">To</th>
-            <th style="text-align:left;padding:8px">Plasticity</th>
+            <th scope="col" style="text-align:left;padding:8px">Tick</th>
+            <th scope="col" style="text-align:left;padding:8px">From</th>
+            <th scope="col"></th>
+            <th scope="col" style="text-align:left;padding:8px">To</th>
+            <th scope="col" style="text-align:left;padding:8px">Plasticity</th>
         </tr></thead>
         <tbody>{rows}</tbody>
     </table>"""
@@ -88,10 +88,10 @@ def _run_lifecycle(max_ops, juv_t, adol_t, mat_t):
     cp_table = f"""<h3 style="margin-top:24px">Critical Periods at MATURE</h3>
     <table style="width:100%;border-collapse:collapse;font-size:14px">
         <thead><tr style="border-bottom:2px solid #333">
-            <th style="text-align:left;padding:8px">Period</th>
-            <th style="text-align:left;padding:8px">Window</th>
-            <th style="text-align:left;padding:8px">Status</th>
-            <th style="text-align:left;padding:8px">Description</th>
+            <th scope="col" style="text-align:left;padding:8px">Period</th>
+            <th scope="col" style="text-align:left;padding:8px">Window</th>
+            <th scope="col" style="text-align:left;padding:8px">Status</th>
+            <th scope="col" style="text-align:left;padding:8px">Description</th>
         </tr></thead>
         <tbody>{cp_rows}</tbody>
     </table>"""
@@ -111,10 +111,10 @@ def _run_lifecycle(max_ops, juv_t, adol_t, mat_t):
     tool_table = f"""<h3 style="margin-top:24px">Capability Gating at MATURE</h3>
     <table style="width:100%;border-collapse:collapse;font-size:14px">
         <thead><tr style="border-bottom:2px solid #333">
-            <th style="text-align:left;padding:8px">Tool</th>
-            <th style="text-align:left;padding:8px">Min Stage</th>
-            <th style="text-align:left;padding:8px">Status</th>
-            <th style="text-align:left;padding:8px">Description</th>
+            <th scope="col" style="text-align:left;padding:8px">Tool</th>
+            <th scope="col" style="text-align:left;padding:8px">Min Stage</th>
+            <th scope="col" style="text-align:left;padding:8px">Status</th>
+            <th scope="col" style="text-align:left;padding:8px">Description</th>
         </tr></thead>
         <tbody>{tool_rows}</tbody>
     </table>"""
