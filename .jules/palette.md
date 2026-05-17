@@ -5,3 +5,6 @@
 ## 2026-05-16 - Add scope attributes to table headers
 **Learning:** Gradio UI does not allow setting scope directly on table headers in Markdown/HTML. Custom tables created with HTML need manual ARIA attributes.
 **Action:** Always add scope="col" manually when constructing HTML tables in Gradio apps.
+## 2025-05-14 - Missing scope="col" on <th> tags in Gradio tables
+**Learning:** Gradio apps often manually construct HTML tables as strings for custom formatting. These manual constructions frequently omit standard accessibility attributes like `scope="col"` on `<th>` tags, making it harder for screen readers to correctly interpret table headers and associate them with data cells.
+**Action:** When working on UI code involving manually constructed HTML tables, especially in Gradio apps or similar frameworks, always verify that `<th>` elements include the appropriate `scope` attribute (e.g., `scope="col"` or `scope="row"`).
