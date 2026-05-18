@@ -201,9 +201,9 @@ def analyze_filters(text: str) -> tuple[str, str, str, str, str]:
             f'Injection Pattern Survival (Chain Filter)</div>'
             f'<table style="width:100%;border-collapse:collapse;">'
             f'<tr style="background:#f3f4f6;">'
-            f'<th style="padding:6px 10px;text-align:left;">Pattern</th>'
-            f'<th style="padding:6px 10px;text-align:center;">In Original</th>'
-            f'<th style="padding:6px 10px;text-align:center;">After Chain</th></tr>'
+            f'<th scope=\'col\' style="padding:6px 10px;text-align:left;">Pattern</th>'
+            f'<th scope=\'col\' style="padding:6px 10px;text-align:center;">In Original</th>'
+            f'<th scope=\'col\' style="padding:6px 10px;text-align:center;">After Chain</th></tr>'
             f'{rows}</table></div>'
         )
     else:

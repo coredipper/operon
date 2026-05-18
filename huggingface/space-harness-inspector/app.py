@@ -174,9 +174,9 @@ def inspect_architecture(
     phi_content = (
         f'<table style="width:100%;border-collapse:collapse;">'
         f'<tr style="border-bottom:2px solid #e5e7eb;color:#6b7280;">'
-        f'<th style="text-align:left;padding:4px 8px;">Stage</th>'
-        f'<th style="text-align:left;padding:4px 8px;">Mode</th>'
-        f'<th style="text-align:left;padding:4px 8px;">Tier</th></tr>'
+        f'<th scope=\'col\' style="text-align:left;padding:4px 8px;">Stage</th>'
+        f'<th scope=\'col\' style="text-align:left;padding:4px 8px;">Mode</th>'
+        f'<th scope=\'col\' style="text-align:left;padding:4px 8px;">Tier</th></tr>'
         f'{phi_rows}</table>')
 
     arch_html = (
@@ -189,9 +189,9 @@ def inspect_architecture(
     pillar_html = (
         '<table style="width:100%;border-collapse:collapse;font-size:0.95em;">'
         '<tr style="border-bottom:2px solid #e5e7eb;color:#6b7280;">'
-        '<th style="text-align:left;padding:6px 8px;">Pillar</th>'
-        '<th style="text-align:left;padding:6px 8px;">Arch Component</th>'
-        '<th style="text-align:left;padding:6px 8px;">Operon Realization</th></tr>'
+        '<th scope=\'col\' style="text-align:left;padding:6px 8px;">Pillar</th>'
+        '<th scope=\'col\' style="text-align:left;padding:6px 8px;">Arch Component</th>'
+        '<th scope=\'col\' style="text-align:left;padding:6px 8px;">Operon Realization</th></tr>'
         '<tr style="border-bottom:1px solid #f3f4f6;">'
         '<td style="padding:6px 8px;font-weight:600;">Harness</td>'
         '<td style="padding:6px 8px;">G (graph)</td>'
@@ -228,10 +228,10 @@ def inspect_architecture(
     functor_html = (
         '<table style="width:100%;border-collapse:collapse;">'
         '<tr style="border-bottom:2px solid #e5e7eb;color:#6b7280;">'
-        '<th style="text-align:left;padding:6px 8px;">Functor</th>'
-        '<th style="text-align:left;padding:6px 8px;">Graph</th>'
-        '<th style="text-align:left;padding:6px 8px;">Certificates</th>'
-        '<th style="text-align:left;padding:6px 8px;">Interface</th></tr>'
+        '<th scope=\'col\' style="text-align:left;padding:6px 8px;">Functor</th>'
+        '<th scope=\'col\' style="text-align:left;padding:6px 8px;">Graph</th>'
+        '<th scope=\'col\' style="text-align:left;padding:6px 8px;">Certificates</th>'
+        '<th scope=\'col\' style="text-align:left;padding:6px 8px;">Interface</th></tr>'
         f'{functor_rows}</table>')
 
     return arch_html, pillar_html, functor_html

@@ -73,11 +73,11 @@ def _trace_table_html(trace) -> str:
     return (
         "<table style='width:100%;border-collapse:collapse'>"
         "<tr style='background:#f3f4f6'>"
-        "<th style='padding:6px;border-bottom:2px solid #d1d5db'>Step</th>"
-        "<th style='padding:6px;border-bottom:2px solid #d1d5db'>State Before</th>"
-        "<th style='padding:6px;border-bottom:2px solid #d1d5db'>Input</th>"
-        "<th style='padding:6px;border-bottom:2px solid #d1d5db'>Output</th>"
-        "<th style='padding:6px;border-bottom:2px solid #d1d5db'>State After</th>"
+        "<th scope=\'col\' style='padding:6px;border-bottom:2px solid #d1d5db'>Step</th>"
+        "<th scope=\'col\' style='padding:6px;border-bottom:2px solid #d1d5db'>State Before</th>"
+        "<th scope=\'col\' style='padding:6px;border-bottom:2px solid #d1d5db'>Input</th>"
+        "<th scope=\'col\' style='padding:6px;border-bottom:2px solid #d1d5db'>Output</th>"
+        "<th scope=\'col\' style='padding:6px;border-bottom:2px solid #d1d5db'>State After</th>"
         "</tr>"
         + "".join(rows)
         + "</table>"
@@ -248,11 +248,11 @@ def _run_composition(
     trace_html = (
         "<table style='width:100%;border-collapse:collapse'>"
         "<tr style='background:#f3f4f6'>"
-        "<th style='padding:6px;border-bottom:2px solid #d1d5db'>Step</th>"
-        "<th style='padding:6px;border-bottom:2px solid #d1d5db'>(S1, S2) Before</th>"
-        "<th style='padding:6px;border-bottom:2px solid #d1d5db'>Input</th>"
-        "<th style='padding:6px;border-bottom:2px solid #d1d5db'>Output</th>"
-        "<th style='padding:6px;border-bottom:2px solid #d1d5db'>(S1, S2) After</th>"
+        "<th scope=\'col\' style='padding:6px;border-bottom:2px solid #d1d5db'>Step</th>"
+        "<th scope=\'col\' style='padding:6px;border-bottom:2px solid #d1d5db'>(S1, S2) Before</th>"
+        "<th scope=\'col\' style='padding:6px;border-bottom:2px solid #d1d5db'>Input</th>"
+        "<th scope=\'col\' style='padding:6px;border-bottom:2px solid #d1d5db'>Output</th>"
+        "<th scope=\'col\' style='padding:6px;border-bottom:2px solid #d1d5db'>(S1, S2) After</th>"
         "</tr>"
         + "".join(rows)
         + "</table>"
