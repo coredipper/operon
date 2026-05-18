@@ -237,10 +237,10 @@ def run_escalation(scenario_name, threshold):
             "Signal Trace",
             '<table style="width:100%;border-collapse:collapse;">'
             '<tr style="border-bottom:2px solid #e5e7eb;color:#6b7280;">'
-            '<th style="text-align:left;padding:4px 8px;">Stage</th>'
-            '<th style="text-align:left;padding:4px 8px;">Quality</th>'
-            '<th style="text-align:left;padding:4px 8px;">Severity</th>'
-            '<th style="text-align:left;padding:4px 8px;">Status</th></tr>'
+            '<th scope=\'col\' style="text-align:left;padding:4px 8px;">Stage</th>'
+            '<th scope=\'col\' style="text-align:left;padding:4px 8px;">Quality</th>'
+            '<th scope=\'col\' style="text-align:left;padding:4px 8px;">Severity</th>'
+            '<th scope=\'col\' style="text-align:left;padding:4px 8px;">Status</th></tr>'
             f'{sig_rows}</table>',
             "#8b5cf6",
         ))

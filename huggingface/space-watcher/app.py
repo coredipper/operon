@@ -216,11 +216,11 @@ def _signal_table_html(signals: list[WatcherSignal]) -> str:
         </tr>"""
     return f"""<table style="width:100%;border-collapse:collapse;font-size:14px">
         <thead><tr style="border-bottom:2px solid #333">
-            <th style="text-align:left;padding:8px">Category</th>
-            <th style="text-align:left;padding:8px">Source</th>
-            <th style="text-align:left;padding:8px">Stage</th>
-            <th style="text-align:left;padding:8px">Value</th>
-            <th style="text-align:left;padding:8px">Detail</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Category</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Source</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Stage</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Value</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Detail</th>
         </tr></thead>
         <tbody>{rows}</tbody>
     </table>"""
@@ -257,11 +257,11 @@ def _timeline_html(
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:14px">
         <thead><tr style="border-bottom:2px solid #333">
-            <th style="text-align:left;padding:8px">Stage</th>
-            <th style="text-align:left;padding:8px">Model</th>
-            <th style="text-align:left;padding:8px">Epiplexity</th>
-            <th style="text-align:left;padding:8px">ATP</th>
-            <th style="text-align:left;padding:8px">Intervention</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Stage</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Model</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Epiplexity</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">ATP</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Intervention</th>
         </tr></thead>
         <tbody>{rows}</tbody>
     </table>"""

@@ -290,12 +290,12 @@ def _profile_table_html(profiles):
     return (
         "<table style='width:100%;border-collapse:collapse'>"
         "<tr style='background:#f3f4f6'>"
-        "<th style='padding:6px;border-bottom:2px solid #d1d5db'>Module</th>"
-        "<th style='padding:6px;border-bottom:2px solid #d1d5db'>Direct Sources</th>"
-        "<th style='padding:6px;border-bottom:2px solid #d1d5db'>Transitive Sources</th>"
-        "<th style='padding:6px;border-bottom:2px solid #d1d5db'>Width</th>"
-        "<th style='padding:6px;border-bottom:2px solid #d1d5db'>Optic</th>"
-        "<th style='padding:6px;border-bottom:2px solid #d1d5db'>Denature</th>"
+        "<th scope=\'col\' style='padding:6px;border-bottom:2px solid #d1d5db'>Module</th>"
+        "<th scope=\'col\' style='padding:6px;border-bottom:2px solid #d1d5db'>Direct Sources</th>"
+        "<th scope=\'col\' style='padding:6px;border-bottom:2px solid #d1d5db'>Transitive Sources</th>"
+        "<th scope=\'col\' style='padding:6px;border-bottom:2px solid #d1d5db'>Width</th>"
+        "<th scope=\'col\' style='padding:6px;border-bottom:2px solid #d1d5db'>Optic</th>"
+        "<th scope=\'col\' style='padding:6px;border-bottom:2px solid #d1d5db'>Denature</th>"
         "</tr>"
         + "".join(rows)
         + "</table>"

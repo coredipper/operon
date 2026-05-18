@@ -128,10 +128,10 @@ def _run_selection(preset_name):
     </div>"""
     table = f"""<table style="width:100%;border-collapse:collapse;font-size:14px">
         <thead><tr style="border-bottom:2px solid #333">
-            <th style="text-align:left;padding:8px">Template</th>
-            <th style="text-align:left;padding:8px">Topology</th>
-            <th style="text-align:left;padding:8px">Stages</th>
-            <th style="text-align:left;padding:8px">Score</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Template</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Topology</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Stages</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Score</th>
         </tr></thead>
         <tbody>{rows}</tbody>
     </table>"""
@@ -161,10 +161,10 @@ def _run_experience(exp_preset):
     rec = max(success_by_kind, key=lambda k: success_by_kind[k]) if success_by_kind else "none"
     table = f"""<table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:16px">
         <thead><tr style="border-bottom:2px solid #333">
-            <th style="text-align:left;padding:8px">Stage</th>
-            <th style="text-align:left;padding:8px">Signal</th>
-            <th style="text-align:left;padding:8px">Intervention</th>
-            <th style="text-align:left;padding:8px">Outcome</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Stage</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Signal</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Intervention</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Outcome</th>
         </tr></thead>
         <tbody>{rows}</tbody>
     </table>"""

@@ -267,10 +267,10 @@ def run_swarm(
     timeline_html = (
         '<table style="width:100%;border-collapse:collapse;font-size:0.9em">'
         '<tr style="background:#f0f0f0">'
-        '<th style="padding:6px 8px;text-align:left">Worker</th>'
-        '<th style="padding:6px 8px;text-align:center">Step</th>'
-        '<th style="padding:6px 8px;text-align:left">Output</th>'
-        '<th style="padding:6px 8px;text-align:left">Event</th></tr>'
+        '<th scope=\'col\' style="padding:6px 8px;text-align:left">Worker</th>'
+        '<th scope=\'col\' style="padding:6px 8px;text-align:center">Step</th>'
+        '<th scope=\'col\' style="padding:6px 8px;text-align:left">Output</th>'
+        '<th scope=\'col\' style="padding:6px 8px;text-align:left">Event</th></tr>'
         + "".join(timeline_rows)
         + "</table>"
     )

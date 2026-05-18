@@ -64,9 +64,9 @@ def _run_exchange(min_sr, default_trust):
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:14px">
         <thead><tr style="border-bottom:2px solid #333">
-            <th style="text-align:left;padding:8px">Template</th>
-            <th style="text-align:left;padding:8px">Success Rate</th>
-            <th style="text-align:left;padding:8px">Status</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Template</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Success Rate</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Status</th>
         </tr></thead>
         <tbody>{rows}</tbody>
     </table>"""
@@ -96,8 +96,8 @@ def _run_trust_sim(n_success, n_failure):
 
     return f"""<table style="width:100%;border-collapse:collapse;font-size:14px">
         <thead><tr style="border-bottom:2px solid #333">
-            <th style="text-align:left;padding:8px">Event</th>
-            <th style="text-align:left;padding:8px">Trust Score</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Event</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Trust Score</th>
         </tr></thead>
         <tbody>{rows}</tbody>
     </table>"""
@@ -128,11 +128,11 @@ def _run_curiosity(threshold):
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:14px">
         <thead><tr style="border-bottom:2px solid #333">
-            <th style="text-align:left;padding:8px">Stage</th>
-            <th style="text-align:left;padding:8px">Model</th>
-            <th style="text-align:left;padding:8px">Novelty</th>
-            <th style="text-align:left;padding:8px">Status</th>
-            <th style="text-align:left;padding:8px">Action</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Stage</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Model</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Novelty</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Status</th>
+            <th scope=\'col\' style="text-align:left;padding:8px">Action</th>
         </tr></thead>
         <tbody>{rows}</tbody>
     </table>"""

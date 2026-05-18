@@ -206,11 +206,11 @@ def browse_registry(search_query: str) -> str:
 
     return (
         f'<table style="width:100%;border-collapse:collapse;">'
-        f'<tr style="background:#f3f4f6;"><th style="padding:8px;text-align:left;">Name</th>'
-        f'<th style="padding:8px;text-align:left;">Description</th>'
-        f'<th style="padding:8px;text-align:left;">Version</th>'
-        f'<th style="padding:8px;text-align:left;">Tags</th>'
-        f'<th style="padding:8px;text-align:left;">Required Caps</th></tr>'
+        f'<tr style="background:#f3f4f6;"><th scope=\'col\' style="padding:8px;text-align:left;">Name</th>'
+        f'<th scope=\'col\' style="padding:8px;text-align:left;">Description</th>'
+        f'<th scope=\'col\' style="padding:8px;text-align:left;">Version</th>'
+        f'<th scope=\'col\' style="padding:8px;text-align:left;">Tags</th>'
+        f'<th scope=\'col\' style="padding:8px;text-align:left;">Required Caps</th></tr>'
         f'{rows}</table>'
     )
 

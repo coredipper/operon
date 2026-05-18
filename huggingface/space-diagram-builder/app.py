@@ -320,12 +320,12 @@ def _profile_table_html(profiles):
     return (
         "<table style='width:100%;border-collapse:collapse;font-size:0.9em'>"
         "<tr style='background:#f3f4f6'>"
-        "<th style='padding:4px 8px;border-bottom:2px solid #d1d5db'>Module</th>"
-        "<th style='padding:4px 8px;border-bottom:2px solid #d1d5db'>Direct</th>"
-        "<th style='padding:4px 8px;border-bottom:2px solid #d1d5db'>Transitive</th>"
-        "<th style='padding:4px 8px;border-bottom:2px solid #d1d5db'>Width</th>"
-        "<th style='padding:4px 8px;border-bottom:2px solid #d1d5db'>Optic</th>"
-        "<th style='padding:4px 8px;border-bottom:2px solid #d1d5db'>Denature</th>"
+        "<th scope=\'col\' style='padding:4px 8px;border-bottom:2px solid #d1d5db'>Module</th>"
+        "<th scope=\'col\' style='padding:4px 8px;border-bottom:2px solid #d1d5db'>Direct</th>"
+        "<th scope=\'col\' style='padding:4px 8px;border-bottom:2px solid #d1d5db'>Transitive</th>"
+        "<th scope=\'col\' style='padding:4px 8px;border-bottom:2px solid #d1d5db'>Width</th>"
+        "<th scope=\'col\' style='padding:4px 8px;border-bottom:2px solid #d1d5db'>Optic</th>"
+        "<th scope=\'col\' style='padding:4px 8px;border-bottom:2px solid #d1d5db'>Denature</th>"
         "</tr>"
         + "".join(rows)
         + "</table>"
@@ -474,9 +474,9 @@ def _run_compare(
     return (
         "<table style='width:100%;border-collapse:collapse'>"
         "<tr style='background:#f3f4f6'>"
-        "<th style='padding:6px 10px;border-bottom:2px solid #d1d5db'>Metric</th>"
-        "<th style='padding:6px 10px;border-bottom:2px solid #d1d5db;text-align:center'>Diagram A</th>"
-        "<th style='padding:6px 10px;border-bottom:2px solid #d1d5db;text-align:center'>Diagram B</th>"
+        "<th scope=\'col\' style='padding:6px 10px;border-bottom:2px solid #d1d5db'>Metric</th>"
+        "<th scope=\'col\' style='padding:6px 10px;border-bottom:2px solid #d1d5db;text-align:center'>Diagram A</th>"
+        "<th scope=\'col\' style='padding:6px 10px;border-bottom:2px solid #d1d5db;text-align:center'>Diagram B</th>"
         "</tr>"
         + "".join(rows)
         + "</table>"
