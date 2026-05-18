@@ -660,3 +660,14 @@
   primaryClass={cs.LG},
   note={Frames agent harness engineering through the categorical Architecture triple $(G, \mathrm{Know}, \Phi)$ from the ArchAgents framework. The four pillars of agent externalization (Memory, Skills, Protocols, Harness) map onto the triple's components: Memory as coalgebraic state, Skills as operad-composed objects, Protocols as syntactic wiring $G$, and the full Harness as the Architecture itself. Structural guarantees---integrity gates, quality-based escalation, supported convergence checks---are $\mathrm{Know}$-level certificates whose preservation is structural replay: compiler functors targeting Swarms, DeerFlow, Ralph, Scion, and LangGraph preserve three named certificate types by identity/replay. Companion to the operon-langgraph-gates v0.1.0 wedge and the L1/L2 cert hooks in operon-ai v0.38+.}
 }
+
+@article{banu2026biological,
+  title={Do Biological Structural Guarantees Earn Their Complexity? Empirical Benchmarks for Biologically-Inspired Agent Reliability},
+  author={Banu, Bogdan},
+  year={2026},
+  journal={arXiv preprint arXiv:2605.15225},
+  eprint={2605.15225},
+  archivePrefix={arXiv},
+  primaryClass={cs.LG},
+  note={Empirical companion to \texttt{banu2026harness}. Tests three biologically-grounded reliability features against naive non-biological alternatives and ablated controls across 10M+ data points (1{,}000 trials $\times$ 10 seeds), plus a real-sentence-embedding follow-up and a Gemma~4 27B end-to-end run. Findings: metabolic priority gating serves 100\% of critical operations under bursty load vs 39.8\% for a flat budget counter ($\Delta=+0.602$, $p<0.001$); autoinducer quorum sensing reaches 0\% false-positive rate with 71--87\% true-positive rate at 40\% agent compromise, an operating point unreachable by majority voting or independent detection; Bayesian two-signal stagnation detection wins on convergence discrimination only with real embeddings (96\% vs 2--40\% naive), a conditional guarantee gated on embedding quality. The cross-benchmark pattern: biological design earns its complexity through \emph{mechanism-level structural guarantees}, not algorithmic sophistication --- state-integrity guarantees (DNA repair) are deterministic, while behavioral/output-layer guarantees show honest limitations with capable models. This is the empirical grounding for which $\mathrm{Know}$-level certificates of \texttt{banu2026harness} actually deliver; cited by operon-langgraph-gates v0.1.0 (\S4.1 integrity, \S4.3 real-embedding stagnation).}
+}
