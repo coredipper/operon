@@ -133,7 +133,6 @@ def compile_guarded_graph(
     """
     try:
         from langgraph.graph import END, START, StateGraph
-        from langchain_openai import ChatOpenAI
         from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
     except ImportError as e:
         raise ImportError(
@@ -143,22 +142,32 @@ def compile_guarded_graph(
     from .langgraph_watcher import operon_watcher_node
 
     # --- Model resolution ---
+    # ``langchain_openai`` is only needed to build default Ollama-backed
+    # models. Callers that pass pre-built ``fast_model``/``deep_model``
+    # instances must not be forced to install it (it is an optional part
+    # of the ``langgraph`` extra), so the import is deferred into the
+    # builder, which only runs when a default model is actually needed.
+    def _default_model(model_name: str, max_tokens: int) -> Any:
+        try:
+            from langchain_openai import ChatOpenAI
+        except ImportError as e:
+            raise ImportError(
+                "langchain-openai is required to build default models. "
+                "Install with: pip install operon-ai[langgraph], or pass "
+                "pre-built fast_model/deep_model instances."
+            ) from e
+        return ChatOpenAI(
+            base_url=ollama_base_url,
+            model=model_name,
+            api_key=os.environ.get("OLLAMA_API_KEY", "ollama"),
+            temperature=0.0,
+            max_tokens=max_tokens,
+        )
+
     if fast_model is None:
-        fast_model = ChatOpenAI(
-            base_url=ollama_base_url,
-            model=fast_model_name,
-            api_key=os.environ.get("OLLAMA_API_KEY", "ollama"),
-            temperature=0.0,
-            max_tokens=1024,
-        )
+        fast_model = _default_model(fast_model_name, 1024)
     if deep_model is None:
-        deep_model = ChatOpenAI(
-            base_url=ollama_base_url,
-            model=deep_model_name,
-            api_key=os.environ.get("OLLAMA_API_KEY", "ollama"),
-            temperature=0.0,
-            max_tokens=2048,
-        )
+        deep_model = _default_model(deep_model_name, 2048)
 
     # --- Extract stages from compiled dict ---
     lead_name = compiled.get("assistant_id", "agent")
