@@ -39,6 +39,13 @@ langgraph = [
 # Install manually: pip install "git+https://github.com/bytedance/deer-flow.git@5db71cb68ce58bbcb221493ee6008adffc286c55#subdirectory=backend/packages/harness"
 dev = [
   "pytest>=7.0",
+  # Test-only: lets the cross-package dogfood contract tests
+  # (tests/unit/convergence/test_{gascity,agentflow}_adapter.py
+  # ::TestOperonLanggraphGatesDogfood) actually run in CI instead of
+  # silently skipping via pytest.importorskip. operon-langgraph-gates
+  # depends on operon-ai, so this MUST stay a dev/test extra — never a
+  # core runtime dependency (that would be a dependency cycle).
+  "operon-langgraph-gates>=0.1.0",
 ]
 eval = [
   "agentdojo>=0.1.35",

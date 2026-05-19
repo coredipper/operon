@@ -26,7 +26,12 @@ from operon_ai.convergence.gascity_adapter import (
     MailEvent,
     verification_to_dolt_envelope,
 )
-from operon_ai.core.certificate import register_verify_fn
+from operon_ai.core.certificate import (
+    certificate_from_dict,
+    certificate_to_dict,
+    register_verify_fn,
+    resolve_verify_fn,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -253,14 +258,20 @@ class TestDoltEnvelope:
 
 
 class TestOperonLanggraphGatesDogfood:
-    """Validates that v0.1.0's STAGNATION_THEOREM / INTEGRITY_THEOREM constants
-    are consumable by the gascity adapter — i.e. the stable surface lands as
-    designed.
+    """Cross-package contract: v0.1.0's STAGNATION_THEOREM / INTEGRITY_THEOREM
+    constants are not merely consumable by name — a certificate produced
+    through the gascity adapter under an olg-named theorem survives the
+    Beads/Dolt audit-trail render *and* a serialize → deserialize →
+    re-verify round-trip with agreement. This is the executable form of the
+    "replayable certificate evidence" claim in
+    ``docs/site/external-frameworks.md`` §8.4.
 
-    Skipped when ``operon-langgraph-gates`` is not installed.
+    Runs in CI: ``operon-langgraph-gates`` is a dev/test extra in
+    ``pyproject.toml``. Still ``importorskip``-guarded so source checkouts
+    without the extra degrade gracefully rather than error.
     """
 
-    def test_stagnation_theorem_constant_is_resolvable(self) -> None:
+    def test_stagnation_theorem_is_a_replayable_contract(self) -> None:
         olg = pytest.importorskip("operon_langgraph_gates")
 
         def _stagnation_harness(_evt: HookEvent) -> Mapping[str, Any]:  # noqa: ARG001
@@ -276,11 +287,25 @@ class TestOperonLanggraphGatesDogfood:
         assert v.holds is True
         assert v.certificate.theorem == "behavioral_stability_windowed"
 
-    def test_integrity_theorem_constant_is_resolvable(self) -> None:
+        # 1. Audit-trail render is JSON-serializable and carries the
+        #    olg-named theorem through unchanged.
+        env = verification_to_dolt_envelope(v, attach_point="hook")
+        json.dumps(env)  # must not raise
+        assert env["theorem"] == olg.STAGNATION_THEOREM
+        assert env["holds"] is True
+
+        # 2. Serialize → deserialize → re-verify with agreement: the
+        #    certificate is replayable, not just nameable.
+        replayed = certificate_from_dict(certificate_to_dict(v.certificate))
+        assert replayed.theorem == olg.STAGNATION_THEOREM
+        assert replayed.verify().holds is True
+
+    def test_integrity_theorem_registers_in_operon_ai_registry(self) -> None:
         olg = pytest.importorskip("operon_langgraph_gates")
-        # Importing operon_langgraph_gates.integrity registers the
-        # ``langgraph_state_integrity`` theorem in operon-ai's registry.
-        # If the import side-effect is gated, importing the package
-        # itself should be enough — confirm by constructing the adapter.
+        # Importing operon_langgraph_gates registers
+        # ``langgraph_state_integrity`` in operon-ai's verifier registry as
+        # an import side-effect. The contract is that operon-ai can
+        # *resolve* the verifier, not merely echo the constant string.
+        assert resolve_verify_fn(olg.INTEGRITY_THEOREM) is not None
         adapter = GascityCertificateAdapter(theorem=olg.INTEGRITY_THEOREM)
         assert adapter.theorem == olg.INTEGRITY_THEOREM

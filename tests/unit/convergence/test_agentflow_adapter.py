@@ -27,7 +27,12 @@ from operon_ai.convergence.agentflow_adapter import (
     EvolveEvent,
     NodeEvent,
 )
-from operon_ai.core.certificate import register_verify_fn
+from operon_ai.core.certificate import (
+    certificate_from_dict,
+    certificate_to_dict,
+    register_verify_fn,
+    resolve_verify_fn,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -293,14 +298,17 @@ class TestDoltEnvelope:
 
 
 class TestOperonLanggraphGatesDogfood:
-    """Validates that v0.1.0's STAGNATION_THEOREM / INTEGRITY_THEOREM constants
-    are consumable by the agentflow adapter — same load-bearing test that the
-    gascity adapter ships, applied to the agentflow attach points.
+    """Cross-package contract (agentflow attach points). Mirrors the gascity
+    adapter's identical class — see it for the full rationale — applying the
+    same replayable-evidence contract to the agentflow node surface: an
+    olg-named theorem produces a certificate that survives the audit-trail
+    render and a serialize → deserialize → re-verify round-trip.
 
-    Skipped when ``operon-langgraph-gates`` is not installed.
+    Runs in CI: ``operon-langgraph-gates`` is a dev/test extra in
+    ``pyproject.toml``. Still ``importorskip``-guarded for source checkouts.
     """
 
-    def test_stagnation_theorem_constant_is_resolvable(self) -> None:
+    def test_stagnation_theorem_is_a_replayable_contract(self) -> None:
         olg = pytest.importorskip("operon_langgraph_gates")
 
         def _stagnation_harness(_evt: NodeEvent) -> Mapping[str, Any]:  # noqa: ARG001
@@ -315,7 +323,17 @@ class TestOperonLanggraphGatesDogfood:
         assert v.holds is True
         assert v.certificate.theorem == "behavioral_stability_windowed"
 
-    def test_integrity_theorem_constant_is_resolvable(self) -> None:
+        env = verification_to_dolt_envelope(v, attach_point="node")
+        json.dumps(env)  # must not raise
+        assert env["theorem"] == olg.STAGNATION_THEOREM
+        assert env["holds"] is True
+
+        replayed = certificate_from_dict(certificate_to_dict(v.certificate))
+        assert replayed.theorem == olg.STAGNATION_THEOREM
+        assert replayed.verify().holds is True
+
+    def test_integrity_theorem_registers_in_operon_ai_registry(self) -> None:
         olg = pytest.importorskip("operon_langgraph_gates")
+        assert resolve_verify_fn(olg.INTEGRITY_THEOREM) is not None
         adapter = AgentflowCertificateAdapter(theorem=olg.INTEGRITY_THEOREM)
         assert adapter.theorem == olg.INTEGRITY_THEOREM
