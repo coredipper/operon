@@ -45,7 +45,7 @@ dev = [
   # silently skipping via pytest.importorskip. operon-langgraph-gates
   # depends on operon-ai, so this MUST stay a dev/test extra — never a
   # core runtime dependency (that would be a dependency cycle).
-  "operon-langgraph-gates>=0.1.0",
+  "operon-langgraph-gates>=0.1.1",
 ]
 eval = [
   "agentdojo>=0.1.35",
