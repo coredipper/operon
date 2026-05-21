@@ -84,28 +84,22 @@ class mRNA:
         codons = []
 
         # Simple variables: {{variable_name}}
-        for match in self._PATTERN_SIMPLE.finditer(self.sequence):
-            codons.append(Codon(
-                codon_type=CodonType.VARIABLE,
-                name=match.group(1)
-            ))
+        codons.extend(
+            Codon(codon_type=CodonType.VARIABLE, name=match.group(1))
+            for match in self._PATTERN_SIMPLE.finditer(self.sequence)
+        )
 
         # Optional variables: {{?variable_name}}
-        for match in self._PATTERN_OPTIONAL.finditer(self.sequence):
-            codons.append(Codon(
-                codon_type=CodonType.VARIABLE,
-                name=match.group(1),
-                required=False
-            ))
+        codons.extend(
+            Codon(codon_type=CodonType.VARIABLE, name=match.group(1), required=False)
+            for match in self._PATTERN_OPTIONAL.finditer(self.sequence)
+        )
 
         # Variables with defaults: {{variable_name|default_value}}
-        for match in self._PATTERN_DEFAULT.finditer(self.sequence):
-            codons.append(Codon(
-                codon_type=CodonType.VARIABLE,
-                name=match.group(1),
-                default=match.group(2),
-                required=False
-            ))
+        codons.extend(
+            Codon(codon_type=CodonType.VARIABLE, name=match.group(1), default=match.group(2), required=False)
+            for match in self._PATTERN_DEFAULT.finditer(self.sequence)
+        )
 
         return codons
 
@@ -475,28 +469,31 @@ class Ribosome:
             if not isinstance(items, (list, tuple)):
                 return ""
 
+            # Optimization: avoid closure recreation overhead inside the loop
+            current_context: dict[str, Any] = {}
+            def replace_loop_var(m: re.Match) -> str:
+                key = m.group(1)
+                if key in current_context:
+                    return str(current_context[key])
+                return m.group(0)
+
             output_parts = []
             for i, item in enumerate(items):
                 # Create loop context
-                loop_context = {
+                current_context.clear()
+                current_context.update({
                     '.': item,
                     'item': item,
                     'index': i,
                     'first': i == 0,
                     'last': i == len(items) - 1,
-                }
+                })
 
                 # If item is a dict, merge its keys
                 if isinstance(item, dict):
-                    loop_context.update(item)
+                    current_context.update(item)
 
                 # Process the content with loop context
-                def replace_loop_var(m: re.Match) -> str:
-                    key = m.group(1)
-                    if key in loop_context:
-                        return str(loop_context[key])
-                    return m.group(0)
-
                 part = self._PATTERN_LOOP_VAR.sub(replace_loop_var, content)
                 output_parts.append(part)
 
