@@ -38,3 +38,10 @@
 ## 2026-05-10 - Optimize Ribosome loop variable substitution overhead
 **Learning:** In `operon_ai/organelles/ribosome.py`, iterating over loop context variables and applying `part.replace` for each variable in the inner loop of `_process_loops` results in substantial overhead due to repeated string construction and memory allocation. Benchmarks reveal that using `re.Pattern.sub` with a pre-compiled regex `_PATTERN_LOOP_VAR` and a dictionary-lookup closure is much faster when context scales, successfully avoiding O(N^2) scaling penalties inherent to repeated full-string scanning.
 **Action:** When applying template interpolations where multiple variables may need to be replaced inside a loop structure, avoid a loop over `str.replace` calls. Instead, use a single `pattern.sub(callback, string)` pass.
+## 2026-05-11 - Regex Substitution Loop Optimization
+**Learning:** For optimal performance when applying regex substitutions (`pattern.sub`) with callbacks inside a loop, hoist the callback function outside the loop and mutate a single shared state dictionary across iterations. Recreating closures or lambdas with default arguments inside the loop incurs significant overhead in hot paths.
+**Action:** When using `pattern.sub` within a loop, define the callback once externally and use a shared, mutable context dictionary.
+
+## 2026-05-11 - List Extension Generator Overhead
+**Learning:** When appending multiple items to a list in performance-critical paths, `.extend([list comprehension])` is generally faster than `.extend(generator expression)`. The generator expression incurs overhead by suspending and resuming its frame for every item.
+**Action:** Prefer `list.extend([list comprehension])` over `list.extend(generator expression)` when speed is paramount.
