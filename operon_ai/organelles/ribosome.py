@@ -83,23 +83,27 @@ class mRNA:
         """
         codons = []
 
+        # Performance optimization: .extend([list comprehension]) is faster than
+        # .extend(generator expression) because it avoids the overhead of suspending
+        # and resuming the generator frame for every item.
+
         # Simple variables: {{variable_name}}
-        codons.extend(
+        codons.extend([
             Codon(codon_type=CodonType.VARIABLE, name=match.group(1))
             for match in self._PATTERN_SIMPLE.finditer(self.sequence)
-        )
+        ])
 
         # Optional variables: {{?variable_name}}
-        codons.extend(
+        codons.extend([
             Codon(codon_type=CodonType.VARIABLE, name=match.group(1), required=False)
             for match in self._PATTERN_OPTIONAL.finditer(self.sequence)
-        )
+        ])
 
         # Variables with defaults: {{variable_name|default_value}}
-        codons.extend(
+        codons.extend([
             Codon(codon_type=CodonType.VARIABLE, name=match.group(1), default=match.group(2), required=False)
             for match in self._PATTERN_DEFAULT.finditer(self.sequence)
-        )
+        ])
 
         return codons
 
