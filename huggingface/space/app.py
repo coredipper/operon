@@ -14,6 +14,7 @@ Deploy to HuggingFace Spaces:
     Copy this directory to a new HF Space with sdk=gradio.
 """
 
+import html
 import json
 import sys
 from pathlib import Path
@@ -202,19 +203,33 @@ def run_chaperone(raw_input: str, schema_name: str) -> tuple[str, str, str, str]
     for attempt in result.attempts:
         status = "Pass" if attempt.success else "Fail"
         status_color = "#22c55e" if attempt.success else "#ef4444"
-        error_text = attempt.error[:80] if attempt.error else "-"
+        error_text = html.escape(attempt.error[:80]) if attempt.error else "-"
         trace_rows.append(
-            f"| {_format_strategy_badge(attempt.strategy)} | "
-            f'<span style="color:{status_color};font-weight:600;">{status}</span> | '
-            f"{attempt.duration_ms:.1f} ms | "
-            f"`{error_text}` |"
+            f'<tr>'
+            f'<td style="padding: 8px; border: 1px solid #e5e7eb;">{_format_strategy_badge(attempt.strategy)}</td>'
+            f'<td style="padding: 8px; border: 1px solid #e5e7eb;"><span style="color:{status_color};font-weight:600;">{status}</span></td>'
+            f'<td style="padding: 8px; border: 1px solid #e5e7eb;">{attempt.duration_ms:.1f} ms</td>'
+            f'<td style="padding: 8px; border: 1px solid #e5e7eb; font-family: monospace;">{error_text}</td>'
+            f'</tr>'
         )
 
     if trace_rows:
         cascade_trace = (
-            "| Strategy | Result | Duration | Error |\n"
-            "|----------|--------|----------|-------|\n"
-            + "\n".join(trace_rows)
+            '<div style="overflow-x: auto;">'
+            '<table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9em;">'
+            '<thead>'
+            '<tr style="background-color: #f9fafb;">'
+            f'<th scope="col" style="padding: 8px; border: 1px solid #e5e7eb; font-weight: 600;">Strategy</th>'
+            f'<th scope="col" style="padding: 8px; border: 1px solid #e5e7eb; font-weight: 600;">Result</th>'
+            f'<th scope="col" style="padding: 8px; border: 1px solid #e5e7eb; font-weight: 600;">Duration</th>'
+            f'<th scope="col" style="padding: 8px; border: 1px solid #e5e7eb; font-weight: 600;">Error</th>'
+            '</tr>'
+            '</thead>'
+            '<tbody>'
+            + "".join(trace_rows) +
+            '</tbody>'
+            '</table>'
+            '</div>'
         )
     else:
         cascade_trace = "No attempts recorded (input may be empty)."
@@ -327,7 +342,7 @@ def build_app() -> gr.Blocks:
 
                 with gr.Row():
                     with gr.Column():
-                        cascade_trace = gr.Markdown(label="Cascade Trace")
+                        cascade_trace = gr.HTML(label="Cascade Trace")
                     with gr.Column():
                         coercions_md = gr.Markdown(label="Repairs / Coercions Applied")
 
