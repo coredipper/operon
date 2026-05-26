@@ -22,8 +22,9 @@ def _call_aggregate(fn: Callable[..., Any], task: str, outputs: dict[str, Any]) 
         params = list(signature(fn).parameters.values())
     except (TypeError, ValueError):
         return fn(task, outputs)
-    if any(p.kind in (p.VAR_POSITIONAL, p.VAR_KEYWORD) for p in params):
-        return fn(task, outputs)
+    for p in params:
+        if p.kind in (p.VAR_POSITIONAL, p.VAR_KEYWORD):
+            return fn(task, outputs)
     positional = [
         p for p in params
         if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)
