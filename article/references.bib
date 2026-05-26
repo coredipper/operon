@@ -654,6 +654,17 @@
   note={Preprints DOI 10.20944/preprints202604.0428.v2. Formalizes the agent harness as a six-component tuple H=(E,T,C,S,L,V); 110+ papers and 23 systems surveyed on a Harness Completeness Matrix; identifies compositional verification as one of nine open challenges. Companion repository: https://github.com/Gloriaameng/Awesome-Agent-Harness}
 }
 
+@article{ning2026codeharness,
+  title={Code as Agent Harness: Toward Executable, Verifiable, and Stateful Agent Systems},
+  author={Ning, Xinyu and Tieu, Kien and Fu, Daniel and Wei, Tianyi and Li, Zhuoer},
+  year={2026},
+  journal={arXiv preprint arXiv:2605.18747},
+  eprint={2605.18747},
+  archivePrefix={arXiv},
+  primaryClass={cs.CL},
+  note={102-page survey from UIUC / Meta / Stanford framing code as the operational substrate for agent systems. Three-layer taxonomy: Harness Interface (code for reasoning / acting / environment), Harness Mechanisms (planning, memory, tool use, Plan-Execute-Verify loop, Agentic Harness Engineering), and Scaling the Harness (multi-agent collaboration). Seven named open problems in §5.2: harness-level evaluation and oracle adequacy, semantic verification beyond executable feedback, self-evolving harnesses without regression, transactional shared program state, human-in-the-loop safety as harness state, multimodal code-harness systems, and a science of harness engineering. Section 5.2.2 names the verification-stack-with-explicit-scope abstraction that operon-langgraph-gates StagnationGate and IntegrityGate concretely supply; §5.2.3 names the regression-free harness improvement pattern that operon's v0.2 dogfood contract implements. Companion repo: github.com/YennNing/Awesome-Code-as-Agent-Harness-Papers.}
+}
+
 @article{banu2026harness,
   title={Harness Engineering as Categorical Architecture},
   author={Banu, Bogdan},
@@ -663,4 +674,15 @@
   archivePrefix={arXiv},
   primaryClass={cs.LG},
   note={Frames agent harness engineering through the categorical Architecture triple $(G, \mathrm{Know}, \Phi)$ from the ArchAgents framework. The four pillars of agent externalization (Memory, Skills, Protocols, Harness) map onto the triple's components: Memory as coalgebraic state, Skills as operad-composed objects, Protocols as syntactic wiring $G$, and the full Harness as the Architecture itself. Structural guarantees---integrity gates, quality-based escalation, supported convergence checks---are $\mathrm{Know}$-level certificates whose preservation is structural replay: compiler functors targeting Swarms, DeerFlow, Ralph, Scion, and LangGraph preserve three named certificate types by identity/replay. Companion to the operon-langgraph-gates v0.1.0 wedge and the L1/L2 cert hooks in operon-ai v0.38+.}
+}
+
+@article{nakajima2026activegraph,
+  title={The Log is the Agent: Event-Sourced Reactive Graphs for Auditable, Forkable Agentic Systems},
+  author={Nakajima, Yohei},
+  year={2026},
+  journal={arXiv preprint arXiv:2605.21997},
+  eprint={2605.21997},
+  archivePrefix={arXiv},
+  primaryClass={cs.AI},
+  note={ActiveGraph: an event-sourced reactive graph runtime in which the append-only event log is the source of truth, the working graph is a deterministic projection of that log, and behaviors (functions/classes/LLM routines, or logic attached to typed edges) react to graph changes and emit new events. Three named properties: deterministic replay of any run, cheap forking via shared-prefix replay, and end-to-end lineage from goal to individual model call. One formal guarantee: a determinism contract that makes replay sound. Sits in the BabyAGI lineage. Product surface at activegraph.ai. Operon-side placement: §8.8 of external-frameworks.md as an alternative L1 substrate (sibling of LangGraph itself, not of the L1 adapter row); attach-point candidate, no adapter scheduled per the v0.2 pull-gated scope discipline. Delivers Ning et al. (arXiv:2605.18747) §5.2.1 metric dimensions (i), (iv), (vi) but does not supply the §5.2.2 verification-stack-with-explicit-scope abstraction; the operon-langgraph-gates wedge fills that gap.}
 }
