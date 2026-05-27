@@ -298,7 +298,7 @@ All 41 tests pass under `pytest tests/unit/convergence/test_gepa_adapter.py test
 
 ## 7. Follow-up tasks
 
-1. **Empirical Theorem 3.** Build a GEPA-vs-reward-gradient benchmark on a bio theorem (`behavioral_stability_windowed`) and measure mutations-to-convergence. Target: 2× reduction on the certificate side, or refute the conjecture cleanly.
+1. **Empirical Theorem 3 — shipped 2026-05-27, null verdict.** The GEPA-vs-reward-gradient benchmark on `behavioral_stability_windowed` ran with three evaluator shapes (cert-binary, scalar-reward, scalar-with-evidence) over 10 seeds each, plus a within-binary formatter ablation on 5 seeds. Cert-binary ties scalar-with-evidence at 1.0 mean mutations-to-convergence (Mann-Whitney U=50, p=1.000, rank-biserial 0.00); the predeclared $\le 0.75$-ratio gate is not cleared, so Theorem 3 stays a conjecture rather than an accepted theorem for this task. Driver: `eval/convergence/theorem_6_experiment.py`; analysis: `eval/convergence/analysis_theorem_6.py`; ablation: `eval/convergence/theorem_6_ablation.py`; writeup: `article/paper6/` (Banu, *Do Certificate-Based Evaluators Help GEPA?*).
 2. **Lightweight DSPy theorem.** Ship `dspy_compile_pinned_inputs` — the cheap provenance variant of Theorem 2 — before the full reproducibility verifier.
 3. **A2A runtime smoke test.** Stand up a minimal A2A server exposing an Operon-certified skill; run `a2a-inspector` against it; verify the certificate Part round-trips through the real wire format.
 4. **`gepa_candidate_improvement` theorem.** Register a verifier that certifies a GEPA-evolved candidate dominates its parent on the Pareto frontier; close the outer loop.

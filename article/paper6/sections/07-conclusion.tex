@@ -29,23 +29,69 @@ the same evidence text.
 
 \subsection{Follow-ups unblocked}\label{sec:followups}
 
+The list below is ordered by dependency: items 1--2 reuse this
+paper's protocol verbatim and are the cheapest to launch; items
+3--5 are independent of each other and have no dependency on items
+1--2.  Each carries a target metric and a binary done criterion so
+the work can be picked up out of order without re-deriving scope.
+
 \begin{enumerate}[leftmargin=*,itemsep=2pt,topsep=2pt]
-\item \textbf{Theorem-shape sweep}: rerun the protocol on
+\item \textbf{Theorem-shape sweep.}  Rerun the protocol on
 \texttt{behavioral\_quality} (continuous) and
 \texttt{behavioral\_no\_anomaly} (structural).
-\item \textbf{Cross-LM robustness}: rerun cert-binary and the
-strongest baseline with a frontier LM.
-\item \textbf{Operon--autocontext adapter}: wire Operon certificates
+\emph{Prerequisites:} none --- the harness, adapter shapes, and
+analysis pipeline ship in this paper.
+\emph{Target:} the predeclared $\le 0.75$-ratio gate on each
+theorem shape.
+\emph{Done:} paper-6-shaped writeup per theorem, with a
+per-shape verdict against the gate.
+\item \textbf{Cross-LM robustness.}  Rerun cert-binary and the
+strongest baseline (scalar-with-evidence) with at least one
+frontier LM in addition to Gemma~4.
+\emph{Prerequisites:} budget for non-local LM tokens; otherwise
+identical infrastructure.
+\emph{Target:} same $\le 0.75$-ratio gate, evaluated independently
+per LM; flag any qualitative arm-ordering flip.
+\emph{Done:} an LM~$\times$~arm table reported alongside
+Table~\ref{tab:paper6-iters}.
+\item \textbf{Operon--autocontext adapter.}  Wire Operon certificates
 into autocontext's staged-validation loop~\cite{autocontext2025},
 giving a second external framework that consumes certificates as
 evaluator output.  A plan for this is logged separately; this is a
 paper-7 candidate.
-\item \textbf{Lightweight DSPy reproducibility theorem}: ship
-\texttt{dspy\_compile\_pinned\_inputs} as the cheap variant of
-memo Theorem~2.
-\item \textbf{\texttt{gepa\_candidate\_improvement} theorem}:
-certify that an evolved candidate Pareto-dominates its parent on
+\emph{Prerequisites:} autocontext's staged-validation hook
+surface (independent of items 1--2).
+\emph{Target:} an in-tree
+\texttt{AutocontextCertificateAdapter} that mirrors
+\texttt{GascityCertificateAdapter}'s shape, with one dogfood
+test that consumes an Operon theorem through the autocontext
+boundary.
+\emph{Done:} adapter merged in
+\texttt{operon\_ai/convergence/} with the dogfood test green.
+\item \textbf{Lightweight DSPy reproducibility theorem.}  Ship
+\texttt{dspy\_compile\_pinned\_inputs} as the cheap provenance
+variant of memo Theorem~2 --- pinned-input hashes recorded at
+compile time, no recompile.
+\emph{Prerequisites:} stable
+\texttt{Certificate.from\_dspy\_compile} entry point (already
+shipped 2026-05-01 per memo §2).
+\emph{Target:} register the verify function on the theorem
+registry and exercise it from a DSPy compile.
+\emph{Done:} theorem in
+\texttt{operon\_ai/core/certificate.py}, unit test
+exercising the round-trip, memo §2 \emph{Status} line updated.
+\item \textbf{\texttt{gepa\_candidate\_improvement} theorem.}
+Certify that an evolved candidate Pareto-dominates its parent on
 the validation set; close GEPA's outer loop with a certificate.
+\emph{Prerequisites:} GEPA exposes per-iteration parent +
+child candidate pairs (already available via callbacks per this
+paper's \texttt{\_IterationRecorder}).
+\emph{Target:} a verify function whose evidence is the
+$(\text{parent valset scores}, \text{child valset scores})$
+pair; cert-binary arm on a held-out task.
+\emph{Done:} theorem registered, a regression
+test that constructs a known-dominating child and a known-tied
+child and verifies both verdicts.
 \end{enumerate}
 
 \subsection{Artifacts}
@@ -53,6 +99,8 @@ the validation set; close GEPA's outer loop with a certificate.
 \begin{itemize}[leftmargin=*,itemsep=2pt,topsep=2pt]
 \item Experiment driver:
 \texttt{eval/convergence/theorem\_6\_experiment.py}
+\item Ablation driver:
+\texttt{eval/convergence/theorem\_6\_ablation.py}
 \item Harness:
 \texttt{eval/convergence/synthetic\_signal\_harness.py}
 \item Baseline adapters:
@@ -62,8 +110,11 @@ the validation set; close GEPA's outer loop with a certificate.
 \texttt{eval/convergence/analysis\_theorem\_6.py}
 \item Per-arm trajectories:
 \texttt{eval/results/theorem\_6/\{arm\}/seed\_*.json}
-\item Summary:
-\texttt{eval/results/theorem\_6/summary.json}
+\item Ablation trajectories:
+\texttt{eval/results/theorem\_6/ablation\_minimal/seed\_*.json}
+\item Summaries:
+\texttt{eval/results/theorem\_6/summary.json},
+\texttt{eval/results/theorem\_6/ablation\_summary.json}
 \item Unit tests:
 \texttt{tests/unit/convergence/test\_paper6\_*.py}
 \end{itemize}
@@ -73,6 +124,7 @@ the validation set; close GEPA's outer loop with a certificate.
 pip install gepa matplotlib scipy
 ollama pull gemma4  # if not already local
 python -m eval.convergence.theorem_6_experiment --sweep
+python -m eval.convergence.theorem_6_ablation
 python -m eval.convergence.analysis_theorem_6
 cd article/paper6 && tectonic main.tex
 \end{verbatim}

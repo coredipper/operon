@@ -15,11 +15,20 @@ Frontier models may parse structured obligation text differently.
 A cross-LM re-run on the treatment and strongest baseline is
 declared as follow-up.
 
-\paragraph{Single-component candidate.}  Our candidate has one
-mutable text slot (\texttt{policy\_prompt}).  GEPA's
-component-selection machinery is therefore exercised trivially.
-Multi-component candidates --- where different components fail
-different obligations --- may change the picture.
+\paragraph{Single mutable component, by design.}  Our candidate has
+two keys --- an immutable prose scratch-space
+(\texttt{policy\_prompt}) and a mutable numeric knob
+(\texttt{policy\_throttle}) --- but a custom
+\texttt{module\_selector} (\texttt{\_ThrottleOnlySelector}) pins
+GEPA's component selection to the throttle, so only one degree of
+freedom is searched.  This matches the task's one-knob structure
+but means GEPA's component-selection machinery is exercised
+trivially.  Multi-component candidates --- where different
+components fail different obligations and GEPA must choose which to
+mutate --- may change the picture, both for the adapter's reflection
+formatting (multiple components imply multiple per-component
+templates) and for the cert-binary signal (a binary verdict on a
+multi-component candidate fans out to which component to blame).
 
 \paragraph{Synthetic task.}  The harness is deliberately a
 one-knob task to isolate the evaluator-to-optimizer pipeline.  A
