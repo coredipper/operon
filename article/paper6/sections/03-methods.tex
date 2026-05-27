@@ -3,8 +3,10 @@
 \subsection{Task}\label{sec:task}
 
 The target predicate is
-\texttt{behavioral\_stability\_windowed}~\cite{banu2026operon}, defined in
-\texttt{operon\_ai/core/certificate.py}:261:
+\texttt{behavioral\_stability\_windowed}~\cite{banu2026operon}, whose
+verify function
+(\texttt{\_verify\_behavioral\_stability\_windowed} in
+\texttt{operon\_ai/core/certificate.py}) implements
 \[
 \mathrm{holds}(\mathbf{x}, \tau) \iff \max_{i} x_i \le \tau,
 \]
@@ -12,19 +14,42 @@ where $\mathbf{x}$ is a vector of per-window means and $\tau$ is a
 stability threshold.  The obligation set is enumerable: every
 violating window $(i, x_i)$ is a concrete obligation.
 
-The task is intentionally synthetic.  The harness
-(\texttt{eval/convergence/synthetic\_signal\_harness.py}) parses a
-single numeric knob, \texttt{policy\_throttle} $\in [0, 1]$, from the
-candidate's prompt text.  It then draws
+\paragraph{Candidate contract.}  The GEPA candidate is a two-key
+dict: an immutable prose scratch-space \texttt{policy\_prompt} and a
+mutable numeric knob \texttt{policy\_throttle} $\in [0, 1]$ (the seed
+value is the literal string \texttt{"1.0"} --- uniformly failing).
+The harness
+(\texttt{eval/convergence/synthetic\_signal\_harness.py}) reads the
+throttle directly from the dict via \texttt{parse\_throttle}; no
+prose parsing is performed and the \texttt{policy\_prompt} component
+is never read by the harness.  Two pieces of GEPA configuration
+enforce that the experiment exercises exactly one degree of freedom:
+(i) a custom \texttt{module\_selector}, \texttt{\_ThrottleOnlySelector},
+that always returns \texttt{[policy\_throttle]} so GEPA never
+proposes mutations to the prose slot (the default
+\texttt{round\_robin} would otherwise alternate between the two
+keys, and the adapter would reject any \texttt{policy\_prompt}
+mutation because the prose key is not in its \texttt{components}
+allowlist); and (ii) a per-component
+\texttt{reflection\_prompt\_template},
+\texttt{THROTTLE\_REFLECTION\_TEMPLATE}, that instructs the
+reflection LM to emit \emph{only} a bare float in $[0.0, 1.0]$
+--- no prose, no markdown fences, no units --- because GEPA's
+default reflection template wraps the LM's full response in
+backticks, which would land as the new candidate value verbatim and
+fail to parse as a float.  Both pieces are wired in
+\texttt{eval/convergence/theorem\_6\_experiment.py} (selector,
+template, and \texttt{MUTABLE\_COMPONENTS}).
+
+The harness then draws
 $W \cdot O$ observations from $\mathcal{N}(\text{throttle},
 \sigma^2)$ --- $W$ non-overlapping windows of $O$ observations each
 --- and returns the per-window means as the theorem's
 \texttt{signal\_values}.  The default calibration is
 $\tau = 0.5$, $\sigma = 0.08$, $W = 4$, $O = 8$, target throttle
-$\approx 0.35$.  The seed prompt uses \texttt{policy\_throttle = 1.0}
-(uniformly failing).  Per-rollout RNG is seeded
-deterministically via SHA-256 of \texttt{(run\_seed, data\_inst\_id)}
-so every batch is reproducible.
+$\approx 0.35$.  Per-rollout RNG is seeded deterministically via
+SHA-256 of \texttt{(run\_seed, data\_inst\_id)} so every batch is
+reproducible.
 
 \subsection{Arms}\label{sec:arms}
 
@@ -120,8 +145,21 @@ as a win.
 \subsection{Ablation}\label{sec:ablation}
 
 On seeds 0--4, we rerun cert-binary with a \emph{minimal} obligation
-formatter that replaces \texttt{default\_obligation\_formatter} with a
+formatter that replaces
+\texttt{stability\_windowed\_obligation\_formatter} with a
 single-line variant: \texttt{"constraint violated: window $k$"} (no
-evidence numbers, no theorem framing).  If the minimal-formatter arm
-matches the default-formatter arm, the signal is in the binarization;
-if it underperforms, the signal is in the evidence content.
+per-window numbers, no theorem framing).  Because both formatters
+run under the cert-binary adapter --- binarization is held constant
+--- the comparison isolates \emph{numeric evidence content +
+theorem framing within the binary arm}.  If the minimal-formatter
+arm matches the default-formatter arm, neither numeric evidence
+content nor theorem framing adds signal once a structural
+``window $k$ failed'' indicator is present; if it underperforms,
+the numeric content or framing is load-bearing.  The
+complementary contrast, cert-binary vs.\ scalar-evidence
+(Section~\ref{sec:arms}), tests \emph{binarization plus theorem
+framing} while holding per-window numeric evidence constant, since
+the two arms emit byte-identical evidence text after the first
+line by construction.  Read together, the two contrasts decompose
+the cert-binary signal into (a) binarization, (b) theorem framing,
+and (c) numeric evidence content.

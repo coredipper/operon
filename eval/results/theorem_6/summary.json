@@ -1,0 +1,99 @@
+{
+  "results_dir": "eval/results/theorem_6",
+  "treatment_arm": "cert-binary",
+  "baseline_arms": [
+    "scalar",
+    "scalar-evidence"
+  ],
+  "budget_iterations": 50,
+  "per_arm": {
+    "cert-binary": {
+      "n_runs": 10,
+      "n_converged": 10,
+      "convergence_rate": 1.0,
+      "convergence_rate_ci95": [
+        0.7225,
+        1.0
+      ],
+      "mean_iterations_to_convergence": 1.0,
+      "convergence_iterations": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "scalar": {
+      "n_runs": 10,
+      "n_converged": 10,
+      "convergence_rate": 1.0,
+      "convergence_rate_ci95": [
+        0.7225,
+        1.0
+      ],
+      "mean_iterations_to_convergence": 2.0,
+      "convergence_iterations": [
+        1,
+        1,
+        1,
+        2,
+        1,
+        2,
+        9,
+        1,
+        1,
+        1
+      ]
+    },
+    "scalar-evidence": {
+      "n_runs": 10,
+      "n_converged": 10,
+      "convergence_rate": 1.0,
+      "convergence_rate_ci95": [
+        0.7225,
+        1.0
+      ],
+      "mean_iterations_to_convergence": 1.0,
+      "convergence_iterations": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    }
+  },
+  "errored_runs_excluded": {
+    "cert-binary": 0,
+    "scalar": 0,
+    "scalar-evidence": 0
+  },
+  "comparisons_treatment_vs_baseline": {
+    "scalar": {
+      "u": 35.0,
+      "p_value": 0.03879164874256576,
+      "effect_size_rank_biserial": 0.30000000000000004,
+      "n_treatment": 10,
+      "n_baseline": 10
+    },
+    "scalar-evidence": {
+      "u": 50.0,
+      "p_value": 1.0,
+      "effect_size_rank_biserial": 0.0,
+      "n_treatment": 10,
+      "n_baseline": 10
+    }
+  },
+  "cdf_plot": "eval/results/theorem_6/cdf.png"
+}

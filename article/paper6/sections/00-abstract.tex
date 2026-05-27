@@ -16,11 +16,20 @@ treatment), \emph{scalar-reward} (a graded reward that peaks when the
 theorem holds), and \emph{scalar-with-evidence} (an active control
 carrying the same per-window violation text as the cert arm but
 without the theorem framing).  Ten seeds per arm, 50-iteration
-budget, Gemma~4 as the reflection LM.  \placeholder{Primary result:
-cert-binary vs strongest baseline mutations-to-convergence ratio,
-Mann-Whitney U p-value, rank-biserial effect size, Wilson 95\% CIs.}
+budget, Gemma~4 as the reflection LM.  All three arms converged on
+100\% of runs (Wilson 95\% CI $[0.722, 1.000]$ per arm).  Mean
+iterations-to-convergence were 1.0 for cert-binary, 2.0 for
+scalar, and 1.0 for scalar-evidence.  Against the strongest
+baseline (scalar-evidence), cert-binary is statistically
+indistinguishable (Mann-Whitney $U=50$, $p=1.000$, rank-biserial
+$0.00$); against the weaker baseline (scalar), cert-binary is
+faster ($U=35$, $p=0.039$, rank-biserial $0.30$).  The predeclared
+gate (ratio $\le 0.75$ at $p<0.05$ vs the stronger baseline) is
+not cleared, so the result is a \emph{null} for the binarization
+hypothesis: the per-window obligation evidence carries the signal,
+the binary/theorem framing does not add on top.
 
-\placeholder{Ablation on the obligation formatter} isolates whether
+The ablation on the obligation formatter isolates whether
 the signal comes from binarization or from obligation content.  The
 work is an engineering test of a theoretical claim (Theorem~3 of the
 companion integration memo) rather than a new algorithm; the
