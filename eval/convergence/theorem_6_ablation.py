@@ -186,7 +186,6 @@ def main() -> int:
     # runs are written to disk with ``gepa_error`` populated and are
     # filtered out before computing summary statistics, matching the
     # main analysis policy.
-    minimal_written = 0
     for seed in seeds:
         print(f"[paper6-ablation] seed={seed}")
         record = run_minimal_seed(
@@ -197,7 +196,6 @@ def main() -> int:
         (out_dir / f"seed_{seed}.json").write_text(
             json.dumps(record, indent=2, default=str)
         )
-        minimal_written += 1
         print(
             f"[paper6-ablation] seed={seed} "
             f"convergence={record['convergence_iteration']} "
@@ -208,7 +206,9 @@ def main() -> int:
     # Reload through the main-analysis loader so the same filter policy
     # applies on both sides of the comparison.  ``load_arm_records``
     # drops mocked and errored records by default, the contract the
-    # paper's results table relies on.
+    # paper's results table relies on.  Both arms are then filtered to
+    # the declared ``seeds`` so a stale ``seed_*.json`` left in either
+    # directory cannot silently inflate ``n_runs`` / shift ``mean_iters``.
     default_dir = Path("eval/results/theorem_6/cert-binary")
     default_all = load_arm_records(default_dir, include_mock=False, include_errored=True)
     default_records = [r for r in default_all if r["seed"] in seeds]
@@ -216,8 +216,9 @@ def main() -> int:
     default_excluded = len(default_records) - len(default_kept)
 
     minimal_all = load_arm_records(out_dir, include_mock=False, include_errored=True)
-    minimal_kept = [r for r in minimal_all if r.get("gepa_error") is None]
-    minimal_excluded = len(minimal_all) - len(minimal_kept)
+    minimal_records = [r for r in minimal_all if r["seed"] in seeds]
+    minimal_kept = [r for r in minimal_records if r.get("gepa_error") is None]
+    minimal_excluded = len(minimal_records) - len(minimal_kept)
 
     # Report the LM actually used per arm (the default arm reads it
     # from disk because the sweep may have run with a different LM
