@@ -121,6 +121,66 @@ def _build_harness(
 MUTABLE_COMPONENTS: tuple[str, ...] = (THROTTLE_COMPONENT_NAME,)
 
 
+#: Per-component reflection template for ``policy_throttle``.  GEPA's
+#: default template instructs the LM to "write a new instruction" and
+#: emit it inside ``` blocks — appropriate for prose components but
+#: catastrophic for a bare-float component (the LM's full response is
+#: written verbatim into the candidate, then ``parse_throttle`` falls
+#: back to the default ``1.0`` because the prose doesn't ``float()``).
+#: This template structures the interface so the LM understands the
+#: contract: output ONLY a bare float.  Required placeholders
+#: ``<curr_param>`` and ``<side_info>`` are validated by GEPA.
+THROTTLE_REFLECTION_TEMPLATE = """\
+You are tuning a single numeric parameter named `policy_throttle`. It is a
+real number in the closed interval [0.0, 1.0]. Lower values reduce the
+emitted signal magnitude; higher values increase it.
+
+The current value of `policy_throttle` is:
+```
+<curr_param>
+```
+
+The most recent evaluation against the stability obligation:
+```
+<side_info>
+```
+
+Your task: propose a new value for `policy_throttle`.
+
+OUTPUT FORMAT (strict): respond with exactly one line containing only a
+bare floating-point number between 0.0 and 1.0. No prose, no markdown, no
+prefix, no units, no surrounding quotes. The entire response must parse as
+a single Python ``float()``. Examples of valid responses:
+0.35
+0.10
+0.8
+"""
+
+
+class _ThrottleOnlySelector:
+    """GEPA component selector pinned to ``policy_throttle``.
+
+    The candidate dict has two keys — ``policy_prompt`` (constant prose
+    scratch-space, declared non-mutable on the adapter) and
+    ``policy_throttle`` (the mutable numeric knob).  GEPA's default
+    ``round_robin`` selector cycles through every key, including
+    ``policy_prompt``; the adapter then raises ``ValueError`` because
+    ``policy_prompt`` is not in its ``components`` allowlist.  This
+    selector skips the wasted round-trips by always returning the
+    throttle component.
+    """
+
+    def __call__(
+        self,
+        state: Any,
+        trajectories: list[Any],
+        subsample_scores: list[float],
+        candidate_idx: int,
+        candidate: dict[str, str],
+    ) -> list[str]:
+        return [THROTTLE_COMPONENT_NAME]
+
+
 def build_adapter(arm: str, config: TaskConfig, run_seed: int) -> Any:
     """Instantiate the adapter for the named arm."""
     harness = _build_harness(config, run_seed)
@@ -357,6 +417,10 @@ def run_single(
             raise_on_exception=False,
             display_progress_bar=False,
             callbacks=[recorder],
+            module_selector=_ThrottleOnlySelector(),
+            reflection_prompt_template={
+                THROTTLE_COMPONENT_NAME: THROTTLE_REFLECTION_TEMPLATE,
+            },
         )
         gepa_error = None
     except Exception as exc:  # noqa: BLE001 - experiment driver should capture failures

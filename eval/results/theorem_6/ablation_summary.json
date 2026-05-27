@@ -1,0 +1,29 @@
+{
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "default_formatter": {
+    "convergence_iterations": [
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "mean_iters": 1
+  },
+  "minimal_formatter": {
+    "convergence_iterations": [
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "mean_iters": 1
+  }
+}

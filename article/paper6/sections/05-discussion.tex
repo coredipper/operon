@@ -31,11 +31,36 @@ window index, giving three grain levels of text structure.
 
 \subsection{Reading the outcome}
 
-\placeholder{Interpretation of the observed table: which signal
-channel the reflection LM is most responsive to.  Specifically,
-comment on the cert-binary vs scalar-evidence gap (isolates
-binarization and framing), and on the formatter-ablation gap
-(isolates numbers vs indices).}
+The cert-binary~vs~scalar-evidence comparison is the cleanest
+test of the binarization+framing hypothesis, because the two arms
+emit byte-identical per-window evidence after the first line ---
+only the framing differs (\texttt{Theorem: \dots [FAILED/HOLDS]}
+in cert-binary, \texttt{Score: \dots} in scalar-evidence).  We
+observe \emph{exact parity}: both arms converge in 1.0 mean
+iterations across all ten seeds, Mann-Whitney $U=50$, $p=1.000$,
+rank-biserial $0.00$.  Under the present LM (Gemma~4, local
+Ollama) and task calibration, binarization of the score and
+explicit naming of the theorem add no measurable benefit on top of
+the evidence content.
+
+The cert-binary~vs~scalar gap, by contrast, is real: scalar lags
+at 2.0 mean iterations ($U=35$, $p=0.039$, rank-biserial $0.30$),
+driven by a single seed (seed~6) that took 9 iterations to
+converge.  Without any structured failure information the LM
+sometimes hunts before finding a stabilising throttle.
+
+The formatter ablation (Table~\ref{tab:paper6-ablation}) refines
+this further.  Stripping the per-window numeric evidence down to a
+bare index list (``constraint violated: window $k$'') leaves the
+default and minimal formatters \emph{tied at 1.0 mean iterations}
+on seeds 0--4.  The numeric content of the obligation is not load
+bearing on this task --- structural awareness of which window
+failed is sufficient for Gemma 4 to choose a throttle low enough to
+satisfy the stability predicate in a single step.  Combined with
+the cert-binary~vs~scalar-evidence parity, this localises the
+signal to a single distinction: \emph{some} structured failure
+information vs none.  Neither binarization, theorem framing, nor
+numeric evidence content adds further on top.
 
 \subsection{What this does not show}
 

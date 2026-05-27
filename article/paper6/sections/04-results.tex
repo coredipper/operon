@@ -23,9 +23,9 @@ Wilson 95\% CIs).}
 \toprule
 Arm & Converged / N & Rate & 95\% CI \\
 \midrule
-cert-binary       & \placeholder{c/10} & \placeholder{0.xxx} & \placeholder{[lo, hi]} \\
-scalar            & \placeholder{c/10} & \placeholder{0.xxx} & \placeholder{[lo, hi]} \\
-scalar-evidence   & \placeholder{c/10} & \placeholder{0.xxx} & \placeholder{[lo, hi]} \\
+cert-binary       & 10/10 & 1.000 & [0.722, 1.000] \\
+scalar            & 10/10 & 1.000 & [0.722, 1.000] \\
+scalar-evidence   & 10/10 & 1.000 & [0.722, 1.000] \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -47,9 +47,9 @@ rank-biserial effect size (positive = treatment dominates).}
 \toprule
 Arm & Mean iters & U & $p$ & Effect size \\
 \midrule
-cert-binary (treatment)   & \placeholder{m} & ---           & ---           & ---           \\
-scalar                    & \placeholder{m} & \placeholder{u} & \placeholder{p} & \placeholder{rb} \\
-scalar-evidence           & \placeholder{m} & \placeholder{u} & \placeholder{p} & \placeholder{rb} \\
+cert-binary (treatment)   & 1.0 & ---  & ---   & ---  \\
+scalar                    & 2.0 & 35.0 & 0.039 & 0.30 \\
+scalar-evidence           & 1.0 & 50.0 & 1.000 & 0.00 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -63,7 +63,7 @@ had converged by iteration $k$ or earlier.
 
 \begin{figure}[h]
 \centering
-\placeholder{CDF plot: eval/results/theorem\_6/cdf.png}
+\includegraphics[width=0.8\linewidth]{../../eval/results/theorem_6/cdf.png}
 \caption{Empirical CDF of iterations to convergence.  Lines that
 reach 1.0 faster indicate arms that converge more reliably.}
 \label{fig:paper6-cdf}
@@ -86,22 +86,21 @@ reports mean iterations for each.
 \toprule
 Formatter & Mean iters \\
 \midrule
-default (numbers + theorem framing) & \placeholder{m} \\
-minimal (window index only)         & \placeholder{m} \\
+default (numbers + theorem framing) & 1.0 \\
+minimal (window index only)         & 1.0 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \subsection{Honest verdict}
 
-\placeholder{One of the three outcomes declared in the companion
-memo:
-\emph{Strong positive} --- mean-iters ratio $\le 0.75$ with $p <
-0.05$; the conjecture is accepted as Theorem~3 for this task.
-\emph{Null} --- ratio in $(0.75, 1.0)$ or $p \ge 0.05$; the
-conjecture is retained as a conjecture; ablation results inform
-which pipeline stage carries what signal.
-\emph{Negative} --- cert-binary is slower than the stronger
-baseline; the conjecture is refuted for this task and the memo is
-updated to report the refutation.
-}
+\textbf{Null} per the predeclared gate.  The ratio
+$\bar n_{\text{cert-binary}}\,/\min(\bar n_{\text{scalar}}, \bar
+n_{\text{scalar-evidence}}) = 1.0\,/\min(2.0, 1.0) = 1.00$ does not
+clear the $\le 0.75$ threshold, and the $p$-value against the
+stronger baseline (\textit{scalar-evidence}) is $1.000$.  Theorem~3
+remains a conjecture rather than an accepted theorem for this task.
+The ablation in §\ref{sec:ablation} informs which pipeline stage
+carries what signal; see also the discussion (§\ref{sec:discussion})
+for the cert-binary~vs~scalar-evidence parity and the
+cert-binary~vs~scalar gap.

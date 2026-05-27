@@ -10,10 +10,22 @@ obligation text drawn from an Operon theorem verifier.  The
 scalar-reward and scalar-with-evidence arms form a minimal pair
 that isolates binarization from obligation-text content.
 
-\placeholder{Final one-sentence verdict: accept, refine, or reject
-the conjecture.  Mean iterations-to-convergence by arm.  Effect
-size and p-value for cert-binary vs the stronger baseline.
-Formatter-ablation outcome.}
+\textbf{Verdict: refine.}  All three arms reach 100\% convergence
+within budget; mean iterations-to-convergence are 1.0
+(cert-binary), 2.0 (scalar), and 1.0 (scalar-evidence).  Against
+the stronger baseline (scalar-evidence) cert-binary is statistically
+indistinguishable (Mann-Whitney $U=50$, $p=1.000$, rank-biserial
+$0.00$), so the predeclared $\le 0.75$-ratio gate is not cleared
+and Theorem~3 stays a conjecture rather than an accepted theorem
+for this task.  The formatter ablation on seeds 0--4 ties at 1.0
+mean iterations for both the default and the minimal formatter,
+localising the active ingredient to ``\emph{some} structured
+failure information vs none'' --- neither binarization, theorem
+framing, nor the numeric content of the obligation evidence adds
+on top.  The integration memo is updated accordingly: certificates
+remain a clean evaluator interface, but on this task they bring no
+convergence-speed advantage over a graded scalar reward paired with
+the same evidence text.
 
 \subsection{Follow-ups unblocked}\label{sec:followups}
 
