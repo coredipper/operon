@@ -65,33 +65,42 @@ if TYPE_CHECKING:
 # Enums
 # ---------------------------------------------------------------------------
 
+
 class CorruptionType(Enum):
     """Types of state corruption (analogous to DNA lesion types)."""
-    GENOME_DRIFT = "genome_drift"           # BER analog: gene values changed
-    EXPRESSION_DRIFT = "expression_drift"   # MMR analog: expression without regulatory signal
-    MEMORY_CORRUPTION = "memory_corruption" # NER analog: contradictions in BiTemporalMemory
-    CHECKSUM_FAILURE = "checksum_failure"    # DSB analog: hash mismatch
+
+    GENOME_DRIFT = "genome_drift"  # BER analog: gene values changed
+    EXPRESSION_DRIFT = (
+        "expression_drift"  # MMR analog: expression without regulatory signal
+    )
+    MEMORY_CORRUPTION = (
+        "memory_corruption"  # NER analog: contradictions in BiTemporalMemory
+    )
+    CHECKSUM_FAILURE = "checksum_failure"  # DSB analog: hash mismatch
 
 
 class DamageSeverity(IntEnum):
     """Severity levels for detected damage."""
-    LOW = 1        # Single gene drift, minor expression change
-    MODERATE = 2   # Multiple gene drifts, memory inconsistency
-    HIGH = 3       # Checksum failure, widespread corruption
-    CRITICAL = 4   # Irrecoverable without full checkpoint restore
+
+    LOW = 1  # Single gene drift, minor expression change
+    MODERATE = 2  # Multiple gene drifts, memory inconsistency
+    HIGH = 3  # Checksum failure, widespread corruption
+    CRITICAL = 4  # Irrecoverable without full checkpoint restore
 
 
 class RepairStrategy(Enum):
     """Repair approaches (analogous to DNA repair pathways)."""
-    ROLLBACK = "rollback"                     # Revert to checkpoint gene values
-    RE_EXPRESS = "re_express"                 # Reset expression levels to defaults
-    EPIGENETIC_PATCH = "epigenetic_patch"     # Store repair as histone marker
-    CHECKPOINT_RESTORE = "checkpoint_restore" # Full state restore from checkpoint
+
+    ROLLBACK = "rollback"  # Revert to checkpoint gene values
+    RE_EXPRESS = "re_express"  # Reset expression levels to defaults
+    EPIGENETIC_PATCH = "epigenetic_patch"  # Store repair as histone marker
+    CHECKPOINT_RESTORE = "checkpoint_restore"  # Full state restore from checkpoint  # noqa: E501
 
 
 # ---------------------------------------------------------------------------
 # Data structures
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class StateCheckpoint:
@@ -100,10 +109,13 @@ class StateCheckpoint:
     Biological analog: DNA checkpoint before cell division — a reference
     state that the repair machinery compares against.
     """
+
     genome_hash: str
-    expression_snapshot: tuple[tuple[str, int], ...]  # (gene_name, level_value) pairs
+    expression_snapshot: tuple[tuple[str, int], ...]  # (gene_name, level_value) pairs  # noqa: E501
     gene_values: tuple[tuple[str, Any], ...]  # (gene_name, value) pairs
-    gene_metadata: tuple[tuple[str, str, str, bool, int], ...]  # (name, gene_type, desc, required, default_expression)
+    gene_metadata: tuple[
+        tuple[str, str, str, bool, int], ...
+    ]  # (name, gene_type, desc, required, default_expression)
     gene_count: int
     timestamp: datetime
     checkpoint_id: str
@@ -126,10 +138,11 @@ class DamageReport:
     Biological analog: The lesion site identified by a repair enzyme —
     contains the type of damage, its location, and recommended fix.
     """
+
     corruption_type: CorruptionType
     severity: DamageSeverity
-    location: str            # e.g. "gene:temperature" or "expression:model"
-    description: str         # Human-readable explanation
+    location: str  # e.g. "gene:temperature" or "expression:model"
+    description: str  # Human-readable explanation
     expected: Any
     actual: Any
     recommended_strategy: RepairStrategy
@@ -138,6 +151,7 @@ class DamageReport:
 @dataclass
 class RepairResult:
     """Outcome of a repair operation."""
+
     success: bool
     strategy_used: RepairStrategy
     damage: DamageReport
@@ -148,6 +162,7 @@ class RepairResult:
 # ---------------------------------------------------------------------------
 # Verification function for Certificate integration
 # ---------------------------------------------------------------------------
+
 
 def _verify_state_integrity(
     params: Any,
@@ -186,6 +201,7 @@ _register("state_integrity_verified", _verify_state_integrity)
 # ---------------------------------------------------------------------------
 # DNARepair engine
 # ---------------------------------------------------------------------------
+
 
 class DNARepair:
     """State integrity checker and repair engine.
@@ -234,12 +250,16 @@ class DNARepair:
             for name, state in sorted(genome._expression.items())
         )
         gene_value_pairs = tuple(
-            (name, gene.value)
-            for name, gene in sorted(genome._genes.items())
+            (name, gene.value) for name, gene in sorted(genome._genes.items())
         )
         gene_meta_pairs = tuple(
-            (name, gene.gene_type.value, gene.description, gene.required,
-             gene.default_expression.value)
+            (
+                name,
+                gene.gene_type.value,
+                gene.description,
+                gene.required,
+                gene.default_expression.value,
+            )
             for name, gene in sorted(genome._genes.items())
         )
 
@@ -291,62 +311,70 @@ class DNARepair:
         # 1. Checksum scan (DSB)
         current_hash = genome.get_hash()
         if current_hash != checkpoint.genome_hash:
-            damage.append(DamageReport(
-                corruption_type=CorruptionType.CHECKSUM_FAILURE,
-                severity=DamageSeverity.HIGH,
-                location="genome:hash",
-                description=(
-                    f"Genome hash changed: "
-                    f"{checkpoint.genome_hash} → {current_hash}"
-                ),
-                expected=checkpoint.genome_hash,
-                actual=current_hash,
-                recommended_strategy=RepairStrategy.CHECKPOINT_RESTORE,
-            ))
+            damage.append(
+                DamageReport(
+                    corruption_type=CorruptionType.CHECKSUM_FAILURE,
+                    severity=DamageSeverity.HIGH,
+                    location="genome:hash",
+                    description=(
+                        f"Genome hash changed: "
+                        f"{checkpoint.genome_hash} → {current_hash}"
+                    ),
+                    expected=checkpoint.genome_hash,
+                    actual=current_hash,
+                    recommended_strategy=RepairStrategy.CHECKPOINT_RESTORE,
+                )
+            )
 
         # 2. Individual gene value scan (BER analog)
         cp_values = checkpoint.values_dict
         for gene_name, expected_value in cp_values.items():
             gene = genome.get_gene(gene_name)
             if gene is None:
-                damage.append(DamageReport(
-                    corruption_type=CorruptionType.GENOME_DRIFT,
-                    severity=DamageSeverity.MODERATE,
-                    location=f"gene:{gene_name}",
-                    description=f"Gene '{gene_name}' was removed",
-                    expected=expected_value,
-                    actual=None,
-                    recommended_strategy=RepairStrategy.CHECKPOINT_RESTORE,
-                ))
+                damage.append(
+                    DamageReport(
+                        corruption_type=CorruptionType.GENOME_DRIFT,
+                        severity=DamageSeverity.MODERATE,
+                        location=f"gene:{gene_name}",
+                        description=f"Gene '{gene_name}' was removed",
+                        expected=expected_value,
+                        actual=None,
+                        recommended_strategy=RepairStrategy.CHECKPOINT_RESTORE,
+                    )
+                )
             elif gene.value != expected_value:
-                damage.append(DamageReport(
-                    corruption_type=CorruptionType.GENOME_DRIFT,
-                    severity=DamageSeverity.MODERATE,
-                    location=f"gene:{gene_name}",
-                    description=(
-                        f"Gene '{gene_name}' value changed: "
-                        f"{expected_value} → {gene.value}"
-                    ),
-                    expected=expected_value,
-                    actual=gene.value,
-                    recommended_strategy=RepairStrategy.ROLLBACK,
-                ))
+                damage.append(
+                    DamageReport(
+                        corruption_type=CorruptionType.GENOME_DRIFT,
+                        severity=DamageSeverity.MODERATE,
+                        location=f"gene:{gene_name}",
+                        description=(
+                            f"Gene '{gene_name}' value changed: "
+                            f"{expected_value} → {gene.value}"
+                        ),
+                        expected=expected_value,
+                        actual=gene.value,
+                        recommended_strategy=RepairStrategy.ROLLBACK,
+                    )
+                )
 
         # 3. Gene count scan
         current_count = len(genome._genes)
         if current_count != checkpoint.gene_count:
-            damage.append(DamageReport(
-                corruption_type=CorruptionType.GENOME_DRIFT,
-                severity=DamageSeverity.MODERATE,
-                location="genome:gene_count",
-                description=(
-                    f"Gene count changed: "
-                    f"{checkpoint.gene_count} → {current_count}"
-                ),
-                expected=checkpoint.gene_count,
-                actual=current_count,
-                recommended_strategy=RepairStrategy.CHECKPOINT_RESTORE,
-            ))
+            damage.append(
+                DamageReport(
+                    corruption_type=CorruptionType.GENOME_DRIFT,
+                    severity=DamageSeverity.MODERATE,
+                    location="genome:gene_count",
+                    description=(
+                        f"Gene count changed: "
+                        f"{checkpoint.gene_count} → {current_count}"
+                    ),
+                    expected=checkpoint.gene_count,
+                    actual=current_count,
+                    recommended_strategy=RepairStrategy.CHECKPOINT_RESTORE,
+                )
+            )
 
         # 4. Expression scan (MMR)
         cp_expr = checkpoint.expression_dict
@@ -364,19 +392,21 @@ class DNARepair:
                 else:
                     severity = DamageSeverity.MODERATE
 
-                damage.append(DamageReport(
-                    corruption_type=CorruptionType.EXPRESSION_DRIFT,
-                    severity=severity,
-                    location=f"expression:{gene_name}",
-                    description=(
-                        f"Expression of '{gene_name}' changed: "
-                        f"{ExpressionLevel(expected_level).name} → "
-                        f"{ExpressionLevel(actual_level).name}"
-                    ),
-                    expected=expected_level,
-                    actual=actual_level,
-                    recommended_strategy=RepairStrategy.RE_EXPRESS,
-                ))
+                damage.append(
+                    DamageReport(
+                        corruption_type=CorruptionType.EXPRESSION_DRIFT,
+                        severity=severity,
+                        location=f"expression:{gene_name}",
+                        description=(
+                            f"Expression of '{gene_name}' changed: "
+                            f"{ExpressionLevel(expected_level).name} → "
+                            f"{ExpressionLevel(actual_level).name}"
+                        ),
+                        expected=expected_level,
+                        actual=actual_level,
+                        recommended_strategy=RepairStrategy.RE_EXPRESS,
+                    )
+                )
 
         # 5. Required gene validation
         # Check required genes directly rather than parsing error strings
@@ -384,15 +414,17 @@ class DNARepair:
             if gene.required:
                 expr = genome._expression.get(gname)
                 if expr and expr.level == ExpressionLevel.SILENCED:
-                    damage.append(DamageReport(
-                        corruption_type=CorruptionType.EXPRESSION_DRIFT,
-                        severity=DamageSeverity.HIGH,
-                        location=f"expression:{gname}",
-                        description=f"Required gene '{gname}' is silenced",
-                        expected="expressed",
-                        actual="silenced",
-                        recommended_strategy=RepairStrategy.RE_EXPRESS,
-                    ))
+                    damage.append(
+                        DamageReport(
+                            corruption_type=CorruptionType.EXPRESSION_DRIFT,
+                            severity=DamageSeverity.HIGH,
+                            location=f"expression:{gname}",
+                            description=f"Required gene '{gname}' is silenced",
+                            expected="expressed",
+                            actual="silenced",
+                            recommended_strategy=RepairStrategy.RE_EXPRESS,
+                        )
+                    )
 
         # Sort by severity descending
         damage.sort(key=lambda d: d.severity.value, reverse=True)
@@ -423,7 +455,7 @@ class DNARepair:
                 for _ in range(max_iterations):
                     if not remaining:
                         break
-                    result = self.repair(genome, remaining[0], checkpoint=checkpoint)
+                    result = self.repair(genome, remaining[0], checkpoint=checkpoint)  # noqa: E501
                     if not result.success:
                         break  # Can't make progress
                     prev_count = len(remaining)
@@ -454,7 +486,7 @@ class DNARepair:
         damage: list[DamageReport] = []
 
         # Build supersession graph: supersedes → fact_id
-        # BiTemporalFact uses `supersedes` (the ID of the fact this one replaces)
+        # BiTemporalFact uses `supersedes` (the ID of the fact this one replaces)  # noqa: E501
         supersession: dict[str, str] = {}  # old_id → new_id
         for fact in memory._facts:
             if fact.supersedes is not None:
@@ -469,18 +501,20 @@ class DNARepair:
             current_id = supersession.get(start_id)
             while current_id and current_id not in seen:
                 if current_id in chain:
-                    damage.append(DamageReport(
-                        corruption_type=CorruptionType.MEMORY_CORRUPTION,
-                        severity=DamageSeverity.HIGH,
-                        location=f"memory:supersession:{start_id}",
-                        description=(
-                            f"Circular supersession chain detected: "
-                            f"{' → '.join(chain)} → {current_id}"
-                        ),
-                        expected="linear supersession",
-                        actual="circular chain",
-                        recommended_strategy=RepairStrategy.EPIGENETIC_PATCH,
-                    ))
+                    damage.append(
+                        DamageReport(
+                            corruption_type=CorruptionType.MEMORY_CORRUPTION,
+                            severity=DamageSeverity.HIGH,
+                            location=f"memory:supersession:{start_id}",
+                            description=(
+                                f"Circular supersession chain detected: "
+                                f"{' → '.join(chain)} → {current_id}"
+                            ),
+                            expected="linear supersession",
+                            actual="circular chain",
+                            recommended_strategy=RepairStrategy.EPIGENETIC_PATCH,  # noqa: E501
+                        )
+                    )
                     break
                 chain.append(current_id)
                 current_id = supersession.get(current_id)
@@ -489,20 +523,152 @@ class DNARepair:
         if not self.silent:
             if damage:
                 print(
-                    f"\U0001f9ec [DNARepair] Memory scan: "
+                    "\U0001f9ec [DNARepair] Memory scan: "
                     f"{len(damage)} corruption(s) detected"
                 )
             else:
-                print(
-                    f"\U0001f9ec [DNARepair] Memory scan: "
-                    f"no corruption detected"
-                )
+                print("\U0001f9ec [DNARepair] Memory scan: " "no corruption detected")  # noqa: E501
 
         return damage
 
     # ------------------------------------------------------------------
     # Repair
     # ------------------------------------------------------------------
+
+    def _repair_rollback(
+        self,
+        genome: Genome,
+        damage: DamageReport,
+    ) -> tuple[bool, str]:
+        gene_name = self._extract_gene_name(damage)
+        if gene_name and genome.rollback_mutation(gene_name):
+            return True, f"Rolled back last mutation on '{gene_name}'"
+        return False, f"Rollback failed for '{gene_name or damage.location}'"
+
+    def _repair_re_express(
+        self,
+        genome: Genome,
+        damage: DamageReport,
+    ) -> tuple[bool, str]:
+        from .genome import ExpressionLevel
+
+        gene_name = self._extract_gene_name(damage)
+        if gene_name:
+            gene = genome.get_gene(gene_name)
+            if gene:
+                if damage.expected is not None and isinstance(damage.expected, int):  # noqa: E501
+                    target_level = ExpressionLevel(damage.expected)
+                else:
+                    target_level = gene.default_expression
+                genome.set_expression(gene_name, target_level, "dna_repair")
+                return True, f"Reset expression of '{gene_name}' to {target_level.name}"  # noqa: E501
+            else:
+                return False, f"Gene '{gene_name}' not found"
+        else:
+            return False, f"Cannot extract gene name from {damage.location}"
+
+    def _repair_epigenetic_patch(
+        self,
+        damage: DamageReport,
+        strategy: RepairStrategy,
+    ) -> tuple[bool, str]:
+        self._store_repair_marker(
+            RepairResult(
+                success=True,
+                strategy_used=strategy,
+                damage=damage,
+                details=f"Logged damage at {damage.location} as epigenetic marker",  # noqa: E501
+            )
+        )
+        details = (
+            f"Stored repair lesson for {damage.corruption_type.value} "
+            f"at {damage.location}"
+        )
+        return True, details
+
+    def _repair_checkpoint_restore(
+        self,
+        genome: Genome,
+        checkpoint: StateCheckpoint | None,
+    ) -> tuple[bool, str]:
+        target_cp = checkpoint
+        if target_cp is None and self._checkpoints:
+            target_cp = list(self._checkpoints.values())[-1]
+
+        if target_cp is None:
+            return False, "No checkpoint available for restore"
+
+        from .genome import Gene, GeneType, ExpressionState, ExpressionLevel
+
+        cp_values = target_cp.values_dict
+        cp_meta = {m[0]: m for m in target_cp.gene_metadata}
+        cp_expr = target_cp.expression_dict
+
+        # Phase 1: Build ALL replacement structures in temps
+        new_genes: dict[str, Gene] = {}
+        build_ok = True
+        details = ""
+        for gname, expected_value in cp_values.items():
+            meta = cp_meta.get(gname)
+            if meta is None:
+                details = f"Checkpoint missing metadata for gene '{gname}'"
+                build_ok = False
+                break
+            _, gtype, desc, req, def_expr = meta
+            new_genes[gname] = Gene(
+                name=gname,
+                value=expected_value,
+                gene_type=GeneType(gtype),
+                description=desc,
+                required=req,
+                default_expression=ExpressionLevel(def_expr),
+            )
+
+        new_expression: dict[str, ExpressionState] = {}
+        if build_ok:
+            if set(cp_expr.keys()) != set(cp_values.keys()):
+                details = "Checkpoint expression/gene key mismatch"
+                build_ok = False
+            else:
+                for gname, level_value in cp_expr.items():
+                    new_expression[gname] = ExpressionState(
+                        level=ExpressionLevel(level_value),
+                        modifier="checkpoint_restore",
+                    )
+
+        # Phase 2: Pre-swap validation + atomic swap with rollback
+        if build_ok:
+            if target_cp.gene_count != len(new_genes):
+                details = (
+                    f"Checkpoint gene_count ({target_cp.gene_count}) "
+                    f"!= restored genes ({len(new_genes)})"
+                )
+            else:
+                orig_genes = genome._genes
+                orig_expression = genome._expression
+                was_mutable = genome.allow_mutations
+                genome.allow_mutations = True
+                try:
+                    genome._genes = dict(new_genes)
+                    genome._expression = dict(new_expression)
+
+                    if genome.get_hash() == target_cp.genome_hash:
+                        return (
+                            True,
+                            f"Restored full state from checkpoint {target_cp.checkpoint_id}",  # noqa: E501
+                        )
+                    else:
+                        genome._genes = orig_genes
+                        genome._expression = orig_expression
+                        details = "Checkpoint restore: hash mismatch, rolled back"  # noqa: E501
+                except Exception:
+                    genome._genes = orig_genes
+                    genome._expression = orig_expression
+                    details = "Checkpoint restore: error during swap, rolled back"  # noqa: E501
+                finally:
+                    genome.allow_mutations = was_mutable
+
+        return False, details
 
     def repair(
         self,
@@ -523,139 +689,20 @@ class DNARepair:
         Returns:
             Result of the repair attempt.
         """
-        from .genome import ExpressionLevel
-
         strategy = strategy or damage.recommended_strategy
         success = False
         details = ""
 
         if strategy == RepairStrategy.ROLLBACK:
-            # Extract gene name from location
-            gene_name = self._extract_gene_name(damage)
-            if gene_name and genome.rollback_mutation(gene_name):
-                success = True
-                details = f"Rolled back last mutation on '{gene_name}'"
-            else:
-                details = f"Rollback failed for '{gene_name or damage.location}'"
-
+            success, details = self._repair_rollback(genome, damage)
         elif strategy == RepairStrategy.RE_EXPRESS:
-            gene_name = self._extract_gene_name(damage)
-            if gene_name:
-                gene = genome.get_gene(gene_name)
-                if gene:
-                    # Restore to checkpointed level if available, else default
-                    if damage.expected is not None and isinstance(damage.expected, int):
-                        target_level = ExpressionLevel(damage.expected)
-                    else:
-                        target_level = gene.default_expression
-                    genome.set_expression(gene_name, target_level, "dna_repair")
-                    success = True
-                    details = (
-                        f"Reset expression of '{gene_name}' to "
-                        f"{target_level.name}"
-                    )
-                else:
-                    details = f"Gene '{gene_name}' not found"
-            else:
-                details = f"Cannot extract gene name from {damage.location}"
-
+            success, details = self._repair_re_express(genome, damage)
         elif strategy == RepairStrategy.EPIGENETIC_PATCH:
-            # Store the damage as a lesson rather than modifying state
-            self._store_repair_marker(
-                RepairResult(
-                    success=True,
-                    strategy_used=strategy,
-                    damage=damage,
-                    details=f"Logged damage at {damage.location} as epigenetic marker",
-                )
-            )
-            success = True
-            details = (
-                f"Stored repair lesson for {damage.corruption_type.value} "
-                f"at {damage.location}"
-            )
-
+            success, details = self._repair_epigenetic_patch(damage, strategy)
         elif strategy == RepairStrategy.CHECKPOINT_RESTORE:
-            # Use provided checkpoint, or fall back to most recent stored
-            target_cp = checkpoint
-            if target_cp is None and self._checkpoints:
-                target_cp = list(self._checkpoints.values())[-1]
-
-            if target_cp is not None:
-                from .genome import Gene, GeneType
-
-                from .genome import ExpressionState
-                cp_values = target_cp.values_dict
-                cp_meta = {m[0]: m for m in target_cp.gene_metadata}
-                cp_expr = target_cp.expression_dict
-
-                # Phase 1: Build ALL replacement structures in temps
-                # Fail before touching the genome if anything is invalid
-                new_genes: dict[str, Gene] = {}
-                build_ok = True
-                for gname, expected_value in cp_values.items():
-                    meta = cp_meta.get(gname)
-                    if meta is None:
-                        details = f"Checkpoint missing metadata for gene '{gname}'"
-                        build_ok = False
-                        break
-                    _, gtype, desc, req, def_expr = meta
-                    new_genes[gname] = Gene(
-                        name=gname,
-                        value=expected_value,
-                        gene_type=GeneType(gtype),
-                        description=desc,
-                        required=req,
-                        default_expression=ExpressionLevel(def_expr),
-                    )
-
-                new_expression: dict[str, ExpressionState] = {}
-                if build_ok:
-                    # Validate expression covers exactly the gene set
-                    if set(cp_expr.keys()) != set(cp_values.keys()):
-                        details = "Checkpoint expression/gene key mismatch"
-                        build_ok = False
-                    else:
-                        for gname, level_value in cp_expr.items():
-                            new_expression[gname] = ExpressionState(
-                                level=ExpressionLevel(level_value),
-                                modifier="checkpoint_restore",
-                            )
-
-                # Phase 2: Pre-swap validation + atomic swap with rollback
-                if build_ok:
-                    # Validate count parity before swap
-                    if target_cp.gene_count != len(new_genes):
-                        details = (
-                            f"Checkpoint gene_count ({target_cp.gene_count}) "
-                            f"!= restored genes ({len(new_genes)})"
-                        )
-                    else:
-                        # Preserve originals for rollback
-                        orig_genes = genome._genes
-                        orig_expression = genome._expression
-                        was_mutable = genome.allow_mutations
-                        genome.allow_mutations = True
-                        try:
-                            genome._genes = dict(new_genes)
-                            genome._expression = dict(new_expression)
-
-                            if genome.get_hash() == target_cp.genome_hash:
-                                success = True
-                                details = f"Restored full state from checkpoint {target_cp.checkpoint_id}"
-                            else:
-                                # Roll back — hash mismatch
-                                genome._genes = orig_genes
-                                genome._expression = orig_expression
-                                details = "Checkpoint restore: hash mismatch, rolled back"
-                        except Exception:
-                            genome._genes = orig_genes
-                            genome._expression = orig_expression
-                            details = "Checkpoint restore: error during swap, rolled back"
-                        finally:
-                            genome.allow_mutations = was_mutable
-            else:
-                details = "No checkpoint available for restore"
+            success, details = self._repair_checkpoint_restore(genome, checkpoint)  # noqa: E501
+        else:
+            details = f"Unknown repair strategy: {strategy}"
 
         result = RepairResult(
             success=success,
@@ -669,10 +716,8 @@ class DNARepair:
             self._store_repair_marker(result)
 
         if not self.silent:
-            status = "\u2705" if success else "\u274c"
-            print(
-                f"\U0001f9ec [DNARepair] {status} {strategy.value}: {details}"
-            )
+            status = "✅" if success else "❌"
+            print(f"🧬 [DNARepair] {status} {strategy.value}: {details}")
 
         return result
 
@@ -719,9 +764,7 @@ class DNARepair:
                 "expression_match": expression_match,
                 "validation_ok": valid,
             },
-            conclusion=(
-                "Genome state matches checkpoint with no detected corruption"
-            ),
+            conclusion=("Genome state matches checkpoint with no detected corruption"),  # noqa: E501
             source="DNARepair.certify",
             _verify_fn=_verify_state_integrity,
         )
@@ -736,9 +779,7 @@ class DNARepair:
             "checkpoints": len(self._checkpoints),
             "scans_performed": self._scan_count,
             "repairs_attempted": len(self._repair_history),
-            "repairs_successful": len(
-                [r for r in self._repair_history if r.success]
-            ),
+            "repairs_successful": len([r for r in self._repair_history if r.success]),  # noqa: E501
             "repair_history": [
                 {
                     "strategy": r.strategy_used.value,
