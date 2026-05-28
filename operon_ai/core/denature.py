@@ -22,7 +22,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from dataclasses import dataclass, field
-from typing import Literal, Protocol, runtime_checkable
+from typing import Literal, Protocol, runtime_checkable, ClassVar
 
 
 @runtime_checkable
@@ -66,6 +66,8 @@ class StripMarkupFilter:
 
     name: str = "strip_markup"
 
+    _COLLAPSE_NEWLINES: ClassVar[re.Pattern[str]] = re.compile(r"\n{3,}")
+
     # Patterns ordered from most specific to most general
     _PATTERNS: tuple[re.Pattern[str], ...] = field(
         default=(
@@ -93,7 +95,7 @@ class StripMarkupFilter:
         for pattern in self._PATTERNS:
             result = pattern.sub("", result)
         # Collapse extra whitespace left behind
-        result = re.sub(r"\n{3,}", "\n\n", result)
+        result = self._COLLAPSE_NEWLINES.sub("\n\n", result)
         return result.strip()
 
 
