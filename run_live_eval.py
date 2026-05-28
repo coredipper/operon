@@ -1,5 +1,5 @@
 """Run live evaluation: Gemini API + Claude CLI + Codex CLI."""
-import argparse, os, sys, time
+import argparse, os, sys, threading, time
 
 # Load .env
 _env_path = os.path.join(os.path.dirname(__file__), ".env")
@@ -108,7 +108,9 @@ for provider_name in providers:
 
             # Rate limit buffer per provider
             delays = {"gemini": 5, "anthropic": 2, "openai": 2, "ollama": 0, "lmstudio": 0}
-            time.sleep(delays.get(provider_name, 1))
+            delay = delays.get(provider_name, 1)
+            if delay > 0:
+                threading.Event().wait(delay)
         print()
 
 # ==========================================================================
