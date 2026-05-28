@@ -52,8 +52,8 @@ Be thorough and specific — list every issue you find.
 
 ```python
 def process_user_input(data):
-    query = f"SELECT * FROM users WHERE name = '{data['name']}'"
-    result = db.execute(query)
+    query = "SELECT * FROM users WHERE name = ?"
+    result = db.execute(query, (data['name'],))
     users = []
     for row in result:
         user = {'name': row[0], 'email': row[1]}
@@ -63,7 +63,7 @@ def process_user_input(data):
 
 def reset_password(email):
     new_pass = str(random.randint(1000, 9999))
-    db.execute(f"UPDATE users SET password='{new_pass}' WHERE email='{email}'")
+    db.execute("UPDATE users SET password=? WHERE email=?", (new_pass, email))
     send_email(email, f"Your new password is: {new_pass}")
 
 def get_config():
@@ -98,7 +98,7 @@ JUDGE_PROMPT = """\
 Rate the quality of this code review on a scale of 0-10.
 
 CRITERIA:
-- Identifies specific bugs (SQL injection, weak hashing, missing error handling)
+- Identifies specific bugs (insecure YAML loading, weak hashing, missing error handling)
 - Provides actionable fix suggestions
 - Covers security, correctness, and best practices
 - Is specific rather than vague ("looks fine" = 0)
