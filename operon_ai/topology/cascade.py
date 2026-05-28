@@ -196,6 +196,121 @@ class Cascade:
                 return True
         return False
 
+    def _evaluate_checkpoint(self, stage: CascadeStage, current_signal: Any, stage_start: float, stage_results: list[StageResult]) -> tuple[str | None, str | None]:
+        """Evaluate checkpoint gate and return (action, blocked_at)."""
+        if not stage.checkpoint:
+            return None, None
+
+        try:
+            if not stage.checkpoint(current_signal):
+                if not self.silent:
+                    print(f"  🚫 Gate blocked at {stage.name}")
+
+                stage_result = StageResult(
+                    stage_name=stage.name,
+                    status=StageStatus.BLOCKED,
+                    input_signal=current_signal,
+                    output_signal=None,
+                    processing_time_ms=(time.time() - stage_start) * 1000
+                )
+                stage_results.append(stage_result)
+
+                if self.halt_on_failure:
+                    return "BREAK", stage.name
+                return "CONTINUE", stage.name
+        except Exception as e:
+            if not self.silent:
+                print(f"  ⚠️ Gate error at {stage.name}: {e}")
+            if self.halt_on_failure:
+                stage_result = StageResult(
+                    stage_name=stage.name,
+                    status=StageStatus.FAILED,
+                    input_signal=current_signal,
+                    output_signal=None,
+                    error=str(e),
+                    processing_time_ms=(time.time() - stage_start) * 1000
+                )
+                stage_results.append(stage_result)
+                return "BREAK", stage.name
+
+        return None, None
+
+    def _handle_stage_error(self, e: Exception, stage: CascadeStage, current_signal: Any, stage_start: float, stage_results: list[StageResult]) -> tuple[str | None, Any, str | None]:
+        """Handle stage error and return (action, current_signal, blocked_at)."""
+        if not self.silent:
+            print(f"  💥 Error at {stage.name}: {e}")
+
+        # Try error handler
+        if stage.on_error:
+            try:
+                recovery_signal = stage.on_error(e)
+                stage_result = StageResult(
+                    stage_name=stage.name,
+                    status=StageStatus.COMPLETED,
+                    input_signal=current_signal,
+                    output_signal=recovery_signal,
+                    error=f"Recovered: {e}",
+                    processing_time_ms=(time.time() - stage_start) * 1000
+                )
+                stage_results.append(stage_result)
+                return "CONTINUE", recovery_signal, None
+            except Exception as recovery_error:
+                if not self.silent:
+                    print(f"  💥 Recovery failed: {recovery_error}")
+
+        stage_result = StageResult(
+            stage_name=stage.name,
+            status=StageStatus.FAILED,
+            input_signal=current_signal,
+            output_signal=None,
+            error=str(e),
+            processing_time_ms=(time.time() - stage_start) * 1000
+        )
+        stage_results.append(stage_result)
+
+        if self.halt_on_failure and stage.required:
+            return "BREAK", current_signal, stage.name
+        elif not stage.required:
+            # Skip non-required stages on failure
+            stage_result.status = StageStatus.SKIPPED
+
+        return None, current_signal, None
+
+    def _execute_stage(self, stage: CascadeStage, current_signal: Any, cumulative_amplification: float, stage_start: float, stage_results: list[StageResult]) -> tuple[str | None, Any, float, str | None]:
+        """Process stage and return (action, current_signal, cumulative_amplification, blocked_at)."""
+        try:
+            output_signal = stage.processor(current_signal)
+
+            # Apply amplification
+            amplification = stage.amplification
+            cumulative_amplification *= amplification
+
+            # Clamp to max
+            if cumulative_amplification > self.max_amplification:
+                cumulative_amplification = self.max_amplification
+                if not self.silent:
+                    print(f"  ⚡ Amplification clamped to {self.max_amplification}")
+
+            stage_result = StageResult(
+                stage_name=stage.name,
+                status=StageStatus.COMPLETED,
+                input_signal=current_signal,
+                output_signal=output_signal,
+                amplification_factor=amplification,
+                processing_time_ms=(time.time() - stage_start) * 1000
+            )
+            stage_results.append(stage_result)
+
+            if self.on_stage_complete:
+                self.on_stage_complete(stage_result)
+
+            return None, output_signal, cumulative_amplification, None
+
+        except Exception as e:
+            action, current_signal, blocked_at = self._handle_stage_error(e, stage, current_signal, stage_start, stage_results)
+            return action, current_signal, cumulative_amplification, blocked_at
+
+
     def run(self, input_signal: Any) -> CascadeResult:
         """
         Run the cascade on an input signal.
@@ -224,110 +339,33 @@ class Cascade:
                 print(f"  📍 Stage {i+1}/{len(self._stages)}: {stage.name}")
 
             # Check checkpoint gate
-            if stage.checkpoint:
-                try:
-                    if not stage.checkpoint(current_signal):
-                        if not self.silent:
-                            print(f"  🚫 Gate blocked at {stage.name}")
-
-                        stage_result = StageResult(
-                            stage_name=stage.name,
-                            status=StageStatus.BLOCKED,
-                            input_signal=current_signal,
-                            output_signal=None,
-                            processing_time_ms=(time.time() - stage_start) * 1000
-                        )
-                        stage_results.append(stage_result)
-                        blocked_at = stage.name
-
-                        if self.halt_on_failure:
-                            break
-                        continue
-                except Exception as e:
-                    if not self.silent:
-                        print(f"  ⚠️ Gate error at {stage.name}: {e}")
-                    if self.halt_on_failure:
-                        stage_result = StageResult(
-                            stage_name=stage.name,
-                            status=StageStatus.FAILED,
-                            input_signal=current_signal,
-                            output_signal=None,
-                            error=str(e),
-                            processing_time_ms=(time.time() - stage_start) * 1000
-                        )
-                        stage_results.append(stage_result)
-                        blocked_at = stage.name
-                        break
+            action, blocked_at_checkpoint = self._evaluate_checkpoint(
+                stage, current_signal, stage_start, stage_results
+            )
+            if blocked_at_checkpoint:
+                blocked_at = blocked_at_checkpoint
+            if action == "BREAK":
+                break
+            elif action == "CONTINUE":
+                continue
 
             # Process stage
-            try:
-                output_signal = stage.processor(current_signal)
+            action, current_signal, cumulative_amplification, blocked_at_exec = self._execute_stage(
+                stage, current_signal, cumulative_amplification, stage_start, stage_results
+            )
+            if blocked_at_exec:
+                blocked_at = blocked_at_exec
+            if action == "BREAK":
+                break
+            elif action == "CONTINUE":
+                continue
 
-                # Apply amplification
-                amplification = stage.amplification
-                cumulative_amplification *= amplification
+        return self._finalize_run(
+            start_time, current_signal, cumulative_amplification, stage_results, blocked_at
+        )
 
-                # Clamp to max
-                if cumulative_amplification > self.max_amplification:
-                    cumulative_amplification = self.max_amplification
-                    if not self.silent:
-                        print(f"  ⚡ Amplification clamped to {self.max_amplification}")
-
-                stage_result = StageResult(
-                    stage_name=stage.name,
-                    status=StageStatus.COMPLETED,
-                    input_signal=current_signal,
-                    output_signal=output_signal,
-                    amplification_factor=amplification,
-                    processing_time_ms=(time.time() - stage_start) * 1000
-                )
-                stage_results.append(stage_result)
-
-                if self.on_stage_complete:
-                    self.on_stage_complete(stage_result)
-
-                current_signal = output_signal
-
-            except Exception as e:
-                if not self.silent:
-                    print(f"  💥 Error at {stage.name}: {e}")
-
-                # Try error handler
-                if stage.on_error:
-                    try:
-                        recovery_signal = stage.on_error(e)
-                        stage_result = StageResult(
-                            stage_name=stage.name,
-                            status=StageStatus.COMPLETED,
-                            input_signal=current_signal,
-                            output_signal=recovery_signal,
-                            error=f"Recovered: {e}",
-                            processing_time_ms=(time.time() - stage_start) * 1000
-                        )
-                        stage_results.append(stage_result)
-                        current_signal = recovery_signal
-                        continue
-                    except Exception as recovery_error:
-                        if not self.silent:
-                            print(f"  💥 Recovery failed: {recovery_error}")
-
-                stage_result = StageResult(
-                    stage_name=stage.name,
-                    status=StageStatus.FAILED,
-                    input_signal=current_signal,
-                    output_signal=None,
-                    error=str(e),
-                    processing_time_ms=(time.time() - stage_start) * 1000
-                )
-                stage_results.append(stage_result)
-
-                if self.halt_on_failure and stage.required:
-                    blocked_at = stage.name
-                    break
-                elif not stage.required:
-                    # Skip non-required stages on failure
-                    stage_result.status = StageStatus.SKIPPED
-
+    def _finalize_run(self, start_time: float, current_signal: Any, cumulative_amplification: float, stage_results: list[StageResult], blocked_at: str | None) -> CascadeResult:
+        """Finalize the cascade run and return the result."""
         # Calculate results
         completed_stages = sum(1 for r in stage_results if r.status == StageStatus.COMPLETED)
         success = completed_stages == len(self._stages) and blocked_at is None
