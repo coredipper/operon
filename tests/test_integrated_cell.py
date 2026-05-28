@@ -172,3 +172,21 @@ class TestIntegratedCell:
 
         # All operations should be terminated
         assert len(cell.coordination.controller.active_operations) == 0
+
+    def test_execute_handles_exceptions(self):
+        cell = IntegratedCell()
+        cell.register_agent("agent1")
+
+        def work():
+            raise ValueError("Test error during execution")
+
+        result = cell.execute(
+            agent_id="agent1",
+            operation_id="op1",
+            work_fn=work,
+        )
+
+        assert result.success is False
+        assert "Test error during execution" in result.error
+        # Check cleanup in finally block
+        assert "agent1" not in cell.agent_operations
