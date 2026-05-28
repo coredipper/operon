@@ -49,3 +49,6 @@
 ## 2026-05-26 - any() with Generators Overhead
 **Learning:** In Python, using `any()` with a generator expression (e.g., `any(kw in ... for kw in [...])`) incurs a slight overhead due to the creation of the generator object and the function call overhead. Replacing this with an explicit `for` loop and moving inline lists to class-level tuple variables avoids allocating new lists on every function call and the generator overhead. In a micro-benchmark, this yielded a ~4x speedup (from 1.67s down to 0.40s for 1M iterations) for string matching checks.
 **Action:** In highly-frequent hot paths like `operon_ai/organelles/mitochondria.py`, replace `any(...)` with an explicit `for` loop, and lift the inline lists (`['true', ...]`) to class-level tuple variables (`_BOOLEAN_KWS`).
+## 2024-05-20 - Generator Expression vs List Comprehension for Membership Checks
+**Learning:** Using a generator expression `val not in (item for item in collection)` instead of a list comprehension `val not in [item for item in collection]` avoids full list allocation in memory and enables early short-circuiting for membership checks, significantly improving performance and reducing memory overhead.
+**Action:** When performing membership checks (`in` or `not in`) against a transformed collection, prefer a generator expression over a list comprehension.
