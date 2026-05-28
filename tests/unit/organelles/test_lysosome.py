@@ -112,6 +112,32 @@ class TestLysosomeBasics:
         assert stats["total_digested"] == 5
 
 
+    def test_digest_error_handling(self):
+        """Should handle and record errors during digestion."""
+        def failing_digester(waste):
+            raise ValueError("Mock digestion error")
+
+        lysosome = Lysosome(
+            silent=True,
+            digesters={WasteType.FAILED_OPERATION: failing_digester}
+        )
+
+        waste = Waste(
+            waste_type=WasteType.FAILED_OPERATION,
+            content="test data",
+            source="test"
+        )
+        lysosome.ingest(waste)
+
+        result = lysosome.digest()
+
+        assert result.success is False
+        assert len(result.errors) == 1
+        assert "Failed to digest" in result.errors[0]
+        assert "Mock digestion error" in result.errors[0]
+        assert result.disposed == 0
+
+
 class TestLysosomeWasteTypes:
     """Test handling of different waste types."""
 
