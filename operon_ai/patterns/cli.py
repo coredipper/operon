@@ -61,6 +61,98 @@ def _sanitize(task: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+
+def _build_command(
+    command: str | list[str],
+    task: str,
+    input_mode: str,
+    shell: bool,
+    sanitize_task: bool,
+) -> tuple[list[str], str, str | None, str]:
+    if isinstance(command, str):
+        cmd_parts = shlex.split(command)
+    else:
+        cmd_parts = list(command)
+
+    task_input = task
+    if sanitize_task and not shell:
+        task_input = _sanitize(task)
+
+    stdin_data = None
+    if input_mode == "arg":
+        cmd_parts.append(task_input)
+    elif input_mode == "stdin":
+        stdin_data = task_input
+    elif input_mode == "none":
+        pass
+    else:
+        raise ValueError(f"Unknown input_mode: {input_mode!r}")
+
+    if shell:
+        base = command if isinstance(command, str) else " ".join(command)
+        if input_mode == "arg":
+            cmd_str = f"{base} {shlex.quote(task_input)}"
+        else:
+            cmd_str = base
+    else:
+        cmd_str = " ".join(cmd_parts)
+
+    return cmd_parts, cmd_str, stdin_data, task_input
+
+
+def _execute_command(
+    cmd_parts: list[str],
+    cmd_str: str,
+    stdin_data: str | None,
+    timeout: float,
+    shell: bool,
+) -> CLIResult:
+    start = time.time()
+    timed_out = False
+    try:
+        result = subprocess.run(
+            cmd_parts if not shell else cmd_str,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            input=stdin_data,
+            shell=shell,
+        )
+        stdout = result.stdout
+        stderr = result.stderr
+        returncode = result.returncode
+    except subprocess.TimeoutExpired:
+        stdout = ""
+        stderr = f"Command timed out after {timeout}s"
+        returncode = -1
+        timed_out = True
+
+    latency_ms = (time.time() - start) * 1000
+
+    return CLIResult(
+        stdout=stdout,
+        stderr=stderr,
+        returncode=returncode,
+        command=cmd_str,
+        latency_ms=latency_ms,
+        timed_out=timed_out,
+    )
+
+
+def _parse_command_output(
+    stdout: str,
+    parse_output: Callable[[str], Any] | None,
+) -> Any:
+    output = stdout.strip()
+    if parse_output is not None and stdout:
+        try:
+            output = parse_output(stdout)
+        except Exception:
+            pass
+    return output
+
+
+# ---------------------------------------------------------------------------
 # Handler factory
 # ---------------------------------------------------------------------------
 
@@ -94,78 +186,13 @@ def cli_handler(
     """
 
     def handler(task: str) -> dict[str, Any]:
-        # Build command
-        if isinstance(command, str):
-            cmd_parts = shlex.split(command)
-        else:
-            cmd_parts = list(command)
-
-        task_input = task
-        if sanitize_task and not shell:
-            task_input = _sanitize(task)
-
-        stdin_data = None
-        if input_mode == "arg":
-            cmd_parts.append(task_input)
-        elif input_mode == "stdin":
-            stdin_data = task_input
-        elif input_mode == "none":
-            pass
-        else:
-            raise ValueError(f"Unknown input_mode: {input_mode!r}")
-
-        if shell:
-            # Build shell string from the original command, plus any appended args
-            base = command if isinstance(command, str) else " ".join(command)
-            if input_mode == "arg":
-                cmd_str = f"{base} {shlex.quote(task_input)}"
-            else:
-                cmd_str = base
-        else:
-            cmd_str = " ".join(cmd_parts)
-
-        # Execute
-        start = time.time()
-        timed_out = False
-        try:
-            result = subprocess.run(
-                cmd_parts if not shell else cmd_str,
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-                input=stdin_data,
-                shell=shell,
-            )
-            stdout = result.stdout
-            stderr = result.stderr
-            returncode = result.returncode
-        except subprocess.TimeoutExpired:
-            stdout = ""
-            stderr = f"Command timed out after {timeout}s"
-            returncode = -1
-            timed_out = True
-
-        latency_ms = (time.time() - start) * 1000
-
-        cli_result = CLIResult(
-            stdout=stdout,
-            stderr=stderr,
-            returncode=returncode,
-            command=cmd_str,
-            latency_ms=latency_ms,
-            timed_out=timed_out,
+        cmd_parts, cmd_str, stdin_data, _ = _build_command(
+            command, task, input_mode, shell, sanitize_task
         )
+        cli_result = _execute_command(cmd_parts, cmd_str, stdin_data, timeout, shell)
+        output = _parse_command_output(cli_result.stdout, parse_output)
 
-        # Parse output
-        output = stdout.strip()
-        if parse_output is not None and stdout:
-            try:
-                output = parse_output(stdout)
-            except Exception:
-                pass  # Fall back to raw stdout
-
-        # Action type
-        action_type = "EXECUTE" if returncode in success_codes else "FAILURE"
+        action_type = "EXECUTE" if cli_result.returncode in success_codes else "FAILURE"
 
         return {
             "output": output,
