@@ -77,8 +77,10 @@ class MockProvider:
             return f"The result is {result}."
 
         # Safety check patterns
-        if any(word in prompt_lower for word in ["safe", "dangerous", "risk"]):
-            if any(word in prompt_lower for word in ["delete", "rm -rf", "drop table"]):
+        # Performance: Replaced list literals with set literals. Python pre-compiles set literals
+        # into frozenset constants, avoiding the runtime BUILD_LIST overhead on every call.
+        if any(word in prompt_lower for word in {"safe", "dangerous", "risk"}):
+            if any(word in prompt_lower for word in {"delete", "rm -rf", "drop table"}):
                 return "UNSAFE: This operation could cause data loss."
             return "SAFE: This operation appears safe to proceed."
 

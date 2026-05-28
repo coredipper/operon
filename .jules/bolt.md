@@ -49,3 +49,6 @@
 ## 2026-05-26 - any() with Generators Overhead
 **Learning:** In Python, using `any()` with a generator expression (e.g., `any(kw in ... for kw in [...])`) incurs a slight overhead due to the creation of the generator object and the function call overhead. Replacing this with an explicit `for` loop and moving inline lists to class-level tuple variables avoids allocating new lists on every function call and the generator overhead. In a micro-benchmark, this yielded a ~4x speedup (from 1.67s down to 0.40s for 1M iterations) for string matching checks.
 **Action:** In highly-frequent hot paths like `operon_ai/organelles/mitochondria.py`, replace `any(...)` with an explicit `for` loop, and lift the inline lists (`['true', ...]`) to class-level tuple variables (`_BOOLEAN_KWS`).
+## 2024-03-05 - Pre-compile Sets over Lists in Literals
+**Learning:** For performance efficiency when iterating over collection literals in Python (e.g., inside an `any()` generator expression), prefer using set literals (`{'a', 'b'}`) instead of list literals (`['a', 'b']`). Python pre-compiles set literals into `frozenset` constants, avoiding the runtime `BUILD_LIST` execution overhead on every call.
+**Action:** Always prefer set literals over list literals for inline collections that are iterated or checked against, to leverage Python's compile-time `frozenset` optimization.
