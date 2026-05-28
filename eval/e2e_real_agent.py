@@ -68,7 +68,7 @@ def reset_password(email):
 
 def get_config():
     with open('/etc/app/config.yaml') as f:
-        return yaml.load(f)
+        return yaml.safe_load(f)
 ```
 """
 
