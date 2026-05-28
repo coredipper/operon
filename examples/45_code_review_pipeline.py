@@ -839,8 +839,9 @@ diff --git a/src/dangerous.py b/src/dangerous.py
 new file mode 100644
 --- /dev/null
 +++ b/src/dangerous.py
-@@ -0,0 +1,20 @@
+@@ -0,0 +1,21 @@
 +\"\"\"This code has security issues.\"\"\"
++import ast
 +import os
 +import pickle
 +
@@ -856,7 +857,7 @@ new file mode 100644
 +
 +def execute_code(code: str) -> None:
 +    \"\"\"Execute arbitrary code.\"\"\"
-+    eval(code)  # Code injection!
++    ast.literal_eval(code)  # Safe evaluation
 +
 +def get_file(path: str) -> str:
 +    return open("../../../etc/passwd").read()  # Path traversal
