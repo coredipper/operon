@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from operon_ai.coordination.types import (
     Phase, CheckpointResult, ResourceLock, LockResult,
 )
+import unittest.mock
 from operon_ai.coordination.watchdog import ApoptosisReason
 from operon_ai.coordination.system import CoordinationSystem, CoordinationResult
 
@@ -121,7 +122,84 @@ class TestCoordinationSystem:
         )
 
         assert result.success is False
-        assert "work failed" in result.error
+        assert "Work failed: work failed" in result.error
+
+    def test_execute_resource_blocked(self):
+        system = CoordinationSystem()
+        system.register_resource("shared")
+
+        # Block the resource
+        ctx1 = system.start_operation("op1", "agent1")
+        system.controller.acquire_resource(ctx1, "shared")
+
+        def work():
+            return {"result": "success"}
+
+        result = system.execute_operation(
+            operation_id="op2",
+            agent_id="agent2",
+            resources=["shared"],
+            work_fn=work,
+        )
+
+        assert result.success is False
+        assert "Blocked on resource shared" in result.error
+
+    def test_execute_g1_checkpoint_fails(self):
+        system = CoordinationSystem()
+
+        def work():
+            return {"result": "success"}
+
+        with unittest.mock.patch.object(system.controller, 'advance', return_value=CheckpointResult.FAILED):
+            result = system.execute_operation(
+                operation_id="op1",
+                agent_id="agent1",
+                work_fn=work,
+            )
+
+        assert result.success is False
+        assert "G1 checkpoint failed" in result.error
+
+    def test_execute_s_checkpoint_fails(self):
+        system = CoordinationSystem()
+
+        def work():
+            return {"result": "success"}
+
+        # Return PASSED for G0->G1, PASSED for G1->S, then FAILED for S->G2
+        side_effect = [CheckpointResult.PASSED, CheckpointResult.PASSED, CheckpointResult.FAILED]
+        with unittest.mock.patch.object(system.controller, 'advance', side_effect=side_effect):
+            result = system.execute_operation(
+                operation_id="op1",
+                agent_id="agent1",
+                work_fn=work,
+            )
+
+        assert result.success is False
+        assert "S checkpoint failed" in result.error
+
+    def test_execute_g2_checkpoint_fails(self):
+        system = CoordinationSystem()
+
+        def work():
+            return {"result": "success"}
+
+        def validate(r):
+            return True
+
+        # Return PASSED for G0->G1, PASSED for G1->S, PASSED for S->G2, then FAILED for G2->M
+        side_effect = [CheckpointResult.PASSED, CheckpointResult.PASSED, CheckpointResult.PASSED, CheckpointResult.FAILED]
+        with unittest.mock.patch.object(system.controller, 'advance', side_effect=side_effect):
+            result = system.execute_operation(
+                operation_id="op1",
+                agent_id="agent1",
+                work_fn=work,
+                validate_fn=validate,
+            )
+
+        assert result.success is False
+        assert "G2 checkpoint failed" in result.error
 
     def test_resource_blocking(self):
         system = CoordinationSystem()
