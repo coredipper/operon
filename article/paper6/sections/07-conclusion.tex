@@ -11,21 +11,32 @@ scalar-reward and scalar-with-evidence arms form a minimal pair
 that isolates binarization from obligation-text content.
 
 \textbf{Verdict: refine.}  All three arms reach 100\% convergence
-within budget; mean iterations-to-convergence are 1.0
-(cert-binary), 2.0 (scalar), and 1.0 (scalar-evidence).  Against
-the stronger baseline (scalar-evidence) cert-binary is statistically
-indistinguishable (Mann-Whitney $U=50$, $p=1.000$, rank-biserial
-$0.00$), so the predeclared $\le 0.75$-ratio gate is not cleared
-and Theorem~3 stays a conjecture rather than an accepted theorem
-for this task.  The formatter ablation on seeds 0--4 ties at 1.0
-mean iterations for both the default and the minimal formatter,
-localising the active ingredient to ``\emph{some} structured
-failure information vs none'' --- neither binarization, theorem
-framing, nor the numeric content of the obligation evidence adds
-on top.  The integration memo is updated accordingly: certificates
-remain a clean evaluator interface, but on this task they bring no
-convergence-speed advantage over a graded scalar reward paired with
-the same evidence text.
+within budget in the reported sweep; mean iterations-to-convergence
+are 1.0 (cert-binary), 2.0 (scalar), and 1.0 (scalar-evidence).
+Against the stronger baseline (scalar-evidence) cert-binary is
+statistically indistinguishable (Mann-Whitney $U=50$, $p=1.000$,
+rank-biserial $0.00$), so the predeclared $\le 0.75$-ratio gate is
+not cleared and Theorem~3 stays a conjecture rather than an accepted
+theorem for this task.  An $N=10$ replication
+(Section~\ref{sec:variance}) confirms the Null is not a single-draw
+artifact: cert-binary and scalar-evidence are indistinguishable in
+$10/10$ repetitions and the gate is cleared in $0/10$, even though
+the exact $p=1.000$ is a single draw from a non-deterministic LM.
+The formatter ablation on seeds 0--4 ties at 1.0 mean iterations for
+both the default and the minimal formatter (in all ten repetitions),
+localising the active ingredient to ``\emph{some} structured failure
+information vs none'' --- neither binarization, theorem framing, nor
+the numeric content of the obligation evidence adds on top.  The
+replication's sharpest finding is about variance, not means: the
+obligation-bearing arms (cert-binary, scalar-evidence) are
+essentially deterministic at 1.0 while the graded-scalar arm ranges
+over $[1.2, 6.5]$ and occasionally fails to converge, so the value
+of an obligation channel on this task is better described as
+\emph{reducing the variance of convergence} than its mean.  The
+integration memo is updated accordingly: certificates remain a clean
+evaluator interface, but on this task they bring no convergence-speed
+advantage over a graded scalar reward paired with the same evidence
+text.
 
 \subsection{Follow-ups unblocked}\label{sec:followups}
 
@@ -108,23 +119,30 @@ child and verifies both verdicts.
 \texttt{scalar\_with\_evidence\_adapter.py}
 \item Analysis:
 \texttt{eval/convergence/analysis\_theorem\_6.py}
+\item Variance replication ($N=10$):
+\texttt{eval/convergence/theorem\_6\_variance.py}
 \item Per-arm trajectories:
 \texttt{eval/results/theorem\_6/\{arm\}/seed\_*.json}
 \item Ablation trajectories:
 \texttt{eval/results/theorem\_6/ablation\_minimal/seed\_*.json}
 \item Summaries:
 \texttt{eval/results/theorem\_6/summary.json},
-\texttt{eval/results/theorem\_6/ablation\_summary.json}
+\texttt{eval/results/theorem\_6/ablation\_summary.json},
+\texttt{eval/results/theorem\_6/variance\_summary.json}
 \item Unit tests:
 \texttt{tests/unit/convergence/test\_paper6\_*.py}
 \end{itemize}
 
-\paragraph{Reproducibility.}
+\paragraph{Reproducibility.}  Because the reflection LM is
+non-deterministic (Section~\ref{sec:variance}), a single sweep
+reproduces the qualitative verdict but not the exact point
+estimates; the variance driver characterises the spread.
 \begin{verbatim}
 pip install gepa matplotlib scipy
 ollama pull gemma4  # if not already local
 python -m eval.convergence.theorem_6_experiment --sweep
 python -m eval.convergence.theorem_6_ablation
 python -m eval.convergence.analysis_theorem_6
+python -m eval.convergence.theorem_6_variance   # N=10 spread
 cd article/paper6 && tectonic main.tex
 \end{verbatim}

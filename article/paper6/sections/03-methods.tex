@@ -142,6 +142,15 @@ decision gate, is:
 Any smaller observed effect is reported as inconclusive rather than
 as a win.
 
+\paragraph{Non-determinism.}  The reflection LM is invoked without a
+temperature or seed pin, so per-cell convergence is a random
+variable and a single sweep yields point estimates, not fixed
+values.  All headline claims are therefore checked against an $N=10$
+replication of the full protocol
+(Section~\ref{sec:variance}); where the single-sweep estimate and
+the replication disagree, the replication's distribution is the
+reported result.
+
 \subsection{Ablation}\label{sec:ablation}
 
 On seeds 0--4, we rerun cert-binary with a \emph{minimal} obligation

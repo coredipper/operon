@@ -66,3 +66,7 @@ article/**/*.toc
 article/**/*.fls
 article/**/*.fdb_latexmk
 article/**/*.synctex.gz
+
+# Paper-6 variance harness resume scratch (raw per-rep state; the
+# committed artifact is variance_summary.json, not this file)
+eval/results/theorem_6/.variance_reps.json

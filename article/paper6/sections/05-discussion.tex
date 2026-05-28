@@ -35,19 +35,27 @@ The cert-binary~vs~scalar-evidence comparison is the cleanest
 test of the binarization+framing hypothesis, because the two arms
 emit byte-identical per-window evidence after the first line ---
 only the framing differs (\texttt{Theorem: \dots [FAILED/HOLDS]}
-in cert-binary, \texttt{Score: \dots} in scalar-evidence).  We
-observe \emph{exact parity}: both arms converge in 1.0 mean
-iterations across all ten seeds, Mann-Whitney $U=50$, $p=1.000$,
-rank-biserial $0.00$.  Under the present LM (Gemma~4, local
-Ollama) and task calibration, binarization of the score and
-explicit naming of the theorem add no measurable benefit on top of
-the evidence content.
+in cert-binary, \texttt{Score: \dots} in scalar-evidence).  In the
+reported sweep both arms converge in 1.0 mean iterations across all
+ten seeds, Mann-Whitney $U=50$, $p=1.000$, rank-biserial $0.00$ ---
+\emph{parity}.  This point estimate is one draw from a
+non-deterministic reflection LM; the $N=10$ replication in
+Section~\ref{sec:variance} shows the two arms are statistically
+indistinguishable in \emph{every} repetition (cert-binary never
+slower), so the parity conclusion is robust even though the exact
+$p=1.000$ is not.  Under the present LM (Gemma~4, local Ollama) and
+task calibration, binarization of the score and explicit naming of
+the theorem add no measurable benefit on top of the evidence
+content.
 
-The cert-binary~vs~scalar gap, by contrast, is real: scalar lags
-at 2.0 mean iterations ($U=35$, $p=0.039$, rank-biserial $0.30$),
-driven by a single seed (seed~6) that took 9 iterations to
-converge.  Without any structured failure information the LM
-sometimes hunts before finding a stabilising throttle.
+The cert-binary~vs~scalar gap, by contrast, is real: in the
+reported sweep scalar lags at 2.0 mean iterations ($U=35$,
+$p=0.039$, rank-biserial $0.30$), driven by a single seed (seed~6)
+that took 9 iterations to converge.  Without any structured failure
+information the LM sometimes hunts before finding a stabilising
+throttle --- and the replication below shows this hunting is not a
+one-seed accident but the scalar arm's defining property: it is the
+\emph{high-variance} arm.
 
 The formatter ablation (Table~\ref{tab:paper6-ablation}) refines
 this further.  Stripping the per-window numeric evidence down to a
@@ -60,7 +68,58 @@ satisfy the stability predicate in a single step.  Combined with
 the cert-binary~vs~scalar-evidence parity, this localises the
 signal to a single distinction: \emph{some} structured failure
 information vs none.  Neither binarization, theorem framing, nor
-numeric evidence content adds further on top.
+numeric evidence content adds further on top.  The replication in
+Section~\ref{sec:variance} confirms this ablation tie is not a lucky
+draw: default and minimal formatters tie at 1.0 in all ten
+warm-LM repetitions.
+
+\subsection{Run-to-run variance}\label{sec:variance}
+
+The reflection LM (\texttt{ollama/gemma4}) is invoked with no
+temperature or seed pin, so the per-cell convergence iteration is a
+random variable.  The single-sweep point estimates above are
+therefore one draw.  To separate a lucky draw from a robust effect
+we re-ran the full protocol --- three arms $\times$ ten seeds, plus
+the default-vs-minimal ablation on seeds 0--4 --- $N=10$ times
+(\texttt{eval/convergence/theorem\_6\_variance.py}, aggregate at
+\texttt{eval/results/theorem\_6/variance\_summary.json}).  Each
+repetition holds GEPA's \texttt{seed} and the SHA-256 data seeding
+fixed, so the only varying factor is LM sampling.  Reported as
+median~[min,~max] of the per-repetition arm mean:
+
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=2pt]
+\item \textbf{cert-binary}: $1.0~[1.0,~1.0]$ --- zero variance; every
+seed converges in one step in every repetition.
+\item \textbf{scalar-evidence}: $1.0~[1.0,~1.1]$ --- near-zero
+variance; a single seed flipped to two iterations in one of ten
+repetitions.
+\item \textbf{scalar}: $1.7~[1.2,~6.5]$ --- the high-variance arm.
+One repetition recorded a non-converged run (a seed exhausting the
+50-iteration budget); the graded-reward-only signal leaves the LM
+hunting unpredictably.
+\end{itemize}
+
+Two conclusions are \emph{robust} across all ten repetitions, and
+two point estimates are \emph{not}.  Robust: (i) cert-binary and
+scalar-evidence are statistically indistinguishable --- Mann-Whitney
+$p \ge 0.05$ in $10/10$ repetitions (observed $p$ range
+$[0.18,~1.00]$), with cert-binary never slower (ratio $\le 1.0$
+throughout); and (ii) the predeclared $\le 0.75$-ratio gate is
+cleared in $0/10$ repetitions, so the Null verdict on Theorem~3 does
+not depend on the reported sweep.  Not robust: the exact $p=1.000$
+and the exact scalar mean of $2.0$ are single-draw artifacts.
+
+The variance itself carries the most interesting signal.  Structured
+failure information does not merely lower the mean iteration count;
+it \emph{collapses the variance}.  Both cert-binary and
+scalar-evidence are essentially deterministic at 1.0, while the
+graded-scalar arm ranges over a factor of five and occasionally
+fails to converge at all.  On this task the value of an obligation
+channel --- certificate or evidence text --- is better described as
+\emph{reducing the variance of convergence} than as reducing its
+mean.  This reframing is consistent with the Null verdict: certificates
+buy reliability that a graded scalar with the same evidence text
+already supplies, not a speed-up over it.
 
 \subsection{What this does not show}
 
