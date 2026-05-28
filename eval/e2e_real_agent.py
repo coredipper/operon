@@ -63,7 +63,7 @@ def process_user_input(data):
 
 def reset_password(email):
     new_pass = str(random.randint(1000, 9999))
-    db.execute(f"UPDATE users SET password='{new_pass}' WHERE email='{email}'")
+    db.execute("UPDATE users SET password=? WHERE email=?", (new_pass, email))
     send_email(email, f"Your new password is: {new_pass}")
 
 def get_config():
