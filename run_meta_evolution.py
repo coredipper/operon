@@ -68,7 +68,8 @@ def _make_seeds(task_roles: tuple[str, ...]) -> list[CandidateConfig]:
     return seeds
 
 
-def main():
+
+def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="C8 Meta-Evolution Runner")
     parser.add_argument("--max-iterations", type=int, default=5)
     parser.add_argument("--population-size", type=int, default=8)
@@ -81,18 +82,86 @@ def main():
                         help="Local LLM proposer URL (e.g. http://localhost:8080/v1)")
     parser.add_argument("--llm-proposer-model", type=str, default=None,
                         help="Model name for LLM proposer")
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    # Load tasks
+
+def _load_tasks(args_tasks: str | None) -> list:
     all_tasks = get_benchmark_tasks()
-    if args.tasks:
-        task_ids = set(args.tasks.split(","))
+    if args_tasks:
+        task_ids = set(args_tasks.split(","))
         tasks = [t for t in all_tasks if t.task_id in task_ids]
         if not tasks:
-            print(f"No tasks matched: {args.tasks}")
+            print(f"No tasks matched: {args_tasks}")
             sys.exit(1)
+        return tasks
+    return all_tasks
+
+
+def _configure_llm_proposer(args: argparse.Namespace):
+    if not args.llm_proposer:
+        return None
+
+    if args.llm_proposer in ("gemini", "openai", "anthropic"):
+        # Use an API provider as LLM proposer
+        custom = args.llm_proposer_model
+        if args.llm_proposer == "gemini":
+            from operon_ai.providers.gemini_provider import GeminiProvider
+            provider = GeminiProvider(model=custom or "gemini-2.5-flash")
+        elif args.llm_proposer == "openai":
+            from operon_ai.providers.openai_provider import OpenAIProvider
+            provider = OpenAIProvider(model=custom or "gpt-4o-mini")
+        elif args.llm_proposer == "anthropic":
+            from operon_ai.providers.anthropic_provider import AnthropicProvider
+            provider = AnthropicProvider(model=custom or "claude-haiku-4-5-20251001")
+        print(f"LLM proposer: {args.llm_proposer} model={getattr(provider, 'model', '?')}")
+        return provider
     else:
-        tasks = all_tasks
+        # Local OpenAI-compatible server URL
+        from operon_ai.providers.openai_compatible_provider import OpenAICompatibleProvider
+        from eval.convergence.live_evaluator import _list_models, _first_chat_model
+        model = args.llm_proposer_model
+        if not model:
+            candidates = _list_models(args.llm_proposer)
+            model = _first_chat_model(args.llm_proposer, candidates)
+            if not model:
+                print(f"WARNING: No chat-capable model at {args.llm_proposer}, disabling LLM proposer")
+                return None
+
+        provider = OpenAICompatibleProvider(
+            api_key="not-needed",
+            base_url=args.llm_proposer,
+            model=model,
+        )
+        print(f"LLM proposer: {args.llm_proposer} model={model}")
+        return provider
+
+
+def _print_results(result: dict):
+    print(f"\n{'=' * 60}")
+    print(f"Evolution complete: {result['total_assessments']} assessments")
+    print(f"Best score: {result['best_score']:.3f}")
+    print(f"Store: {result['store_path']}")
+
+    best = result["best"]
+    if best:
+        print(f"\nBest config ({best.candidate_id}):")
+        print(f"  Proposer: {best.proposer}")
+        print(f"  Reason: {best.reason}")
+        for i, sc in enumerate(best.stage_configs):
+            print(f"  Stage {i}: role={sc.role} mode={sc.mode} model={sc.model}")
+
+    stats = result.get("monitor_stats", {})
+    if stats:
+        print(f"\nEpiplexity stats:")
+        print(f"  Stagnant episodes: {stats.get('stagnant_episodes', 0)}")
+        print(f"  Mean epiplexity: {stats.get('mean_epiplexity', 0):.3f}")
+
+
+def main():
+    args = _parse_args()
+
+    # Load tasks
+    tasks = _load_tasks(args.tasks)
 
     print(f"C8 Meta-Evolution: {len(tasks)} tasks, {args.max_iterations} iterations")
     print(f"Provider: {args.provider}")
@@ -113,38 +182,7 @@ def main():
     )
 
     # Optional LLM proposer for exploration when stalled
-    llm_provider = None
-    if args.llm_proposer:
-        if args.llm_proposer in ("gemini", "openai", "anthropic"):
-            # Use an API provider as LLM proposer
-            custom = args.llm_proposer_model
-            if args.llm_proposer == "gemini":
-                from operon_ai.providers.gemini_provider import GeminiProvider
-                llm_provider = GeminiProvider(model=custom or "gemini-2.5-flash")
-            elif args.llm_proposer == "openai":
-                from operon_ai.providers.openai_provider import OpenAIProvider
-                llm_provider = OpenAIProvider(model=custom or "gpt-4o-mini")
-            elif args.llm_proposer == "anthropic":
-                from operon_ai.providers.anthropic_provider import AnthropicProvider
-                llm_provider = AnthropicProvider(model=custom or "claude-haiku-4-5-20251001")
-            print(f"LLM proposer: {args.llm_proposer} model={getattr(llm_provider, 'model', '?')}")
-        else:
-            # Local OpenAI-compatible server URL
-            from operon_ai.providers.openai_compatible_provider import OpenAICompatibleProvider
-            from eval.convergence.live_evaluator import _list_models, _first_chat_model
-            model = args.llm_proposer_model
-            if not model:
-                candidates = _list_models(args.llm_proposer)
-                model = _first_chat_model(args.llm_proposer, candidates)
-                if not model:
-                    print(f"WARNING: No chat-capable model at {args.llm_proposer}, disabling LLM proposer")
-            if model:
-                llm_provider = OpenAICompatibleProvider(
-                    api_key="not-needed",
-                    base_url=args.llm_proposer,
-                    model=model,
-                )
-                print(f"LLM proposer: {args.llm_proposer} model={model}")
+    llm_provider = _configure_llm_proposer(args)
 
     loop = EvolutionLoop(
         config=config,
@@ -159,24 +197,7 @@ def main():
     result = loop.run()
 
     # Print results
-    print(f"\n{'=' * 60}")
-    print(f"Evolution complete: {result['total_assessments']} assessments")
-    print(f"Best score: {result['best_score']:.3f}")
-    print(f"Store: {result['store_path']}")
-
-    best = result["best"]
-    if best:
-        print(f"\nBest config ({best.candidate_id}):")
-        print(f"  Proposer: {best.proposer}")
-        print(f"  Reason: {best.reason}")
-        for i, sc in enumerate(best.stage_configs):
-            print(f"  Stage {i}: role={sc.role} mode={sc.mode} model={sc.model}")
-
-    stats = result.get("monitor_stats", {})
-    if stats:
-        print(f"\nEpiplexity stats:")
-        print(f"  Stagnant episodes: {stats.get('stagnant_episodes', 0)}")
-        print(f"  Mean epiplexity: {stats.get('mean_epiplexity', 0):.3f}")
+    _print_results(result)
 
 
 if __name__ == "__main__":
