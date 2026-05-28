@@ -117,7 +117,7 @@ class Watchdog:
         deadlock = controller.check_deadlock()
         if deadlock:
             victim = self._select_deadlock_victim(controller, deadlock)
-            if victim and victim not in [e.operation_id for e in events]:
+            if victim and victim not in (e.operation_id for e in events):
                 ctx = controller.active_operations.get(victim)
                 if ctx:
                     events.append(ApoptosisEvent(
