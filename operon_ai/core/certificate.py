@@ -279,6 +279,10 @@ _THEOREM_FN_PATHS: dict[str, tuple[str, str]] = {
         "_verify_behavioral_stability_windowed",
     ),
     "behavioral_no_anomaly": ("operon_ai.core.certificate", "_verify_behavioral_no_anomaly"),
+    "gepa_candidate_improvement": (
+        "operon_ai.core.certificate",
+        "_verify_gepa_candidate_improvement",
+    ),
     # Compile-time provenance markers (§2 cheap-variant T2 / §8.3 L2)
     "dspy_compile_pinned_inputs": (
         "operon_ai.convergence.dspy_certificate",
@@ -380,6 +384,61 @@ def _verify_behavioral_no_anomaly(params: Mapping[str, Any]) -> tuple[bool, dict
         "max_threat": reverse.get(max_seen, "unknown"),
         "n": len(levels),
     }
+
+
+def _verify_gepa_candidate_improvement(
+    params: Mapping[str, Any],
+) -> tuple[bool, dict[str, Any]]:
+    """Replay: an evolved candidate Pareto-dominates its parent on the valset.
+
+    ``parent_scores`` and ``child_scores`` are per-instance validation
+    scores (higher is better), aligned index-for-index. The certificate
+    holds iff the child Pareto-dominates the parent: every instance is
+    at-least-as-good (``child[i] >= parent[i]``) AND at least one is
+    strictly better. This closes GEPA's outer loop — an accepted mutation
+    that does not dominate its parent fails the certificate even if its
+    mean improved (a mean rise that worsens an individual instance is not
+    a Pareto improvement).
+
+    Failure carries a ``reason``: ``empty_evidence`` (no scores),
+    ``length_mismatch`` (vectors not aligned — a per-instance comparison
+    is undefined), ``not_dominated`` (some instance regressed), or
+    ``no_strict_improvement`` (every instance tied — dominance requires a
+    strict win somewhere).
+    """
+    parent = list(params["parent_scores"])
+    child = list(params["child_scores"])
+    if not parent or not child:
+        return False, {
+            "parent_mean": 0.0,
+            "child_mean": 0.0,
+            "n": 0,
+            "reason": "empty_evidence",
+        }
+    if len(parent) != len(child):
+        return False, {
+            "parent_mean": round(sum(parent) / len(parent), 4),
+            "child_mean": round(sum(child) / len(child), 4),
+            "n_parent": len(parent),
+            "n_child": len(child),
+            "reason": "length_mismatch",
+        }
+    dominated_count = sum(1 for p, c in zip(parent, child) if c >= p)
+    strict_better_count = sum(1 for p, c in zip(parent, child) if c > p)
+    evidence = {
+        "parent_mean": round(sum(parent) / len(parent), 4),
+        "child_mean": round(sum(child) / len(child), 4),
+        "dominated_count": dominated_count,
+        "strict_better_count": strict_better_count,
+        "n": len(parent),
+    }
+    if dominated_count < len(parent):
+        evidence["reason"] = "not_dominated"
+        return False, evidence
+    if strict_better_count == 0:
+        evidence["reason"] = "no_strict_improvement"
+        return False, evidence
+    return True, evidence
 
 
 def _resolve_verify_fn(theorem: str) -> Callable | None:
