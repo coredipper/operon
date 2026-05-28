@@ -221,48 +221,52 @@ class EpiplexityMonitor:
         Returns:
             EpiplexityResult with current health status
         """
-        # --- Distance-provider path (non-embedding) ---
         if self.distance_provider is not None and item is not None:
-            if self.state.previous_item is not None:
-                embedding_novelty = self.distance_provider.distance(
-                    self.state.previous_item, item,
-                )
-            else:
-                embedding_novelty = 1.0  # First item — maximum novelty
+            return self._measure_distance(item)
 
-            # Without real perplexity, approximate from novelty trend
-            normalized_perplexity = self._approximate_perplexity_from_novelty(
-                embedding_novelty,
+        return self._measure_embedding(message, perplexity)
+
+    def _measure_distance(self, item: Any) -> EpiplexityResult:
+        if self.state.previous_item is not None:
+            embedding_novelty = self.distance_provider.distance(
+                self.state.previous_item, item,
             )
+        else:
+            embedding_novelty = 1.0  # First item — maximum novelty
 
-            epiplexity = (
-                self.alpha * embedding_novelty
-                + (1 - self.alpha) * normalized_perplexity
-            )
+        # Without real perplexity, approximate from novelty trend
+        normalized_perplexity = self._approximate_perplexity_from_novelty(
+            embedding_novelty,
+        )
 
-            self.state.previous_item = item
-            self.state.epiplexity_history.append(epiplexity)
-            self.state.total_measurements += 1
+        epiplexity = (
+            self.alpha * embedding_novelty
+            + (1 - self.alpha) * normalized_perplexity
+        )
 
-            window = list(self.state.epiplexity_history)[-self.window_size:]
-            epiplexic_integral = sum(window) / len(window) if window else 0.0
+        self.state.previous_item = item
+        self.state.epiplexity_history.append(epiplexity)
+        self.state.total_measurements += 1
 
-            status = self._determine_status(
-                embedding_novelty, normalized_perplexity, epiplexic_integral,
-            )
-            self._track_stagnation(status)
+        window = list(self.state.epiplexity_history)[-self.window_size:]
+        epiplexic_integral = sum(window) / len(window) if window else 0.0
 
-            return EpiplexityResult(
-                embedding_novelty=embedding_novelty,
-                normalized_perplexity=normalized_perplexity,
-                epiplexity=epiplexity,
-                epiplexic_integral=epiplexic_integral,
-                status=status,
-                window_size=len(window),
-                threshold=self.threshold,
-            )
+        status = self._determine_status(
+            embedding_novelty, normalized_perplexity, epiplexic_integral,
+        )
+        self._track_stagnation(status)
 
-        # --- Embedding path (original behavior) ---
+        return EpiplexityResult(
+            embedding_novelty=embedding_novelty,
+            normalized_perplexity=normalized_perplexity,
+            epiplexity=epiplexity,
+            epiplexic_integral=epiplexic_integral,
+            status=status,
+            window_size=len(window),
+            threshold=self.threshold,
+        )
+
+    def _measure_embedding(self, message: str, perplexity: float | None) -> EpiplexityResult:
         if self.embedding_provider is None:
             raise ValueError(
                 "EpiplexityMonitor requires either embedding_provider or "
