@@ -842,7 +842,7 @@ new file mode 100644
 @@ -0,0 +1,20 @@
 +\"\"\"This code has security issues.\"\"\"
 +import os
-+import pickle
++import json
 +
 +API_KEY = "sk-1234567890abcdef"  # Hardcoded secret!
 +
@@ -850,9 +850,9 @@ new file mode 100644
 +    \"\"\"Run a shell command.\"\"\"
 +    return os.system(cmd)  # Shell injection risk
 +
-+def process_data(data: bytes) -> dict:
-+    \"\"\"Load pickled data.\"\"\"
-+    return pickle.loads(data)  # Unsafe deserialization
++def process_data(data: str) -> dict:
++    \"\"\"Load JSON data.\"\"\"
++    return json.loads(data)
 +
 +def execute_code(code: str) -> None:
 +    \"\"\"Execute arbitrary code.\"\"\"
