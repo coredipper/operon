@@ -12,7 +12,7 @@ from eval.convergence.topology_validation import run_validation
 from eval.convergence.validation_report import generate_report
 
 
-def main() -> int:
+def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Operon topology validation — epistemic predictions vs real LLM execution"
     )
@@ -36,7 +36,54 @@ def main() -> int:
         "--out", default="eval/results/topology_validation",
         help="Output directory (default: eval/results/topology_validation)",
     )
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def _select_tasks(args: argparse.Namespace) -> list:
+    all_tasks = get_benchmark_tasks()
+    if args.tasks:
+        task_ids = set(args.tasks)
+        tasks = [t for t in all_tasks if t.task_id in task_ids]
+        if not tasks:
+            print(f"ERROR: No matching tasks for {args.tasks}")
+            return []
+    elif args.quick:
+        tasks = [t for t in all_tasks if t.task_id.startswith("easy_")]
+    else:
+        tasks = all_tasks
+    return tasks
+
+
+def _print_report_summary(report, out_dir: str) -> None:
+    # Generate reports
+    generate_report(report, out_dir)
+    print(f"Results written to {out_dir}/")
+    print()
+
+    # Print summary
+    s = report.summary
+    print("=== Summary ===")
+    print(f"Success rate: {s['success_rate']:.1%}")
+    print(f"Mean quality: {s['mean_quality']:.3f}")
+    print()
+
+    print("=== Theorem Correlations ===")
+    print(f"{'Theorem':<22s} {'rho':>6s} {'p':>8s} {'Dir':>5s} {'Pass':>5s}")
+    print("-" * 50)
+    for t in report.theorems:
+        d = "ok" if t.direction_correct else "WRONG"
+        if t.informational:
+            p = "info"
+        else:
+            p = "YES" if t.validation_pass else "no"
+        print(f"{t.theorem_name:<22s} {t.spearman_rho:>+6.3f} {t.spearman_p:>8.4f} {d:>5s} {p:>5s}")
+    print()
+
+    print(f"Validated: {s['theorems_validated']}/{s['theorems_total']} theorems")
+
+
+def main() -> int:
+    args = _parse_args()
 
     # Check Ollama — use the same chat-capable probe as LiveEvaluator
     evaluator = LiveEvaluator()
@@ -48,17 +95,9 @@ def main() -> int:
     print(f"Model: {evaluator.ollama.model} via Ollama")
 
     # Select tasks
-    all_tasks = get_benchmark_tasks()
-    if args.tasks:
-        task_ids = set(args.tasks)
-        tasks = [t for t in all_tasks if t.task_id in task_ids]
-        if not tasks:
-            print(f"ERROR: No matching tasks for {args.tasks}")
-            return 1
-    elif args.quick:
-        tasks = [t for t in all_tasks if t.task_id.startswith("easy_")]
-    else:
-        tasks = all_tasks
+    tasks = _select_tasks(args)
+    if args.tasks and not tasks:
+        return 1
 
     n_runs = len(tasks) * 2 * args.seeds
     print(f"Tasks: {len(tasks)} x 2 configs x {args.seeds} seeds = {n_runs} runs")
@@ -90,31 +129,7 @@ def main() -> int:
     print(f"Completed {report.metadata['total_runs']} runs in {elapsed:.0f}s")
     print()
 
-    # Generate reports
-    generate_report(report, args.out)
-    print(f"Results written to {args.out}/")
-    print()
-
-    # Print summary
-    s = report.summary
-    print("=== Summary ===")
-    print(f"Success rate: {s['success_rate']:.1%}")
-    print(f"Mean quality: {s['mean_quality']:.3f}")
-    print()
-
-    print("=== Theorem Correlations ===")
-    print(f"{'Theorem':<22s} {'rho':>6s} {'p':>8s} {'Dir':>5s} {'Pass':>5s}")
-    print("-" * 50)
-    for t in report.theorems:
-        d = "ok" if t.direction_correct else "WRONG"
-        if t.informational:
-            p = "info"
-        else:
-            p = "YES" if t.validation_pass else "no"
-        print(f"{t.theorem_name:<22s} {t.spearman_rho:>+6.3f} {t.spearman_p:>8.4f} {d:>5s} {p:>5s}")
-    print()
-
-    print(f"Validated: {s['theorems_validated']}/{s['theorems_total']} theorems")
+    _print_report_summary(report, args.out)
 
     return 0
 
