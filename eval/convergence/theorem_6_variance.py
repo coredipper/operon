@@ -175,18 +175,22 @@ def _checkpoint(reps: list[dict[str, Any]], *, n_reps: int, include_main: bool) 
         json.dumps(_aggregate(reps, n_reps=n_reps, include_main=include_main), indent=2)
     )
     # Persist raw reps so an interrupted run can resume (see RAW_REPS_PATH).
+    # ``n_reps`` is stored so a resume can validate the requested run shape.
     RAW_REPS_PATH.write_text(
-        json.dumps({"include_main": include_main, "reps": reps})
+        json.dumps({"n_reps": n_reps, "include_main": include_main, "reps": reps})
     )
 
 
-def _load_resume(*, include_main: bool) -> list[dict[str, Any]]:
+def _load_resume(*, include_main: bool, n_reps: int) -> list[dict[str, Any]]:
     """Load previously completed reps if a compatible checkpoint exists.
 
     Only resumes when the saved ``include_main`` matches the requested
     run shape — an ablation-only checkpoint must not be extended with
     full-sweep reps (or vice versa), since the per-rep records would
-    have different keys.
+    have different keys.  A checkpoint with more reps than the requested
+    ``n_reps`` is truncated to the first ``n_reps`` so the aggregate's
+    ``n_reps`` and the number of summarised reps always agree (a 10-rep
+    checkpoint must not silently back a ``--n-reps 5`` summary).
     """
     if not RAW_REPS_PATH.exists():
         return []
@@ -196,13 +200,23 @@ def _load_resume(*, include_main: bool) -> list[dict[str, Any]]:
         return []
     if saved.get("include_main") != include_main:
         return []
-    return saved.get("reps", [])
+    reps = saved.get("reps", [])
+    if len(reps) > n_reps:
+        print(
+            f"[variance] checkpoint has {len(reps)} reps but --n-reps={n_reps}; "
+            f"using first {n_reps}",
+            flush=True,
+        )
+        reps = reps[:n_reps]
+    return reps
 
 
 def run_variance(
     *, n_reps: int = 10, include_main: bool = True, resume: bool = True
 ) -> dict[str, Any]:
-    reps: list[dict[str, Any]] = _load_resume(include_main=include_main) if resume else []
+    reps: list[dict[str, Any]] = (
+        _load_resume(include_main=include_main, n_reps=n_reps) if resume else []
+    )
     if reps:
         print(
             f"[variance] resuming from {len(reps)} completed rep(s); "
@@ -301,8 +315,13 @@ def run_variance(
             flush=True,
         )
 
+    # Always write the final summary, even when the loop added no new
+    # reps (e.g. a complete checkpoint was resumed, or it was truncated
+    # to a smaller --n-reps): the on-disk summary must match the
+    # returned aggregate, and the "wrote" message must be truthful.
+    _checkpoint(reps, n_reps=n_reps, include_main=include_main)
     final = _aggregate(reps, n_reps=n_reps, include_main=include_main)
-    print(f"[variance] wrote {SUMMARY_PATH}")
+    print(f"[variance] wrote {SUMMARY_PATH} ({len(reps)} reps)")
     return final
 
 
