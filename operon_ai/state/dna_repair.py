@@ -267,7 +267,7 @@ class DNARepair:
 
     def scan(
         self,
-        genome: Genome,
+        genome: "Genome",
         checkpoint: StateCheckpoint,
     ) -> list[DamageReport]:
         """Scan genome state against a checkpoint for corruption.
@@ -283,15 +283,33 @@ class DNARepair:
         Returns:
             Damage reports sorted by severity (highest first).
         """
-        from .genome import ExpressionLevel
-
         self._scan_count += 1
         damage: list[DamageReport] = []
 
-        # 1. Checksum scan (DSB)
+        damage.extend(self._scan_checksum(genome, checkpoint))
+        damage.extend(self._scan_gene_values(genome, checkpoint))
+        damage.extend(self._scan_gene_count(genome, checkpoint))
+        damage.extend(self._scan_expression(genome, checkpoint))
+        damage.extend(self._scan_required_genes(genome))
+
+        # Sort by severity descending
+        damage.sort(key=lambda d: d.severity.value, reverse=True)
+
+        self._log_scan_results(damage)
+        damage = self._handle_auto_repair(damage, genome, checkpoint)
+
+        return damage
+
+
+    def _scan_checksum(
+        self,
+        genome: "Genome",
+        checkpoint: StateCheckpoint,
+    ) -> list[DamageReport]:
+        """1. Checksum scan (DSB)"""
         current_hash = genome.get_hash()
         if current_hash != checkpoint.genome_hash:
-            damage.append(DamageReport(
+            return [DamageReport(
                 corruption_type=CorruptionType.CHECKSUM_FAILURE,
                 severity=DamageSeverity.HIGH,
                 location="genome:hash",
@@ -302,9 +320,16 @@ class DNARepair:
                 expected=checkpoint.genome_hash,
                 actual=current_hash,
                 recommended_strategy=RepairStrategy.CHECKPOINT_RESTORE,
-            ))
+            )]
+        return []
 
-        # 2. Individual gene value scan (BER analog)
+    def _scan_gene_values(
+        self,
+        genome: "Genome",
+        checkpoint: StateCheckpoint,
+    ) -> list[DamageReport]:
+        """2. Individual gene value scan (BER analog)"""
+        damage = []
         cp_values = checkpoint.values_dict
         for gene_name, expected_value in cp_values.items():
             gene = genome.get_gene(gene_name)
@@ -331,11 +356,17 @@ class DNARepair:
                     actual=gene.value,
                     recommended_strategy=RepairStrategy.ROLLBACK,
                 ))
+        return damage
 
-        # 3. Gene count scan
+    def _scan_gene_count(
+        self,
+        genome: "Genome",
+        checkpoint: StateCheckpoint,
+    ) -> list[DamageReport]:
+        """3. Gene count scan"""
         current_count = len(genome._genes)
         if current_count != checkpoint.gene_count:
-            damage.append(DamageReport(
+            return [DamageReport(
                 corruption_type=CorruptionType.GENOME_DRIFT,
                 severity=DamageSeverity.MODERATE,
                 location="genome:gene_count",
@@ -346,9 +377,17 @@ class DNARepair:
                 expected=checkpoint.gene_count,
                 actual=current_count,
                 recommended_strategy=RepairStrategy.CHECKPOINT_RESTORE,
-            ))
+            )]
+        return []
 
-        # 4. Expression scan (MMR)
+    def _scan_expression(
+        self,
+        genome: "Genome",
+        checkpoint: StateCheckpoint,
+    ) -> list[DamageReport]:
+        """4. Expression scan (MMR)"""
+        from .genome import ExpressionLevel
+        damage = []
         cp_expr = checkpoint.expression_dict
         for gene_name, expected_level in cp_expr.items():
             if gene_name not in genome._expression:
@@ -377,8 +416,15 @@ class DNARepair:
                     actual=actual_level,
                     recommended_strategy=RepairStrategy.RE_EXPRESS,
                 ))
+        return damage
 
-        # 5. Required gene validation
+    def _scan_required_genes(
+        self,
+        genome: "Genome",
+    ) -> list[DamageReport]:
+        """5. Required gene validation"""
+        from .genome import ExpressionLevel
+        damage = []
         # Check required genes directly rather than parsing error strings
         for gname, gene in genome._genes.items():
             if gene.required:
@@ -393,28 +439,32 @@ class DNARepair:
                         actual="silenced",
                         recommended_strategy=RepairStrategy.RE_EXPRESS,
                     ))
+        return damage
 
-        # Sort by severity descending
-        damage.sort(key=lambda d: d.severity.value, reverse=True)
-
+    def _log_scan_results(self, damage: list[DamageReport]) -> None:
         if not self.silent:
             if damage:
                 print(
-                    f"\U0001f9ec [DNARepair] Scan #{self._scan_count}: "
+                    f"🧬 [DNARepair] Scan #{self._scan_count}: "
                     f"{len(damage)} damage site(s) detected"
                 )
                 for d in damage:
                     print(
-                        f"  \u26a0\ufe0f {d.corruption_type.value} "
+                        f"  ⚠️ {d.corruption_type.value} "
                         f"[{d.severity.name}] at {d.location}"
                     )
             else:
                 print(
-                    f"\U0001f9ec [DNARepair] Scan #{self._scan_count}: "
+                    f"🧬 [DNARepair] Scan #{self._scan_count}: "
                     f"no damage detected"
                 )
 
-        # Auto-repair if enabled: repair highest-severity, re-scan, repeat
+    def _handle_auto_repair(
+        self,
+        damage: list[DamageReport],
+        genome: "Genome",
+        checkpoint: StateCheckpoint,
+    ) -> list[DamageReport]:
         if self._auto_repair and damage:
             self._auto_repair = False  # Prevent recursion
             try:
@@ -430,10 +480,11 @@ class DNARepair:
                     remaining = self.scan(genome, checkpoint)
                     if len(remaining) >= prev_count:
                         break  # Not making progress
+                return remaining
             finally:
                 self._auto_repair = True
-
         return damage
+
 
     def scan_memory(
         self,
