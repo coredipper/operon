@@ -379,8 +379,8 @@ class Oscillator:
                 if self.on_tick:
                     self.on_tick(current_value)
 
-                # Small sleep to prevent busy waiting
-                time.sleep(0.1)
+                # Wait on stop event to prevent busy waiting but allow immediate exit
+                self._stop_event.wait(0.1)
 
             # On exit callback
             if phase.on_exit:
@@ -408,7 +408,7 @@ class Oscillator:
             if self.on_tick:
                 self.on_tick(current_value)
 
-            time.sleep(0.05)
+            self._stop_event.wait(0.05)
 
     def _calculate_waveform(self, phase: float) -> float:
         """Calculate waveform value at given phase (0-1)."""
