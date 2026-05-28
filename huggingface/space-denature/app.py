@@ -291,6 +291,105 @@ def run_wire_demo(text: str) -> tuple[str, str]:
 # Gradio UI
 # ---------------------------------------------------------------------------
 
+def _build_filter_analysis_tab() -> None:
+    with gr.TabItem("Filter Analysis"):
+        with gr.Row():
+            example_dropdown = gr.Dropdown(
+                choices=list(EXAMPLES.keys()),
+                value="(custom)",
+                label="Load Example",
+                scale=2,
+            )
+            analyze_btn = gr.Button("Analyze", variant="primary", scale=1)
+
+        text_input = gr.Textbox(
+            label="Input Text",
+            placeholder="Type or paste a prompt (try an injection payload)...",
+            lines=5,
+        )
+
+        gr.Markdown("### Injection Pattern Check")
+        comparison_html = gr.HTML()
+
+        gr.Markdown("### Filter Results")
+        with gr.Row():
+            with gr.Column():
+                strip_html = gr.HTML(label="StripMarkup")
+            with gr.Column():
+                normalize_html = gr.HTML(label="Normalize")
+
+        with gr.Row():
+            with gr.Column():
+                summarize_html = gr.HTML(label="Summarize")
+            with gr.Column():
+                chain_html = gr.HTML(label="Chain")
+
+        # Bindings
+        analyze_btn.click(
+            fn=analyze_filters,
+            inputs=[text_input],
+            outputs=[strip_html, normalize_html, summarize_html, chain_html, comparison_html],
+        )
+        text_input.submit(
+            fn=analyze_filters,
+            inputs=[text_input],
+            outputs=[strip_html, normalize_html, summarize_html, chain_html, comparison_html],
+        )
+        example_dropdown.change(
+            fn=load_example,
+            inputs=[example_dropdown],
+            outputs=[text_input],
+        )
+
+
+def _build_wire_comparison_tab() -> None:
+    with gr.TabItem("Wire Comparison"):
+        gr.Markdown(
+            "### Raw vs. Denatured Wire\n\n"
+            "See the same payload flowing through two wires:\n"
+            "- **Raw wire** -- data passes through unchanged (injection survives)\n"
+            "- **Denatured wire** -- StripMarkup + Normalize applied in transit\n\n"
+            "This demonstrates how denaturation disrupts injection cascading "
+            "between agents in a wiring diagram."
+        )
+
+        with gr.Row():
+            wire_example = gr.Dropdown(
+                choices=list(EXAMPLES.keys()),
+                value="Multi-vector combined",
+                label="Load Example",
+                scale=2,
+            )
+            wire_btn = gr.Button("Compare Wires", variant="primary", scale=1)
+
+        wire_input = gr.Textbox(
+            label="Payload",
+            placeholder="Text to send through both wires...",
+            lines=5,
+            value=EXAMPLES["Multi-vector combined"],
+        )
+
+        with gr.Row():
+            raw_wire_html = gr.HTML(label="Raw Wire")
+            denatured_wire_html = gr.HTML(label="Denatured Wire")
+
+        wire_btn.click(
+            fn=run_wire_demo,
+            inputs=[wire_input],
+            outputs=[raw_wire_html, denatured_wire_html],
+        )
+        wire_input.submit(
+            fn=run_wire_demo,
+            inputs=[wire_input],
+            outputs=[raw_wire_html, denatured_wire_html],
+        )
+        wire_example.change(
+            fn=load_example,
+            inputs=[wire_example],
+            outputs=[wire_input],
+        )
+
+
 def build_app() -> gr.Blocks:
     with gr.Blocks(title="Operon Denaturation Layers") as app:
         gr.Markdown(
@@ -304,102 +403,8 @@ def build_app() -> gr.Blocks:
         )
 
         with gr.Tabs():
-            # ── Tab 1: Filter Analysis ────────────────────────────
-            with gr.TabItem("Filter Analysis"):
-                with gr.Row():
-                    example_dropdown = gr.Dropdown(
-                        choices=list(EXAMPLES.keys()),
-                        value="(custom)",
-                        label="Load Example",
-                        scale=2,
-                    )
-                    analyze_btn = gr.Button("Analyze", variant="primary", scale=1)
-
-                text_input = gr.Textbox(
-                    label="Input Text",
-                    placeholder="Type or paste a prompt (try an injection payload)...",
-                    lines=5,
-                )
-
-                gr.Markdown("### Injection Pattern Check")
-                comparison_html = gr.HTML()
-
-                gr.Markdown("### Filter Results")
-                with gr.Row():
-                    with gr.Column():
-                        strip_html = gr.HTML(label="StripMarkup")
-                    with gr.Column():
-                        normalize_html = gr.HTML(label="Normalize")
-
-                with gr.Row():
-                    with gr.Column():
-                        summarize_html = gr.HTML(label="Summarize")
-                    with gr.Column():
-                        chain_html = gr.HTML(label="Chain")
-
-                # Bindings
-                analyze_btn.click(
-                    fn=analyze_filters,
-                    inputs=[text_input],
-                    outputs=[strip_html, normalize_html, summarize_html, chain_html, comparison_html],
-                )
-                text_input.submit(
-                    fn=analyze_filters,
-                    inputs=[text_input],
-                    outputs=[strip_html, normalize_html, summarize_html, chain_html, comparison_html],
-                )
-                example_dropdown.change(
-                    fn=load_example,
-                    inputs=[example_dropdown],
-                    outputs=[text_input],
-                )
-
-            # ── Tab 2: Wire Comparison ────────────────────────────
-            with gr.TabItem("Wire Comparison"):
-                gr.Markdown(
-                    "### Raw vs. Denatured Wire\n\n"
-                    "See the same payload flowing through two wires:\n"
-                    "- **Raw wire** -- data passes through unchanged (injection survives)\n"
-                    "- **Denatured wire** -- StripMarkup + Normalize applied in transit\n\n"
-                    "This demonstrates how denaturation disrupts injection cascading "
-                    "between agents in a wiring diagram."
-                )
-
-                with gr.Row():
-                    wire_example = gr.Dropdown(
-                        choices=list(EXAMPLES.keys()),
-                        value="Multi-vector combined",
-                        label="Load Example",
-                        scale=2,
-                    )
-                    wire_btn = gr.Button("Compare Wires", variant="primary", scale=1)
-
-                wire_input = gr.Textbox(
-                    label="Payload",
-                    placeholder="Text to send through both wires...",
-                    lines=5,
-                    value=EXAMPLES["Multi-vector combined"],
-                )
-
-                with gr.Row():
-                    raw_wire_html = gr.HTML(label="Raw Wire")
-                    denatured_wire_html = gr.HTML(label="Denatured Wire")
-
-                wire_btn.click(
-                    fn=run_wire_demo,
-                    inputs=[wire_input],
-                    outputs=[raw_wire_html, denatured_wire_html],
-                )
-                wire_input.submit(
-                    fn=run_wire_demo,
-                    inputs=[wire_input],
-                    outputs=[raw_wire_html, denatured_wire_html],
-                )
-                wire_example.change(
-                    fn=load_example,
-                    inputs=[wire_example],
-                    outputs=[wire_input],
-                )
+            _build_filter_analysis_tab()
+            _build_wire_comparison_tab()
 
     return app
 
