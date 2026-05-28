@@ -302,127 +302,21 @@ class CoherentFeedForwardLoop:
         assessor_permits = y_out.action_type == "PERMIT"
         assessor_blocks = y_out.action_type == "BLOCK"
 
-        if self.gate_logic == GateLogic.AND or self.gate_logic == GateLogic.UNANIMOUS:
-            # Both must agree to proceed
-            if assessor_blocks:
-                return LoopResult(
-                    success=True,
-                    action="BLOCKED",
-                    executor_output=z_out,
-                    assessor_output=y_out,
-                    blocked=True,
-                    block_reason=f"Risk Assessor: {y_out.payload}",
-                    gate_logic=self.gate_logic
-                )
-            if executor_fails:
-                return LoopResult(
-                    success=False,
-                    action="FAILURE",
-                    executor_output=z_out,
-                    assessor_output=y_out,
-                    blocked=True,
-                    block_reason=f"Executor failure: {z_out.payload}",
-                    gate_logic=self.gate_logic
-                )
-            if executor_blocks:
-                return LoopResult(
-                    success=True,
-                    action="SKIPPED",
-                    executor_output=z_out,
-                    assessor_output=y_out,
-                    blocked=True,
-                    block_reason=f"Executor skipped: {z_out.payload}",
-                    gate_logic=self.gate_logic
-                )
-            if executor_permits and assessor_permits:
-                return LoopResult(
-                    success=True,
-                    action="SUCCESS",
-                    executor_output=z_out,
-                    assessor_output=y_out,
-                    approval_token=approval,
-                    blocked=False,
-                    gate_logic=self.gate_logic
-                )
+        if self.gate_logic in (GateLogic.AND, GateLogic.UNANIMOUS):
+            res = self._logic_and(z_out, y_out, approval, executor_permits, executor_blocks, executor_fails, assessor_permits, assessor_blocks)
+            if res: return res
 
         elif self.gate_logic == GateLogic.OR:
-            # Either can permit
-            if executor_permits or assessor_permits:
-                return LoopResult(
-                    success=True,
-                    action="SUCCESS",
-                    executor_output=z_out,
-                    assessor_output=y_out,
-                    approval_token=approval,
-                    blocked=False,
-                    gate_logic=self.gate_logic
-                )
-            # Both block/fail
-            return LoopResult(
-                success=False,
-                action="BLOCKED",
-                executor_output=z_out,
-                assessor_output=y_out,
-                blocked=True,
-                block_reason="Both agents rejected",
-                gate_logic=self.gate_logic
-            )
+            res = self._logic_or(z_out, y_out, approval, executor_permits, assessor_permits)
+            if res: return res
 
         elif self.gate_logic == GateLogic.EXECUTOR_PRIORITY:
-            # Executor decides unless assessor explicitly blocks
-            if assessor_blocks:
-                return LoopResult(
-                    success=True,
-                    action="BLOCKED",
-                    executor_output=z_out,
-                    assessor_output=y_out,
-                    blocked=True,
-                    block_reason=f"Risk Assessor override: {y_out.payload}",
-                    gate_logic=self.gate_logic
-                )
-            if executor_permits:
-                return LoopResult(
-                    success=True,
-                    action="SUCCESS",
-                    executor_output=z_out,
-                    assessor_output=y_out,
-                    approval_token=approval,
-                    blocked=False,
-                    gate_logic=self.gate_logic
-                )
+            res = self._logic_executor_priority(z_out, y_out, approval, executor_permits, assessor_blocks)
+            if res: return res
 
         elif self.gate_logic == GateLogic.ASSESSOR_PRIORITY:
-            # Assessor decides unless executor fails
-            if executor_fails:
-                return LoopResult(
-                    success=False,
-                    action="FAILURE",
-                    executor_output=z_out,
-                    assessor_output=y_out,
-                    blocked=True,
-                    block_reason=f"Executor failure: {z_out.payload}",
-                    gate_logic=self.gate_logic
-                )
-            if assessor_permits:
-                return LoopResult(
-                    success=True,
-                    action="SUCCESS",
-                    executor_output=z_out,
-                    assessor_output=y_out,
-                    approval_token=approval,
-                    blocked=False,
-                    gate_logic=self.gate_logic
-                )
-            if assessor_blocks:
-                return LoopResult(
-                    success=True,
-                    action="BLOCKED",
-                    executor_output=z_out,
-                    assessor_output=y_out,
-                    blocked=True,
-                    block_reason=f"Risk Assessor: {y_out.payload}",
-                    gate_logic=self.gate_logic
-                )
+            res = self._logic_assessor_priority(z_out, y_out, approval, executor_fails, assessor_permits, assessor_blocks)
+            if res: return res
 
         # Default: error state
         return LoopResult(
@@ -434,6 +328,127 @@ class CoherentFeedForwardLoop:
             block_reason="Signal mismatch",
             gate_logic=self.gate_logic
         )
+
+
+    def _logic_and(self, z_out, y_out, approval, executor_permits, executor_blocks, executor_fails, assessor_permits, assessor_blocks):
+        if assessor_blocks:
+            return LoopResult(
+                success=True,
+                action="BLOCKED",
+                executor_output=z_out,
+                assessor_output=y_out,
+                blocked=True,
+                block_reason=f"Risk Assessor: {y_out.payload}",
+                gate_logic=self.gate_logic
+            )
+        if executor_fails:
+            return LoopResult(
+                success=False,
+                action="FAILURE",
+                executor_output=z_out,
+                assessor_output=y_out,
+                blocked=True,
+                block_reason=f"Executor failure: {z_out.payload}",
+                gate_logic=self.gate_logic
+            )
+        if executor_blocks:
+            return LoopResult(
+                success=True,
+                action="SKIPPED",
+                executor_output=z_out,
+                assessor_output=y_out,
+                blocked=True,
+                block_reason=f"Executor skipped: {z_out.payload}",
+                gate_logic=self.gate_logic
+            )
+        if executor_permits and assessor_permits:
+            return LoopResult(
+                success=True,
+                action="SUCCESS",
+                executor_output=z_out,
+                assessor_output=y_out,
+                approval_token=approval,
+                blocked=False,
+                gate_logic=self.gate_logic
+            )
+        return None
+
+    def _logic_or(self, z_out, y_out, approval, executor_permits, assessor_permits):
+        if executor_permits or assessor_permits:
+            return LoopResult(
+                success=True,
+                action="SUCCESS",
+                executor_output=z_out,
+                assessor_output=y_out,
+                approval_token=approval,
+                blocked=False,
+                gate_logic=self.gate_logic
+            )
+        return LoopResult(
+            success=False,
+            action="BLOCKED",
+            executor_output=z_out,
+            assessor_output=y_out,
+            blocked=True,
+            block_reason="Both agents rejected",
+            gate_logic=self.gate_logic
+        )
+
+    def _logic_executor_priority(self, z_out, y_out, approval, executor_permits, assessor_blocks):
+        if assessor_blocks:
+            return LoopResult(
+                success=True,
+                action="BLOCKED",
+                executor_output=z_out,
+                assessor_output=y_out,
+                blocked=True,
+                block_reason=f"Risk Assessor override: {y_out.payload}",
+                gate_logic=self.gate_logic
+            )
+        if executor_permits:
+            return LoopResult(
+                success=True,
+                action="SUCCESS",
+                executor_output=z_out,
+                assessor_output=y_out,
+                approval_token=approval,
+                blocked=False,
+                gate_logic=self.gate_logic
+            )
+        return None
+
+    def _logic_assessor_priority(self, z_out, y_out, approval, executor_fails, assessor_permits, assessor_blocks):
+        if executor_fails:
+            return LoopResult(
+                success=False,
+                action="FAILURE",
+                executor_output=z_out,
+                assessor_output=y_out,
+                blocked=True,
+                block_reason=f"Executor failure: {z_out.payload}",
+                gate_logic=self.gate_logic
+            )
+        if assessor_permits:
+            return LoopResult(
+                success=True,
+                action="SUCCESS",
+                executor_output=z_out,
+                assessor_output=y_out,
+                approval_token=approval,
+                blocked=False,
+                gate_logic=self.gate_logic
+            )
+        if assessor_blocks:
+            return LoopResult(
+                success=True,
+                action="BLOCKED",
+                executor_output=z_out,
+                assessor_output=y_out,
+                blocked=True,
+                block_reason=f"Risk Assessor: {y_out.payload}",
+                gate_logic=self.gate_logic
+            )
+        return None
 
     def _check_circuit(self) -> bool:
         """Check if circuit breaker allows the request."""
