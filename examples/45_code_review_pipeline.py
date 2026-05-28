@@ -844,7 +844,7 @@ new file mode 100644
 +import os
 +import pickle
 +
-+API_KEY = "sk-1234567890abcdef"  # Hardcoded secret!
++API_KEY = os.getenv("API_KEY")
 +
 +def run_command(cmd: str) -> str:
 +    \"\"\"Run a shell command.\"\"\"
