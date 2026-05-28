@@ -283,3 +283,23 @@ class TestCoordinationSystem:
         system.shutdown()
 
         assert len(system.controller.active_operations) == 0
+
+    def test_execute_aborts_on_error(self):
+        system = CoordinationSystem()
+
+        def work():
+            return {"result": "success"}
+
+        with unittest.mock.patch.object(system.controller, 'abort_operation') as mock_abort:
+            with unittest.mock.patch.object(system.controller, 'advance', side_effect=Exception("Unexpected error")):
+                result = system.execute_operation(
+                    operation_id="op1",
+                    agent_id="agent1",
+                    work_fn=work,
+                )
+
+        assert result.success is False
+        assert result.error == "Unexpected error"
+        mock_abort.assert_called_once()
+        args, kwargs = mock_abort.call_args
+        assert kwargs["reason"] == "Unexpected error"
