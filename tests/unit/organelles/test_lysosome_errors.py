@@ -24,6 +24,7 @@ def test_cleanup_failure_is_logged(caplog):
 
     # Digest should not raise, but should log
     result = lysosome.digest()
+    assert any("cleanup" in record.message.lower() for record in caplog.records)
 
     # Check that warning was logged
     assert any("cleanup" in record.message.lower() or "failed" in record.message.lower()
@@ -49,3 +50,21 @@ def test_emergency_digest_logs_errors(caplog):
     # Check that errors during emergency digest were logged
     assert any("emergency" in record.message.lower() or "failed" in record.message.lower()
                for record in caplog.records), "Emergency digest failures should be logged"
+
+def test_orphaned_resource_cleanup_failure_coverage(caplog):
+    """Test specifically for _digest_orphaned cleanup exception block to ensure line coverage."""
+    import logging
+    caplog.set_level(logging.WARNING)
+    lysosome = Lysosome(silent=True)
+    waste = Waste(
+        waste_type=WasteType.ORPHANED_RESOURCE,
+        content=FailingCleanup(),
+        source="test"
+    )
+
+    # Trigger _digest_orphaned directly via digest()
+    lysosome.ingest(waste)
+
+    # digest() should catch the exception internally and return empty dict
+    lysosome.digest()
+    assert any("cleanup" in record.message.lower() for record in caplog.records)
