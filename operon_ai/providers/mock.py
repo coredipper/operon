@@ -77,8 +77,20 @@ class MockProvider:
             return f"The result is {result}."
 
         # Safety check patterns
-        if any(word in prompt_lower for word in ["safe", "dangerous", "risk"]):
-            if any(word in prompt_lower for word in ["delete", "rm -rf", "drop table"]):
+        is_safety_check = False
+        for word in {"safe", "dangerous", "risk"}:
+            if word in prompt_lower:
+                is_safety_check = True
+                break
+
+        if is_safety_check:
+            is_unsafe = False
+            for word in {"delete", "rm -rf", "drop table"}:
+                if word in prompt_lower:
+                    is_unsafe = True
+                    break
+
+            if is_unsafe:
                 return "UNSAFE: This operation could cause data loss."
             return "SAFE: This operation appears safe to proceed."
 

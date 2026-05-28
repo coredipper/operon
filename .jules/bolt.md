@@ -49,3 +49,6 @@
 ## 2026-05-26 - any() with Generators Overhead
 **Learning:** In Python, using `any()` with a generator expression (e.g., `any(kw in ... for kw in [...])`) incurs a slight overhead due to the creation of the generator object and the function call overhead. Replacing this with an explicit `for` loop and moving inline lists to class-level tuple variables avoids allocating new lists on every function call and the generator overhead. In a micro-benchmark, this yielded a ~4x speedup (from 1.67s down to 0.40s for 1M iterations) for string matching checks.
 **Action:** In highly-frequent hot paths like `operon_ai/organelles/mitochondria.py`, replace `any(...)` with an explicit `for` loop, and lift the inline lists (`['true', ...]`) to class-level tuple variables (`_BOOLEAN_KWS`).
+## 2024-05-24 - explicit for-loops over generator expressions
+**Learning:** In performance-critical Python paths, explicitly using a `for` loop with early returns is generally faster than using `any()` or `all()` with generator expressions due to the overhead of creating generator objects and the function call overhead of `any()`/`all()`.
+**Action:** Use explicit `for` loops with early returns instead of `any()` or `all()` with generator expressions for performance optimization.
