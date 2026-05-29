@@ -190,3 +190,37 @@ class TestIntegratedCell:
         assert "Test error during execution" in result.error
         # Check cleanup in finally block
         assert "agent1" not in cell.agent_operations
+
+    def test_execute_internal_exception(self):
+        cell = IntegratedCell()
+        cell.register_agent("agent1")
+
+        # We need an exception to be thrown inside execute(), but NOT inside work_fn
+        # (as that is caught by coordination system). We can mock a property temporarily.
+        # Alternatively we can mock time.time()
+        import unittest.mock as mock
+        with mock.patch.object(cell.coordination, "execute_operation", side_effect=Exception("Unforeseen Internal Error")):
+            result = cell.execute(
+                agent_id="agent1",
+                operation_id="op1",
+                work_fn=lambda: "hello",
+            )
+            assert result.success is False
+            assert "Unforeseen Internal Error" in result.error
+            assert "agent1" not in cell.agent_operations
+
+    def test_run_maintenance_with_apoptosis(self):
+        cell = IntegratedCell()
+        cell.register_agent("agent1")
+
+        # Inject mock maintenance response
+        import unittest.mock as mock
+        from operon_ai.coordination.watchdog import ApoptosisEvent
+
+        from operon_ai.coordination.watchdog import ApoptosisReason
+        mock_event = ApoptosisEvent(agent_id="agent1", operation_id="op1", reason=ApoptosisReason.MANUAL, details="test")
+
+        with mock.patch.object(cell.coordination, 'run_maintenance', return_value={"apoptosis": [mock_event]}):
+            events = cell.run_maintenance()
+            assert "coordination" in events
+            assert len(events["coordination"]["apoptosis"]) == 1
