@@ -314,7 +314,28 @@ class CompilerFunctor:
         """Verify that the compilation preserves architectural properties."""
         details: dict[str, Any] = {}
 
-        # 1. Graph preservation: source subgraph embedded in target
+        graph_ok = self._verify_graph_preservation(source, target, compiled, details)
+        cert_ok, cert_verifications = self._verify_certificate_preservation(source, target, compiled, details)
+        interface_ok = self._verify_interface_preservation(source, target, compiled, details)
+
+        return PreservationResult(
+            graph_preserved=graph_ok,
+            certificate_preserved=cert_ok,
+            interface_preserved=interface_ok,
+            source=source,
+            target=target,
+            certificate_verifications=cert_verifications,
+            details=details,
+        )
+
+    def _verify_graph_preservation(
+        self,
+        source: Architecture,
+        target: Architecture,
+        compiled: dict[str, Any],
+        details: dict[str, Any],
+    ) -> bool:
+        """Verify source subgraph embedded in target or correctly reshaped."""
         # Compilers may enrich (add watcher agents, etc.), so we check
         # that source stages and edges are subsets of the target.
         source_stages = frozenset(source.stage_names)
@@ -366,13 +387,23 @@ class CompilerFunctor:
             )
         else:
             graph_ok = stages_embedded and edges_embedded
+
         details["source_stages"] = source.stage_count
         details["target_stages"] = target.stage_count
         details["stages_embedded"] = stages_embedded
         details["edges_embedded"] = edges_embedded
         details["graph_reshaped"] = has_parallel
 
-        # 2. Certificate preservation (Prop 5.1)
+        return graph_ok
+
+    def _verify_certificate_preservation(
+        self,
+        source: Architecture,
+        target: Architecture,
+        compiled: dict[str, Any],
+        details: dict[str, Any],
+    ) -> tuple[bool, tuple[CertificateVerification, ...]]:
+        """Verify certificate preservation (Prop 5.1)."""
         source_theorems = source.certificate_theorems
         target_theorems = target.certificate_theorems
         cert_set_preserved = source_theorems <= target_theorems
@@ -386,27 +417,31 @@ class CompilerFunctor:
         details["target_theorems"] = sorted(target_theorems)
         details["all_certs_hold"] = certs_hold
 
-        # 3. Interface preservation: source stage names present in target
+        return cert_ok, cert_verifications
+
+    def _verify_interface_preservation(
+        self,
+        source: Architecture,
+        target: Architecture,
+        compiled: dict[str, Any],
+        details: dict[str, Any],
+    ) -> bool:
+        """Verify interface preservation: source stage names present in target."""
         # (mode→model mapping may differ since compilers remap models)
         source_stage_set = frozenset(source.stage_names)
         target_stage_set = frozenset(target.stage_names)
+        has_parallel = compiled.get("config", {}).get("has_parallel_groups", False)
+
         # For parallel groups, verify all source stages are present in target
         if has_parallel:
             interface_ok = source_stage_set <= target_stage_set
         else:
             interface_ok = source_stage_set <= target_stage_set
+
         details["source_stage_names"] = sorted(source_stage_set)
         details["target_stage_names"] = sorted(target_stage_set)
 
-        return PreservationResult(
-            graph_preserved=graph_ok,
-            certificate_preserved=cert_ok,
-            interface_preserved=interface_ok,
-            source=source,
-            target=target,
-            certificate_verifications=cert_verifications,
-            details=details,
-        )
+        return interface_ok
 
     def __repr__(self) -> str:
         return f"CompilerFunctor({self.name!r})"
