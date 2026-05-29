@@ -103,61 +103,8 @@ def _card(title, content, border_color="#e5e7eb"):
     )
 
 
-def run_escalation(scenario_name, threshold):
-    scenario = SCENARIOS.get(scenario_name)
-    if scenario is None:
-        return "<p>Select a scenario.</p>"
 
-    threshold = float(threshold)
-
-    # Build rubric that scores based on output length + specificity
-    def rubric(output: str, stage_name: str) -> float:
-        if stage_name != "respond":
-            return 0.8
-        if output == scenario.fast_response:
-            return scenario.fast_quality
-        return 0.95  # deep response always scores high
-
-    # Build organism
-    fast = Nucleus(provider=MockProvider(responses={
-        "respond": scenario.fast_response,
-    }))
-    deep = Nucleus(provider=MockProvider(responses={
-        "respond": scenario.deep_response,
-    }))
-
-    watcher = WatcherComponent(config=WatcherConfig())
-    verifier = VerifierComponent(
-        rubric=rubric,
-        config=VerifierConfig(quality_low_threshold=threshold),
-    )
-
-    org = skill_organism(
-        stages=[
-            SkillStage(
-                name="respond",
-                role="Responder",
-                instructions="Respond to the task.",
-                mode="fixed",
-            ),
-        ],
-        fast_nucleus=fast,
-        deep_nucleus=deep,
-        budget=ATP_Store(budget=1000, silent=True),
-        components=[watcher, verifier],
-    )
-
-    result = org.run(scenario.task)
-
-    # Collect results
-    escalated = any(
-        i.kind.value == "escalate" for i in watcher.interventions
-    )
-    fix_scores = [(s, q) for s, q in verifier.quality_scores if s == "respond"]
-    initial_quality = fix_scores[0][1] if fix_scores else 0.0
-
-    verifier_signals = [s for s in watcher.signals if s.source == "verifier"]
-
+def _render_results(scenario, threshold, initial_quality, escalated, watcher, result, verifier_signals):
     # Build HTML output
     html_parts = []
 
@@ -246,6 +193,66 @@ def run_escalation(scenario_name, threshold):
         ))
 
     return "\n".join(html_parts)
+
+
+def run_escalation(scenario_name, threshold):
+    scenario = SCENARIOS.get(scenario_name)
+    if scenario is None:
+        return "<p>Select a scenario.</p>"
+
+    threshold = float(threshold)
+
+    # Build rubric that scores based on output length + specificity
+    def rubric(output: str, stage_name: str) -> float:
+        if stage_name != "respond":
+            return 0.8
+        if output == scenario.fast_response:
+            return scenario.fast_quality
+        return 0.95  # deep response always scores high
+
+    # Build organism
+    fast = Nucleus(provider=MockProvider(responses={
+        "respond": scenario.fast_response,
+    }))
+    deep = Nucleus(provider=MockProvider(responses={
+        "respond": scenario.deep_response,
+    }))
+
+    watcher = WatcherComponent(config=WatcherConfig())
+    verifier = VerifierComponent(
+        rubric=rubric,
+        config=VerifierConfig(quality_low_threshold=threshold),
+    )
+
+    org = skill_organism(
+        stages=[
+            SkillStage(
+                name="respond",
+                role="Responder",
+                instructions="Respond to the task.",
+                mode="fixed",
+            ),
+        ],
+        fast_nucleus=fast,
+        deep_nucleus=deep,
+        budget=ATP_Store(budget=1000, silent=True),
+        components=[watcher, verifier],
+    )
+
+    result = org.run(scenario.task)
+
+    # Collect results
+    escalated = any(
+        i.kind.value == "escalate" for i in watcher.interventions
+    )
+    fix_scores = [(s, q) for s, q in verifier.quality_scores if s == "respond"]
+    initial_quality = fix_scores[0][1] if fix_scores else 0.0
+
+    verifier_signals = [s for s in watcher.signals if s.source == "verifier"]
+
+    return _render_results(
+        scenario, threshold, initial_quality, escalated, watcher, result, verifier_signals
+    )
 
 
 def load_scenario(name):
