@@ -380,98 +380,27 @@ class HistoneStore:
         self._total_retrievals += 1
         self._maybe_check_decay()
 
-        # --- Energy gate: Cost-Gated Retrieval (Paper §6.1.1) ---
-        if self._energy_gate is not None:
-            atp_store, policy = self._energy_gate
-            metabolic_state = atp_store.get_state()
-            gate_threshold = policy.get_min_strength(metabolic_state)
-
-            # DORMANT or fully silenced → return empty
-            if gate_threshold is None:
-                self._gated_retrievals += 1
-                if not self.silent:
-                    print(f"🔇 [Epigenetics] Retrieval blocked: {metabolic_state.value} state")
-                return RetrievalResult(
-                    markers=[], formatted_context="",
-                    relevance_scores={}, total_markers=len(self._markers),
-                    active_markers=len([m for m in self._markers.values() if not m.is_expired()]),
-                )
-
-            # Consume ATP for retrieval (priority=5 to bypass STARVING filter;
-            # the state_thresholds already control what's accessible)
-            if not atp_store.consume(policy.retrieval_cost, "histone_retrieval", priority=5):
-                self._gated_retrievals += 1
-                if not self.silent:
-                    print("🔇 [Epigenetics] Retrieval blocked: insufficient ATP")
-                return RetrievalResult(
-                    markers=[], formatted_context="",
-                    relevance_scores={}, total_markers=len(self._markers),
-                    active_markers=len([m for m in self._markers.values() if not m.is_expired()]),
-                )
-
-            # Raise effective min_strength to the metabolic threshold
-            if gate_threshold > min_strength.value:
-                min_strength = MarkerStrength(gate_threshold)
+        # Check energy gate and get effective minimum strength
+        gate_result, min_strength = self._check_energy_gate(min_strength)
+        if gate_result is not None:
+            return gate_result
 
         limit = limit or self.context_window
-        query_lower = query.lower()
-        query_words = set(query_lower.split())
 
         # Score and filter markers
-        scored_markers: list[tuple[float, EpigeneticMarker]] = []
-
-        for marker in self._markers.values():
-            # Filter by expiration
-            if not include_expired and marker.is_expired():
-                continue
-
-            # Filter by marker type
-            if marker_types and marker.marker_type not in marker_types:
-                continue
-
-            # Filter by minimum strength
-            if marker.strength.value < min_strength.value:
-                continue
-
-            # Filter by tags
-            if tags and not any(t in marker.tags for t in tags):
-                continue
-
-            # Calculate relevance score
-            score = self._calculate_relevance(marker, query_lower, query_words)
-
-            if score > 0 or not query:  # Include all if no query
-                scored_markers.append((score, marker))
-
-        # Sort by score (descending) and take top N
-        scored_markers.sort(key=lambda x: x[0], reverse=True)
-        top_markers = scored_markers[:limit]
-
-        # Update access counts
-        for _, marker in top_markers:
-            marker.access_count += 1
-            marker.last_accessed = datetime.now()
+        top_markers = self._score_and_filter_markers(
+            query=query,
+            tags=tags,
+            marker_types=marker_types,
+            min_strength=min_strength,
+            limit=limit,
+            include_expired=include_expired,
+        )
 
         # Build result
         markers = [m for _, m in top_markers]
         relevance_scores = {m.get_hash(): s for s, m in top_markers}
-
-        # Format context string
-        if not markers:
-            formatted = ""
-        else:
-            lines = []
-            for marker in markers:
-                strength_indicator = "!" * marker.strength.value
-                type_emoji = {
-                    MarkerType.METHYLATION: "🔒",
-                    MarkerType.ACETYLATION: "🔓",
-                    MarkerType.PHOSPHORYLATION: "⚡",
-                    MarkerType.UBIQUITINATION: "🏷️",
-                }.get(marker.marker_type, "•")
-                lines.append(f"{type_emoji} [{strength_indicator}] {marker.content}")
-
-            formatted = "⚠️ EPIGENETIC MEMORY:\n" + "\n".join(f"  - {line}" for line in lines)
+        formatted = self._format_retrieved_markers(markers)
 
         return RetrievalResult(
             markers=markers,
@@ -480,6 +409,100 @@ class HistoneStore:
             total_markers=len(self._markers),
             active_markers=len([m for m in self._markers.values() if not m.is_expired()]),
         )
+
+    def _check_energy_gate(
+        self, min_strength: MarkerStrength
+    ) -> tuple[RetrievalResult | None, MarkerStrength]:
+        """Check if retrieval is allowed based on metabolic state and ATP.
+        Returns a tuple of (RetrievalResult if blocked, effective min_strength)."""
+        if self._energy_gate is None:
+            return None, min_strength
+
+        atp_store, policy = self._energy_gate
+        metabolic_state = atp_store.get_state()
+        gate_threshold = policy.get_min_strength(metabolic_state)
+
+        def _create_empty_result() -> RetrievalResult:
+            self._gated_retrievals += 1
+            return RetrievalResult(
+                markers=[], formatted_context="",
+                relevance_scores={}, total_markers=len(self._markers),
+                active_markers=len([m for m in self._markers.values() if not m.is_expired()]),
+            )
+
+        # DORMANT or fully silenced → return empty
+        if gate_threshold is None:
+            if not self.silent:
+                print(f"🔇 [Epigenetics] Retrieval blocked: {metabolic_state.value} state")
+            return _create_empty_result(), min_strength
+
+        # Consume ATP for retrieval (priority=5 to bypass STARVING filter)
+        if not atp_store.consume(policy.retrieval_cost, "histone_retrieval", priority=5):
+            if not self.silent:
+                print("🔇 [Epigenetics] Retrieval blocked: insufficient ATP")
+            return _create_empty_result(), min_strength
+
+        # Raise effective min_strength to the metabolic threshold
+        effective_min_strength = min_strength
+        if gate_threshold > min_strength.value:
+            effective_min_strength = MarkerStrength(gate_threshold)
+
+        return None, effective_min_strength
+
+    def _score_and_filter_markers(
+        self,
+        query: str,
+        tags: list[str] | None,
+        marker_types: list[MarkerType] | None,
+        min_strength: MarkerStrength,
+        limit: int,
+        include_expired: bool,
+    ) -> list[tuple[float, EpigeneticMarker]]:
+        """Score and filter markers based on retrieval criteria."""
+        query_lower = query.lower()
+        query_words = set(query_lower.split())
+        scored_markers: list[tuple[float, EpigeneticMarker]] = []
+
+        for marker in self._markers.values():
+            if not include_expired and marker.is_expired():
+                continue
+            if marker_types and marker.marker_type not in marker_types:
+                continue
+            if marker.strength.value < min_strength.value:
+                continue
+            if tags and not any(t in marker.tags for t in tags):
+                continue
+
+            score = self._calculate_relevance(marker, query_lower, query_words)
+            if score > 0 or not query:
+                scored_markers.append((score, marker))
+
+        scored_markers.sort(key=lambda x: x[0], reverse=True)
+        top_markers = scored_markers[:limit]
+
+        for _, marker in top_markers:
+            marker.access_count += 1
+            marker.last_accessed = datetime.now()
+
+        return top_markers
+
+    def _format_retrieved_markers(self, markers: list[EpigeneticMarker]) -> str:
+        """Format a list of markers into a context string."""
+        if not markers:
+            return ""
+
+        lines = []
+        for marker in markers:
+            strength_indicator = "!" * marker.strength.value
+            type_emoji = {
+                MarkerType.METHYLATION: "🔒",
+                MarkerType.ACETYLATION: "🔓",
+                MarkerType.PHOSPHORYLATION: "⚡",
+                MarkerType.UBIQUITINATION: "🏷️",
+            }.get(marker.marker_type, "•")
+            lines.append(f"{type_emoji} [{strength_indicator}] {marker.content}")
+
+        return "⚠️ EPIGENETIC MEMORY:\n" + "\n".join(f"  - {line}" for line in lines)
 
     def _calculate_relevance(
         self,
