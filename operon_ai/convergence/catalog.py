@@ -416,14 +416,7 @@ def seed_library_from_acg_survey(library: PatternLibrary) -> int:
 # ---------------------------------------------------------------------------
 
 
-def get_builtin_swarms_patterns() -> list[dict[str, Any]]:
-    """Return ~10 representative Swarms patterns as plain dicts.
-
-    These are hardcoded representations of Swarms' built-in workflow
-    patterns, useful for seeding a :class:`PatternLibrary` without
-    requiring the Swarms package.
-    """
-    return [
+_BUILTIN_SWARMS_PATTERNS: list[dict[str, Any]] = [
         {
             "name": "SequentialWorkflow",
             "agents": [
@@ -547,3 +540,14 @@ def get_builtin_swarms_patterns() -> list[dict[str, Any]]:
             ],
         },
     ]
+
+
+def get_builtin_swarms_patterns() -> list[dict[str, Any]]:
+    """Return ~10 representative Swarms patterns as plain dicts.
+
+    These are hardcoded representations of Swarms' built-in workflow
+    patterns, useful for seeding a :class:`PatternLibrary` without
+    requiring the Swarms package.
+    """
+    import copy
+    return copy.deepcopy(_BUILTIN_SWARMS_PATTERNS)
