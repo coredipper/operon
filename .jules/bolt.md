@@ -53,3 +53,6 @@
 ## 2026-05-28 - Consolidated micro-optimizations (denature regex, watchdog generator, mock set literals)
 **Learning:** Three small, behavior-preserving wins landed together: (1) pre-compiling an inline `re.sub(r"\n{3,}", ...)` as a class-level `ClassVar` `re.Pattern` in `StripMarkupFilter` avoids re-compiling on every `denature()` call; (2) using a generator expression instead of a list comprehension in a `not in` membership check (`watchdog.py`) avoids allocating the full list and short-circuits on first match; (3) set literals (`{...}`) instead of list literals in `any(... for ... in {...})` membership checks let Python build a `frozenset` constant at compile time rather than a list per call.
 **Action:** Prefer pre-compiled `ClassVar` patterns for inline regexes in hot filters; prefer generator expressions and set literals for membership checks. (Consolidates four duplicate bot PRs into one commit; dates use 2026.)
+## 2026-05-29 - Synchronous Sleep in Loop
+**Learning:** `time.sleep` in background threads causes slow shutdown because it forces the thread to block for the full duration, regardless of shutdown signals. `threading.Event().wait(timeout)` is a better alternative as it returns immediately when the event is set, enabling fast teardown.
+**Action:** Replace `time.sleep(delay)` with `event.wait(delay)` for periodic background loops.
