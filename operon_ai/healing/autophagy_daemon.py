@@ -177,26 +177,10 @@ class AutophagyDaemon:
         Returns:
             Tuple of (new_context, PruneResult if pruned else None)
         """
-        import time
-
         self._last_check = datetime.now(timezone.utc)
         metrics = self.assess_health(context, max_tokens)
 
-        # Decide if pruning is needed
-        should_prune = (
-            force
-            or metrics.status == ContextHealthStatus.CRITICAL
-            or (
-                metrics.status == ContextHealthStatus.ACCUMULATING
-                and metrics.useful_content_ratio < 0.5
-            )
-        )
-
-        # Don't prune tiny contexts
-        if metrics.estimated_tokens < self.min_tokens_for_pruning:
-            should_prune = False
-
-        if not should_prune:
+        if not self._should_prune(metrics, force):
             if not self.silent and metrics.status == ContextHealthStatus.ACCUMULATING:
                 print(
                     f"🧹 [Autophagy] Context at {metrics.fill_percentage:.0%} "
@@ -204,7 +188,32 @@ class AutophagyDaemon:
                 )
             return context, None
 
-        # Trigger pruning
+        return self._execute_pruning(context, metrics, max_tokens)
+
+    def _should_prune(self, metrics: ContextMetrics, force: bool) -> bool:
+        """Decide if pruning is needed based on metrics and force flag."""
+        should_prune = False
+
+        if force:
+            should_prune = True
+        elif metrics.status == ContextHealthStatus.CRITICAL:
+            should_prune = True
+        elif (
+            metrics.status == ContextHealthStatus.ACCUMULATING
+            and metrics.useful_content_ratio < 0.5
+        ):
+            should_prune = True
+
+        if metrics.estimated_tokens < self.min_tokens_for_pruning:
+            should_prune = False
+
+        return should_prune
+
+    def _execute_pruning(
+        self, context: str, metrics: ContextMetrics, max_tokens: int
+    ) -> tuple[str, PruneResult]:
+        """Execute the pruning process and consolidate context."""
+        import time
         start = time.time()
 
         if not self.silent:
@@ -217,7 +226,10 @@ class AutophagyDaemon:
         summary = self.summarizer(context)
 
         if not self.silent:
-            print(f"🧹 [Autophagy] Summarized {metrics.estimated_tokens} tokens → {self.estimate_tokens(summary)} tokens")
+            print(
+                f"🧹 [Autophagy] Summarized {metrics.estimated_tokens} tokens → "
+                f"{self.estimate_tokens(summary)} tokens"
+            )
 
         # Step 2: Store summary in long-term memory
         marker_hash = self.histone_store.add_marker(
@@ -253,7 +265,7 @@ class AutophagyDaemon:
                 f"Context now at {tokens_after / max_tokens:.0%}"
             )
 
-        return new_context, PruneResult(
+        result = PruneResult(
             pruned=True,
             tokens_before=metrics.estimated_tokens,
             tokens_after=tokens_after,
@@ -262,6 +274,7 @@ class AutophagyDaemon:
             waste_items_flushed=1,
             duration_ms=duration,
         )
+        return new_context, result
 
     def _estimate_useful_ratio(self, context: str) -> float:
         """
