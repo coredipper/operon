@@ -90,6 +90,75 @@ class IntegratedCell:
         """Register a resource for coordination."""
         self.coordination.register_resource(resource_id, allow_preemption)
 
+    def _execute_coordination(
+        self,
+        agent_id: str,
+        operation_id: str,
+        work_fn: Callable[[], Any],
+        resources: Optional[list[str]] = None,
+        validate_fn: Optional[Callable[[Any], bool]] = None,
+        priority: int = 0,
+    ) -> CoordinationResult:
+        # Execute through coordination system
+        return self.coordination.execute_operation(
+            operation_id=operation_id,
+            agent_id=agent_id,
+            work_fn=work_fn,
+            resources=resources,
+            validate_fn=validate_fn,
+            priority=priority,
+        )
+
+    def _tag_output(self, agent_id: str, output: Any) -> tuple[Any, Optional[TaggedData]]:
+        # Tag output with provenance
+        tag = self.quality_pool.allocate(
+            origin=agent_id,
+            confidence=1.0,
+        )
+
+        tagged_output = None
+        if tag:
+            tagged_output = TaggedData(data=output, tag=tag)
+
+        return tag, tagged_output
+
+    def _record_observation(
+        self,
+        agent_id: str,
+        output: Any,
+        response_time: float,
+        tag: Any
+    ) -> None:
+        # Record observation in surveillance
+        if agent_id in self.surveillance.displays:
+            output_str = str(output) if output else ""
+            self.surveillance.record_observation(
+                agent_id=agent_id,
+                output=output_str,
+                response_time=response_time,
+                confidence=tag.confidence if tag else 0.5,
+            )
+
+    def _check_quality(
+        self,
+        agent_id: str,
+        output: Any,
+        tag: Any,
+        tagged_output: Optional[TaggedData]
+    ) -> Optional[DegradationResult]:
+        # Quality check through proteasome (if tag exists)
+        degradation_result = None
+        if tag and tagged_output:
+            ctx = ProvenanceContext(
+                tag=tag,
+                source_module=agent_id,
+                target_module="cell_output",
+            )
+            _, _, degradation_result = self.proteasome.inspect(
+                output, tag, ctx, self.quality_pool
+            )
+        return degradation_result
+
     def execute(
         self,
         agent_id: str,
@@ -117,14 +186,8 @@ class IntegratedCell:
             # Pre-execution: Check if agent is under surveillance alert
             # (In full implementation, would check threat level)
 
-            # Execute through coordination system
-            coord_result = self.coordination.execute_operation(
-                operation_id=operation_id,
-                agent_id=agent_id,
-                work_fn=work_fn,
-                resources=resources,
-                validate_fn=validate_fn,
-                priority=priority,
+            coord_result = self._execute_coordination(
+                agent_id, operation_id, work_fn, resources, validate_fn, priority
             )
 
             if not coord_result.success:
@@ -139,40 +202,11 @@ class IntegratedCell:
 
             output = coord_result.result
 
-            # Tag output with provenance
-            tag = self.quality_pool.allocate(
-                origin=agent_id,
-                confidence=1.0,
-            )
+            tag, tagged_output = self._tag_output(agent_id, output)
 
-            tagged_output = None
-            if tag:
-                tagged_output = TaggedData(data=output, tag=tag)
+            self._record_observation(agent_id, output, time.time() - start_time, tag)
 
-            # Record observation in surveillance
-            if agent_id in self.surveillance.displays:
-                output_str = str(output) if output else ""
-                response_time = (time.time() - start_time)
-                self.surveillance.record_observation(
-                    agent_id=agent_id,
-                    output=output_str,
-                    response_time=response_time,
-                    confidence=tag.confidence if tag else 0.5,
-                )
-
-            # Quality check through proteasome (if tag exists)
-            degradation_result = None
-            if tag and tagged_output:
-                ctx = ProvenanceContext(
-                    tag=tag,
-                    source_module=agent_id,
-                    target_module="cell_output",
-                )
-                _, _, degradation_result = self.proteasome.inspect(
-                    output, tag, ctx, self.quality_pool
-                )
-
-            execution_time_ms = (time.time() - start_time) * 1000
+            degradation_result = self._check_quality(agent_id, output, tag, tagged_output)
 
             return CellExecutionResult(
                 agent_id=agent_id,
@@ -181,7 +215,7 @@ class IntegratedCell:
                 tagged_output=tagged_output,
                 degradation_result=degradation_result,
                 coordination_result=coord_result,
-                execution_time_ms=execution_time_ms,
+                execution_time_ms=(time.time() - start_time) * 1000,
             )
 
         except Exception as e:
