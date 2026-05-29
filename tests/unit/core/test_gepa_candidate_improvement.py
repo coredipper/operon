@@ -62,6 +62,28 @@ class TestGepaCandidateImprovement:
         assert result.holds is False
         assert result.evidence["reason"] == "length_mismatch"
 
+    def test_one_sided_empty_parent_is_length_mismatch(self):
+        # Scores exist on the child side, so this is unaligned vectors —
+        # not "no evidence". Must be length_mismatch, not empty_evidence,
+        # and the empty side's mean is reported safely as 0.0.
+        result = _cert([], [0.8]).verify()
+        assert result.holds is False
+        assert result.evidence["reason"] == "length_mismatch"
+        assert result.evidence["n_parent"] == 0
+        assert result.evidence["n_child"] == 1
+        assert result.evidence["parent_mean"] == 0.0
+        assert result.evidence["child_mean"] == 0.8
+
+    def test_one_sided_empty_child_is_length_mismatch(self):
+        # Symmetric case: parent has scores, child is empty.
+        result = _cert([0.5], []).verify()
+        assert result.holds is False
+        assert result.evidence["reason"] == "length_mismatch"
+        assert result.evidence["n_parent"] == 1
+        assert result.evidence["n_child"] == 0
+        assert result.evidence["parent_mean"] == 0.5
+        assert result.evidence["child_mean"] == 0.0
+
     def test_registered_in_theorem_registry(self):
         # The theorem name must resolve via the built-in registry so the
         # GEPA adapter (and downstream consumers) can look it up by string.

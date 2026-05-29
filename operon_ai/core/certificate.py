@@ -400,15 +400,16 @@ def _verify_gepa_candidate_improvement(
     mean improved (a mean rise that worsens an individual instance is not
     a Pareto improvement).
 
-    Failure carries a ``reason``: ``empty_evidence`` (no scores),
-    ``length_mismatch`` (vectors not aligned — a per-instance comparison
-    is undefined), ``not_dominated`` (some instance regressed), or
+    Failure carries a ``reason``: ``empty_evidence`` (both vectors empty —
+    no scores at all), ``length_mismatch`` (vectors not aligned, including a
+    one-sided empty vector — a per-instance comparison is undefined),
+    ``not_dominated`` (some instance regressed), or
     ``no_strict_improvement`` (every instance tied — dominance requires a
     strict win somewhere).
     """
     parent = list(params["parent_scores"])
     child = list(params["child_scores"])
-    if not parent or not child:
+    if not parent and not child:
         return False, {
             "parent_mean": 0.0,
             "child_mean": 0.0,
@@ -416,9 +417,12 @@ def _verify_gepa_candidate_improvement(
             "reason": "empty_evidence",
         }
     if len(parent) != len(child):
+        # A one-sided empty vector (e.g. parent=[], child=[0.8]) is an
+        # alignment failure, not "no evidence", so it lands here — guard
+        # the means against division by zero on the empty side.
         return False, {
-            "parent_mean": round(sum(parent) / len(parent), 4),
-            "child_mean": round(sum(child) / len(child), 4),
+            "parent_mean": round(sum(parent) / len(parent), 4) if parent else 0.0,
+            "child_mean": round(sum(child) / len(child), 4) if child else 0.0,
             "n_parent": len(parent),
             "n_child": len(child),
             "reason": "length_mismatch",
