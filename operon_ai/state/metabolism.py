@@ -230,8 +230,7 @@ class ATP_Store:
         """Start background regeneration thread."""
         def regenerate_loop():
             while not self._stop_regeneration.is_set():
-                time.sleep(1.0)  # Regenerate every second
-                if not self._stop_regeneration.is_set():
+                if not self._stop_regeneration.wait(1.0):  # Regenerate every second
                     self.regenerate(int(self.regeneration_rate))
 
         self._regeneration_thread = threading.Thread(target=regenerate_loop, daemon=True)
