@@ -21,7 +21,6 @@ from typing import Callable, Any
 from enum import Enum
 from datetime import datetime, timedelta
 import threading
-import time
 
 
 class MetabolicState(Enum):
@@ -229,10 +228,8 @@ class ATP_Store:
     def _start_regeneration(self):
         """Start background regeneration thread."""
         def regenerate_loop():
-            while not self._stop_regeneration.is_set():
-                time.sleep(1.0)  # Regenerate every second
-                if not self._stop_regeneration.is_set():
-                    self.regenerate(int(self.regeneration_rate))
+            while not self._stop_regeneration.wait(1.0):
+                self.regenerate(int(self.regeneration_rate))
 
         self._regeneration_thread = threading.Thread(target=regenerate_loop, daemon=True)
         self._regeneration_thread.start()
