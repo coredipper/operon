@@ -56,3 +56,6 @@
 ## 2026-05-18 - Replacing time.sleep with wait in background thread loops
 **Learning:** Using `time.sleep(1.0)` in a background thread blocks the thread unconditionally for up to 1 second during shutdown, increasing application shutdown latency. `threading.Event().wait(1.0)` can sleep for the same duration but immediately interrupts and exits if the event is set.
 **Action:** Replace `time.sleep()` with `threading.Event().wait()` inside background thread loops to eliminate unconditional blocking delay overhead and reduce shutdown latency.
+## 2026-05-31 - Generator Expression in any() Overhead Optimization
+**Learning:** Using `any(generator_expression)` has an implicit generator creation overhead which slows down execution in hot paths. Replacing `any(v is not None for v in [a, b, c])` with a manual `for v in (a, b, c): if v is not None: break` removes the overhead. Additionally, converting the inline list `[a, b, c]` to a tuple `(a, b, c)` prevents the `BUILD_LIST` operation overhead on every loop execution.
+**Action:** Always prefer an explicit `for` loop combined with an inline tuple definition `(a, b, c)` instead of using `any([generator])` or `any([list comprehension])` when checking for a single `True` condition among local variables in performance-critical execution paths.

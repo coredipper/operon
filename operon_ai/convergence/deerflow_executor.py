@@ -171,9 +171,11 @@ def execute_deerflow(
         import warnings
 
         # Check if any legacy kwargs were provided
-        legacy_kwargs_used = any(
-            v is not None for v in [model, model_name, ollama_base_url, enable_watcher, watcher_config, verify_certificates]
-        )
+        legacy_kwargs_used = False
+        for v in (model, model_name, ollama_base_url, enable_watcher, watcher_config, verify_certificates):
+            if v is not None:
+                legacy_kwargs_used = True
+                break
         if legacy_kwargs_used:
             warnings.warn(
                 "Passing configuration directly as keyword arguments to execute_deerflow is deprecated. "
