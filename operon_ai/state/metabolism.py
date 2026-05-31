@@ -21,7 +21,6 @@ from typing import Callable, Any
 from enum import Enum
 from datetime import datetime, timedelta
 import threading
-import time
 
 
 class MetabolicState(Enum):
