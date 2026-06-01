@@ -279,7 +279,7 @@ def _profile_table_html(profiles):
         denat = _badge("Yes", "#ec4899") if p.has_denature_filter else _badge("No", "#d1d5db")
         rows.append(
             f"<tr>"
-            f"<td style='padding:6px;font-weight:600'>{name}</td>"
+            f"<th scope='row' style='padding:6px;font-weight:600;text-align:left'>{name}</th>"
             f"<td style='padding:6px'>{direct}</td>"
             f"<td style='padding:6px'>{trans}</td>"
             f"<td style='padding:6px;text-align:center'>{p.observation_width}</td>"

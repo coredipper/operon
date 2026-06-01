@@ -193,19 +193,19 @@ def inspect_architecture(
         '<th scope=\'col\' style="text-align:left;padding:6px 8px;">Arch Component</th>'
         '<th scope=\'col\' style="text-align:left;padding:6px 8px;">Operon Realization</th></tr>'
         '<tr style="border-bottom:1px solid #f3f4f6;">'
-        '<td style="padding:6px 8px;font-weight:600;">Harness</td>'
+        '<th scope="row" style="padding:6px 8px;font-weight:600;text-align:left;">Harness</th>'
         '<td style="padding:6px 8px;">G (graph)</td>'
         '<td style="padding:6px 8px;font-family:monospace;">SkillOrganism.stages + edges</td></tr>'
         '<tr style="border-bottom:1px solid #f3f4f6;">'
-        '<td style="padding:6px 8px;font-weight:600;">Skills</td>'
+        '<th scope="row" style="padding:6px 8px;font-weight:600;text-align:left;">Skills</th>'
         '<td style="padding:6px 8px;">G (graph)</td>'
         '<td style="padding:6px 8px;font-family:monospace;">SkillStage.role + handler</td></tr>'
         '<tr style="border-bottom:1px solid #f3f4f6;">'
-        '<td style="padding:6px 8px;font-weight:600;">Protocols</td>'
+        '<th scope="row" style="padding:6px 8px;font-weight:600;text-align:left;">Protocols</th>'
         '<td style="padding:6px 8px;">Know (certs)</td>'
         '<td style="padding:6px 8px;font-family:monospace;">ATP_Store.certify &rarr; Certificate</td></tr>'
         '<tr>'
-        '<td style="padding:6px 8px;font-weight:600;">Memory</td>'
+        '<th scope="row" style="padding:6px 8px;font-weight:600;text-align:left;">Memory</th>'
         '<td style="padding:6px 8px;">&Phi; (interface)</td>'
         '<td style="padding:6px 8px;font-family:monospace;">mode &rarr; nucleus mapping</td></tr>'
         '</table>')
@@ -220,7 +220,7 @@ def inspect_architecture(
         i_status = _badge("preserved", "#22c55e") if p.interface_preserved else _badge("remapped", "#f59e0b")
         functor_rows += (
             f'<tr style="border-bottom:1px solid #f3f4f6;">'
-            f'<td style="padding:6px 8px;font-weight:600;">{name}</td>'
+            f'<th scope="row" style="padding:6px 8px;font-weight:600;text-align:left;">{name}</th>'
             f'<td style="padding:6px 8px;">{g_status}</td>'
             f'<td style="padding:6px 8px;">{c_status}</td>'
             f'<td style="padding:6px 8px;">{i_status}</td></tr>')
