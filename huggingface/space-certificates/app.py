@@ -47,7 +47,7 @@ def _holds_badge(holds: bool) -> str:
 
 def _kv_table(d: dict) -> str:
     rows = "".join(
-        f"<tr><td style='padding:4px 12px;font-weight:600;'>{k}</td>"
+        f"<tr><th scope='row' style='padding:4px 12px;font-weight:600;text-align:left;'>{k}</th>"
         f"<td style='padding:4px 12px;'>{v}</td></tr>"
         for k, v in d.items()
     )

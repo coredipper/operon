@@ -279,7 +279,7 @@ def _profile_table_html(profiles):
         denat = _badge("Yes", "#ec4899") if p.has_denature_filter else _badge("No", "#d1d5db")
         rows.append(
             f"<tr>"
-            f"<td style='padding:6px;font-weight:600'>{name}</td>"
+            f"<th scope='row' style='padding:6px;font-weight:600;text-align:left'>{name}</th>"
             f"<td style='padding:6px'>{direct}</td>"
             f"<td style='padding:6px'>{trans}</td>"
             f"<td style='padding:6px;text-align:center'>{p.observation_width}</td>"
@@ -328,13 +328,13 @@ def _classification_html(cls):
         f'<div style="padding:12px;border:2px solid #e5e7eb;border-radius:8px">'
         f'<div style="font-size:1.3em;margin-bottom:10px">{tb}</div>'
         f'<table style="border-collapse:collapse">'
-        f'<tr><td style="padding:4px 12px;color:#666">Hub module</td>'
+        f'<tr><th scope="row" style="padding:4px 12px;color:#666;text-align:left;font-weight:normal;">Hub module</th>'
         f'<td style="padding:4px 12px;font-weight:600">{hub}</td></tr>'
-        f'<tr><td style="padding:4px 12px;color:#666">Chain length</td>'
+        f'<tr><th scope="row" style="padding:4px 12px;color:#666;text-align:left;font-weight:normal;">Chain length</th>'
         f'<td style="padding:4px 12px;font-weight:600">{cls.chain_length}</td></tr>'
-        f'<tr><td style="padding:4px 12px;color:#666">Parallelism width</td>'
+        f'<tr><th scope="row" style="padding:4px 12px;color:#666;text-align:left;font-weight:normal;">Parallelism width</th>'
         f'<td style="padding:4px 12px;font-weight:600">{cls.parallelism_width}</td></tr>'
-        f'<tr><td style="padding:4px 12px;color:#666">Source modules</td>'
+        f'<tr><th scope="row" style="padding:4px 12px;color:#666;text-align:left;font-weight:normal;">Source modules</th>'
         f'<td style="padding:4px 12px;font-weight:600">{cls.num_sources}</td></tr>'
         f'</table></div>'
     )
