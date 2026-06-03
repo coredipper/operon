@@ -309,7 +309,7 @@ def _profile_table_html(profiles):
         denat = "Yes" if p.has_denature_filter else "-"
         rows.append(
             f"<tr>"
-            f"<td style='padding:4px 8px;font-weight:600'>{html.escape(name)}</td>"
+            f"<th scope='row' style='padding:4px 8px;font-weight:600;text-align:left'>{html.escape(name)}</th>"
             f"<td style='padding:4px 8px'>{html.escape(direct)}</td>"
             f"<td style='padding:4px 8px'>{html.escape(trans)}</td>"
             f"<td style='padding:4px 8px;text-align:center'>{p.observation_width}</td>"
