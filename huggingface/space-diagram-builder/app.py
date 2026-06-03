@@ -446,7 +446,7 @@ def _run_compare(
         style = "font-weight:600;" if highlight else ""
         return (
             f"<tr>"
-            f"<td style='padding:4px 10px;{style}'>{html.escape(str(label))}</td>"
+            f"<th scope='row' style='padding:4px 10px;font-weight:normal;text-align:left;{style}'>{html.escape(str(label))}</th>"
             f"<td style='padding:4px 10px;text-align:center;{style}'>{a_str}</td>"
             f"<td style='padding:4px 10px;text-align:center;{style}'>{b_str}</td>"
             f"</tr>"
@@ -456,7 +456,7 @@ def _run_compare(
     tb_b = _topology_badge(cls_b.topology_class)
 
     rows = [
-        f"<tr><td style='padding:4px 10px;font-weight:700'>Topology</td>"
+        f"<tr><th scope='row' style='padding:4px 10px;font-weight:700;text-align:left'>Topology</th>"
         f"<td style='padding:4px 10px;text-align:center'>{tb_a}</td>"
         f"<td style='padding:4px 10px;text-align:center'>{tb_b}</td></tr>",
         _row("Modules", len(diag_a.modules), len(diag_b.modules)),
