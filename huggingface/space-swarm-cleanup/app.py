@@ -386,7 +386,7 @@ def run_swarm(
         ec = _EVENT_COLORS.get(entry["event"], "#888")
         timeline_rows.append(
             f'<tr>'
-            f'<td style="padding:4px 8px;font-family:monospace">{entry["worker"]}</td>'
+            f'<th scope="row" style="padding:4px 8px;font-family:monospace;font-weight:normal;text-align:left;">{entry["worker"]}</th>'
             f'<td style="padding:4px 8px;text-align:center">{entry["generation"]}</td>'
             f'<td style="padding:4px 8px">'
             f'<span style="background:{ec}20;color:{ec};padding:1px 6px;'

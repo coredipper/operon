@@ -206,7 +206,7 @@ def run_chaperone(raw_input: str, schema_name: str) -> tuple[str, str, str, str]
         error_text = html.escape(attempt.error[:80] if attempt.error else "-")
         trace_rows.append(
             f"<tr>"
-            f"<td style='padding:8px; border:1px solid #e5e7eb;'>{_format_strategy_badge(attempt.strategy)}</td>"
+            f"<th scope='row' style='padding:8px; border:1px solid #e5e7eb;font-weight:normal;text-align:left;'>{_format_strategy_badge(attempt.strategy)}</th>"
             f"<td style='padding:8px; border:1px solid #e5e7eb;'><span style='color:{status_color};font-weight:600;'>{status}</span></td>"
             f"<td style='padding:8px; border:1px solid #e5e7eb;'>{attempt.duration_ms:.1f} ms</td>"
             f"<td style='padding:8px; border:1px solid #e5e7eb;'><code>{error_text}</code></td>"

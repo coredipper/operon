@@ -196,7 +196,7 @@ def browse_registry(search_query: str) -> str:
         cap_color = "#22c55e" if caps == ["none"] else "#ef4444"
         rows += (
             f'<tr>'
-            f'<td style="padding:8px;font-weight:600;">{p.name}</td>'
+            f'<th scope="row" style="padding:8px;font-weight:600;text-align:left;">{p.name}</th>'
             f'<td style="padding:8px;">{p.description}</td>'
             f'<td style="padding:8px;">{p.version}</td>'
             f'<td style="padding:8px;">{", ".join(tags)}</td>'

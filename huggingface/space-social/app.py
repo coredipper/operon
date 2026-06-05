@@ -54,7 +54,7 @@ def _run_exchange(min_sr, default_trust):
         status = "ADOPTED" if in_adopted else ("REJECTED" if in_export else "NOT EXPORTED")
         color = "#4a4" if in_adopted else ("#a44" if in_export else "#888")
         rows += f"""<tr>
-            <td style="padding:8px">{t.name}</td>
+            <th scope="row" style="padding:8px;font-weight:normal;text-align:left;">{t.name}</th>
             <td style="padding:8px">{t.success_rate:.0%}</td>
             <td style="padding:8px;color:{color};font-weight:600">{status}</td>
         </tr>"""
@@ -87,7 +87,7 @@ def _run_trust_sim(n_success, n_failure):
         color = "#4a4" if score >= 0.5 else "#a44"
         bar = min(int(score * 100), 100)
         rows += f"""<tr>
-            <td style="padding:6px">{event}</td>
+            <th scope="row" style="padding:6px;font-weight:normal;text-align:left;">{event}</th>
             <td style="padding:6px">
                 <span style="display:inline-block;width:{bar}%;height:12px;background:{color};border-radius:3px;opacity:0.5"></span>
                 <span style="color:{color};margin-left:8px;font-size:12px">{score:.3f}</span>
@@ -116,7 +116,7 @@ def _run_curiosity(threshold):
         color = "#f97316" if would_escalate else "#4a4"
         action = "ESCALATE" if would_escalate else "OK"
         rows += f"""<tr>
-            <td style="padding:8px">{name}</td>
+            <th scope="row" style="padding:8px;font-weight:normal;text-align:left;">{name}</th>
             <td style="padding:8px">{model}</td>
             <td style="padding:8px">{novelty:.2f}</td>
             <td style="padding:8px">{status}</td>

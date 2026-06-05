@@ -235,7 +235,7 @@ def visualize_and_run(stages_text, task, do_run):
             preview = str(output)[:60]
             rows += (
                 f'<tr style="border-bottom:1px solid #f3f4f6;">'
-                f'<td style="padding:6px 8px;font-weight:600;">{html_mod.escape(name)}</td>'
+                f'<th scope="row" style="padding:6px 8px;font-weight:600;text-align:left;">{html_mod.escape(name)}</th>'
                 f'<td style="padding:6px 8px;font-family:monospace;'
                 f'font-size:0.9em;">{html_mod.escape(preview)}</td></tr>')
 

@@ -174,7 +174,7 @@ def _render_results(scenario, threshold, initial_quality, escalated, watcher, re
         status = _badge("BELOW", "#ef4444") if bt else _badge("OK", "#22c55e")
         sig_rows += (
             f'<tr style="border-bottom:1px solid #f3f4f6;">'
-            f'<td style="padding:4px 8px;">{sig.stage_name}</td>'
+            f'<th scope="row" style="padding:4px 8px;font-weight:normal;text-align:left;">{sig.stage_name}</th>'
             f'<td style="padding:4px 8px;">{q:.2f}</td>'
             f'<td style="padding:4px 8px;">{sig.value:.2f}</td>'
             f'<td style="padding:4px 8px;">{status}</td></tr>')

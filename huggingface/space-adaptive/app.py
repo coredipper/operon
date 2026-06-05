@@ -118,7 +118,7 @@ def _run_selection(preset_name):
         bg = "#1a2a1a" if i == 0 else "transparent"
         badge = ' <span style="color:#6a6;font-size:12px">SELECTED</span>' if i == 0 else ""
         rows += f"""<tr style="background:{bg}">
-            <td style="padding:10px;font-weight:{'600' if i==0 else '400'}">{t.name}{badge}</td>
+            <th scope="row" style="padding:10px;font-weight:{'600' if i==0 else 'normal'};text-align:left;">{t.name}{badge}</th>
             <td style="padding:10px">{t.topology}</td>
             <td style="padding:10px">{t.stage_count} stages</td>
             <td style="padding:10px;font-weight:600">{s:.4f}</td>
@@ -148,7 +148,7 @@ def _run_experience(exp_preset):
     for r in records:
         color = "#4a4" if r.outcome_success else "#a44"
         rows += f"""<tr>
-            <td style="padding:8px">{r.stage_name}</td>
+            <th scope="row" style="padding:8px;font-weight:normal;text-align:left;">{r.stage_name}</th>
             <td style="padding:8px">{r.signal_category}</td>
             <td style="padding:8px">{r.intervention_kind}</td>
             <td style="padding:8px;color:{color}">{'success' if r.outcome_success else 'failed'}</td>

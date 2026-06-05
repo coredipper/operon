@@ -212,7 +212,7 @@ def _fact_row_html(f, show_status=True):
     rec_to = _day_fmt(f.recorded_to) if f.recorded_to else "current"
     return (
         f'<tr style="border-bottom:1px solid #e5e7eb">'
-        f'<td style="padding:6px;font-family:monospace;font-size:0.85em">{f.fact_id[:8]}</td>'
+        f'<th scope="row" style="padding:6px;font-family:monospace;font-size:0.85em;font-weight:normal;text-align:left;">{f.fact_id[:8]}</th>'
         f'<td style="padding:6px">{status}</td>'
         f'<td style="padding:6px;font-weight:600">{f.subject}</td>'
         f'<td style="padding:6px">{f.predicate}</td>'
