@@ -168,7 +168,7 @@ def inspect_architecture(
         tier = tier_map.get(mode_s, _esc(mode_s))
         phi_rows += (
             f'<tr style="border-bottom:1px solid #f3f4f6;">'
-            f'<td style="padding:4px 8px;font-family:monospace;">{_esc(str(stage_name))}</td>'
+            f'<th scope="row" style="padding:4px 8px;font-family:monospace;font-weight:normal;text-align:left;">{_esc(str(stage_name))}</th>'
             f'<td style="padding:4px 8px;">{_esc(mode_s)}</td>'
             f'<td style="padding:4px 8px;">{tier}</td></tr>')
     phi_content = (
