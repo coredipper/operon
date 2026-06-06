@@ -189,7 +189,7 @@ def analyze_filters(text: str) -> tuple[str, str, str, str, str]:
                 '<span style="color:#ef4444;font-weight:700;">SURVIVED</span>'
             )
             rows += (
-                f'<tr><td style="padding:6px 10px;">{label}</td>'
+                f'<tr><th scope="row" style="padding:6px 10px;font-weight:normal;text-align:left;">{label}</th>'
                 f'<td style="padding:6px 10px;text-align:center;">Present</td>'
                 f'<td style="padding:6px 10px;text-align:center;">{status}</td></tr>'
             )

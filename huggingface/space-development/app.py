@@ -52,7 +52,7 @@ def _run_lifecycle(max_ops, juv_t, adol_t, mat_t):
     for tick, old, new in transitions:
         color = COLORS[new]
         rows += f"""<tr>
-            <td style="padding:8px">Tick {tick}</td>
+            <th scope="row" style="padding:8px;font-weight:normal;text-align:left;">Tick {tick}</th>
             <td style="padding:8px;color:{COLORS[old]}">{old.value}</td>
             <td style="padding:8px">&rarr;</td>
             <td style="padding:8px;color:{color};font-weight:600">{new.value}</td>
@@ -79,7 +79,7 @@ def _run_lifecycle(max_ops, juv_t, adol_t, mat_t):
         status = "CLOSED" if is_closed else "OPEN"
         color = "#a44" if is_closed else "#4a4"
         cp_rows += f"""<tr>
-            <td style="padding:8px">{name}</td>
+            <th scope="row" style="padding:8px;font-weight:normal;text-align:left;">{name}</th>
             <td style="padding:8px">{opens.value} → {closes.value}</td>
             <td style="padding:8px;color:{color};font-weight:600">{status}</td>
             <td style="padding:8px;font-size:12px;color:#888">{desc}</td>
@@ -102,7 +102,7 @@ def _run_lifecycle(max_ops, juv_t, adol_t, mat_t):
         can_acquire = stage_order[final_stage] >= stage_order[min_stage]
         color = "#4a4" if can_acquire else "#a44"
         tool_rows += f"""<tr>
-            <td style="padding:8px">{name}</td>
+            <th scope="row" style="padding:8px;font-weight:normal;text-align:left;">{name}</th>
             <td style="padding:8px">{min_stage.value}</td>
             <td style="padding:8px;color:{color};font-weight:600">{'AVAILABLE' if can_acquire else 'LOCKED'}</td>
             <td style="padding:8px;font-size:12px;color:#888">{desc}</td>

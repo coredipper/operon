@@ -107,7 +107,7 @@ def run_audit(preset_name: str, budget: int, num_genes: int) -> str:
     if damages:
         rows = "".join(
             f"<tr style='border-bottom:1px solid #e5e7eb;'>"
-            f"<td style='padding:6px 8px;'>{d.corruption_type.value}</td>"
+            f"<th scope='row' style='padding:6px 8px;font-weight:normal;text-align:left;'>{d.corruption_type.value}</th>"
             f"<td style='padding:6px 8px;'>{_severity_badge(d.severity)}</td>"
             f"<td style='padding:6px 8px;'><code>{d.location}</code></td>"
             f"<td style='padding:6px 8px;'>{d.description}</td></tr>"
@@ -206,7 +206,7 @@ def verify_all_certificates(budget: int) -> str:
 
         rows += (
             f"<tr style='background:{row_bg};border-bottom:1px solid #e5e7eb;'>"
-            f"<td style='padding:8px;font-weight:600;'>{cert.theorem}</td>"
+            f"<th scope='row' style='padding:8px;font-weight:600;text-align:left;'>{cert.theorem}</th>"
             f"<td style='padding:8px;'><code>{cert.source}</code></td>"
             f"<td style='padding:8px;'>{_cert_badge(v.holds)}</td>"
             f"<td style='padding:8px;font-size:0.85em;'>{evidence_str}</td></tr>"

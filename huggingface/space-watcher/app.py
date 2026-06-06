@@ -208,7 +208,7 @@ def _signal_table_html(signals: list[WatcherSignal]) -> str:
     for s in signals:
         color = _CAT_COLORS.get(s.category.value, "#888")
         rows += f"""<tr>
-            <td><span style="color:{color};font-weight:600">{s.category.value}</span></td>
+            <th scope="row" style="font-weight:normal;text-align:left;"><span style="color:{color};font-weight:600">{s.category.value}</span></th>
             <td>{s.source}</td>
             <td>{s.stage_name}</td>
             <td>{s.value:.2f}</td>
@@ -245,7 +245,7 @@ def _timeline_html(
         ep_str = f"{ep_val:.2f}" if ep_val is not None else "—"
         atp_str = f"{atp_val:.0%}" if atp_val is not None else "—"
         rows += f"""<tr style="border-bottom:1px solid #222">
-            <td style="padding:10px;font-weight:600">{stage.name}</td>
+            <th scope="row" style="padding:10px;font-weight:600;text-align:left;">{stage.name}</th>
             <td style="padding:10px">{stage.model}</td>
             <td style="padding:10px">{ep_str}</td>
             <td style="padding:10px">{atp_str}</td>
