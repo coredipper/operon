@@ -71,25 +71,21 @@ class StripMarkupFilter:
     _COLLAPSE_NEWLINES: ClassVar[re.Pattern[str]] = re.compile(r"\n{3,}")
 
     # Patterns ordered from most specific to most general
-    _PATTERNS: tuple[re.Pattern[str], ...] = field(
-        default=(
-            re.compile(r"```[\s\S]*?```"),           # fenced code blocks
-            re.compile(r"`[^`]+`"),                    # inline code
-            re.compile(r"<\|[^|]*\|>"),                # <|...|> tokens (ChatML)
-            re.compile(r"\[INST\].*?\[/INST\]", re.S), # [INST] blocks
-            re.compile(r"\[/?INST\]"),                  # standalone [INST] tags
-            re.compile(
-                r"<(system|user|assistant|human|ai)[^>]*>.*?</\1>",
-                re.S | re.I,
-            ),                                          # XML role tags
-            re.compile(
-                r"<(system|user|assistant|human|ai)[^>]*/?>",
-                re.I,
-            ),                                          # self-closing role tags
-            re.compile(r"^(system|user|assistant|human|ai)\s*:", re.I | re.M),
-        ),
-        init=False,
-        repr=False,
+    _PATTERNS: ClassVar[tuple[re.Pattern[str], ...]] = (
+        re.compile(r"```[\s\S]*?```"),           # fenced code blocks
+        re.compile(r"`[^`]+`"),                    # inline code
+        re.compile(r"<\|[^|]*\|>"),                # <|...|> tokens (ChatML)
+        re.compile(r"\[INST\].*?\[/INST\]", re.S), # [INST] blocks
+        re.compile(r"\[/?INST\]"),                  # standalone [INST] tags
+        re.compile(
+            r"<(system|user|assistant|human|ai)[^>]*>.*?</\1>",
+            re.S | re.I,
+        ),                                          # XML role tags
+        re.compile(
+            r"<(system|user|assistant|human|ai)[^>]*/?>",
+            re.I,
+        ),                                          # self-closing role tags
+        re.compile(r"^(system|user|assistant|human|ai)\s*:", re.I | re.M),
     )
 
     def denature(self, value: str) -> str:
