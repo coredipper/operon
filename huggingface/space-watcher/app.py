@@ -208,11 +208,11 @@ def _signal_table_html(signals: list[WatcherSignal]) -> str:
     for s in signals:
         color = _CAT_COLORS.get(s.category.value, "#888")
         rows += f"""<tr>
-            <th scope="row" style="font-weight:normal;text-align:left;"><span style="color:{color};font-weight:600">{s.category.value}</span></th>
-            <td>{s.source}</td>
-            <td>{s.stage_name}</td>
-            <td>{s.value:.2f}</td>
-            <td style="font-size:12px;color:#888">{s.detail}</td>
+            <th scope="row" style="padding:8px;font-weight:normal;text-align:left;"><span style="color:{color};font-weight:600">{s.category.value}</span></th>
+            <td style="padding:8px">{s.source}</td>
+            <td style="padding:8px">{s.stage_name}</td>
+            <td style="padding:8px">{s.value:.2f}</td>
+            <td style="padding:8px;font-size:12px;color:#888">{s.detail}</td>
         </tr>"""
     return f"""<table style="width:100%;border-collapse:collapse;font-size:14px">
         <thead><tr style="border-bottom:2px solid #333">
