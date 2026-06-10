@@ -63,11 +63,11 @@ def _trace_table_html(trace) -> str:
     for t in trace:
         rows.append(
             f"<tr>"
-            f"<th scope='row' style='text-align:center;font-weight:normal;'>{t.step}</th>"
-            f"<td style='text-align:center'>{t.state_before}</td>"
-            f"<td style='text-align:center'>{t.input}</td>"
-            f"<td style='text-align:center;font-weight:600'>{t.output}</td>"
-            f"<td style='text-align:center'>{t.state_after}</td>"
+            f"<th scope='row' style='padding:6px;text-align:center;font-weight:normal;'>{t.step}</th>"
+            f"<td style='padding:6px;text-align:center'>{t.state_before}</td>"
+            f"<td style='padding:6px;text-align:center'>{t.input}</td>"
+            f"<td style='padding:6px;text-align:center;font-weight:600'>{t.output}</td>"
+            f"<td style='padding:6px;text-align:center'>{t.state_after}</td>"
             f"</tr>"
         )
     return (
@@ -237,11 +237,11 @@ def _run_composition(
 
         rows.append(
             f"<tr>"
-            f"<th scope='row' style='text-align:center;font-weight:normal;'>{t.step}</th>"
-            f"<td style='text-align:center'>({s1_before}, {s2_before})</td>"
-            f"<td style='text-align:center'>{t.input}</td>"
-            f"<td style='text-align:center;font-weight:600'>{out_str}</td>"
-            f"<td style='text-align:center'>({s1_after}, {s2_after})</td>"
+            f"<th scope='row' style='padding:6px;text-align:center;font-weight:normal;'>{t.step}</th>"
+            f"<td style='padding:6px;text-align:center'>({s1_before}, {s2_before})</td>"
+            f"<td style='padding:6px;text-align:center'>{t.input}</td>"
+            f"<td style='padding:6px;text-align:center;font-weight:600'>{out_str}</td>"
+            f"<td style='padding:6px;text-align:center'>({s1_after}, {s2_after})</td>"
             f"</tr>"
         )
 
