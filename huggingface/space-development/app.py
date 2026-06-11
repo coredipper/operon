@@ -63,7 +63,7 @@ def _run_lifecycle(max_ops, juv_t, adol_t, mat_t):
         <thead><tr style="border-bottom:2px solid #333">
             <th scope="col" style="text-align:left;padding:8px">Tick</th>
             <th scope="col" style="text-align:left;padding:8px">From</th>
-            <th scope="col" aria-label="Transition"></th>
+            <th scope="col" style="padding:8px" aria-label="Transition"></th>
             <th scope="col" style="text-align:left;padding:8px">To</th>
             <th scope="col" style="text-align:left;padding:8px">Plasticity</th>
         </tr></thead>
