@@ -59,3 +59,7 @@
 ## 2026-05-28 - any() with Generators Overhead (Autophagy Optimization)
 **Learning:** In highly-frequent paths or deep loops, such as evaluating markers in text arrays, `any()` coupled with generator expressions incurs a steep function call and generator creation overhead. Replacing `any(marker in line for marker in noise_markers)` with an explicit double-for loop inside string evaluators substantially reduces execution time (from ~26s down to ~11s in benchmarks of large line counts).
 **Action:** When scanning strings for multiple patterns, replace `any(pattern in text for pattern in patterns)` with an explicit loop.
+
+## 2026-05-28 - any(gen) optimization rejected
+**Learning:** Replacing idiomatic `any(marker in line for marker in noise_markers)` with explicit multi-line loops was rejected because it hurts readability, and the performance gain is not worth it, especially in cold paths or stub functions (like `create_simple_summarizer`). The benchmarked speedup (2.3x) was also implausible for real-world usage of `any(gen)` vs an inline `for`/`break` loop, which typically only differs by ~10-30%.
+**Action:** Never optimize `any(gen)` to explicit multi-line loops if it hurts readability or if the code is in a cold path/placeholder stub. Focus optimizations on proven hot paths, and be critical of micro-benchmark results that claim implausibly large speedups for simple loop structure changes.
