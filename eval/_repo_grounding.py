@@ -47,7 +47,8 @@ def extract_hints(text: str) -> list[str]:
     seen: dict[str, None] = {}
 
     # Explicit ``.py`` paths carry the most signal.
-    for m in _FILE_PATH_RE.findall(text):
+    for match in _FILE_PATH_RE.finditer(text):
+        m = match.group(0)
         seen.setdefault(m, None)
         # Also add the filename without extension so ``foo.py`` mentioned
         # in the issue matches a file on disk.
@@ -56,13 +57,15 @@ def extract_hints(text: str) -> list[str]:
             seen.setdefault(stem[:-3], None)
 
     # CamelCase identifiers (class names, error types).
-    for m in _CAMEL_CASE_RE.findall(text):
+    for match in _CAMEL_CASE_RE.finditer(text):
+        m = match.group(0)
         if m.lower() in _STOPWORDS:
             continue
         seen.setdefault(m, None)
 
     # snake_case identifiers (function names, module names).
-    for m in _SNAKE_CASE_RE.findall(text):
+    for match in _SNAKE_CASE_RE.finditer(text):
+        m = match.group(0)
         if m in _STOPWORDS:
             continue
         seen.setdefault(m, None)
