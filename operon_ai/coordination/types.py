@@ -1,5 +1,6 @@
 """Core types for the coordination system."""
 from __future__ import annotations
+import collections
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum
@@ -70,7 +71,7 @@ class ResourceLock:
     allow_preemption: bool = False
 
     # Waiting list: [(owner_id, priority), ...] sorted by priority desc
-    waiting_list: list[tuple[str, int]] = field(default_factory=list)
+    waiting_list: collections.deque[tuple[str, int]] = field(default_factory=collections.deque)
 
     @property
     def is_available(self) -> bool:
@@ -130,9 +131,10 @@ class ResourceLock:
     def _add_to_waiting(self, owner: str, priority: int) -> None:
         """Add to waiting list, sorted by priority (highest first)."""
         # Remove if already waiting
-        self.waiting_list = [(o, p) for o, p in self.waiting_list if o != owner]
-        self.waiting_list.append((owner, priority))
-        self.waiting_list.sort(key=lambda x: x[1], reverse=True)
+        temp_list = [(o, p) for o, p in self.waiting_list if o != owner]
+        temp_list.append((owner, priority))
+        temp_list.sort(key=lambda x: x[1], reverse=True)
+        self.waiting_list = collections.deque(temp_list)
 
     def release(self, owner: str) -> bool:
         """
@@ -160,7 +162,7 @@ class ResourceLock:
         """Get and remove highest priority waiter."""
         if not self.waiting_list:
             return None
-        return self.waiting_list.pop(0)
+        return self.waiting_list.popleft()
 
 
 @dataclass
