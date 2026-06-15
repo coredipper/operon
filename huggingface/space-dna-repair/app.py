@@ -113,14 +113,16 @@ def tab1_init(state: dict) -> tuple[str, dict]:
     repair = DNARepair(histone_store=histones, silent=True)
     state = {"genome": genome, "histones": histones, "repair": repair, "checkpoint": None}
 
-    genes_html = ""
+    genes_html_parts = []
     for name, gene in sorted(genome._genes.items()):
         expr = genome._expression[name].level.name
         req = " (required)" if gene.required else ""
-        genes_html += (f'<div style="margin:2px 0;"><code>{name}</code> = '
-                       f'<b>{gene.value}</b> [{gene.gene_type.value}] '
-                       f'expression={expr}{req}</div>')
-    return _section("Genome (4 genes)", genes_html), state
+        genes_html_parts.append(
+            f'<div style="margin:2px 0;"><code>{name}</code> = '
+            f'<b>{gene.value}</b> [{gene.gene_type.value}] '
+            f'expression={expr}{req}</div>'
+        )
+    return _section("Genome (4 genes)", "".join(genes_html_parts)), state
 
 
 def tab1_checkpoint(state: dict) -> tuple[str, dict]:

@@ -59,3 +59,7 @@
 ## 2025-02-20 - List comprehension optimization
 **Learning:** Using a list comprehension is generally faster than initializing an empty list and calling `.append()` repeatedly.
 **Action:** Replace `for` loops that only append to a list with list comprehensions when possible.
+
+## 2024-05-20 - String Concatenation Optimization
+**Learning:** In Python, string concatenation using `+=` inside loops creates a new string object each iteration, leading to O(N^2) time complexity due to memory reallocation.
+**Action:** Always accumulate string parts in a list and use `"".join(list)` when building large strings in a loop to ensure O(N) complexity and improve performance.
