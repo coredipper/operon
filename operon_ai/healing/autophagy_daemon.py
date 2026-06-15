@@ -106,6 +106,20 @@ class AutophagyDaemon:
     tokens_per_char: float = 0.25  # Rough estimate (4 chars per token)
     silent: bool = False
 
+    _NOISE_MARKERS = (
+        "Error:",
+        "Failed:",
+        "Traceback",
+        "Exception",
+        "FAILED",
+        "retry",
+        "timeout",
+        "Invalid",
+        "Unable to",
+        "I apologize",
+        "I cannot",
+    )
+
     # Tracking
     _prune_count: int = field(default=0, init=False)
     _total_tokens_freed: int = field(default=0, init=False)
@@ -283,27 +297,12 @@ class AutophagyDaemon:
         Uses simple heuristics - real implementation could use
         semantic analysis.
         """
-        # Markers of noise/waste in context
-        noise_markers = [
-            "Error:",
-            "Failed:",
-            "Traceback",
-            "Exception",
-            "FAILED",
-            "retry",
-            "timeout",
-            "Invalid",
-            "Unable to",
-            "I apologize",
-            "I cannot",
-        ]
-
         lines = context.split("\n")
         if not lines:
             return 1.0
 
         noise_lines = sum(
-            1 for line in lines if any(marker in line for marker in noise_markers)
+            1 for line in lines if any(marker in line for marker in self._NOISE_MARKERS)
         )
 
         return 1.0 - (noise_lines / len(lines))
@@ -334,6 +333,15 @@ class AutophagyDaemon:
         }
 
 
+_SIMPLE_SUMMARIZER_NOISE_MARKERS = (
+    "Error:",
+    "Failed:",
+    "Traceback",
+    "Exception",
+    "retry",
+    "timeout",
+)
+
 def create_simple_summarizer(max_summary_lines: int = 10) -> Callable[[str], str]:
     """
     Create a simple summarizer that extracts key lines.
@@ -345,21 +353,11 @@ def create_simple_summarizer(max_summary_lines: int = 10) -> Callable[[str], str
     def summarizer(context: str) -> str:
         lines = context.split("\n")
 
-        # Filter out noise
-        noise_markers = [
-            "Error:",
-            "Failed:",
-            "Traceback",
-            "Exception",
-            "retry",
-            "timeout",
-        ]
-
         useful_lines = [
             line
             for line in lines
             if line.strip()
-            and not any(marker in line for marker in noise_markers)
+            and not any(marker in line for marker in _SIMPLE_SUMMARIZER_NOISE_MARKERS)
         ]
 
         # Take first and last useful lines (most likely to be important)
