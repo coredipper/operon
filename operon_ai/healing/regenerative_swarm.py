@@ -316,10 +316,7 @@ class RegenerativeSwarm:
         """Check if output indicates task completion."""
         # Simple heuristic - real implementation would use task-specific logic
         output_upper = output.upper()
-        for marker in self._SUCCESS_MARKERS:
-            if marker in output_upper:
-                return True
-        return False
+        return any(marker in output_upper for marker in self._SUCCESS_MARKERS)
 
     def _calculate_entropy(self, outputs: list[str] | deque[str]) -> float:
         """
