@@ -311,11 +311,16 @@ class RegenerativeSwarm:
             )
         return None
 
+    _SUCCESS_MARKERS = ("SUCCESS", "SOLVED", "COMPLETE", "DONE", "FINISHED")
+
     def _is_success(self, output: str) -> bool:
         """Check if output indicates task completion."""
         # Simple heuristic - real implementation would use task-specific logic
-        success_markers = ["SUCCESS", "SOLVED", "COMPLETE", "DONE", "FINISHED"]
-        return any(marker in output.upper() for marker in success_markers)
+        output_upper = output.upper()
+        for marker in self._SUCCESS_MARKERS:
+            if marker in output_upper:
+                return True
+        return False
 
     def _calculate_entropy(self, outputs: list[str]) -> float:
         """
