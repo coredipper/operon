@@ -20,6 +20,7 @@ regeneration cycle:
 The key insight: Agent death is not just cleanup - it's information transfer.
 The dying agent's experience becomes a lesson for its successor.
 """
+from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Callable, Protocol
@@ -278,7 +279,7 @@ class RegenerativeSwarm:
 
         Returns output on success, None if stuck/failed.
         """
-        recent_outputs: list[str] = []
+        recent_outputs: deque[str] = deque(maxlen=3)
 
         for _ in range(self.max_steps_per_worker):
             output = worker.step(task)
@@ -289,8 +290,6 @@ class RegenerativeSwarm:
 
             # Track recent outputs for entropy calculation
             recent_outputs.append(output)
-            if len(recent_outputs) > 3:
-                recent_outputs.pop(0)
 
             # Check for entropy collapse (stuck)
             if len(recent_outputs) >= 3:
@@ -317,7 +316,7 @@ class RegenerativeSwarm:
         success_markers = ["SUCCESS", "SOLVED", "COMPLETE", "DONE", "FINISHED"]
         return any(marker in output.upper() for marker in success_markers)
 
-    def _calculate_entropy(self, outputs: list[str]) -> float:
+    def _calculate_entropy(self, outputs: list[str] | deque[str]) -> float:
         """
         Calculate output entropy (diversity).
 
