@@ -56,7 +56,7 @@ class ThreatSignature:
             )
 
         # Partial match - check if any violation types overlap
-        return bool(set(self.violation_types) & set(other.violation_types))
+        return not set(self.violation_types).isdisjoint(other.violation_types)
 
     def touch(self) -> None:
         """Update access time and count."""
