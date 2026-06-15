@@ -56,3 +56,6 @@
 ## 2026-05-18 - Replacing time.sleep with wait in background thread loops
 **Learning:** Using `time.sleep(1.0)` in a background thread blocks the thread unconditionally for up to 1 second during shutdown, increasing application shutdown latency. `threading.Event().wait(1.0)` can sleep for the same duration but immediately interrupts and exits if the event is set.
 **Action:** Replace `time.sleep()` with `threading.Event().wait()` inside background thread loops to eliminate unconditional blocking delay overhead and reduce shutdown latency.
+## 2025-02-20 - List comprehension optimization
+**Learning:** Using a list comprehension is generally faster than initializing an empty list and calling `.append()` repeatedly.
+**Action:** Replace `for` loops that only append to a list with list comprehensions when possible.
