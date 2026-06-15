@@ -34,6 +34,7 @@ cheap front-line screen, not as a complete adversarial robustness claim.
 """
 from dataclasses import dataclass, field
 from typing import Callable, Protocol
+from collections import deque
 from enum import Enum, IntEnum
 from datetime import datetime, timedelta
 import re
@@ -183,7 +184,7 @@ class InflammationState:
     triggered_at: datetime | None = None
     trigger_count: int = 0
     cooldown_until: datetime | None = None
-    recent_alerts: list[str] = field(default_factory=list)
+    recent_alerts: deque[str] = field(default_factory=lambda: deque(maxlen=10))
 
     def is_in_cooldown(self) -> bool:
         """Check if still in cooldown period."""
@@ -512,9 +513,6 @@ class InnateImmunity:
             for p in patterns:
                 alert = f"{p.category.value}: {p.description}"
                 self.inflammation_state.recent_alerts.append(alert)
-                # Keep only last 10
-                if len(self.inflammation_state.recent_alerts) > 10:
-                    self.inflammation_state.recent_alerts.pop(0)
 
         # Build response based on level
         actions: list[str] = []

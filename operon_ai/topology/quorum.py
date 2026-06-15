@@ -670,15 +670,16 @@ class QuorumSensing:
 
     def get_statistics(self) -> dict:
         """Get quorum sensing statistics."""
-        agent_stats = []
-        for profile in self.colony:
-            agent_stats.append({
+        agent_stats = [
+            {
                 "name": profile.agent.name,
                 "weight": profile.weight,
                 "reliability": profile.reliability_score,
                 "votes_cast": profile.votes_cast,
                 "correct_votes": profile.correct_votes,
-            })
+            }
+            for profile in self.colony
+        ]
 
         return {
             "n_agents": len(self.colony),
