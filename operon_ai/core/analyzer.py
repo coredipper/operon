@@ -16,6 +16,7 @@ References:
 """
 
 from __future__ import annotations
+import collections
 
 from dataclasses import dataclass, field
 
@@ -125,10 +126,10 @@ def critical_path(diagram: WiringDiagram) -> tuple[list[str], ResourceCost]:
 
     # Topological sort via Kahn's algorithm
     in_degree = {name: len(preds) for name, preds in deps.items()}
-    queue = [name for name, deg in in_degree.items() if deg == 0]
+    queue = collections.deque([name for name, deg in in_degree.items() if deg == 0])
     topo_order: list[str] = []
     while queue:
-        node = queue.pop(0)
+        node = queue.popleft()
         topo_order.append(node)
         for name, preds in deps.items():
             if node in preds:
