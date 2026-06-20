@@ -159,8 +159,6 @@ class GeminiProvider:
                                 arguments=dict(fc.args) if fc.args else {},
                             ))
                         elif hasattr(part, 'text') and part.text:
-                            # ⚡ Bolt: Use list append and join for string concatenation
-                            # inside loop instead of += to prevent O(N^2) memory reallocation.
                             content_parts.append(part.text)
 
             content = "".join(content_parts)
