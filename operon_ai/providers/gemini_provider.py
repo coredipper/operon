@@ -117,14 +117,14 @@ class GeminiProvider:
         try:
             from google.genai import types
 
-            function_declarations = []
-            for tool in tools:
-                func_decl = types.FunctionDeclaration(
+            function_declarations = [
+                types.FunctionDeclaration(
                     name=tool.name,
                     description=tool.description,
                     parameters=tool.parameters_schema,
                 )
-                function_declarations.append(func_decl)
+                for tool in tools
+            ]
 
             gemini_tools = [types.Tool(function_declarations=function_declarations)]
 
