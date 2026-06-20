@@ -301,9 +301,12 @@ class AutophagyDaemon:
         if not lines:
             return 1.0
 
-        noise_lines = sum(
-            1 for line in lines if any(marker in line for marker in self._NOISE_MARKERS)
-        )
+        noise_lines = 0
+        for line in lines:
+            for marker in self._NOISE_MARKERS:
+                if marker in line:
+                    noise_lines += 1
+                    break
 
         return 1.0 - (noise_lines / len(lines))
 
@@ -353,12 +356,17 @@ def create_simple_summarizer(max_summary_lines: int = 10) -> Callable[[str], str
     def summarizer(context: str) -> str:
         lines = context.split("\n")
 
-        useful_lines = [
-            line
-            for line in lines
-            if line.strip()
-            and not any(marker in line for marker in _SIMPLE_SUMMARIZER_NOISE_MARKERS)
-        ]
+        useful_lines = []
+        for line in lines:
+            if not line.strip():
+                continue
+            is_noise = False
+            for marker in _SIMPLE_SUMMARIZER_NOISE_MARKERS:
+                if marker in line:
+                    is_noise = True
+                    break
+            if not is_noise:
+                useful_lines.append(line)
 
         # Take first and last useful lines (most likely to be important)
         if len(useful_lines) <= max_summary_lines:
