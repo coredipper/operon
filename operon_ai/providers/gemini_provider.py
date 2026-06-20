@@ -145,7 +145,7 @@ class GeminiProvider:
             latency = (time.time() - start_time) * 1000
 
             tool_calls = []
-            content = ""
+            content_parts = []
 
             if response.candidates:
                 candidate = response.candidates[0]
@@ -159,7 +159,9 @@ class GeminiProvider:
                                 arguments=dict(fc.args) if fc.args else {},
                             ))
                         elif hasattr(part, 'text') and part.text:
-                            content += part.text
+                            content_parts.append(part.text)
+
+            content = "".join(content_parts)
 
             tokens = len(content.split()) + len(prompt.split())
 
