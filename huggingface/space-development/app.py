@@ -16,6 +16,9 @@ STAGES = [Stage.EMBRYONIC, Stage.JUVENILE, Stage.ADOLESCENT, Stage.MATURE]
 PLASTICITY = {Stage.EMBRYONIC: 1.0, Stage.JUVENILE: 0.75, Stage.ADOLESCENT: 0.5, Stage.MATURE: 0.25}
 COLORS = {Stage.EMBRYONIC: "#4ade80", Stage.JUVENILE: "#60a5fa", Stage.ADOLESCENT: "#f59e0b", Stage.MATURE: "#a78bfa"}
 
+# Visually hidden but exposed to screen readers (standard "sr-only" clip pattern).
+SR_ONLY = "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;"
+
 CRITICAL_PERIODS = [
     ("rapid_learning", Stage.EMBRYONIC, Stage.JUVENILE, "Fast template adoption from peers"),
     ("tool_exploration", Stage.JUVENILE, Stage.ADOLESCENT, "Try new tools freely"),
@@ -54,7 +57,7 @@ def _run_lifecycle(max_ops, juv_t, adol_t, mat_t):
         rows += f"""<tr>
             <th scope="row" style="padding:8px;font-weight:normal;text-align:left;">Tick {tick}</th>
             <td style="padding:8px;color:{COLORS[old]}">{old.value}</td>
-            <td style="padding:8px">&rarr;</td>
+            <td style="padding:8px" aria-hidden="true">&rarr;</td>
             <td style="padding:8px;color:{color};font-weight:600">{new.value}</td>
             <td style="padding:8px">{PLASTICITY[new]:.2f}</td>
         </tr>"""
@@ -63,7 +66,7 @@ def _run_lifecycle(max_ops, juv_t, adol_t, mat_t):
         <thead><tr style="border-bottom:2px solid #333">
             <th scope="col" style="text-align:left;padding:8px">Tick</th>
             <th scope="col" style="text-align:left;padding:8px">From</th>
-            <th scope="col" style="padding:8px" aria-label="Transition"></th>
+            <th scope="col" style="padding:8px"><span style="{SR_ONLY}">Transition</span></th>
             <th scope="col" style="text-align:left;padding:8px">To</th>
             <th scope="col" style="text-align:left;padding:8px">Plasticity</th>
         </tr></thead>
