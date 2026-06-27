@@ -63,3 +63,7 @@
 ## 2024-05-20 - String Concatenation Optimization
 **Learning:** In Python, string concatenation using `+=` inside loops creates a new string object each iteration, leading to O(N^2) time complexity due to memory reallocation.
 **Action:** Always accumulate string parts in a list and use `"".join(list)` when building large strings in a loop to ensure O(N) complexity and improve performance.
+
+## 2024-06-27 - Fast Set Intersection Checks
+**Learning:** Checking set intersection using `not a.intersection(b)` creates a new set and is significantly slower than `a.isdisjoint(b)`.
+**Action:** Always prefer `isdisjoint()` for overlapping checks in hot paths.
