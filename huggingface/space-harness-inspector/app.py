@@ -203,11 +203,11 @@ def inspect_architecture(
         '<tr style="border-bottom:1px solid #f3f4f6;">'
         '<th scope="row" style="padding:6px 8px;font-weight:600;text-align:left;">Protocols</th>'
         '<td style="padding:6px 8px;">Know (certs)</td>'
-        '<td style="padding:6px 8px;font-family:monospace;">ATP_Store.certify &rarr; Certificate</td></tr>'
+        '<td style="padding:6px 8px;font-family:monospace;">ATP_Store.certify <span aria-hidden="true">&rarr;</span> Certificate</td></tr>'
         '<tr>'
         '<th scope="row" style="padding:6px 8px;font-weight:600;text-align:left;">Memory</th>'
         '<td style="padding:6px 8px;">&Phi; (interface)</td>'
-        '<td style="padding:6px 8px;font-family:monospace;">mode &rarr; nucleus mapping</td></tr>'
+        '<td style="padding:6px 8px;font-family:monospace;">mode <span aria-hidden="true">&rarr;</span> nucleus mapping</td></tr>'
         '</table>')
 
     # --- Functor Results ---

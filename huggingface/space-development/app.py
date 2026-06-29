@@ -83,7 +83,7 @@ def _run_lifecycle(max_ops, juv_t, adol_t, mat_t):
         color = "#a44" if is_closed else "#4a4"
         cp_rows += f"""<tr>
             <th scope="row" style="padding:8px;font-weight:normal;text-align:left;">{name}</th>
-            <td style="padding:8px">{opens.value} → {closes.value}</td>
+            <td style="padding:8px">{opens.value} <span aria-hidden="true">→</span> {closes.value}</td>
             <td style="padding:8px;color:{color};font-weight:600">{status}</td>
             <td style="padding:8px;font-size:12px;color:#888">{desc}</td>
         </tr>"""
