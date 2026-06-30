@@ -29,6 +29,7 @@ from operon_ai import BiTemporalMemory
 # ── Time helpers ────────────────────────────────────────────────────
 
 _BASE = datetime(2026, 3, 15, 9, 0, 0)
+SR_ONLY = "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;"
 
 
 def _t(day: int, hour: int = 12) -> datetime:
@@ -217,8 +218,8 @@ def _fact_row_html(f, show_status=True):
         f'<td style="padding:6px;font-weight:600">{f.subject}</td>'
         f'<td style="padding:6px">{f.predicate}</td>'
         f'<td style="padding:6px;font-weight:600">{f.value}</td>'
-        f'<td style="padding:6px;font-size:0.85em">{_day_fmt(f.valid_from)} &mdash; {valid_to}</td>'
-        f'<td style="padding:6px;font-size:0.85em">{_day_fmt(f.recorded_from)} &mdash; {rec_to}</td>'
+        f'<td style="padding:6px;font-size:0.85em">{_day_fmt(f.valid_from)} <span aria-hidden="true">&mdash;</span><span style="{SR_ONLY}"> to </span> {valid_to}</td>'
+        f'<td style="padding:6px;font-size:0.85em">{_day_fmt(f.recorded_from)} <span aria-hidden="true">&mdash;</span><span style="{SR_ONLY}"> to </span> {rec_to}</td>'
         f'<td style="padding:6px;font-size:0.85em">{f.source}{supersedes}</td>'
         f'<td style="padding:6px">{tags}</td>'
         f'</tr>'
