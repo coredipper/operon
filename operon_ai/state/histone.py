@@ -462,6 +462,7 @@ class HistoneStore:
         query_lower = query.lower()
         query_words = set(query_lower.split())
         scored_markers: list[tuple[float, EpigeneticMarker]] = []
+        query_tags_set = set(tags) if tags else None
 
         for marker in self._markers.values():
             if not include_expired and marker.is_expired():
@@ -470,7 +471,7 @@ class HistoneStore:
                 continue
             if marker.strength.value < min_strength.value:
                 continue
-            if tags and not any(t in marker.tags for t in tags):
+            if query_tags_set and query_tags_set.isdisjoint(marker.tags):
                 continue
 
             score = self._calculate_relevance(marker, query_lower, query_words)

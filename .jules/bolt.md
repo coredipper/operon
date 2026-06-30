@@ -67,3 +67,7 @@
 ## 2024-06-27 - Fast Set Intersection Checks
 **Learning:** Checking set intersection using `not a.intersection(b)` creates a new set and is significantly slower than `a.isdisjoint(b)`.
 **Action:** Always prefer `isdisjoint()` for overlapping checks in hot paths.
+
+## 2024-05-18 - Optimize collection overlap checking
+**Learning:** When checking for overlaps between two collections inside performance-critical paths (e.g. loops in `HistoneStore.retrieve_context`), `not any(t in marker.tags for t in tags)` generates function call overhead and generator instantiation per loop iteration.
+**Action:** Convert the source collection to a set before the loop, and use `isdisjoint()` inside the loop for fast C-level intersection evaluation. This avoids redundant set creation and generator overhead.
