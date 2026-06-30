@@ -89,7 +89,7 @@ def _run_trust_sim(n_success, n_failure):
         rows += f"""<tr>
             <th scope="row" style="padding:6px;font-weight:normal;text-align:left;">{event}</th>
             <td style="padding:6px">
-                <span style="display:inline-block;width:{bar}%;height:12px;background:{color};border-radius:3px;opacity:0.5"></span>
+                <span aria-hidden="true" style="display:inline-block;width:{bar}%;height:12px;background:{color};border-radius:3px;opacity:0.5"></span>
                 <span style="color:{color};margin-left:8px;font-size:12px">{score:.3f}</span>
             </td>
         </tr>"""

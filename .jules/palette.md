@@ -12,3 +12,10 @@
 ## 2026-05-19 - Adding padding to manual Gradio HTML table cells
 **Learning:** When manually constructing HTML tables for Gradio applications, standard HTML elements lack default framework CSS. To ensure visual consistency, readability, and a sufficient click target area, manually add appropriate padding (e.g., `style="padding:8px"`) to `<td>` and `<th>` elements.
 **Action:** When working on custom HTML table strings inside Gradio interfaces, proactively ensure adequate padding is present on table headers and data cells.
+## 2026-05-19 - Adding aria-hidden to decorative html elements
+**Learning:** In manual HTML string construction for Gradio UIs, decorative elements like a `<span>` used for visual bar charts can be read as empty by screen readers or cause confusion.
+**Action:** Always add `aria-hidden="true"` to decorative HTML elements (such as visual background spans) within Gradio application strings to improve screen reader accessibility.
+
+## 2026-05-19 - Normalizing row header font weight in manual html tables
+**Learning:** Gradio UI manual HTML table constructions should keep table headers `font-weight:normal` when acting as row headers to align with visual standards and prevent visual regressions when compared against standard cells.
+**Action:** Consistently enforce `font-weight:normal` for `<th>` tags used as row headers in HTML tables within Gradio applications.

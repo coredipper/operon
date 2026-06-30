@@ -245,7 +245,7 @@ def _timeline_html(
         ep_str = f"{ep_val:.2f}" if ep_val is not None else "—"
         atp_str = f"{atp_val:.0%}" if atp_val is not None else "—"
         rows += f"""<tr style="border-bottom:1px solid #222">
-            <th scope="row" style="padding:10px;font-weight:600;text-align:left;">{stage.name}</th>
+            <th scope="row" style="padding:10px;font-weight:normal;text-align:left;">{stage.name}</th>
             <td style="padding:10px">{stage.model}</td>
             <td style="padding:10px">{ep_str}</td>
             <td style="padding:10px">{atp_str}</td>
