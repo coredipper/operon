@@ -132,7 +132,7 @@ class PlasmidRegistry:
             )
             if not text_match:
                 continue
-            if tags is not None and not tags.intersection(p.tags):
+            if tags is not None and tags.isdisjoint(p.tags):
                 continue
             results.append(p)
         return results
