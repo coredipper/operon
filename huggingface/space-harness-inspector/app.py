@@ -33,6 +33,8 @@ from operon_ai.convergence.categorical import (
     scion_functor,
 )
 
+SR_ONLY = "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;"
+
 # ---------------------------------------------------------------------------
 # Presets
 # ---------------------------------------------------------------------------
@@ -203,11 +205,11 @@ def inspect_architecture(
         '<tr style="border-bottom:1px solid #f3f4f6;">'
         '<th scope="row" style="padding:6px 8px;font-weight:600;text-align:left;">Protocols</th>'
         '<td style="padding:6px 8px;">Know (certs)</td>'
-        '<td style="padding:6px 8px;font-family:monospace;">ATP_Store.certify <span aria-hidden="true">&rarr;</span> Certificate</td></tr>'
+        f'<td style="padding:6px 8px;font-family:monospace;">ATP_Store.certify <span aria-hidden="true">&rarr;</span><span style="{SR_ONLY}"> to </span> Certificate</td></tr>'
         '<tr>'
         '<th scope="row" style="padding:6px 8px;font-weight:600;text-align:left;">Memory</th>'
         '<td style="padding:6px 8px;">&Phi; (interface)</td>'
-        '<td style="padding:6px 8px;font-family:monospace;">mode <span aria-hidden="true">&rarr;</span> nucleus mapping</td></tr>'
+        f'<td style="padding:6px 8px;font-family:monospace;">mode <span aria-hidden="true">&rarr;</span><span style="{SR_ONLY}"> to </span> nucleus mapping</td></tr>'
         '</table>')
 
     # --- Functor Results ---
