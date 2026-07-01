@@ -131,7 +131,7 @@ def inspect_architecture(
 
     # --- Architecture Triple ---
     # G (graph)
-    edges_html = " &rarr; ".join(_esc(s) for s in arch.stage_names)
+    edges_html = " <span aria-hidden=\"true\">&rarr;</span> ".join(_esc(s) for s in arch.stage_names)
     g_content = (
         f'<div style="font-family:monospace;font-size:1.1em;margin-bottom:8px;">'
         f'{edges_html}</div>'
@@ -163,7 +163,7 @@ def inspect_architecture(
         know_content = '<span style="color:#9ca3af;">No certificates</span>'
 
     # Phi (interface)
-    tier_map = {"fixed": "fast", "fuzzy": "fast&rarr;deep", "deep": "deep"}
+    tier_map = {"fixed": "fast", "fuzzy": "fast<span aria-hidden=\"true\">&rarr;</span>deep", "deep": "deep"}
     phi_rows = ""
     for stage_name, mode in arch.interface:
         mode_s = str(mode) if mode is not None else ""
@@ -182,9 +182,9 @@ def inspect_architecture(
         f'{phi_rows}</table>')
 
     arch_html = (
-        _section("G &mdash; Graph (syntactic wiring)", g_content, "#3b82f6")
-        + _section("Know &mdash; Knowledge (structural guarantees)", know_content, "#22c55e")
-        + _section("&Phi; &mdash; Interface (mode &rarr; model mapping)", phi_content, "#a855f7")
+        _section("G <span aria-hidden=\"true\">&mdash;</span> Graph (syntactic wiring)", g_content, "#3b82f6")
+        + _section("Know <span aria-hidden=\"true\">&mdash;</span> Knowledge (structural guarantees)", know_content, "#22c55e")
+        + _section("&Phi; <span aria-hidden=\"true\">&mdash;</span> Interface (mode <span aria-hidden=\"true\">&rarr;</span> model mapping)", phi_content, "#a855f7")
     )
 
     # --- Four-Pillar Mapping ---

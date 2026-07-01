@@ -203,7 +203,7 @@ def run_pipeline(text: str) -> str:
     dna_passed = len(damage) == 0
 
     d_detail = ("Genome state: clean (internal state integrity verified) "
-                "&mdash; <em>see DNA Repair Space for corruption scenarios</em>"
+                "<span aria-hidden=\"true\">&mdash;</span> <em>see DNA Repair Space for corruption scenarios</em>"
                 if dna_passed else f"{len(damage)} damage(s) detected")
     html_parts.append(_pipeline_step("DNA Repair Scan", "&#x1F9EC;", dna_passed, d_detail))
     html_parts.append(_arrow())

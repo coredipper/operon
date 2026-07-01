@@ -147,8 +147,8 @@ def build_graph_html(stages_info, executed_stages=None):
     halt_legend = (
         '<div style="text-align:center;padding:8px;color:#9ca3af;font-size:0.85em;">'
         'Each stage has a conditional edge: '
-        '<span style="color:#22c55e;font-weight:600;">continue</span> &rarr; next stage, '
-        '<span style="color:#ef4444;font-weight:600;">halt/blocked</span> &rarr; END'
+        '<span style="color:#22c55e;font-weight:600;">continue</span> <span aria-hidden="true">&rarr;</span> next stage, '
+        '<span style="color:#ef4444;font-weight:600;">halt/blocked</span> <span aria-hidden="true">&rarr;</span> END'
         '</div>')
 
     return main_flow + halt_legend

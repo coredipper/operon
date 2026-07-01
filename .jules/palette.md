@@ -19,3 +19,6 @@
 ## 2026-05-19 - Normalizing row header font weight in manual html tables
 **Learning:** Gradio UI manual HTML table constructions should keep table headers `font-weight:normal` when acting as row headers to align with visual standards and prevent visual regressions when compared against standard cells.
 **Action:** Consistently enforce `font-weight:normal` for `<th>` tags used as row headers in HTML tables within Gradio applications.
+## 2026-05-19 - Python heredoc string escaping
+**Learning:** When generating temporary Python scripts via bash heredocs (e.g., `cat << 'EOF' > script.py`) to perform complex `str.replace()` operations containing HTML or multiple quote types, using standard single/double quotes can lead to `SyntaxError: unexpected character after line continuation character` due to fragile multi-level escaping.
+**Action:** Use Python triple quotes (`'''...'''`) or raw strings (`r'...'`) for the target and replacement strings in temporary rewrite scripts to prevent escaping errors.
