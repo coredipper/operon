@@ -332,7 +332,7 @@ def _run_query(query_type, valid_day, record_day, subject_filter):
         explanation = (
             '<div style="padding:8px;background:#faf5ff;border-radius:6px;margin-bottom:12px;'
             'font-size:0.9em;color:#6b21a8">'
-            '<strong>Belief-state query:</strong> Intersects both axes &mdash; returns facts '
+            '<strong>Belief-state query:</strong> Intersects both axes <span aria-hidden="true">&mdash;</span> returns facts '
             f'valid at {_day_fmt(valid_time)} AND recorded by {_day_fmt(record_time)}. '
             'This answers: "What did the system believe was true at this world-time, '
             'given only what it knew by this record-time?"'

@@ -134,7 +134,7 @@ def run_audit(preset_name: str, budget: int, num_genes: int) -> str:
     # --- Certificate status ---
     cert_html = (
         f"<h3 style='margin:0 0 12px 0;'>Certificate Status</h3>"
-        f"<p><b>Theorem:</b> {cert.theorem} &mdash; {_cert_badge(verification.holds)}</p>"
+        f"<p><b>Theorem:</b> {cert.theorem} <span aria-hidden=\"true\">&mdash;</span> {_cert_badge(verification.holds)}</p>"
         f"<p><b>Conclusion:</b> {cert.conclusion}</p>"
     )
 
