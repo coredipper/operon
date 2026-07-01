@@ -27,6 +27,8 @@ from operon_ai.convergence.langgraph_compiler import (
     run_organism_langgraph,
 )
 
+SR_ONLY = "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;"
+
 # ---------------------------------------------------------------------------
 # Presets
 # ---------------------------------------------------------------------------
@@ -147,8 +149,8 @@ def build_graph_html(stages_info, executed_stages=None):
     halt_legend = (
         '<div style="text-align:center;padding:8px;color:#9ca3af;font-size:0.85em;">'
         'Each stage has a conditional edge: '
-        '<span style="color:#22c55e;font-weight:600;">continue</span> <span aria-hidden="true">&rarr;</span> next stage, '
-        '<span style="color:#ef4444;font-weight:600;">halt/blocked</span> <span aria-hidden="true">&rarr;</span> END'
+        f'<span style="color:#22c55e;font-weight:600;">continue</span> <span aria-hidden="true">&rarr;</span><span style="{SR_ONLY}"> to </span> next stage, '
+        f'<span style="color:#ef4444;font-weight:600;">halt/blocked</span> <span aria-hidden="true">&rarr;</span><span style="{SR_ONLY}"> to </span> END'
         '</div>')
 
     return main_flow + halt_legend

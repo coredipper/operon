@@ -66,6 +66,8 @@ DENATURE_PRESETS = {
     ),
 }
 
+SR_ONLY = "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;"
+
 # ── HTML helpers ─────────────────────────────────────────────────────────
 
 
@@ -79,7 +81,7 @@ def _badge(text: str, color: str) -> str:
 
 def _wire_result(label: str, accepted: bool, value=None) -> str:
     if accepted:
-        val_str = f" <span aria-hidden='true'>&rarr;</span> <code>{value}</code>" if value is not None else ""
+        val_str = f" <span aria-hidden='true'>&rarr;</span><span style='{SR_ONLY}'> to </span> <code>{value}</code>" if value is not None else ""
         return (
             f'<div style="padding:8px;margin:4px 0;border-left:4px solid #22c55e;'
             f'background:#f0fdf4;border-radius:4px">'
@@ -313,7 +315,7 @@ def run_denature_optic(
     parts = [
         f'<div style="padding:8px;margin-bottom:8px">'
         f'Wire configuration: <strong>Denature({denature_filter.name})</strong> '
-        f'<span aria-hidden=\'true\'>&rarr;</span> <strong>Optic({composed_optic.name})</strong><br>'
+        f'<span aria-hidden=\'true\'>&rarr;</span><span style="{SR_ONLY}"> to </span> <strong>Optic({composed_optic.name})</strong><br>'
         f'DataType: {_badge(source_type, "#6366f1")} '
         f'Payload: <code>{payload}</code></div>',
     ]
