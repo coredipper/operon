@@ -71,3 +71,6 @@
 ## 2024-05-18 - Optimize collection overlap checking
 **Learning:** When checking for overlaps between two collections inside performance-critical paths (e.g. loops in `HistoneStore.retrieve_context`), `not any(t in marker.tags for t in tags)` generates function call overhead and generator instantiation per loop iteration.
 **Action:** Convert the source collection to a set before the loop, and use `isdisjoint()` inside the loop for fast C-level intersection evaluation. This avoids redundant set creation and generator overhead.
+## 2024-07-01 - Mock Provider Regex Matching Optimization violates constraints
+**Learning:** While replacing `any(marker in string)` with pre-compiled regex `re.compile("...").search(string)` is a valid performance optimization, applying it to a mock testing provider with simulated latency constitutes an optimization on a cold path (micro-optimization with no measurable real-world impact), violating strict agent boundaries.
+**Action:** Do not optimize testing providers or paths with artificial simulated latencies; only target actual runtime application logic or performance bottlenecks with tangible, real-world execution impacts.

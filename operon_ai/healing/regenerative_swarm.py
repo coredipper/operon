@@ -26,6 +26,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Callable, Protocol
 from enum import Enum
 import hashlib
+import re
 
 
 class WorkerStatus(Enum):
@@ -310,13 +311,12 @@ class RegenerativeSwarm:
             )
         return None
 
-    _SUCCESS_MARKERS = ("SUCCESS", "SOLVED", "COMPLETE", "DONE", "FINISHED")
+    _SUCCESS_MARKERS_RE = re.compile(r"SUCCESS|SOLVED|COMPLETE|DONE|FINISHED")
 
     def _is_success(self, output: str) -> bool:
         """Check if output indicates task completion."""
         # Simple heuristic - real implementation would use task-specific logic
-        output_upper = output.upper()
-        return any(marker in output_upper for marker in self._SUCCESS_MARKERS)
+        return bool(self._SUCCESS_MARKERS_RE.search(output.upper()))
 
     def _calculate_entropy(self, outputs: list[str] | deque[str]) -> float:
         """
