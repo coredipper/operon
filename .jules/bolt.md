@@ -71,3 +71,7 @@
 ## 2024-05-18 - Optimize collection overlap checking
 **Learning:** When checking for overlaps between two collections inside performance-critical paths (e.g. loops in `HistoneStore.retrieve_context`), `not any(t in marker.tags for t in tags)` generates function call overhead and generator instantiation per loop iteration.
 **Action:** Convert the source collection to a set before the loop, and use `isdisjoint()` inside the loop for fast C-level intersection evaluation. This avoids redundant set creation and generator overhead.
+
+## 2026-05-30 - O(N) Generator Expressions in Hot Loops
+**Learning:** In Python, when repeatedly checking membership against an actively growing collection of objects inside a loop, using a generator expression like `victim not in (e.operation_id for e in events)` results in O(N) execution time and introduces generator instantiation overhead on every check. By maintaining a parallel `set` of the target keys (e.g., `event_op_ids.add(op_id)`), this check can be converted to an O(1) set lookup (`victim not in event_op_ids`), yielding significant performance improvements (from ~0.46s down to virtually instantaneous in micro-benchmarks).
+**Action:** Always maintain a parallel `set` of lookup keys when appending to a list of objects if those keys need to be queried for membership later within the same operational loop.
