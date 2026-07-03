@@ -68,6 +68,7 @@ class Watchdog:
         Returns list of termination events (does not execute).
         """
         events = []
+        event_op_ids = set()
         now = utc_now()
 
         for op_id, ctx in list(controller.active_operations.items()):
@@ -79,6 +80,7 @@ class Watchdog:
             if self.max_operation_time:
                 elapsed = now - _coerce_utc(ctx.created_at)
                 if elapsed > self.max_operation_time:
+                    event_op_ids.add(op_id)
                     events.append(ApoptosisEvent(
                         operation_id=op_id,
                         agent_id=ctx.agent_id,
@@ -93,6 +95,7 @@ class Watchdog:
                 if phase_time > self.starvation_timeout:
                     # Check if actually waiting for resources
                     if not ctx.resources_acquired:
+                        event_op_ids.add(op_id)
                         events.append(ApoptosisEvent(
                             operation_id=op_id,
                             agent_id=ctx.agent_id,
@@ -105,6 +108,7 @@ class Watchdog:
             if self.progress_timeout and ctx.phase == Phase.S:
                 phase_time = now - _coerce_utc(ctx.phase_entered_at)
                 if phase_time > self.progress_timeout:
+                    event_op_ids.add(op_id)
                     events.append(ApoptosisEvent(
                         operation_id=op_id,
                         agent_id=ctx.agent_id,
@@ -117,7 +121,7 @@ class Watchdog:
         deadlock = controller.check_deadlock()
         if deadlock:
             victim = self._select_deadlock_victim(controller, deadlock)
-            if victim and victim not in (e.operation_id for e in events):
+            if victim and victim not in event_op_ids:
                 ctx = controller.active_operations.get(victim)
                 if ctx:
                     events.append(ApoptosisEvent(
